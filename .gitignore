@@ -17,3 +17,6 @@ rules.mk
 librep.spec
 doc-strings
 autom4te.cache
+config.guess
+config.sub
+ltmain.sh

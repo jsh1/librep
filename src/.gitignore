@@ -11,3 +11,4 @@ srep
 .libexec
 rep_config.h
 .*.d
+*.dSYM
