@@ -350,6 +350,9 @@
 /* Define if <ffi.h> exists */
 #undef HAVE_FFI_H
 
+/* Define if <ffi/ffi.h> exists */
+#undef HAVE_FFI_FFI_H
+
 /* Define if libffi exists and works */
 #undef HAVE_LIBFFI
 

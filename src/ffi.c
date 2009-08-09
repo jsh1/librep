@@ -70,8 +70,10 @@
 #include <string.h>
 #include <inttypes.h>
 
-#ifdef HAVE_FFI_H
+#if defined (HAVE_FFI_H)
 #include <ffi.h>
+#elif defined (HAVE_FFI_FFI_H)
+#include <ffi/ffi.h>
 #endif
 
 #if SIZEOF_VOID_P == SIZEOF_LONG

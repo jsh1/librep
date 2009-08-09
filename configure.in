@@ -237,6 +237,12 @@ if test "$with_ffi" != "no"; then
       FFI_LIBS="-lffi"
       AC_DEFINE(HAVE_LIBFFI)]))
 
+  AC_CHECK_HEADER(ffi/ffi.h,
+    AC_DEFINE(HAVE_FFI_FFI_H)
+    AC_CHECK_LIB(ffi, ffi_call,[
+      FFI_LIBS="-lffi"
+      AC_DEFINE(HAVE_LIBFFI)]))
+
   if test -z "$FFI_LIBS"; then
     if test "$with_ffi_prefix" = "yes"; then
       AC_MSG_ERROR([Can't find libffi])
