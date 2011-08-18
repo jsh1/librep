@@ -88,6 +88,9 @@
 # error "weird pointer size"
 #endif
 
+#undef ALIGN
+#define ALIGN(v, a)     (((size_t)(v) + (a) - 1) & ~((a) - 1))
+
 #ifdef HAVE_LIBFFI
 
 typedef struct rep_ffi_type_struct rep_ffi_type;

@@ -1,3 +1,8 @@
+2011-08-17  John Harper  <jsh@unfactored.org>
+
+	* ffi.c: ALIGN macro is no longer defined by ffi.h on Mac OS X
+	10.7, so always define it locally
+
 2007-11-02  John Harper  <jsh@unfactored.org>
 
 	* values.c, lispmach.h, unix_processes.c, rep-md5.c, streams.c,
