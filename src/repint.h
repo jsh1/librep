@@ -104,8 +104,8 @@ struct rep_struct_node_struct {
     rep_struct_node *next;
     repv symbol;
     repv binding;
-    u_int is_constant : 1;
-    u_int is_exported : 1;
+    unsigned int is_constant : 1;
+    unsigned int is_exported : 1;
 };
 
 /* structure encapsulating a single namespace */
@@ -232,8 +232,7 @@ typedef struct rep_cons_block_struct {
    call when the heap needs to grow. */
 
 #if defined __GNUC__ && defined __OPTIMIZE__
-extern __inline__ repv inline_Fcons (repv x, repv y);
-extern __inline__ repv
+static __inline__ repv
 inline_Fcons (repv x, repv y)
 {
     rep_cons *c = rep_cons_freelist;

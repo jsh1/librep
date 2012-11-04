@@ -60,7 +60,7 @@
 #endif
 
 void (*rep_redisplay_fun)(void);
-int (*rep_wait_for_input_fun)(fd_set *inputs, u_long timeout_msecs);
+int (*rep_wait_for_input_fun)(fd_set *inputs, int timeout_msecs);
 int rep_input_timeout_secs = 1;
 
 
@@ -82,13 +82,13 @@ rep_lookup_errno(void)
 #endif
 }
 
-u_long
+rep_uintptr_t
 rep_getpid (void)
 {
     return getpid ();
 }
 
-u_long
+rep_uintptr_t
 rep_time(void)
 {
     return time(0);
@@ -109,7 +109,7 @@ rep_utime (void)
 }
 
 void
-rep_sleep_for(long secs, long msecs)
+rep_sleep_for(int secs, int msecs)
 {
     struct timeval timeout;
     timeout.tv_sec = secs + msecs / 1000;
@@ -174,7 +174,7 @@ rep_user_home_directory(repv user)
     {
 	repv dir;
 	char *src = 0;
-	int len;
+	size_t len;
 
 	if(rep_NILP(user))
 	    src = getenv("HOME");
@@ -400,7 +400,7 @@ rep_proc_periodically (void)
    actual fds defined by the fdset INPUTS. Return zero if the timeout
    was reached. */
 static int
-wait_for_input(fd_set *inputs, u_long timeout_msecs)
+wait_for_input(fd_set *inputs, int timeout_msecs)
 {
     fd_set copy;
     int ready = -1;
@@ -440,10 +440,10 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
        interrupt between each call to select. */
     do {
 	struct timeval timeout;
-	u_long max_sleep = rep_max_sleep_for ();
-	u_long this_timeout_msecs = MIN (timeout_msecs,
-					 rep_input_timeout_secs * 1000);
-	u_long actual_timeout_msecs = MIN (this_timeout_msecs, max_sleep);
+	int max_sleep = rep_max_sleep_for ();
+	int this_timeout_msecs = MIN (timeout_msecs,
+				      rep_input_timeout_secs * 1000);
+	int actual_timeout_msecs = MIN (this_timeout_msecs, max_sleep);
 
 	timeout.tv_sec = actual_timeout_msecs / 1000;
 	timeout.tv_usec = (actual_timeout_msecs % 1000) * 1000;
@@ -484,7 +484,7 @@ wait_for_input(fd_set *inputs, u_long timeout_msecs)
 static rep_bool
 handle_input(fd_set *inputs, int ready)
 {
-    static long idle_period;
+    static int idle_period;
     rep_bool refreshp = rep_FALSE;
 
     if(ready > 0)
@@ -571,7 +571,7 @@ rep_event_loop(void)
 }
 
 repv
-rep_sit_for(u_long timeout_msecs)
+rep_sit_for(int timeout_msecs)
 {
     fd_set copy;
     int ready;
@@ -589,7 +589,7 @@ rep_sit_for(u_long timeout_msecs)
    invoke any callback function except CALLBACKS. Return Qnil if any
    input was serviced, Qt if the timeout expired, rep_NULL for an error. */
 repv
-rep_accept_input_for_callbacks (u_long timeout_msecs, int ncallbacks,
+rep_accept_input_for_callbacks (int timeout_msecs, int ncallbacks,
 				void (**callbacks)(int))
 {
     fd_set copy;
@@ -623,7 +623,7 @@ rep_accept_input_for_callbacks (u_long timeout_msecs, int ncallbacks,
    Return Qnil if any input was serviced, Qt if the timeout expired, rep_NULL
    for an error. */
 repv
-rep_accept_input_for_fds (u_long timeout_msecs, int nfds, int *fds)
+rep_accept_input_for_fds (int timeout_msecs, int nfds, int *fds)
 {
     fd_set copy;
     int ready, i;
@@ -644,7 +644,7 @@ rep_accept_input_for_fds (u_long timeout_msecs, int nfds, int *fds)
 
 /* obsolete, for compatibility only */
 repv
-rep_accept_input(u_long timeout_msecs, void (*callback)(int))
+rep_accept_input(int timeout_msecs, void (*callback)(int))
 {
     return rep_accept_input_for_callbacks (timeout_msecs, 1, &callback);
 }
@@ -674,7 +674,7 @@ struct alloc_data {
 static struct alloc_data *allocations;
 
 void *
-rep_alloc(u_int length)
+rep_alloc(size_t length)
 {
     void *mem;
     length += SIZEOF_ALLOC_DATA;
@@ -696,7 +696,7 @@ rep_alloc(u_int length)
 }
 
 void *
-rep_realloc(void *ptr, u_int length)
+rep_realloc(void *ptr, size_t length)
 {
     void *mem;
     length += SIZEOF_ALLOC_DATA;

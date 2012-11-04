@@ -36,9 +36,13 @@
 
 /* Lisp values. */
 
+/* Integer types at least as large as a pointer. */
+typedef rep_PTR_SIZED_INT rep_intptr_t;
+typedef unsigned rep_PTR_SIZED_INT rep_uintptr_t;
+
 /* A `repv' is a lisp value, perhaps a pointer to an object, but not a real
    pointer; it's two lowest bits define its type. */
-typedef unsigned rep_PTR_SIZED_INT repv;
+typedef rep_uintptr_t repv;
 
 /* The number of bits in the lisp value type. */
 #define rep_VALUE_BITS rep_PTR_SIZED_INT_BITS
@@ -238,7 +242,7 @@ typedef struct {
 typedef struct rep_type_struct {
     struct rep_type_struct *next;
     char *name;
-    u_int code;
+    repv code;
 
     /* Compares two values, rc is similar to strcmp() */
     int (*compare)(repv val1, repv val2);
@@ -267,7 +271,8 @@ typedef struct rep_type_struct {
     int (*getc)(repv obj);
     int (*ungetc)(repv obj, int c);
     int (*putc)(repv obj, int c);
-    int (*puts)(repv obj, void *data, int length, rep_bool lisp_obj_p);
+    rep_intptr_t (*puts)(repv obj, void *data, rep_intptr_t length,
+			 rep_bool lisp_obj_p);
 
     /* When non-null, a function to ``bind'' to OBJ temporarily,
        returning some handle for later unbinding. */

@@ -1,3 +1,14 @@
+2012-11-03  John Harper  <jsh@unfactored.org>
+
+	* values.c, unix_processes.c, unix_main.c, unix_files.c,
+	timers.c, symbols.c, structures.c, streams.c, sockets.c,
+	repint_subrs.h, repint.h, rep_subrs.h, rep_lisp.h,
+	rep-remote.c, regsub.c, origin.c, numbers.c, misc.c, message.c,
+	main.c, macros.c, lispmach.h, lispcmds.c, lisp.c, find.c,
+	continuations.c: clean up type usage, e.g. added rep_intptr_t
+	and rep_uintptr_t which are now widely used. Probably breaks
+	ABI, so recompile dependent code
+
 2011-08-17  John Harper  <jsh@unfactored.org>
 
 	* ffi.c: ALIGN macro is no longer defined by ffi.h on Mac OS X

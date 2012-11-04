@@ -61,10 +61,10 @@ typedef struct lisp_timer {
     struct lisp_timer *next;
     struct lisp_timer *next_alloc;
     repv function;
-    long secs, msecs;
-    long rel_secs, rel_msecs;
-    u_int fired : 1;
-    u_int deleted : 1;
+    int secs, msecs;
+    int rel_secs, rel_msecs;
+    unsigned int fired : 1;
+    unsigned int deleted : 1;
 } Lisp_Timer;
 
 /* List of all allocated timer objects, linked through next_alloc field */
@@ -121,7 +121,7 @@ setup_next_timer (void)
 }
 
 static inline void
-fix_time (long *secs, long *msecs)
+fix_time (int *secs, int *msecs)
 {
     while (*msecs < 0)
     {
@@ -250,8 +250,8 @@ to re-enable it.
     rep_data_after_gc += sizeof (Lisp_Timer);
     t->car = timer_type;
     t->function = fun;
-    t->secs = rep_get_long_int (secs);
-    t->msecs = rep_get_long_int (msecs);
+    t->secs = (int) rep_get_long_int (secs);
+    t->msecs = (int) rep_get_long_int (msecs);
     fix_time (&t->secs, &t->msecs);
     t->next_alloc = allocated_timers;
     allocated_timers = t;
@@ -289,8 +289,8 @@ duration. Otherwise, the existing values are preserved.
     delete_timer (TIMER(timer));
     if (secs != Qnil || msecs != Qnil)
     {
-	TIMER(timer)->secs = rep_get_long_int (secs);
-	TIMER(timer)->msecs = rep_get_long_int (msecs);
+	TIMER(timer)->secs = (int) rep_get_long_int (secs);
+	TIMER(timer)->msecs = (int) rep_get_long_int (msecs);
 	fix_time (&TIMER (timer)->secs, &TIMER (timer)->msecs);
     }
     insert_timer (TIMER(timer));
@@ -346,7 +346,7 @@ timer_print (repv stream, repv arg)
 {
     char buf[64];
 #ifdef HAVE_SNPRINTF
-    snprintf (buf, sizeof (buf), "#<timer %lds, %ldms>",
+    snprintf (buf, sizeof (buf), "#<timer %ds, %dms>",
 	      TIMER(arg)->secs, TIMER(arg)->msecs);
 #else
     sprintf (buf, "#<timer %lds, %ldms>", TIMER(arg)->secs, TIMER(arg)->msecs);

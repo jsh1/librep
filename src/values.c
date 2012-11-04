@@ -77,11 +77,11 @@ DEFSYM(after_gc_hook, "after-gc-hook");
 #define TYPE_HASH_SIZE 32
 #define TYPE_HASH(type) (((type) >> 1) & (TYPE_HASH_SIZE-1))
 
-static u_int next_free_type = 0;
+static int next_free_type = 0;
 static rep_type *data_types[TYPE_HASH_SIZE];
 
 void
-rep_register_type(u_int code, char *name,
+rep_register_type(repv code, char *name,
 		  int (*compare)(repv, repv),
 		  void (*princ)(repv, repv),
 		  void (*print)(repv, repv),
@@ -91,7 +91,7 @@ rep_register_type(u_int code, char *name,
 		  int (*getc)(repv),
 		  int (*ungetc)(repv, int),
 		  int (*putc)(repv, int),
-		  int (*puts)(repv, void *, int, rep_bool),
+		  rep_intptr_t (*puts)(repv, void *, rep_intptr_t, rep_bool),
 		  repv (*bind)(repv),
 		  void (*unbind)(repv))
 {
@@ -119,7 +119,7 @@ rep_register_type(u_int code, char *name,
     data_types[TYPE_HASH(code)] = t;
 }
 
-u_int
+repv
 rep_register_new_type(char *name,
 		      int (*compare)(repv, repv),
 		      void (*princ)(repv, repv),
@@ -130,11 +130,11 @@ rep_register_new_type(char *name,
 		      int (*getc)(repv),
 		      int (*ungetc)(repv, int),
 		      int (*putc)(repv, int),
-		      int (*puts)(repv, void *, int, rep_bool),
+		      rep_intptr_t (*puts)(repv, void *, rep_intptr_t, rep_bool),
 		      repv (*bind)(repv),
 		      void (*unbind)(repv))
 {
-    u_int code;
+    repv code;
     assert(next_free_type != 256);
     code = (next_free_type++ << rep_CELL16_TYPE_SHIFT) | rep_CELL_IS_8 | rep_CELL_IS_16;
     rep_register_type(code, name, compare, princ, print,
@@ -144,7 +144,7 @@ rep_register_new_type(char *name,
 }
 
 rep_type *
-rep_get_data_type(u_int code)
+rep_get_data_type(repv code)
 {
     rep_type *t = data_types[TYPE_HASH(code)];
     while (t != 0 && t->code != code)
@@ -227,7 +227,7 @@ DEFSTRING(string_overflow, "String too long");
    of its memory passes to the lisp system. LEN _doesn't_ include the zero
    terminator */
 repv
-rep_box_string (char *ptr, long len)
+rep_box_string (char *ptr, size_t len)
 {
     rep_string *str;
 
@@ -268,7 +268,7 @@ rep_box_string (char *ptr, long len)
 /* Return a string object with room for exactly LEN characters. No extra
    byte is allocated for a zero terminator; do this manually if required. */
 repv
-rep_make_string(long len)
+rep_make_string(size_t len)
 {
     char *data = rep_alloc (len);
     if(data != NULL)
@@ -278,7 +278,7 @@ rep_make_string(long len)
 }
 
 repv
-rep_string_dupn(const char *src, long slen)
+rep_string_dupn(const char *src, size_t slen)
 {
     rep_string *dst = rep_STRING(rep_make_string(slen + 1));
     if(dst != NULL)
@@ -327,9 +327,9 @@ string_cmp(repv v1, repv v2)
 {
     if(rep_STRINGP(v1) && rep_STRINGP(v2))
     {
-	long len1 = rep_STRING_LEN(v1);
-	long len2 = rep_STRING_LEN(v2);
-	long tem = memcmp(rep_STR(v1), rep_STR(v2), MIN(len1, len2));
+	size_t len1 = rep_STRING_LEN(v1);
+	size_t len2 = rep_STRING_LEN(v2);
+	int tem = memcmp(rep_STR(v1), rep_STR(v2), MIN(len1, len2));
 	return tem != 0 ? tem : (len1 - len2);
     }
     else
@@ -395,7 +395,7 @@ string_sweep(void)
 
 /* Sets the length-field of the dynamic string STR to LEN. */
 rep_bool
-rep_set_string_len(repv str, long len)
+rep_set_string_len(repv str, size_t len)
 {
     if(rep_STRING_WRITABLE_P(str))
     {

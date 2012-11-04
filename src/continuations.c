@@ -183,7 +183,7 @@ typedef struct rep_thread_struct rep_thread;
 
 struct rep_barrier_struct {
     rep_barrier *next;
-    rep_barrier *root;		/* upwards closed barrier */
+    rep_barrier *root;			/* upwards closed barrier */
     char *point;
     void (*in)(void *data);
     void (*out)(void *data);
@@ -191,9 +191,9 @@ struct rep_barrier_struct {
     rep_thread *active;
     rep_thread *head, *tail;
     rep_thread *susp_head, *susp_tail;
-    short depth;
-    u_int closed : 1;
-    u_int targeted : 1;		/* may contain continuations */
+    int depth;
+    unsigned int closed : 1;
+    unsigned int targeted : 1;		/* may contain continuations */
 };
 
 /* List of all currently active barriers (on the current stack) */
@@ -1127,7 +1127,7 @@ thread_suspend (rep_thread *t, u_long msecs,
 	/* XXX assumes twos-complement representation.. but Solaris
 	   XXX has a weird struct timeval.. */
 	t->run_at.tv_sec = ~0UL >> 1;
-	t->run_at.tv_usec = ~0UL >> 1;
+	t->run_at.tv_usec = 0;
     }
     else
     {
@@ -1148,15 +1148,14 @@ thread_suspend (rep_thread *t, u_long msecs,
 	thread_invoke ();
 }
 
-u_long
+int
 rep_max_sleep_for (void)
 {
     rep_barrier *root = root_barrier;
     if (root == 0 || root->active == 0)
     {
-	/* not using threads, sleep as long as you like..
-	   XXX grr.. using ULONG_MAX doesn't work on solaris*/
-	return UINT_MAX;
+	/* not using threads, sleep as long as you like.. */
+	return INT_MAX;
     }
     else if (root->head != 0 && root->head->next != 0)
     {
@@ -1168,7 +1167,7 @@ rep_max_sleep_for (void)
 	/* other threads sleeping, how long until the first wakes? */
 	/* XXX ignores polling */
 	struct timeval now;
-	long msecs;
+	int msecs;
 	gettimeofday (&now, 0);
 	msecs = ((root->susp_head->run_at.tv_sec - now.tv_sec) * 1000
 		 + (root->susp_head->run_at.tv_usec - now.tv_usec) / 1000);
@@ -1177,7 +1176,7 @@ rep_max_sleep_for (void)
     else
     {
 	/* whatever.. */
-	return UINT_MAX;
+	return INT_MAX;
     }
 }
 

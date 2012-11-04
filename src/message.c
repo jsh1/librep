@@ -34,14 +34,12 @@ default_message (enum rep_message fn, ...)
     va_start (args, fn);
     switch (fn)
     {
-	int len;
+	size_t len;
 	char *msg;
-	u_long *old_lenp;
-	char **old_msgp;
 
     case rep_messagen:
 	msg = (char *)va_arg(args, char *);
-	len = (int)va_arg(args, int);
+	len = (size_t)va_arg(args, size_t);
 	fwrite(msg, 1, len, stderr);
 	fputc('\n', stderr);
 	break;
@@ -58,21 +56,14 @@ default_message (enum rep_message fn, ...)
 	fputc ('\n', stderr);
 	break;
 
-    case rep_save_message:
-	old_msgp = (char **)va_arg(args, char **);
-	old_lenp = (u_long *)va_arg(args, u_long *);
-	*old_msgp = ""; *old_lenp = 0;
-	break;
-
     case rep_append_message:
 	msg = (char *)va_arg(args, char *);
-	len = (int)va_arg(args, int);
+	len = (size_t)va_arg(args, size_t);
 	fwrite(msg, len, 1, stderr);
 	fputc('\n', stderr);
 	break;
 
     case rep_reset_message: 		/* (void) */
-    case rep_restore_message:		/* (char *msg, u_long len) */
     case rep_redisplay_message:		/* (void) */
 	break;
     }

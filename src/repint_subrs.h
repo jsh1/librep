@@ -97,8 +97,8 @@ extern int strncasecmp (const char *s1, const char *s2, size_t n);
 extern void rep_misc_init(void);
 
 /* from numbers.c */
-extern repv rep_parse_number (char *buf, u_int len, u_int radix,
-			      int sign, u_int type);
+extern repv rep_parse_number (char *buf, size_t len, int radix,
+			      int sign, unsigned int type);
 extern void rep_numbers_init (void);
 extern repv Fplus(int, repv *);
 extern repv Fminus(int, repv *);
@@ -113,14 +113,14 @@ extern repv Fgcd (int, repv *);
 
 /* from origin.c */
 extern rep_bool rep_record_origins;
-extern void rep_record_origin (repv form, repv stream, long start_line);
+extern void rep_record_origin (repv form, repv stream, int start_line);
 extern repv Flexical_origin (repv form);
 extern void rep_mark_origins (void);
 extern void rep_origin_init (void);
 
 /* from regsub.c */
 extern void rep_default_regsub(int, rep_regsubs *, char *, char *, void *);
-extern int rep_default_regsublen(int, rep_regsubs *, char *, void *);
+extern size_t rep_default_regsublen(int, rep_regsubs *, char *, void *);
 
 /* from streams.c */
 extern void rep_streams_init(void);

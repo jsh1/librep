@@ -104,28 +104,34 @@ read_char (void)
 }
 
 static void
-send_long (long value)
+send_long (intptr_t value)
 {
-    char lbuf[10];
-    sprintf (lbuf, "%08lx", value);
-    if (write (1, lbuf, 8) != 8)
+    unsigned char size;
+    char lbuf[64];
+    size = sprintf (lbuf, "%lx", value);
+    if (write (1, &size, 1) != 1)
+	x_perror ("send_long");
+    if (write (1, lbuf, size) != (int) size)
 	x_perror ("send_long");
 }
 
-static long
-read_long ()
+static intptr_t
+read_long (void)
 {
-    char lbuf[10];
-    if (read (0, lbuf, 8) != 8)
+    unsigned char size;
+    char lbuf[64];
+    if (read (0, &size, 1) != 1 || size > sizeof(lbuf)-1)
 	x_perror ("read_long");
-    lbuf[8] = 0;
+    if (read (0, lbuf, size) != (int) size)
+	x_perror ("read_long");
+    lbuf[size] = 0;
     return strtol (lbuf, 0, 16);
 }
 
 static void
 send_string (char *string)
 {
-    long length = strlen (string);
+    intptr_t length = strlen (string);
     send_long (length);
     if (write (1, string, length) != length)
 	x_perror ("send_string");
@@ -134,7 +140,7 @@ send_string (char *string)
 static char *
 read_string ()
 {
-    long length = read_long ();
+    intptr_t length = read_long ();
     char *buf = malloc (length + 1);
     if (read (0, buf, length) != length)
 	x_perror ("read_string");
@@ -205,7 +211,7 @@ gid_name (gid_t gid)
 }
 
 static char *
-output_mode_string (char *out, u_long perms)
+output_mode_string (char *out, unsigned int perms)
 {
     int i;
     char c = '-';
@@ -219,7 +225,7 @@ output_mode_string (char *out, u_long perms)
     out[0] = c;
     for(i = 0; i < 3; i++)
     {
-	u_long xperms = perms >> ((2 - i) * 3);
+	unsigned int xperms = perms >> ((2 - i) * 3);
 	if(xperms & 4)
 	    out[1+i*3] = 'r';
 	if(xperms & 2)
@@ -251,7 +257,7 @@ do_get (int argc, char **argv)
 	FILE *fh = fopen (argv[0], "r");
 	if (fh != 0)
 	{
-	    u_long size = st.st_size;
+	    size_t size = st.st_size;
 	    send_success ();
 	    send_long (size);
 	    while (size > 0)
@@ -282,8 +288,8 @@ do_put (int argc, char **argv)
     fh = fopen (argv[0], "w");
     if (fh != 0)
     {
-	long size = read_long ();
-	long todo = size;
+	intptr_t size = read_long ();
+	intptr_t todo = size;
 	while (todo > 0)
 	{
 	    char buf[BUFSIZ];
@@ -381,7 +387,7 @@ do_cp (int argc, char **argv)
 static void
 do_chmod (int argc, char **argv)
 {
-    long mode;
+    unsigned long mode;
     assert (argc == 2);
     mode = strtol (argv[1], 0, 16);
     if (chmod (argv[0], mode) == 0)
@@ -447,7 +453,7 @@ do_readdir (int argc, char **argv)
 	    {
 		*ptr++ = '[';
 		ptr = quote_string (ptr, de->d_name);
-		ptr += sprintf (ptr, " %ld (%ld . %ld) %s %ld \"",
+		ptr += sprintf (ptr, " %ld (%ld . %ld) %s %d \"",
 				(long)st.st_size,
 				st.st_mtime / 86400, st.st_mtime % 86400,
 				S_ISREG (st.st_mode) ? "file"
@@ -458,7 +464,7 @@ do_readdir (int argc, char **argv)
 				: S_ISCHR (st.st_mode) ? "device"
 				: S_ISBLK (st.st_mode) ? "device"
 				: "nil",
-				(long)st.st_mode & 07777);
+				(int)st.st_mode & 07777);
 		ptr = output_mode_string (ptr, st.st_mode);
 		ptr += sprintf (ptr, "\" %d \"%s\" \"%s\"]\n",
 				(int)st.st_nlink,

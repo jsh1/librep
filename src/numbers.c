@@ -528,7 +528,7 @@ promote_dup (repv *n1p, repv *n2p)
 }
 
 repv
-rep_make_long_uint (u_long in)
+rep_make_long_uint (rep_uintptr_t in)
 {
     if (in < rep_LISP_MAX_INT)
 	return rep_MAKE_INT (in);
@@ -545,7 +545,7 @@ rep_make_long_uint (u_long in)
 }
 
 repv
-rep_make_long_int (long in)
+rep_make_long_int (rep_intptr_t in)
 {
     if (in >= rep_LISP_MIN_INT && in <= rep_LISP_MAX_INT)
 	return rep_MAKE_INT (in);
@@ -561,7 +561,7 @@ rep_make_long_int (long in)
     }
 }
 
-u_long
+rep_uintptr_t
 rep_get_long_uint (repv in)
 {
     if (rep_INTP (in))
@@ -579,11 +579,11 @@ rep_get_long_uint (repv in)
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
-	    return (u_long) mpq_get_d (rep_NUMBER(in,q));
+	    return (rep_uintptr_t) mpq_get_d (rep_NUMBER(in,q));
 #endif
 
 	case rep_NUMBER_FLOAT:
-	    return (u_long) rep_NUMBER(in,f);
+	    return (rep_uintptr_t) rep_NUMBER(in,f);
 	}
     }
     else if (rep_CONSP (in)
@@ -594,7 +594,7 @@ rep_get_long_uint (repv in)
     return 0;
 }
 
-long
+rep_intptr_t
 rep_get_long_int (repv in)
 {
     if (rep_INTP (in))
@@ -612,11 +612,11 @@ rep_get_long_int (repv in)
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
-	    return (long) mpq_get_d (rep_NUMBER(in,q));
+	    return (rep_intptr_t) mpq_get_d (rep_NUMBER(in,q));
 #endif
 
 	case rep_NUMBER_FLOAT:
-	    return (long) rep_NUMBER(in,f);
+	    return (rep_intptr_t) rep_NUMBER(in,f);
 	}
     }
     else if (rep_CONSP (in)
@@ -639,8 +639,8 @@ rep_make_longlong_int (rep_long_long in)
 #ifdef HAVE_GMP
 	int sign = (in < 0) ? -1 : 1;
 	unsigned rep_long_long uin = (sign < 0) ? -in : in;
-	u_long bottom = (u_long) uin;
-	u_long top = (u_long) (uin >> (CHAR_BIT * sizeof (long)));
+	unsigned long bottom = (u_long) uin;
+	unsigned long top = (u_long) (uin >> (CHAR_BIT * sizeof (long)));
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set_ui (z->z, bottom);
 	if (top != 0)
@@ -861,7 +861,7 @@ static const signed int map[] = {
 
 #ifndef HAVE_GMP
 static rep_bool
-parse_integer_to_float (char *buf, u_int len, u_int radix,
+parse_integer_to_float (char *buf, size_t len, int radix,
 			int sign, double *output)
 {
     double value = 0.0;
@@ -901,7 +901,8 @@ parse_integer_to_float (char *buf, u_int len, u_int radix,
     } while (0)
 
 repv
-rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
+rep_parse_number (char *buf, size_t len, int radix,
+		  int sign, unsigned int type)
 {
     if (len == 0)
 	goto error;
@@ -915,7 +916,7 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	rep_number_f *f;
 	char *tem, *copy, *old_locale;
 	double d;
-	u_int bits;
+	size_t bits;
 
     case 0:
 	switch (radix)
@@ -942,7 +943,7 @@ rep_parse_number (char *buf, u_int len, u_int radix, int sign, u_int type)
 	}
 	if (bits < rep_LISP_INT_BITS)
 	{
-	    long value = 0;
+	    rep_intptr_t value = 0;
 	    char c;
 	    if (radix == 10)
 	    {
@@ -1529,7 +1530,8 @@ rep_number_div (repv x, repv y)
 	else
 	{
 #ifdef HAVE_GMP
-	    u_long uy = (rep_INT (y) < 0 ? - rep_INT (y) : rep_INT (y));
+	    /* FIXME: rep_INT() is wider than long in 64-bit. */
+	    unsigned long uy = (rep_INT (y) < 0 ? - rep_INT (y) : rep_INT (y));
 	    rep_number_q *q = make_number (rep_NUMBER_RATIONAL);
 	    mpq_init (q->q);
 	    mpq_set_si (q->q, rep_INT (x), uy);
@@ -1761,11 +1763,11 @@ rep_integer_gcd (repv x, repv y)
     if (rep_INTP (x))
     {
 	/* Euclid's algorithm */
-	long m = rep_INT (x), n = rep_INT (y);
+	rep_intptr_t m = rep_INT (x), n = rep_INT (y);
 	m = ABS (m); n = ABS (n);
 	while(m != 0)
 	{
-	    long t = n % m;
+	    rep_intptr_t t = n % m;
 	    n = m;
 	    m = t;
 	}
@@ -1910,7 +1912,7 @@ and that floating point division is used.
     out = promote_dup (&n1, &n2);
     switch (rep_NUMERIC_TYPE (out))
     {
-	long tem;
+	rep_intptr_t tem;
 #ifdef HAVE_GMP
 	int sign;
 #else
@@ -2206,7 +2208,7 @@ Both NUMBER and COUNT must be integers.
 #else
 	if (rep_INT (shift) > 0)
 	{
-	    long i, this;
+	    rep_intptr_t i, this;
 	    double factor = 1, t;
 	    for (i = rep_INT (shift); i > 0; i -= this)
 	    {
@@ -2307,7 +2309,7 @@ Round NUMBER to the nearest integer between NUMBER and zero.
 	d = (d < 0.0) ? -floor (-d) : floor (d);
 #ifdef HAVE_GMP
         if (rep_NUMBER_RATIONAL_P (arg))
-	    return rep_make_long_int ((long) d);
+	    return rep_make_long_int ((rep_intptr_t) d);
 	else
 #endif
 	    return rep_make_float (d, rep_TRUE);
@@ -2347,7 +2349,7 @@ nearest even integer.
 	     ? result - 1 : result);
 #ifdef HAVE_GMP
         if (rep_NUMBER_RATIONAL_P (arg))
-	    return rep_make_long_int ((long) d);
+	    return rep_make_long_int ((rep_intptr_t) d);
 	else
 #endif
 	    return rep_make_float (d, rep_TRUE);
@@ -2977,8 +2979,8 @@ random_seed (u_long seed)
 static repv
 random_new (repv limit_)
 {
-    long limit = rep_get_long_int (limit_);
-    long divisor, val;
+    rep_intptr_t limit = rep_get_long_int (limit_);
+    rep_intptr_t divisor, val;
 
     if (limit <= 0 || limit > rep_LISP_MAX_INT)
 	return rep_signal_arg_error (limit_, 1);
@@ -3023,7 +3025,7 @@ generator is seeded with the current time of day.
 
     if (arg == Qt)
     {
-	u_long seed = time (0);
+	rep_uintptr_t seed = time (0);
 	seed = (seed << 8) | (rep_getpid () & 0xff);
 	random_seed (seed);
 	return Qt;

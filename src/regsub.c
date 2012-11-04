@@ -113,7 +113,7 @@ rep_default_regsub(lasttype, matches, source, dest, data)
  * - regsublen - dummy regsub() returning length of contructed string,
  * including terminating '\0'
  */
-int
+size_t
 rep_default_regsublen(lasttype, matches, source, data)
     int		    lasttype;
     rep_regsubs	   *matches;
@@ -123,7 +123,7 @@ rep_default_regsublen(lasttype, matches, source, data)
     register char  *src;
     register char   c;
     register int    no;
-    register int    dstlen = 1;
+    register size_t dstlen = 1;
 
     if (matches == NULL || source == NULL) {
 	rep_regerror("NULL parm to regsublen");

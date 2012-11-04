@@ -572,7 +572,7 @@ vm (repv code, repv consts, int argc, repv *argv,
     
     /* Jump to this label when tail-calling */
 again: {
-    register u_char *pc PC_REG;
+    register unsigned char *pc PC_REG;
     register repv *stackp SP_REG;
     register repv *bindp BP_REG;
     register repv *slotp SLOTS_REG;
@@ -593,7 +593,7 @@ again: {
     bindp = bindstack;
     slotp = slots;
     impurity = 0;
-    pc = (u_char *) rep_STR(code);
+    pc = (unsigned char *) rep_STR(code);
 
     /* Start of the VM fetch-execute sequence. */
     {
@@ -601,7 +601,7 @@ again: {
 	static void *cfa__[256] = { JUMP_TABLE };
 	register void **cfa CFA_REG = cfa__;
 #endif
-	u_int arg;
+	int arg;
 	repv tmp, tmp2;
 
 	BEGIN_DISPATCH
@@ -727,7 +727,7 @@ again: {
 		    else
 		    {
 			tmp2 = Qnil;
-			POPN(- ((int) arg)); /* reclaim my args */
+			POPN(-arg); /* reclaim my args */
 			while(arg-- != 0)
 			{
 			    repv x; POP1 (x);
@@ -1229,7 +1229,7 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp) && rep_INTP (tmp2))
 	    {
-		long x = rep_INT (tmp2) + rep_INT (tmp);
+		rep_intptr_t x = rep_INT (tmp2) + rep_INT (tmp);
 		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -1245,7 +1245,7 @@ again: {
 	    tmp = TOP;
 	    if (rep_INTP (tmp))
 	    {
-		long x = - rep_INT (tmp);
+		rep_intptr_t x = - rep_INT (tmp);
 		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -1262,7 +1262,7 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp) && rep_INTP (tmp2))
 	    {
-		long x = rep_INT (tmp2) - rep_INT (tmp);
+		rep_intptr_t x = rep_INT (tmp2) - rep_INT (tmp);
 		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -1422,7 +1422,7 @@ again: {
 	    tmp = TOP;
 	    if (rep_INTP (tmp))
 	    {
-		long x = rep_INT (tmp) + 1;
+		rep_intptr_t x = rep_INT (tmp) + 1;
 		if (x <= rep_LISP_MAX_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -1437,7 +1437,7 @@ again: {
 	    tmp = TOP;
 	    if (rep_INTP (tmp))
 	    {
-		long x = rep_INT (tmp) - 1;
+		rep_intptr_t x = rep_INT (tmp) - 1;
 		if (x >= rep_LISP_MIN_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -2178,7 +2178,8 @@ again: {
 
 	BEGIN_INSN (OP_JMP)
 	do_jmp:
-	    pc = (u_char *) rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
+	    pc = ((unsigned char *) rep_STR(code)
+		  + ((pc[0] << ARG_SHIFT) | pc[1]));
 
 	    /* Test if an interrupt occurred... */
 	    rep_TEST_INT;
@@ -2247,7 +2248,8 @@ again: {
 		    RELOAD;
 		    PUSH(rep_throw_value);
 		    rep_throw_value = rep_NULL;
-		    pc = (u_char *) rep_STR(code) + rep_INT(rep_CAR(item));
+		    pc = ((unsigned char *) rep_STR(code)
+			  + rep_INT(rep_CAR(item)));
 		    impurity--;
 		    SAFE_NEXT;
 		}

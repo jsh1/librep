@@ -339,7 +339,7 @@ rep_kill(void)
    The first idle period after a non-idle period should pass zero.
    Returns rep_TRUE if the display should be refreshed. */
 rep_bool
-rep_on_idle(long since_last_event)
+rep_on_idle(int since_last_event)
 {
     static rep_bool called_hook;
     static int depth;

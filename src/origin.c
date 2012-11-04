@@ -29,7 +29,7 @@ struct origin_item {
     origin_item *next;
     repv form;
     repv file;
-    long line;
+    int line;
 };
 
 #define BLOCK_SIZE (4084 / sizeof (struct origin_item))
@@ -67,7 +67,7 @@ new_item_block (void)
 }
 
 void
-rep_record_origin (repv form, repv stream, long start_line)
+rep_record_origin (repv form, repv stream, int start_line)
 {
     origin_item *item;
 
@@ -124,7 +124,7 @@ DEFUN ("lexical-origin", Flexical_origin,
     for (item = buckets[HASH (form)]; item != 0; item = item->next)
     {
 	if (item->form == form)
-	    return Fcons (item->file, rep_make_long_int (item->line));
+	    return Fcons (item->file, rep_MAKE_INT (item->line));
     }
 
     /* no direct hit, scan into the list */

@@ -379,10 +379,10 @@ read_from_process(int fd)
     }
 }
 
-static int
-write_to_process(repv pr, char *buf, int bufLen)
+static rep_intptr_t
+write_to_process(repv pr, char *buf, rep_intptr_t bufLen)
 {
-    int act = 0;
+    rep_intptr_t act = 0;
     if(!PROCESSP(pr))
 	return(0);
     if(PR_ACTIVE_P(VPROC(pr)))
@@ -1056,8 +1056,8 @@ proc_putc(repv stream, int c)
     return write_to_process(stream, tmps, 1);
 }
 
-static int
-proc_puts(repv stream, void *data, int len, rep_bool is_lisp)
+static rep_intptr_t
+proc_puts(repv stream, void *data, rep_intptr_t len, rep_bool is_lisp)
 {
     char *buf = is_lisp ? rep_STR(data) : data;
     return write_to_process(stream, buf, len);

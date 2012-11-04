@@ -92,7 +92,7 @@ rep_stream_getc(repv stream)
 	{
 	    if (rep_INT(res) < rep_STRING_LEN(rep_CDR(stream)))
 	    {
-		c = (int) ((u_char *)rep_STR(rep_CDR(stream)))[rep_INT(res)];
+		c = ((unsigned char *)rep_STR(rep_CDR(stream)))[rep_INT(res)];
 		rep_CAR(stream) = rep_MAKE_INT(rep_INT(res) + 1);
 	    }
 	    else
@@ -244,7 +244,7 @@ top:
 		rep_CDR(stream) = rep_MAKE_INT (newlen);
 		args = new;
 	    }
-	    ((u_char *)rep_STR (args))[len] = (u_char) c;
+	    rep_STR (args)[len] = c;
 	    rep_STR (args)[len+1] = 0;
 	    rep_set_string_len (args, len + 1);
 	    rc = 1;
@@ -268,7 +268,7 @@ top:
 	    tmps[0] = (char) c;
 	    tmps[1] = 0;
 	    if (rep_message_fun != 0)
-		(*rep_message_fun) (rep_append_message, tmps, 1);
+		(*rep_message_fun) (rep_append_message, tmps, (size_t) 1);
 	    rc = 1;
 	}
 	break;
@@ -316,21 +316,22 @@ bottom:
 	}
 	return 0;
     }
-    else
-	return 1;
+
+    return 1;
 }
 
-int
-rep_stream_puts(repv stream, void *data, int bufLen, rep_bool isValString)
+rep_intptr_t
+rep_stream_puts(repv stream, void *data, rep_intptr_t bufLen,
+		rep_bool isValString)
 {
     char *buf;
-    int rc = -1;
+    rep_intptr_t rc = -1;
 
     if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
 	goto bottom;
 
     buf = isValString ? rep_STR (data) : data;
-    if (bufLen == -1)
+    if (bufLen < 0)
 	bufLen = isValString ? rep_STRING_LEN (rep_VAL (data)) : strlen (buf);
 
 top:
@@ -383,7 +384,7 @@ top:
 	if (stream == Qt)
 	{
 	    if (rep_message_fun != 0)
-		(*rep_message_fun) (rep_append_message, buf, bufLen);
+		(*rep_message_fun) (rep_append_message, buf, (size_t) bufLen);
 	    rc = bufLen;
 	}
 	break;
@@ -435,10 +436,10 @@ bottom:
 	{
 	    Fsignal (Qend_of_stream, rep_LIST_1 (stream));
 	}
-	return 0;
+	rc = 0;
     }
-    else
-	return bufLen;
+
+    return rc;
 }
 
 /* Read an escape sequence from STREAM. C_P should contain the first

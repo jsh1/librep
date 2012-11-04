@@ -296,7 +296,7 @@ read_list(repv strm, register int *c_p)
 {
     repv result = Qnil;
     repv last = rep_NULL;
-    long start_line = read_local_file ? rep_FILE (strm)->line_number : -1;
+    int start_line = read_local_file ? rep_FILE (strm)->line_number : -1;
     rep_GC_root gc_result;
 
     *c_p = rep_stream_getc(strm);
@@ -2705,13 +2705,13 @@ ARGLIST had been evaluated or not before being put into the stack.
 		{
 		    char buf[256];
 #ifdef HAVE_SNPRINTF
-		    snprintf (buf, sizeof (buf), " at %s:%ld",
+		    snprintf (buf, sizeof (buf), " at %s:%d",
 			      rep_STR (rep_CAR (origin)),
-			      (long) rep_INT (rep_CDR (origin)));
+			      (int) rep_INT (rep_CDR (origin)));
 #else
-		    sprintf (buf, " at %s:%ld",
+		    sprintf (buf, " at %s:%d",
 			     rep_STR (rep_CAR (origin)),
-			     (long) rep_INT (rep_CDR (origin)));
+			     (int) rep_INT (rep_CDR (origin)));
 #endif
 		    rep_stream_puts (strm, buf, -1, rep_FALSE);
 		}

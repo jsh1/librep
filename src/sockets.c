@@ -654,10 +654,10 @@ poll_for_input (int fd)
 }
 
 /* Returns the number of bytes actually written. */
-static u_int
-blocking_write (rep_socket *s, char *data, u_int bytes)
+static rep_intptr_t
+blocking_write (rep_socket *s, char *data, size_t bytes)
 {
-    u_int done = 0;
+    size_t done = 0;
 
     if (!SOCKET_IS_ACTIVE (s))
     {
@@ -667,7 +667,7 @@ blocking_write (rep_socket *s, char *data, u_int bytes)
     }
 
     do {
-	int actual = write (s->sock, data + done, bytes - done);
+	rep_intptr_t actual = write (s->sock, data + done, bytes - done);
 	if (actual < 0)
 	{
 	    if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -697,8 +697,8 @@ socket_putc (repv stream, int c)
     return blocking_write (SOCKET (stream), &data, 1);
 }
 
-static int
-socket_puts (repv stream, void *data, int len, rep_bool is_lisp)
+static rep_intptr_t
+socket_puts (repv stream, void *data, rep_intptr_t len, rep_bool is_lisp)
 {
     char *buf = is_lisp ? rep_STR(data) : data;
     return blocking_write (SOCKET (stream), buf, len);
