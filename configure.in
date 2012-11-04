@@ -40,7 +40,7 @@ output_files="src/Makefile:Makedefs.in:src/Makefile.in\
  lisp/Makefile:Makedefs.in:lisp/Makefile.in\
  Makefile:Makedefs.in:Makefile.in\
  man/Makefile:Makedefs.in:man/Makefile.in\
- intl/Makefile librep.spec"
+ librep.spec"
 
 dnl Find the system type
 AC_CANONICAL_HOST
@@ -76,6 +76,13 @@ AC_SUBST(EXTRA_LIBOBJS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(CFLAGS)
+
+dnl Allow an extra include/library directory to be added
+AC_ARG_WITH(extra-prefix, [  --with-extra-prefix=DIR   path to libraries],
+ [if test "$withval" != "no"; then
+    CPPFLAGS="${CPPFLAGS} -I$withval/include"
+    LDFLAGS="${LDFLAGS} -L$withval/lib"
+  fi], [])
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -436,112 +443,10 @@ AC_ARG_ENABLE(full-name-terminator,
    AC_DEFINE_UNQUOTED(FULL_NAME_TERMINATOR, $enableval)
   fi])
 
-dnl Assumption for now
-HAVE_UNIX=1
-AC_DEFINE(rep_HAVE_UNIX, 1)
-
-dnl We need to find an integer type that's big enough to store any pointer
-AC_MSG_CHECKING([for data type to store Lisp values])
-AC_ARG_WITH(value-type,
- [  --with-value-type=TYPE  Implicitly signed integer type, at least as wide
-			   as a pointer. [TYPE=<probed>] (see README)], [],
- [with_value_type="undef"])
-if test "${with_value_type}" = "undef"; then
-  AC_TRY_RUN([main () { exit (!(sizeof (int) >= sizeof (void *)));}],
-	     [with_value_type=int])
-fi
-if test "${with_value_type}" = "undef"; then
-  AC_TRY_RUN([main () { exit (!(sizeof (long int) >= sizeof (void *)));}],
-	     [with_value_type="long int"])
-fi
-if test "${with_value_type}" = "undef"; then
-  AC_TRY_RUN([main () { exit (!(sizeof (long long int) >= sizeof (void *)));}],
-	     [with_value_type="long long int"])
-fi
-if test "${with_value_type}" = "undef"; then
-  AC_MSG_ERROR([can't find Lisp value type; set --with-value-type (see README)])
-fi
-AC_MSG_RESULT([${with_value_type}])
-AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT, ${with_value_type})
-
-dnl Find the size (in bits) of the chosen value type
-AC_MSG_CHECKING([for size of Lisp value type])
-AC_ARG_WITH(value-sizeof,
- [  --with-value-sizeof=N   Size (in bytes) of value type. [N=<probed>]], [],
- [with_value_sizeof="undef"])
-if test "${with_value_sizeof}" = "undef"; then
-  dnl the following fragment is inspired by AC_CHECK_SIZEOF
-  AC_TRY_RUN([#include <stdio.h>
-	      main () {
-		FILE *f = fopen ("conftestval", "w");
-		if (!f) exit (1);
-		fprintf (f, "%d\n", sizeof (${with_value_type}));
-		exit (0);
-	      }],
-	      [ with_value_sizeof=`cat conftestval`; rm -f conftestval])
-fi
-AC_MSG_RESULT([${with_value_sizeof} bytes])
-AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SIZEOF, ${with_value_sizeof})
-
-dnl What's the suffix to get an integer constant of the above size?
-AC_MSG_CHECKING([for value type constant suffix])
-case "${with_value_type}" in
-  "long long int"|"long long")
-    rep_value_suffix=LL
-    ;;
-  *)
-    dnl We should be okay to default to longs..
-    rep_value_suffix=L
-    ;;
-esac
-AC_MSG_RESULT([${rep_value_suffix}])
-AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_SUFFIX, ${rep_value_suffix})
-
-dnl What's the printf integer conversion for this type?
-AC_MSG_CHECKING([for value type printf conversion])
-case "${with_value_type}" in
-  "long long int"|"long long")
-    dnl other options would be L or q!?
-    rep_value_conv=ll
-    ;;
-  long|"long int")
-    rep_value_conv=l
-    ;;
-  *)
-    rep_value_conv=
-    ;;
-esac
-AC_MSG_RESULT([${rep_value_conv}])
-AC_DEFINE_UNQUOTED(rep_PTR_SIZED_INT_CONV, "${rep_value_conv}")
-
 dnl Check for size of some types
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 AC_CHECK_SIZEOF(void *)
-
-if test "x$ac_cv_sizeof_long_long" != "x0"; then
-  AC_DEFINE(rep_HAVE_LONG_LONG,1)
-fi
-
-dnl This is the malloc granularity. It's unlikely that anything has
-dnl less alignment than the default value of the number of bytes in
-dnl the value type
-AC_ARG_WITH(malloc-alignment,
- [  --with-malloc-alignment=BYTES Must be less than or equal to the alignment
-			   returned by the malloc function. [BYTES=N]], [],
- [with_malloc_alignment=${with_value_sizeof}])
-AC_DEFINE_UNQUOTED(rep_MALLOC_ALIGNMENT, ${with_malloc_alignment})
-
-dnl Check for gcc crashes on alpha (seems to be fixed in new snapshots, but
-dnl just to make it compile on all machines)
-if test "x${GCC}" = "xyes"; then
-  AC_MSG_CHECKING([for broken alpha gcc])
-  AC_TRY_COMPILE([],[__builtin_return_address(1);],
-		 [AC_MSG_RESULT(no)],
-		 [AC_DEFINE(BROKEN_ALPHA_GCC,1)
-		  AC_MSG_RESULT(yes)
-		  AC_MSG_WARN([Backtrace support will not be compiled])])
-fi
 
 AC_MSG_CHECKING([for stack growth direction])
 AC_ARG_WITH(stack-direction,
@@ -579,37 +484,19 @@ AC_SUBST(repcommonexecdir)
 AC_SUBST(replispdir)
 AC_SUBST(repdocfile)
 AC_SUBST(emacssitelispdir)
+HAVE_UNIX=1
 AC_SUBST(HAVE_UNIX)
 AC_SUBST(HAVE_X11)
 
 AC_DEFINE_UNQUOTED(rep_VERSION, "${version}")
 AC_DEFINE_UNQUOTED(rep_INTERFACE, ${libcurrent})
 
-dnl Hacks for libintl
-VERSION="$version"
-PACKAGE="librep"
-DATADIRNAME="share"
-MKINSTALLDIRS='${top_srcdir}/mkinstalldirs'
-INTLOBJS="\$(GETTOBJS)"
-GT_YES='#'
-GT_NO=''
-l=l
-AC_SUBST(VERSION)
-AC_SUBST(PACKAGE)
-AC_SUBST(DATADIRNAME)
-AC_SUBST(MKINSTALLDIRS)
-AC_SUBST(INTLOBJS)
-AC_SUBST(GT_YES)
-AC_SUBST(GT_NO)
-AC_SUBST(l)
-
-dnl If it looks like GNU gettext is in libc, don't compile a local copy
-USE_INCLUDED_LIBINTL=yes
-AC_SUBST(USE_INCLUDED_LIBINTL)
-AC_CHECK_FUNC(_nl_msg_cat_cntr,
- [AC_DEFINE(LIBC_GETTEXT)
-  AC_CHECK_HEADERS(libintl.h)
-  USE_INCLUDED_LIBINTL=no])
+INTL_LIBS=
+AC_CHECK_FUNC(_nl_msg_cat_cntr, [],
+ [AC_CHECK_LIB(intl, _nl_msg_cat_cntr,
+  [INTL_LIBS="-lintl"])])
+AC_CHECK_HEADERS(libintl.h)
+AC_SUBST(INTL_LIBS)
 
 dnl Build all files. Makes sure rules.mk is rebuild each time
 AC_OUTPUT(${output_files}, [rm -f rules.mk])

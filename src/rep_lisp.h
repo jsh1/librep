@@ -23,8 +23,6 @@
 #ifndef REP_LISP_H
 #define REP_LISP_H
 
-#include <stdio.h>
-
 /* Stringify X. Expands macros in X. */
 #define rep_QUOTE(x) rep_QUOTE__(x)
 #define rep_QUOTE__(x) #x
@@ -36,19 +34,15 @@
 
 /* Lisp values. */
 
-/* Integer types at least as large as a pointer. */
-typedef rep_PTR_SIZED_INT rep_intptr_t;
-typedef unsigned rep_PTR_SIZED_INT rep_uintptr_t;
-
 /* A `repv' is a lisp value, perhaps a pointer to an object, but not a real
    pointer; it's two lowest bits define its type. */
-typedef rep_uintptr_t repv;
+typedef uintptr_t repv;
 
 /* The number of bits in the lisp value type. */
-#define rep_VALUE_BITS rep_PTR_SIZED_INT_BITS
+#define rep_VALUE_BITS (sizeof(intptr_t) * CHAR_BIT)
 
 /* Get the integer constant X in the lisp value type */
-#define rep_VALUE_CONST(x) rep_CONCAT(x, rep_PTR_SIZED_INT_SUFFIX)
+#define rep_VALUE_CONST(x) ((intptr_t) (x))
 
 
 /* Structure of Lisp objects and the pointers to them. */
@@ -84,16 +78,13 @@ typedef rep_uintptr_t repv;
 #define rep_VALUE_CONS_MARK_BIT	1
 #define rep_VALUE_IS_INT	2
 #define rep_VALUE_INT_SHIFT	2
-#define rep_CELL_ALIGNMENT	rep_PTR_SIZED_INT_SIZEOF
+#define rep_CELL_ALIGNMENT	sizeof(intptr_t)
 
-#if rep_CELL_ALIGNMENT <= rep_MALLOC_ALIGNMENT
-  /* Allocate SIZE bytes of memory, aligned to NORMAL_ALIGNMENT */
-# define rep_ALLOC_CELL(n) rep_alloc(n)
-  /* Free something allocated by rep_ALLOC_CELL */
-# define rep_FREE_CELL(x)  rep_free(x)
-#else
-# error "Need an aligned memory allocator"
-#endif
+/* Allocate SIZE bytes of memory. */
+#define rep_ALLOC_CELL(n) rep_alloc(n)
+
+/* Free something allocated by rep_ALLOC_CELL */
+#define rep_FREE_CELL(x)  rep_free(x)
 
 /* A ``null pointer'', i.e. an invalid object. This has the important
    property of being a proper null pointer (i.e. (void *)0) when
@@ -104,16 +95,7 @@ typedef rep_uintptr_t repv;
    This is used like: ``rep_ALIGN_CELL(rep_cell foo) = ...'' */
 #ifdef __GNUC__
 # define rep_ALIGN_CELL(d) d __attribute__ ((aligned (rep_CELL_ALIGNMENT)))
-#elif defined (__digital__) && defined (__unix__) && defined (__DECC)
-# if rep_CELL_ALIGNMENT >= rep_PTR_SIZED_INT_SIZEOF
-   /* "the C compiler aligns an int (32 bits) on a 4-byte boundary and
-      a long (64 bits) on an 8-byte boundary" (Tru64 Programmer's Guide) */
-#  define rep_ALIGN_CELL(d) d
-# else
-#  error "You need to fix alignment for Tru64"
-# endif
 #else
-/* # warning Lets hope your compiler aligns to 4 byte boundaries.. */
 # define rep_ALIGN_CELL(d) d
 #endif
 
@@ -124,8 +106,7 @@ typedef rep_uintptr_t repv;
 #define rep_INTP(v)		(!rep_CELLP(v))
 
 /* Convert a repv into a signed integer. */
-#define rep_INT(v)		(((rep_PTR_SIZED_INT)(v)) \
-				 >> rep_VALUE_INT_SHIFT)
+#define rep_INT(v)		(((intptr_t)(v)) >> rep_VALUE_INT_SHIFT)
 
 /* Convert a signed integer into a repv. */
 #define rep_MAKE_INT(x)		(((x) << rep_VALUE_INT_SHIFT) \
@@ -271,8 +252,7 @@ typedef struct rep_type_struct {
     int (*getc)(repv obj);
     int (*ungetc)(repv obj, int c);
     int (*putc)(repv obj, int c);
-    rep_intptr_t (*puts)(repv obj, void *data, rep_intptr_t length,
-			 rep_bool lisp_obj_p);
+    intptr_t (*puts)(repv obj, void *data, intptr_t length, bool lisp_obj_p);
 
     /* When non-null, a function to ``bind'' to OBJ temporarily,
        returning some handle for later unbinding. */
@@ -794,13 +774,13 @@ typedef struct rep_gc_n_roots {
     repv fsym args
 
 /* Add a subroutine */    
-#define rep_ADD_SUBR(subr) rep_add_subr(&subr, rep_TRUE)
+#define rep_ADD_SUBR(subr) rep_add_subr(&subr, true)
 
 /* Add a non-exported subroutine */
-#define rep_ADD_INTERNAL_SUBR(subr) rep_add_subr(&subr, rep_FALSE)
+#define rep_ADD_INTERNAL_SUBR(subr) rep_add_subr(&subr, false)
 
 /* Add an interactive subroutine */    
-#define rep_ADD_SUBR_INT(subr) rep_add_subr(&subr, rep_TRUE)
+#define rep_ADD_SUBR_INT(subr) rep_add_subr(&subr, true)
 
 /* Declare a symbol stored in variable QX. */
 #define DEFSYM(x, name) \
@@ -871,7 +851,7 @@ typedef struct rep_gc_n_roots {
 	if(++rep_test_int_counter > rep_test_int_period) { 	\
 	    (*rep_test_int_fun)();				\
 	    rep_test_int_counter = 0;				\
-	    rep_pending_thread_yield = rep_TRUE;		\
+	    rep_pending_thread_yield = true;			\
 	}							\
     } while(0)
 

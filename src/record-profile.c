@@ -60,7 +60,7 @@ char *alloca ();
 #endif
 
 static repv profile_table;
-static rep_bool profiling;
+static bool profiling;
 
 static void (*chained_test_interrupt)(void);
 
@@ -163,14 +163,14 @@ test_interrupt (void)
 DEFUN ("start-profiler", Fstart_profiler, Sstart_profiler, (void), rep_Subr0)
 {
     profile_table = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
-    profiling = rep_TRUE;
+    profiling = true;
     set_timer ();
     return Qt;
 }
 
 DEFUN ("stop-profiler", Fstop_profiler, Sstop_profiler, (void), rep_Subr0)
 {
-    profiling = rep_FALSE;
+    profiling = false;
     clear_timer ();
     return Qt;
 }

@@ -279,7 +279,7 @@ still case-significant.
 ::end:: */
 {
     rep_regexp *prog;
-    rep_intptr_t xstart;
+    intptr_t xstart;
     rep_DECLARE1(re, rep_STRINGP);
     rep_DECLARE2(str, rep_STRINGP);
     rep_DECLARE3_OPT(start, rep_INTP);
@@ -311,7 +311,7 @@ Updates the match data.
 ::end:: */
 {
     rep_regexp *prog;
-    rep_intptr_t xstart;
+    intptr_t xstart;
     rep_DECLARE1(re, rep_STRINGP);
     rep_DECLARE2(string, rep_STRINGP);
     rep_DECLARE3_OPT(start, rep_INTP);
@@ -369,7 +369,7 @@ The returned value will either be a position if the last match was in a
 buffer, or an integer if the last match was in a string (i.e. regexp-match).
 ::end:: */
 {
-    rep_intptr_t i;
+    intptr_t i;
     rep_DECLARE1_OPT(exp, rep_INTP);
     if(rep_INTP(exp))
     {
@@ -405,7 +405,7 @@ The returned value will either be a position if the last match was in a
 buffer, or an integer if the last match was in a string (i.e. regexp-match).
 ::end:: */
 {
-    rep_intptr_t i;
+    intptr_t i;
     rep_DECLARE1_OPT(exp, rep_INTP);
     if(rep_INTP(exp))
     {
@@ -442,7 +442,7 @@ it is returned as-is (un-copied).
 {
     char *buf, *s;
     int buflen = 128, slen, i = 0;
-    rep_bool quoted = rep_FALSE;
+    bool quoted = false;
     repv res = rep_NULL;
     rep_DECLARE1(str, rep_STRINGP);
     s = rep_STR(str);
@@ -482,7 +482,7 @@ it is returned as-is (un-copied).
 	    /* quote this character */
 	    buf[i++] = '\\';
 	    buf[i++] = c;
-	    quoted = rep_TRUE;
+	    quoted = true;
 	    break;
 	default:
 	    buf[i++] = c;

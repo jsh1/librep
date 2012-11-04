@@ -30,7 +30,7 @@ main(int argc, char **argv)
     rep_init (prog_name, &argc, &argv, 0, 0);
 
     rep_call_with_barrier (rep_load_environment, rep_VAL (&rep),
-			   rep_TRUE, 0, 0, 0);
+			   true, 0, 0, 0);
 
     return rep_top_level_exit ();
 }

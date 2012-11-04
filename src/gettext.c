@@ -23,25 +23,8 @@
 #include <config.h>
 #include <rep.h>
 
-#ifdef LIBC_GETTEXT
-# ifdef HAVE_LIBINTL_H
-#  include <libintl.h>
-# endif
-# define gnu_gettext gettext
-# define gnu_textdomain textdomain
-# define gnu_bindtextdomain bindtextdomain
-# define gnu_bind_textdomain_codeset bind_textdomain_codeset 
-#else
-# define gnu_gettext gettext__
-# define gnu_textdomain textdomain__
-# define gnu_bindtextdomain bindtextdomain__
-# ifdef FIXME_SOMEONE_PLEASE
-#  define gnu_bind_textdomain_codeset bind_textdomain_codeset__ 
-# endif
-extern char *gnu_gettext (const char *msgid);
-extern char *gnu_textdomain (const char *domainname);
-extern char *gnu_bindtextdomain (const char *domainname, const char *dirname);
-extern char *gnu_bind_textdomain_codeset (const char *domainname, const char *codeset);
+#ifdef HAVE_LIBINTL_H
+# include <libintl.h>
 #endif
 
 DEFUN("gettext", Fgettext, Sgettext, (repv in), rep_Subr1)
@@ -49,7 +32,7 @@ DEFUN("gettext", Fgettext, Sgettext, (repv in), rep_Subr1)
     char *out;
     rep_DECLARE1(in, rep_STRINGP);
 
-    out = gnu_gettext (rep_STR(in));
+    out = gettext (rep_STR(in));
     if (out == 0 || (char *) out == rep_STR(in))
 	return in;
     else
@@ -66,7 +49,7 @@ DEFUN("bindtextdomain", Fbindtextdomain,
     if (rep_STRINGP(dir))
 	dirname = rep_STR(dir);
 
-    out = gnu_bindtextdomain (domainname, dirname);
+    out = bindtextdomain (domainname, dirname);
     return out ? rep_string_dup (out) : Qnil;
 }
 
@@ -81,11 +64,7 @@ DEFUN("bindtextdomaincodeset", Fbindtextdomaincodeset,
     if (rep_STRINGP(cod))
         codeset = rep_STR(cod);
 
-#ifdef gnu_bind_textdomain_codeset
-    out = gnu_bind_textdomain_codeset (domainname, codeset);
-#else
-    out = NULL;
-#endif
+    out = bind_textdomain_codeset (domainname, codeset);
 
     return out ? rep_string_dup (out) : Qnil;
 }
@@ -98,7 +77,7 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
     if (rep_STRINGP(dom))
 	domainname = rep_STR(dom);
 
-    out = gnu_textdomain (domainname);
+    out = textdomain (domainname);
     return out ? rep_string_dup (out) : Qnil;
 }
 

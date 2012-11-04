@@ -31,13 +31,11 @@
 # include <memory.h>
 #endif
 
-typedef unsigned rep_PTR_SIZED_INT hash_value;
-
 typedef struct node_struct node;
 struct node_struct {
     node *next;
     repv key, value;
-    hash_value hash;
+    uintptr_t hash;
 };
 
 typedef struct table_struct table;
@@ -123,7 +121,7 @@ table_sweep (void)
 static void
 table_print (repv stream, repv arg)
 {
-    rep_stream_puts (stream, "#<table ", -1, rep_FALSE);
+    rep_stream_puts (stream, "#<table ", -1, false);
     rep_princ_val (stream, TABLE(arg)->hash_fun);
     rep_stream_putc (stream, ' ');
     rep_princ_val (stream, TABLE(arg)->compare_fun);
@@ -133,10 +131,10 @@ table_print (repv stream, repv arg)
 
 /* hash functions */
 
-static inline hash_value
+static inline uintptr_t
 hash_string (register char *ptr)
 {
-    register hash_value value = 0;
+    uintptr_t value = 0;
     while (*ptr != 0)
 	value = (value * 33) + *ptr++;
     return rep_MAKE_INT (TRUNC (value));
@@ -173,7 +171,7 @@ Return a positive fixnum somehow related to object ARG, such that (eq X
 Y) implies (= (eq-hash X) (eq-hash Y)).
 ::end:: */
 {
-    hash_value hv = value;
+    uintptr_t hv = value;
     return rep_MAKE_INT (TRUNC (hv));
 }
 
@@ -186,7 +184,8 @@ Return a positive fixnum somehow related to ARG, such that (equal X Y)
 implies (= (equal-hash X) (equal-hash Y)).
 ::end:: */
 {
-    int n = rep_INTP (n_) ? rep_INT (n_) : rep_PTR_SIZED_INT_BITS / 2;
+    const unsigned int bits = sizeof(uintptr_t) * CHAR_BIT;
+    int n = rep_INTP (n_) ? rep_INT (n_) : bits / 2;
     if (rep_CONSP (x))
     {
 	if (n > 0)
@@ -200,7 +199,7 @@ implies (= (equal-hash X) (equal-hash Y)).
     }
     else if (rep_VECTORP (x) || rep_COMPILEDP (x))
     {
-	hash_value hash = 0;
+	uintptr_t hash = 0;
 	int i = MIN (n, rep_VECT_LEN (x));
 	while (i-- > 0)
 	{
@@ -215,12 +214,12 @@ implies (= (equal-hash X) (equal-hash Y)).
 	return Fsymbol_hash (x);
     else if (rep_INTP (x))
     {
-	hash_value hash = rep_INT (x);
+	uintptr_t hash = rep_INT (x);
 	return rep_MAKE_INT (TRUNC (hash));
     }
     else if (rep_NUMBERP (x))
     {
-	hash_value hash = rep_get_long_uint (x);
+	uintptr_t hash = rep_get_long_uint (x);
 	return rep_MAKE_INT (TRUNC (hash));
     }
     else
@@ -286,7 +285,7 @@ Return true if ARG is a hash table.
     return TABLEP(arg) ? Qt : Qnil;
 }
 
-static hash_value
+static uintptr_t
 hash_key (repv tab, repv key)
 {
     repv hash;
@@ -309,12 +308,12 @@ hash_key (repv tab, repv key)
 }
 
 static inline int
-hash_key_to_bin (repv tab, hash_value hash)
+hash_key_to_bin (repv tab, uintptr_t hash)
 {
     return hash % TABLE(tab)->total_buckets;
 }
 
-static inline rep_bool
+static inline bool
 compare (repv tab, repv val1, repv val2)
 {
     repv ret;
@@ -328,7 +327,7 @@ compare (repv tab, repv val1, repv val2)
 static node *
 lookup (repv tab, repv key)
 {
-    hash_value hv;
+    uintptr_t hv;
     node *ptr;
     int index;
     if (TABLE(tab)->total_buckets == 0)

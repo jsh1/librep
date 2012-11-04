@@ -48,6 +48,7 @@ char *alloca ();
 #include <limits.h>
 #include <errno.h>
 #include <time.h>
+#include <inttypes.h>
 
 #ifdef HAVE_LOCALE_H
 # include <locale.h>
@@ -97,7 +98,7 @@ typedef struct {
 #ifdef HAVE_GMP
     mpz_t z;
 #else
-    rep_long_long z;
+    long long z;
 #endif
 } rep_number_z;
 
@@ -131,7 +132,7 @@ typedef struct rep_number_block_struct {
 	mpz_t dummy_z;
 	mpq_t dummy_q;
 #else
-	rep_long_long dummy_z;
+	long long dummy_z;
 #endif
 	double dummy_f;
     } next;
@@ -528,7 +529,7 @@ promote_dup (repv *n1p, repv *n2p)
 }
 
 repv
-rep_make_long_uint (rep_uintptr_t in)
+rep_make_long_uint (uintptr_t in)
 {
     if (in < rep_LISP_MAX_INT)
 	return rep_MAKE_INT (in);
@@ -545,7 +546,7 @@ rep_make_long_uint (rep_uintptr_t in)
 }
 
 repv
-rep_make_long_int (rep_intptr_t in)
+rep_make_long_int (intptr_t in)
 {
     if (in >= rep_LISP_MIN_INT && in <= rep_LISP_MAX_INT)
 	return rep_MAKE_INT (in);
@@ -561,7 +562,7 @@ rep_make_long_int (rep_intptr_t in)
     }
 }
 
-rep_uintptr_t
+uintptr_t
 rep_get_long_uint (repv in)
 {
     if (rep_INTP (in))
@@ -579,11 +580,11 @@ rep_get_long_uint (repv in)
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
-	    return (rep_uintptr_t) mpq_get_d (rep_NUMBER(in,q));
+	    return (uintptr_t) mpq_get_d (rep_NUMBER(in,q));
 #endif
 
 	case rep_NUMBER_FLOAT:
-	    return (rep_uintptr_t) rep_NUMBER(in,f);
+	    return (uintptr_t) rep_NUMBER(in,f);
 	}
     }
     else if (rep_CONSP (in)
@@ -594,7 +595,7 @@ rep_get_long_uint (repv in)
     return 0;
 }
 
-rep_intptr_t
+intptr_t
 rep_get_long_int (repv in)
 {
     if (rep_INTP (in))
@@ -612,11 +613,11 @@ rep_get_long_int (repv in)
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
-	    return (rep_intptr_t) mpq_get_d (rep_NUMBER(in,q));
+	    return (intptr_t) mpq_get_d (rep_NUMBER(in,q));
 #endif
 
 	case rep_NUMBER_FLOAT:
-	    return (rep_intptr_t) rep_NUMBER(in,f);
+	    return (intptr_t) rep_NUMBER(in,f);
 	}
     }
     else if (rep_CONSP (in)
@@ -630,7 +631,7 @@ rep_get_long_int (repv in)
 #if SIZEOF_LONG_LONG > SIZEOF_LONG
 
 repv
-rep_make_longlong_int (rep_long_long in)
+rep_make_longlong_int (long long in)
 {
     if (in <= rep_LISP_MAX_INT && in >= rep_LISP_MIN_INT)
 	return rep_MAKE_INT (in);
@@ -638,7 +639,7 @@ rep_make_longlong_int (rep_long_long in)
     {
 #ifdef HAVE_GMP
 	int sign = (in < 0) ? -1 : 1;
-	unsigned rep_long_long uin = (sign < 0) ? -in : in;
+	unsigned long long uin = (sign < 0) ? -in : in;
 	unsigned long bottom = (u_long) uin;
 	unsigned long top = (u_long) (uin >> (CHAR_BIT * sizeof (long)));
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
@@ -661,7 +662,7 @@ rep_make_longlong_int (rep_long_long in)
     }
 }
 
-rep_long_long
+long long
 rep_get_longlong_int (repv in)
 {
     if (rep_INTP (in))
@@ -674,7 +675,7 @@ rep_get_longlong_int (repv in)
 #ifdef HAVE_GMP
 	    {
 		int sign = mpz_sgn (rep_NUMBER(in,z));
-		rep_long_long bottom, top, out;
+		long long bottom, top, out;
 		mpz_t tem;
 		mpz_init_set (tem, rep_NUMBER(in,z));
 		if (sign < 0)
@@ -694,17 +695,17 @@ rep_get_longlong_int (repv in)
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
-	    return (rep_long_long) mpq_get_d (rep_NUMBER(in,q));
+	    return (long long) mpq_get_d (rep_NUMBER(in,q));
 #endif
 
 	case rep_NUMBER_FLOAT:
-	    return (rep_long_long) rep_NUMBER(in,f);
+	    return (long long) rep_NUMBER(in,f);
 	}
     }
     else if (rep_CONSP (in)
 	     && rep_INTP (rep_CAR (in)) && rep_INTP (rep_CDR (in)))
     {
-	rep_long_long out = rep_INT (rep_CDR (in));
+	long long out = rep_INT (rep_CDR (in));
 	out = (out << 24) | rep_INT (rep_CAR (in));
 	return out;
     }
@@ -714,12 +715,12 @@ rep_get_longlong_int (repv in)
 #else /* SIZEOF_LONG_LONG > SIZEOF_LONG */
 
 repv
-rep_make_longlong_int (rep_long_long in)
+rep_make_longlong_int (long long in)
 {
     return rep_make_long_int (in);
 }
 
-rep_long_long
+long long
 rep_get_longlong_int (repv in)
 {
     return rep_get_long_int (in);
@@ -728,7 +729,7 @@ rep_get_longlong_int (repv in)
 #endif /* ! SIZEOF_LONG_LONG > SIZEOF_LONG */
 
 repv
-rep_make_float (double in, rep_bool force)
+rep_make_float (double in, bool force)
 {
     rep_number_f *f;
     if (!force && floor (in) == in)
@@ -860,7 +861,7 @@ static const signed int map[] = {
 #define MAP_SIZE 0x2c
 
 #ifndef HAVE_GMP
-static rep_bool
+static bool
 parse_integer_to_float (char *buf, size_t len, int radix,
 			int sign, double *output)
 {
@@ -872,15 +873,15 @@ parse_integer_to_float (char *buf, size_t len, int radix,
 	char c = *buf++;
 	d = toupper (c) - '0';
 	if (d < 0 || d >= MAP_SIZE)
-	    return rep_FALSE;
+	    return false;
 	d = map [d];
 	if (d < 0 || d >= radix)
-	    return rep_FALSE;
+	    return false;
 	value = value * radix + d;
     }
 
     *output = (sign < 0) ? value * -1.0 : value;
-    return rep_TRUE;
+    return true;
 }
 #endif
 
@@ -943,7 +944,7 @@ rep_parse_number (char *buf, size_t len, int radix,
 	}
 	if (bits < rep_LISP_INT_BITS)
 	{
-	    rep_intptr_t value = 0;
+	    intptr_t value = 0;
 	    char c;
 	    if (radix == 10)
 	    {
@@ -992,7 +993,7 @@ rep_parse_number (char *buf, size_t len, int radix,
 		goto error;
 #else
 	    {
-		rep_long_long value;
+		long long value;
 		char *tail;
 		copy = alloca (len + 1);
 		memcpy (copy, buf, len);
@@ -1103,11 +1104,11 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 
     case rep_NUMBER_INT:
 	if (radix == 10)
-	    tem = "%" rep_PTR_SIZED_INT_CONV "d";
+	    tem = "%" PRIdPTR;
 	else if (radix == 16)
-	    tem = "%" rep_PTR_SIZED_INT_CONV "x";
+	    tem = "%" PRIxPTR;
 	else if (radix == 8)
-	    tem = "%" rep_PTR_SIZED_INT_CONV "o";
+	    tem = "%" PRIoPTR;
 	else
 	{
 	    /* XXX implement properly..? */
@@ -1133,7 +1134,7 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 	{
 	    static const char *map = "0123456789abcdefghijklmnopqrstuvwxyz";
 	    char *ptr = buf, *optr;
-	    rep_long_long value = rep_NUMBER(obj,z);
+	    long long value = rep_NUMBER(obj,z);
 	    int sign = (value < 0) ? -1 : +1;
 	    while (value != 0)
 	    {
@@ -1194,23 +1195,22 @@ number_prin (repv stream, repv obj)
     {
 	char buf[64];
 #ifdef HAVE_SNPRINTF
-	snprintf(buf, sizeof(buf),
-		 "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
+	snprintf(buf, sizeof(buf), "%" PRIdPTR, rep_INT(obj));
 #else
-	sprintf(buf, "%" rep_PTR_SIZED_INT_CONV "d", rep_INT(obj));
+	sprintf(buf, "%" PRIdPTR, rep_INT(obj));
 #endif
-	rep_stream_puts(stream, buf, -1, rep_FALSE);
+	rep_stream_puts(stream, buf, -1, false);
     }
     else
     {
 	char *string = rep_print_number_to_string (obj, 10, -1);
 	if (string != 0)
 	{
-	    rep_stream_puts (stream, string, -1, rep_FALSE);
+	    rep_stream_puts (stream, string, -1, false);
 	    free (string);
 	}
 	else
-	    rep_stream_puts (stream, "#<unprintable number>", -1, rep_FALSE);
+	    rep_stream_puts (stream, "#<unprintable number>", -1, false);
     }
 }
 
@@ -1368,7 +1368,7 @@ rep_number_add (repv x, repv y)
 	    if (t > BIGNUM_MIN && t < BIGNUM_MAX)
 		rep_NUMBER(out,z) = rep_NUMBER(x,z) + rep_NUMBER(y,z);
 	    else
-		out = rep_make_float (t, rep_TRUE);
+		out = rep_make_float (t, true);
 #endif
 	    out = maybe_demote (out);
 	    break;
@@ -1408,7 +1408,7 @@ rep_number_neg (repv x)
 	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
 	    rep_NUMBER(out,z) = - rep_NUMBER(x,z);
 	else
-	    out = rep_make_float (t, rep_TRUE);
+	    out = rep_make_float (t, true);
 #endif
 	break;
     }
@@ -1447,7 +1447,7 @@ rep_number_sub (repv x, repv y)
 	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
 	    rep_NUMBER (out,z) = rep_NUMBER (x,z) - rep_NUMBER (y,z);
 	else
-	    out = rep_make_float (t, rep_TRUE);
+	    out = rep_make_float (t, true);
 #endif
 	out = maybe_demote (out);
 	break;
@@ -1476,10 +1476,10 @@ rep_number_mul (repv x, repv y)
     out = promote_dup (&x, &y);
     switch (rep_NUMERIC_TYPE (out))
     {
-	rep_long_long tot;
+	long long tot;
 
     case rep_NUMBER_INT:
-	tot = ((rep_long_long) rep_INT (x)) * ((rep_long_long) rep_INT (y));
+	tot = ((long long) rep_INT (x)) * ((long long) rep_INT (y));
 	out = rep_make_longlong_int (tot);
 	break;
 
@@ -1491,7 +1491,7 @@ rep_number_mul (repv x, repv y)
 	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
 	    rep_NUMBER (out,z) = rep_NUMBER (x,z) * rep_NUMBER (y,z);
 	else
-	    out = rep_make_float (t, rep_TRUE);
+	    out = rep_make_float (t, true);
 #endif
 	out = maybe_demote (out);
 	break;
@@ -1763,11 +1763,11 @@ rep_integer_gcd (repv x, repv y)
     if (rep_INTP (x))
     {
 	/* Euclid's algorithm */
-	rep_intptr_t m = rep_INT (x), n = rep_INT (y);
+	intptr_t m = rep_INT (x), n = rep_INT (y);
 	m = ABS (m); n = ABS (n);
 	while(m != 0)
 	{
-	    rep_intptr_t t = n % m;
+	    intptr_t t = n % m;
 	    n = m;
 	    m = t;
 	}
@@ -1779,11 +1779,11 @@ rep_integer_gcd (repv x, repv y)
 	mpz_gcd (rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
 #else
 	/* Euclid's algorithm */
-	rep_long_long m = rep_NUMBER (x,z), n = rep_NUMBER (y,z);
+	long long m = rep_NUMBER (x,z), n = rep_NUMBER (y,z);
 	m = ABS (m); n = ABS (n);
 	while(m != 0)
 	{
-	    rep_long_long t = n % m;
+	    long long t = n % m;
 	    n = m;
 	    m = t;
 	}
@@ -1912,7 +1912,7 @@ and that floating point division is used.
     out = promote_dup (&n1, &n2);
     switch (rep_NUMERIC_TYPE (out))
     {
-	rep_intptr_t tem;
+	intptr_t tem;
 #ifdef HAVE_GMP
 	int sign;
 #else
@@ -2179,7 +2179,7 @@ Both NUMBER and COUNT must be integers.
     switch (rep_NUMERIC_TYPE (num))
     {
 	rep_number_z *z;
-	rep_long_long tot;
+	long long tot;
 
     case rep_NUMBER_INT:
 	if (rep_INT (shift) >= rep_LISP_INT_BITS)
@@ -2190,9 +2190,9 @@ Both NUMBER and COUNT must be integers.
 	else
 	{
 	    if (rep_INT (shift) > 0)
-		tot = ((rep_long_long) rep_INT (num)) << rep_INT (shift);
+		tot = ((long long) rep_INT (num)) << rep_INT (shift);
 	    else
-		tot = ((rep_long_long) rep_INT (num)) >> -rep_INT (shift);
+		tot = ((long long) rep_INT (num)) >> -rep_INT (shift);
 	}
 	return rep_make_longlong_int (tot);
 
@@ -2208,7 +2208,7 @@ Both NUMBER and COUNT must be integers.
 #else
 	if (rep_INT (shift) > 0)
 	{
-	    rep_intptr_t i, this;
+	    intptr_t i, this;
 	    double factor = 1, t;
 	    for (i = rep_INT (shift); i > 0; i -= this)
 	    {
@@ -2219,7 +2219,7 @@ Both NUMBER and COUNT must be integers.
 	    if (t > BIGNUM_MIN && t < BIGNUM_MAX)
 		z->z = rep_NUMBER (num,z) << rep_INT (shift);
 	    else
-		return rep_make_float (t, rep_TRUE);
+		return rep_make_float (t, true);
 	}
 	else
 	    z->z = rep_NUMBER (num,z) >> -rep_INT (shift);
@@ -2252,7 +2252,7 @@ NUMBER.
 #endif
 
     case rep_NUMBER_FLOAT:
-	return rep_make_float (floor (rep_NUMBER (arg,f)), rep_TRUE);
+	return rep_make_float (floor (rep_NUMBER (arg,f)), true);
     }
     abort ();
 }	
@@ -2278,7 +2278,7 @@ NUMBER.
 #endif
 
     case rep_NUMBER_FLOAT:
-	return rep_make_float (ceil (rep_NUMBER (arg,f)), rep_TRUE);
+	return rep_make_float (ceil (rep_NUMBER (arg,f)), true);
     }
     abort ();
 }
@@ -2309,10 +2309,10 @@ Round NUMBER to the nearest integer between NUMBER and zero.
 	d = (d < 0.0) ? -floor (-d) : floor (d);
 #ifdef HAVE_GMP
         if (rep_NUMBER_RATIONAL_P (arg))
-	    return rep_make_long_int ((rep_intptr_t) d);
+	    return rep_make_long_int ((intptr_t) d);
 	else
 #endif
-	    return rep_make_float (d, rep_TRUE);
+	    return rep_make_float (d, true);
     }
     abort ();
 }
@@ -2349,10 +2349,10 @@ nearest even integer.
 	     ? result - 1 : result);
 #ifdef HAVE_GMP
         if (rep_NUMBER_RATIONAL_P (arg))
-	    return rep_make_long_int ((rep_intptr_t) d);
+	    return rep_make_long_int ((intptr_t) d);
 	else
 #endif
-	    return rep_make_float (d, rep_TRUE);
+	    return rep_make_float (d, true);
     }
     abort ();
 }
@@ -2365,7 +2365,7 @@ Return `e' (the base of natural logarithms) raised to the power X.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (exp (rep_get_float (arg)), rep_TRUE);
+    return rep_make_float (exp (rep_get_float (arg)), true);
 }
 
 DEFUN("log", Flog_, Slog, (repv arg, repv base), rep_Subr2) /*
@@ -2388,12 +2388,12 @@ natural logarithm of X.
     {
 	b = rep_get_float (base);
 	if (d >= 0 && b >= 0)
-	    return rep_make_float (log (d) / log (b), rep_TRUE);
+	    return rep_make_float (log (d) / log (b), true);
     }
     else
     {
 	if (d >= 0)
-	    return rep_make_float (log (d), rep_TRUE);
+	    return rep_make_float (log (d), true);
     }
 
     return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
@@ -2410,7 +2410,7 @@ Returns the sine of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (sin (rep_get_float (arg)), rep_TRUE);
+    return rep_make_float (sin (rep_get_float (arg)), true);
 }
 
 DEFUN("cos", Fcos, Scos, (repv arg), rep_Subr1) /*
@@ -2421,7 +2421,7 @@ Returns the cosine of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (cos (rep_get_float (arg)), rep_TRUE);
+    return rep_make_float (cos (rep_get_float (arg)), true);
 }
 
 DEFUN("tan", Ftan, Stan, (repv arg), rep_Subr1) /*
@@ -2432,7 +2432,7 @@ Returns the tangent of X, in radians.
 ::end:: */
 {
     rep_DECLARE1 (arg, rep_NUMERICP);
-    return rep_make_float (tan (rep_get_float (arg)), rep_TRUE);
+    return rep_make_float (tan (rep_get_float (arg)), true);
 }
 
 DEFUN("asin", Fasin, Sasin, (repv arg), rep_Subr1) /*
@@ -2446,7 +2446,7 @@ Return the arc sine of X (the value whose sine is X), in radians.
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= -1.0 && d <= 1.0)
-	return rep_make_float (asin (d), rep_TRUE);
+	return rep_make_float (asin (d), true);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -2462,7 +2462,7 @@ Return the arc cosine of X (the value whose cosine is X), in radians.
     rep_DECLARE1 (arg, rep_NUMERICP);
     d = rep_get_float (arg);
     if (d >= -1.0 && d <= 1.0)
-	return rep_make_float (acos (d), rep_TRUE);
+	return rep_make_float (acos (d), true);
     else
 	return Fsignal (Qarith_error, rep_LIST_1 (rep_VAL (&domain_error)));
 }
@@ -2483,10 +2483,10 @@ be zero.
 {
     rep_DECLARE1 (y, rep_NUMERICP);
     if (!rep_NUMERICP (x))
-	return rep_make_float (atan (rep_get_float (y)), rep_TRUE);
+	return rep_make_float (atan (rep_get_float (y)), true);
     else
 	return rep_make_float (atan2 (rep_get_float (y),
-				      rep_get_float (x)), rep_TRUE);
+				      rep_get_float (x)), true);
 }
 
 DEFUN("sqrt", Fsqrt, Ssqrt, (repv arg), rep_Subr1) /*
@@ -2540,7 +2540,7 @@ signalled (mathematically should return a complex number).
 #else
 	{
 	    double t = pow (rep_NUMBER (arg1,z), rep_INT (arg2));
-	    out = rep_make_float (t, rep_FALSE);
+	    out = rep_make_float (t, false);
 	}
 #endif
     }
@@ -2649,7 +2649,7 @@ Returns an inexact (i.e. floating point) representation of X.
     if (!rep_INTP (arg) && rep_NUMBER_FLOAT_P (arg))
 	return arg;
     else
-	return rep_make_float (rep_get_float (arg), rep_TRUE);
+	return rep_make_float (rep_get_float (arg), true);
 }
 
 static void
@@ -2725,7 +2725,7 @@ numerator X
 Return the numerator of rational number X.
 ::end:: */
 {
-    rep_bool inexact = rep_FALSE;
+    bool inexact = false;
     double x;
 
     rep_DECLARE1(arg, rep_NUMERICP);
@@ -2740,7 +2740,7 @@ Return the numerator of rational number X.
 #endif
 
     if (rep_NUMBER_INEXACT_P (arg))
-	inexact = rep_TRUE;
+	inexact = true;
 
     rationalize (arg, &x, NULL);
 
@@ -2754,7 +2754,7 @@ denominator X
 Return the denominator of rational number X.
 ::end:: */
 {
-    rep_bool inexact = rep_FALSE;
+    bool inexact = false;
     double y;
 
     rep_DECLARE1(arg, rep_NUMERICP);
@@ -2769,7 +2769,7 @@ Return the denominator of rational number X.
 #endif
 
     if (rep_NUMBER_INEXACT_P (arg))
-	inexact = rep_TRUE;
+	inexact = true;
 
     rationalize (arg, NULL, &y);
 
@@ -2918,7 +2918,7 @@ static gmp_randstate_t random_state;
 static void
 ensure_random_state (void)
 {
-    static rep_bool initialized;
+    static bool initialized;
 
     if (!initialized)
     {
@@ -2929,7 +2929,7 @@ ensure_random_state (void)
 	/* Initialize to a known seed */
 	gmp_randseed_ui (random_state, 0);
 
-	initialized = rep_TRUE;
+	initialized = true;
     }
 }
 
@@ -2979,8 +2979,8 @@ random_seed (u_long seed)
 static repv
 random_new (repv limit_)
 {
-    rep_intptr_t limit = rep_get_long_int (limit_);
-    rep_intptr_t divisor, val;
+    intptr_t limit = rep_get_long_int (limit_);
+    intptr_t divisor, val;
 
     if (limit <= 0 || limit > rep_LISP_MAX_INT)
 	return rep_signal_arg_error (limit_, 1);
@@ -3025,7 +3025,7 @@ generator is seeded with the current time of day.
 
     if (arg == Qt)
     {
-	rep_uintptr_t seed = time (0);
+	uintptr_t seed = time (0);
 	seed = (seed << 8) | (rep_getpid () & 0xff);
 	random_seed (seed);
 	return Qt;

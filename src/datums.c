@@ -61,7 +61,7 @@ datum_print (repv stream, repv arg)
     if (arg == Qnil)
     {
 	DEFSTRING (eol, "()");
-	rep_stream_puts (stream, rep_PTR (rep_VAL (&eol)), 2, rep_TRUE);
+	rep_stream_puts (stream, rep_PTR (rep_VAL (&eol)), 2, true);
     }
     else
     {
@@ -70,12 +70,12 @@ datum_print (repv stream, repv arg)
 	    rep_call_lisp2 (rep_CDR (printer), arg, stream);
 	else if (rep_SYMBOLP (DATUM_ID (arg)))
 	{
-	    rep_stream_puts (stream, "#<datum ", -1, rep_FALSE);
-	    rep_stream_puts (stream, rep_PTR (rep_SYM (DATUM_ID (arg))->name), -1, rep_TRUE);
+	    rep_stream_puts (stream, "#<datum ", -1, false);
+	    rep_stream_puts (stream, rep_PTR (rep_SYM (DATUM_ID (arg))->name), -1, true);
 	    rep_stream_putc (stream, '>');
 	}
 	else
-	    rep_stream_puts (stream, "#<datum>", -1, rep_FALSE);
+	    rep_stream_puts (stream, "#<datum>", -1, false);
     }
 }
 

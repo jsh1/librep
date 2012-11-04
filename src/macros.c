@@ -127,7 +127,7 @@ again:
 
     bindings = rep_bind_symbol (Qnil, Qmacro_environment, rep_structure);
     rep_PUSHGC(gc_bindings, bindings);
-    form = rep_funcall (car, rep_CDR(form), rep_FALSE);
+    form = rep_funcall (car, rep_CDR(form), false);
     rep_POPGC;
     rep_unbind_symbols (bindings);
     return form;

@@ -139,7 +139,7 @@ char *alloca ();
 int rep_thread_lock = 0;
 
 /* True when the current thread should be preempted soon */
-rep_bool rep_pending_thread_yield;
+bool rep_pending_thread_yield;
 
 #ifdef WITH_CONTINUATIONS
 
@@ -224,7 +224,7 @@ struct rep_continuation_struct {
     struct rep_saved_regexp_data *regexp_data;
     struct blocked_op *blocked_ops[op_MAX];
     repv throw_value;
-    rep_bool single_step;
+    bool single_step;
     int lisp_depth;
 };
 
@@ -250,7 +250,7 @@ struct rep_thread_struct {
     repv env, structure;
     int lock;
     struct timeval run_at;
-    rep_bool (*poll)(rep_thread *t, void *arg);
+    bool (*poll)(rep_thread *t, void *arg);
     void *poll_arg;
     repv exit_val;
 };
@@ -316,7 +316,7 @@ static void thread_delete (rep_thread *t);
    the stack to below; OUT when control passes from below to above. */
 repv
 rep_call_with_barrier (repv (*callback)(repv), repv arg,
-		       rep_bool closed, void (*in)(void *),
+		       bool closed, void (*in)(void *),
 		       void (*out)(void *), void *data)
 {
     repv ret;
@@ -460,7 +460,7 @@ save_stack (rep_continuation *c)
 
     /* __builtin_frame_address doesn't give the right thing on athlon64 */
 
-#if defined (__GNUC__) && !defined (BROKEN_ALPHA_GCC) && !defined (__x86_64)
+#if defined (__GNUC__) && !defined (__x86_64)
     c->stack_top = __builtin_frame_address (0);
 #else
     c->stack_top = (char *) &size;
@@ -868,10 +868,10 @@ thread_wake (rep_thread *t)
     enqueue_thread (t, root);
 }
 
-static rep_bool
+static bool
 poll_threads (rep_barrier *root)
 {
-    rep_bool woke_any = rep_FALSE;
+    bool woke_any = false;
     rep_thread *t, *next;
     for (t = root->susp_head; t != 0; t = next)
     {
@@ -879,7 +879,7 @@ poll_threads (rep_barrier *root)
 	if (t->poll && t->poll (t, t->poll_arg))
 	{
 	    thread_wake (t);
-	    woke_any = rep_TRUE;
+	    woke_any = true;
 	}
     }
     return woke_any;
@@ -1022,7 +1022,7 @@ ensure_default_thread (void)
 }
 
 static rep_thread *
-make_thread (repv thunk, repv name, rep_bool suspended)
+make_thread (repv thunk, repv name, bool suspended)
 {
     repv ret;
     rep_GC_root gc_thunk;
@@ -1063,7 +1063,7 @@ make_thread (repv thunk, repv name, rep_bool suspended)
     }
 }
 
-static rep_bool
+static bool
 thread_yield (void)
 {
     struct timeval now;
@@ -1071,10 +1071,10 @@ thread_yield (void)
     rep_thread *old_head;
 
     if (root_barrier == 0)
-	return rep_FALSE;
+	return false;
 
     old_head = root_barrier->head;
-    rep_pending_thread_yield = rep_FALSE;
+    rep_pending_thread_yield = false;
     if (root_barrier->head && root_barrier->head->next)
     {
 	rep_thread *old = root_barrier->head;
@@ -1106,15 +1106,15 @@ thread_yield (void)
     if (root_barrier->head != old_head)
     {
 	thread_invoke ();
-	return rep_TRUE;
+	return true;
     }
     else
-	return rep_FALSE;
+	return false;
 }
 
 static void
 thread_suspend (rep_thread *t, u_long msecs,
-		rep_bool (*poll)(rep_thread *t, void *arg), void *poll_arg)
+		bool (*poll)(rep_thread *t, void *arg), void *poll_arg)
 {
     rep_barrier *root = t->cont->root;
     assert (!(t->car & TF_SUSPENDED));
@@ -1296,7 +1296,7 @@ sweep_cont (void)
 static void
 print_cont (repv stream, repv obj)
 {
-    rep_stream_puts (stream, "#<continuation>", -1, rep_FALSE);
+    rep_stream_puts (stream, "#<continuation>", -1, false);
 }
 
 static int
@@ -1348,11 +1348,11 @@ sweep_thread (void)
 static void
 print_thread (repv stream, repv obj)
 {
-    rep_stream_puts (stream, "#<thread", -1, rep_FALSE);
+    rep_stream_puts (stream, "#<thread", -1, false);
     if (rep_STRINGP (THREAD (obj)->name))
     {
 	rep_stream_putc (stream, ' ');
-	rep_stream_puts (stream, rep_STR (THREAD (obj)->name), -1, rep_FALSE);
+	rep_stream_puts (stream, rep_STR (THREAD (obj)->name), -1, false);
     }
     rep_stream_putc (stream, '>');
 }
@@ -1377,7 +1377,7 @@ thread_type (void)
 
 repv
 rep_call_with_barrier (repv (*callback)(repv), repv arg,
-		       rep_bool closed, void (*in)(void *),
+		       bool closed, void (*in)(void *),
 		       void (*out)(void *), void *data)
 {
     return callback (arg);
@@ -1485,7 +1485,7 @@ unbound. If THUNK is subsequently reentered, ARG will be rebound.
 	rep_GC_n_roots gc_data;
 	rep_PUSHGCN (gc_data, data, 2);
 	ret = rep_call_with_barrier (rep_call_lisp0, thunk,
-				     rep_FALSE, call_with_inwards,
+				     false, call_with_inwards,
 				     call_with_outwards, data);
 	unbind_object (data[1]);
 	rep_POPGCN;
@@ -1506,7 +1506,7 @@ reached once, and once only. Any continuations above the new root may
 not be invoked from inside the root.
 ::end:: */
 {
-    return rep_call_with_barrier (rep_call_lisp0, thunk, rep_TRUE, 0, 0, 0);
+    return rep_call_with_barrier (rep_call_lisp0, thunk, true, 0, 0, 0);
 }
 
 static void
@@ -1548,7 +1548,7 @@ The value of this function is the value returned by THUNK.
     thunks[1] = out;
     rep_PUSHGCN (gc_thunks, thunks, 2);
     ret = rep_call_with_barrier (rep_call_lisp0, thunk,
-				 closed == Qnil ? rep_FALSE : rep_TRUE,
+				 closed == Qnil ? false : true,
 				 call_in, call_out, thunks);
     rep_POPGCN;
     return ret;
@@ -1564,7 +1564,7 @@ parameters.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    return rep_VAL (make_thread (thunk, name, rep_FALSE));
+    return rep_VAL (make_thread (thunk, name, false));
 #else
     return call_cc_missing ();
 #endif
@@ -1580,7 +1580,7 @@ immediately put in the suspended state.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    return rep_VAL (make_thread (thunk, name, rep_TRUE));
+    return rep_VAL (make_thread (thunk, name, true));
 #else
     return call_cc_missing ();
 #endif
@@ -1653,11 +1653,11 @@ Returns true if the timeout was reached.
 }
 
 #ifdef WITH_CONTINUATIONS
-static rep_bool
+static bool
 thread_join_poller (rep_thread *t, void *arg)
 {
     rep_thread *th = arg;
-    return (th->car & TF_EXITED) ? rep_TRUE : rep_FALSE;
+    return (th->car & TF_EXITED) ? true : false;
 }
 #endif
 

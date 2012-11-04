@@ -44,7 +44,7 @@ static origin_item *free_list;
 static origin_block *block_list;
 static repv guardian;
 
-rep_bool rep_record_origins;
+bool rep_record_origins;
 
 #define HASH_SIZE 1024
 #define HASH(x) (((x) >> 3) % HASH_SIZE)
@@ -100,10 +100,10 @@ rep_record_origin (repv form, repv stream, int start_line)
 DEFUN ("call-with-lexical-origins", Fcall_with_lexical_origins,
        Scall_with_lexical_origins, (repv thunk), rep_Subr1)
 {
-    rep_bool old_record_origins = rep_record_origins;
+    bool old_record_origins = rep_record_origins;
     repv result;
 
-    rep_record_origins = rep_TRUE;
+    rep_record_origins = true;
     result = rep_call_lisp0 (thunk);
     rep_record_origins = old_record_origins;
 

@@ -21,24 +21,14 @@
 #ifndef REP_H
 #define REP_H
 
-#include <sys/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <limits.h>
-
-typedef int rep_bool;
-#define rep_TRUE 1
-#define rep_FALSE 0
-
-#ifndef NULL
-#define NULL 0
-#endif
+#include <sys/types.h>
 
 #include <rep_config.h>
-
-#ifdef rep_HAVE_LONG_LONG
-# define rep_long_long long long
-#else
-# define rep_long_long long
-#endif
 
 #include "rep_lisp.h"
 #include "rep_regexp.h"

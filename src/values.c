@@ -91,7 +91,7 @@ rep_register_type(repv code, char *name,
 		  int (*getc)(repv),
 		  int (*ungetc)(repv, int),
 		  int (*putc)(repv, int),
-		  rep_intptr_t (*puts)(repv, void *, rep_intptr_t, rep_bool),
+		  intptr_t (*puts)(repv, void *, intptr_t, bool),
 		  repv (*bind)(repv),
 		  void (*unbind)(repv))
 {
@@ -130,7 +130,7 @@ rep_register_new_type(char *name,
 		      int (*getc)(repv),
 		      int (*ungetc)(repv, int),
 		      int (*putc)(repv, int),
-		      rep_intptr_t (*puts)(repv, void *, rep_intptr_t, rep_bool),
+		      intptr_t (*puts)(repv, void *, intptr_t, bool),
 		      repv (*bind)(repv),
 		      void (*unbind)(repv))
 {
@@ -394,16 +394,16 @@ string_sweep(void)
 }
 
 /* Sets the length-field of the dynamic string STR to LEN. */
-rep_bool
+bool
 rep_set_string_len(repv str, size_t len)
 {
     if(rep_STRING_WRITABLE_P(str))
     {
 	rep_STRING(str)->car = rep_MAKE_STRING_CAR(len);
-	return rep_TRUE;
+	return true;
     }
     else
-	return rep_FALSE;
+	return false;
 }
 
 
@@ -421,17 +421,18 @@ rep_ptr_cmp(repv v1, repv v2)
 repv
 rep_box_pointer (void *p)
 {
-    unsigned rep_PTR_SIZED_INT low;
-    low = (unsigned rep_PTR_SIZED_INT)p;
+    uintptr_t low;
+    low = (uintptr_t) p;
     if (low <= rep_LISP_MAX_INT)
 	return rep_MAKE_INT (low);
     else
     {
 	int i;
-	unsigned rep_PTR_SIZED_INT high = (unsigned rep_PTR_SIZED_INT)p;
-	for (i = rep_PTR_SIZED_INT_BITS / 2; i < rep_PTR_SIZED_INT_BITS; i++)
+	uintptr_t high = (uintptr_t) p;
+	const unsigned int bits = sizeof(uintptr_t) * CHAR_BIT;
+	for (i = bits / 2; i < bits; i++)
 	    low &= ~(1 << i);
-	high = high >> (rep_PTR_SIZED_INT_BITS/2);
+	high = high >> (bits / 2);
 	return Fcons (rep_MAKE_INT(high), rep_MAKE_INT(low));
     }
 }
@@ -443,10 +444,11 @@ rep_unbox_pointer (repv v)
 	return (void *) rep_INT(v);
     else if (rep_CONSP(v))
     {
-	unsigned rep_PTR_SIZED_INT low, high;
+	const unsigned int bits = sizeof(uintptr_t) * CHAR_BIT;
+	uintptr_t low, high;
 	low = rep_INT(rep_CDR(v));
 	high = rep_INT(rep_CAR(v));
-	return (void *) (low | high << (rep_PTR_SIZED_INT_BITS/2));
+	return (void *) (low | high << (bits / 2));
     }
     else
 	return 0;
@@ -761,7 +763,7 @@ sweep_guardians (void)
 static void
 print_guardian (repv stream, repv obj)
 {
-    rep_stream_puts (stream, "#<guardian>", -1, rep_FALSE);
+    rep_stream_puts (stream, "#<guardian>", -1, false);
 }
 
 
@@ -773,7 +775,7 @@ static int next_static_root, allocated_static_roots;
 rep_GC_root *rep_gc_root_stack = 0;
 rep_GC_n_roots *rep_gc_n_roots_stack = 0;
 
-rep_bool rep_in_gc = rep_FALSE;
+bool rep_in_gc = false;
 
 /* rep_data_after_gc = bytes of storage used since last gc
    rep_gc_threshold = value that rep_data_after_gc should be before gc'ing
@@ -965,7 +967,7 @@ last garbage-collection is greater than `garbage-threshold'.
     gc_stack_high_tide = &dummy;
 #endif
 
-    rep_in_gc = rep_TRUE;
+    rep_in_gc = true;
 
     rep_macros_before_gc ();
 
@@ -1037,7 +1039,7 @@ last garbage-collection is greater than `garbage-threshold'.
     }
 
     rep_data_after_gc = 0;
-    rep_in_gc = rep_FALSE;
+    rep_in_gc = false;
 
 #ifdef GC_MONITOR_STK
     fprintf(stderr, "gc: stack usage = %d\n",

@@ -25,9 +25,9 @@
 
 /* from continuations.c */
 extern int rep_thread_lock;
-extern rep_bool rep_pending_thread_yield;
+extern bool rep_pending_thread_yield;
 extern repv rep_call_with_barrier (repv (*callback)(repv), repv arg,
-				   rep_bool closed, void (*in)(void *),
+				   bool closed, void (*in)(void *),
 				   void (*out)(void *), void *data);
 extern repv Fcall_cc (repv thunk);
 extern repv Fcontinuation_callable_p (repv cont);
@@ -84,7 +84,7 @@ extern repv rep_call_file_handler(repv handler, int op,
 extern repv rep_get_handler_from_file_or_name(repv *filep, int op);
 extern repv rep_expand_and_get_handler(repv *file_namep, int op);
 extern repv rep_localise_and_get_handler(repv *file_namep, int op);
-extern rep_bool rep_file_newer_than(repv name1, repv name2);
+extern bool rep_file_newer_than(repv name1, repv name2);
 extern repv Ffile_name_absolute_p(repv file);
 extern repv Fexpand_file_name(repv, repv);
 extern repv Flocal_file_name(repv);
@@ -157,7 +157,7 @@ extern repv Fwith_fluids (repv, repv, repv);
 
 /* from lisp.c */
 extern repv rep_load_autoload(repv);
-extern repv rep_funcall(repv fun, repv arglist, rep_bool eval_args);
+extern repv rep_funcall(repv fun, repv arglist, bool eval_args);
 extern repv rep_apply (repv, repv);
 extern repv rep_call_lisp0(repv);
 extern repv rep_call_lisp1(repv, repv);
@@ -202,7 +202,7 @@ extern repv Fsignal(repv error, repv data);
 extern repv Fbacktrace(repv strm);
 extern repv Vmax_lisp_depth(repv val);
 extern int rep_list_length(repv);
-extern rep_bool rep_assign_args (repv list, int required, int total, ...);
+extern bool rep_assign_args (repv list, int required, int total, ...);
 
 /* from lispcmds.c */
 extern repv Qor, Qand;
@@ -285,13 +285,13 @@ extern void rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 			       char *dump_file);
 extern repv rep_load_environment (repv file);
 extern void rep_kill(void);
-extern rep_bool rep_get_option (char *option, repv *argp);
-extern rep_bool rep_on_idle(int since_last_event);
-extern rep_bool rep_handle_input_exception(repv *result_p);
+extern bool rep_get_option (char *option, repv *argp);
+extern bool rep_on_idle(int since_last_event);
+extern bool rep_handle_input_exception(repv *result_p);
 extern int rep_top_level_exit (void);
 extern void *rep_common_db;
 extern int rep_recurse_depth;
-extern rep_bool (*rep_on_idle_fun)(int since_last);
+extern bool (*rep_on_idle_fun)(int since_last);
 extern repv (*rep_event_loop_fun)(void);
 extern repv Qidle_hook;
 extern void (*rep_on_termination_fun)(void);
@@ -345,13 +345,13 @@ extern repv Fchar_upcase(repv);
 extern repv Fchar_downcase(repv);
 
 /* from numbers.c */
-extern repv rep_make_long_uint (rep_uintptr_t in);
-extern repv rep_make_long_int (rep_intptr_t in);
-extern rep_uintptr_t rep_get_long_uint (repv in);
-extern rep_intptr_t rep_get_long_int (repv in);
-extern repv rep_make_longlong_int (rep_long_long in);
-extern rep_long_long rep_get_longlong_int (repv in);
-extern repv rep_make_float (double in, rep_bool force);
+extern repv rep_make_long_uint (uintptr_t in);
+extern repv rep_make_long_int (intptr_t in);
+extern uintptr_t rep_get_long_uint (repv in);
+extern intptr_t rep_get_long_int (repv in);
+extern repv rep_make_longlong_int (long long in);
+extern long long rep_get_longlong_int (repv in);
+extern repv rep_make_float (double in, bool force);
 extern double rep_get_float (repv in);
 extern int rep_compare_numbers (repv n1, repv n2);
 extern char *rep_print_number_to_string (repv obj, int radix, int prec);
@@ -410,7 +410,7 @@ extern repv Qformat_hooks_alist;
 extern int rep_stream_getc(repv);
 extern int rep_stream_ungetc(repv, int);
 extern int rep_stream_putc(repv, int);
-extern rep_intptr_t rep_stream_puts(repv, void *, rep_intptr_t, rep_bool);
+extern intptr_t rep_stream_puts(repv, void *, intptr_t, bool);
 extern int rep_stream_read_esc(repv, int *);
 extern repv Fwrite(repv stream, repv data, repv len);
 extern repv Fread_char(repv stream);
@@ -443,7 +443,7 @@ extern repv rep_obarray;
 extern repv Qt;
 extern repv Qvariable_documentation, Qpermanent_local;
 extern repv rep_void_value;
-extern rep_bool rep_warn_shadowing;
+extern bool rep_warn_shadowing;
 extern repv Fmake_symbol(repv);
 extern repv Fmake_obarray(repv);
 extern repv Ffind_symbol(repv, repv);
@@ -492,9 +492,9 @@ extern repv rep_push_structure (const char *name);
 extern repv rep_pop_structure (repv old);
 extern void rep_alias_structure (const char *name);
 extern repv rep_bootstrap_structure (const char *s);
-extern repv rep_add_subr(rep_xsubr *, rep_bool);
-extern void rep_structure_exports_all (repv s, rep_bool status);
-extern void rep_structure_set_binds (repv s, rep_bool status);
+extern repv rep_add_subr(rep_xsubr *, bool);
+extern void rep_structure_exports_all (repv s, bool status);
+extern void rep_structure_set_binds (repv s, bool status);
 
 /* from tuples.c */
 extern repv rep_make_tuple (repv car, repv a, repv b);
@@ -517,7 +517,7 @@ extern void rep_register_type(repv code, char *name,
 			      void (*mark_type)(void),
 			      int (*getc)(repv), int (*ungetc)(repv, int),
 			      int (*putc)(repv, int),
-			      rep_intptr_t (*puts)(repv, void *, rep_intptr_t, rep_bool),
+			      intptr_t (*puts)(repv, void *, intptr_t, bool),
 			      repv (*bind)(repv), void (*unbind)(repv));
 extern repv rep_register_new_type(char *name,
 				   int (*compare)(repv, repv),
@@ -529,7 +529,7 @@ extern repv rep_register_new_type(char *name,
 				   int (*getc)(repv),
 				   int (*ungetc)(repv, int),
 				   int (*putc)(repv, int),
-				   rep_intptr_t (*puts)(repv, void *, rep_intptr_t, rep_bool),
+				   intptr_t (*puts)(repv, void *, intptr_t, bool),
 				   repv (*bind)(repv),
 				   void (*unbind)(repv));
 extern rep_type *rep_get_data_type(repv code);
@@ -544,7 +544,7 @@ extern repv rep_string_dup(const char *);
 extern repv rep_concat2(char *, char *);
 extern repv rep_concat3(char *, char *, char *);
 extern repv rep_concat4(char *s1, char *s2, char *s3, char *s4);
-extern rep_bool rep_set_string_len(repv, size_t);
+extern bool rep_set_string_len(repv, size_t);
 extern repv rep_list_1(repv);
 extern repv rep_list_2(repv, repv);
 extern repv rep_list_3(repv, repv, repv);
@@ -563,12 +563,10 @@ extern repv Vgarbage_threshold(repv val);
 extern repv Vidle_garbage_threshold(repv val);
 extern repv Fgarbage_collect(repv noStats);
 extern int rep_data_after_gc, rep_gc_threshold, rep_idle_gc_threshold;
-extern rep_bool rep_in_gc;
-
-#ifdef rep_HAVE_UNIX
+extern bool rep_in_gc;
 
 /* from unix_dl.c */
-extern rep_bool rep_find_c_symbol(void *, char **, void **);
+extern bool rep_find_c_symbol(void *, char **, void **);
 extern void *rep_find_dl_symbol (repv feature, char *symbol);
 
 /* from unix_files.c */
@@ -576,21 +574,21 @@ extern repv rep_lookup_errno(void);
 extern size_t rep_file_length(repv file);
 
 /* from unix_main.c */
-extern rep_uintptr_t rep_time(void);
-extern rep_long_long rep_utime (void);
-extern rep_uintptr_t rep_getpid (void);
+extern uintptr_t rep_time(void);
+extern long long rep_utime (void);
+extern uintptr_t rep_getpid (void);
 extern void (*rep_register_input_fd_fun)(int fd, void (*callback)(int fd));
 extern void (*rep_deregister_input_fd_fun)(int fd);
-extern void rep_add_event_loop_callback (rep_bool (*callback)(void));
+extern void rep_add_event_loop_callback (bool (*callback)(void));
 extern void rep_sleep_for(int secs, int msecs);
 extern void rep_register_input_fd(int fd, void (*callback)(int fd));
 extern void rep_deregister_input_fd(int fd);
 extern void rep_map_inputs (void (*fun)(int fd, void (*callback)(int)));
 extern void rep_mark_input_pending(int fd);
-extern void rep_unix_set_fd_nonblocking(int fd);
-extern void rep_unix_set_fd_blocking(int fd);
-extern void rep_unix_set_fd_cloexec(int fd);
-extern void rep_sig_restart(int sig, rep_bool flag);
+extern void rep_set_fd_nonblocking(int fd);
+extern void rep_set_fd_blocking(int fd);
+extern void rep_set_fd_cloexec(int fd);
+extern void rep_sig_restart(int sig, bool flag);
 extern repv rep_event_loop(void);
 extern repv rep_sit_for(int timeout_msecs);
 extern repv rep_accept_input_for_callbacks (int timeout_msecs,
@@ -599,7 +597,7 @@ extern repv rep_accept_input_for_callbacks (int timeout_msecs,
 extern repv rep_accept_input_for_fds (int timeout_msecs,
 				      int nfds, int *fds);
 extern repv rep_accept_input(int timeout_msecs, void (*callback)(int));
-extern rep_bool rep_poll_input(int fd);
+extern bool rep_poll_input(int fd);
 
 #ifdef DEBUG_SYS_ALLOC
 extern void *rep_alloc(size_t length);
@@ -621,7 +619,7 @@ extern repv Funix_print_allocations(void);
 /* from unix_processes.c */
 extern repv Qpipe, Qpty;
 extern void (*rep_sigchld_fun) (void);
-extern rep_bool rep_proc_periodically(void);
+extern bool rep_proc_periodically(void);
 extern repv Fmake_process(repv stream, repv fun, repv dir,
 			   repv prog, repv args);
 extern repv Fstart_process(repv arg_list);
@@ -654,8 +652,6 @@ extern repv Fset_process_connection_type(repv proc, repv type);
 extern repv Factive_processes(void);
 extern repv Faccept_process_output(repv secs, repv msecs);
 void rep_register_process_input_handler (void (*handler)(int));
-
-#endif /* rep_HAVE_UNIX */
 
 /* in plugins */
 extern repv rep_dl_init (void);

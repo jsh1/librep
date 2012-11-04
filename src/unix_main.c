@@ -82,28 +82,28 @@ rep_lookup_errno(void)
 #endif
 }
 
-rep_uintptr_t
+uintptr_t
 rep_getpid (void)
 {
     return getpid ();
 }
 
-rep_uintptr_t
+uintptr_t
 rep_time(void)
 {
     return time(0);
 }
 
-rep_long_long
+long long
 rep_utime (void)
 {
-    rep_long_long t;
+    long long t;
 #ifdef HAVE_GETTIMEOFDAY
     struct timeval time;
     gettimeofday (&time, 0);
-    t = ((rep_long_long) time.tv_sec * 1000000) + time.tv_usec;
+    t = ((long long) time.tv_sec * 1000000) + time.tv_usec;
 #else
-    t = (rep_long_long) rep_time () * 1000000;
+    t = (long long) rep_time () * 1000000;
 #endif
     return t;
 }
@@ -275,7 +275,7 @@ void (*rep_deregister_input_fd_fun)(int fd) = 0;
 
 #define MAX_EVENT_LOOP_CALLBACKS 16
 static int next_event_loop_callback;
-static rep_bool (*event_loop_callbacks[MAX_EVENT_LOOP_CALLBACKS])(void);
+static bool (*event_loop_callbacks[MAX_EVENT_LOOP_CALLBACKS])(void);
 
 void
 rep_register_input_fd(int fd, void (*callback)(int fd))
@@ -286,7 +286,7 @@ rep_register_input_fd(int fd, void (*callback)(int fd))
     if (rep_register_input_fd_fun != 0)
 	(*rep_register_input_fd_fun) (fd, callback);
 
-    rep_unix_set_fd_cloexec(fd);
+    rep_set_fd_cloexec(fd);
 }
 
 void
@@ -321,7 +321,7 @@ rep_mark_input_pending(int fd)
 }
 
 void
-rep_unix_set_fd_nonblocking(int fd)
+rep_set_fd_nonblocking(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
     if(flags != -1)
@@ -329,7 +329,7 @@ rep_unix_set_fd_nonblocking(int fd)
 }
 
 void
-rep_unix_set_fd_blocking(int fd)
+rep_set_fd_blocking(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
     if(flags != -1)
@@ -337,7 +337,7 @@ rep_unix_set_fd_blocking(int fd)
 }
 
 void
-rep_unix_set_fd_cloexec(int fd)
+rep_set_fd_cloexec(int fd)
 {
     /* Set close on exec flag. */
     int tem = fcntl(fd, F_GETFD, 0);
@@ -347,7 +347,7 @@ rep_unix_set_fd_cloexec(int fd)
 
 /* Turns on or off restarted system calls for SIG */
 void
-rep_sig_restart(int sig, rep_bool flag)
+rep_sig_restart(int sig, bool flag)
 {
 #if defined (HAVE_SIGINTERRUPT)
     siginterrupt (sig, !flag);
@@ -375,22 +375,22 @@ rep_sig_restart(int sig, rep_bool flag)
 }
 
 void
-rep_add_event_loop_callback (rep_bool (*callback)(void))
+rep_add_event_loop_callback (bool (*callback)(void))
 {
     if (next_event_loop_callback == MAX_EVENT_LOOP_CALLBACKS)
 	abort ();
     event_loop_callbacks [next_event_loop_callback++] = callback;
 }
 
-rep_bool
+bool
 rep_proc_periodically (void)
 {
-    rep_bool ret = rep_FALSE;
+    bool ret = false;
     int i;
     for (i = 0; i < next_event_loop_callback; i++)
     {
 	if (event_loop_callbacks[i] ())
-	    ret = rep_TRUE;
+	    ret = true;
     }
     return ret;
 }
@@ -459,11 +459,11 @@ wait_for_input(fd_set *inputs, int timeout_msecs)
 
 	/* Don't want select() to restart after a SIGCHLD or SIGALRM;
 	   there may be a notification to dispatch.  */
-	rep_sig_restart(SIGCHLD, rep_FALSE);
-	rep_sig_restart(SIGALRM, rep_FALSE);
+	rep_sig_restart(SIGCHLD, false);
+	rep_sig_restart(SIGALRM, false);
 	ready = select(FD_SETSIZE, &copy, NULL, NULL, &timeout);
-	rep_sig_restart(SIGALRM, rep_TRUE);
-	rep_sig_restart(SIGCHLD, rep_TRUE);
+	rep_sig_restart(SIGALRM, true);
+	rep_sig_restart(SIGCHLD, true);
 
 	if (ready == 0 && actual_timeout_msecs < this_timeout_msecs)
 	{
@@ -481,11 +481,11 @@ wait_for_input(fd_set *inputs, int timeout_msecs)
 /* Handle the READY fds with pending input (defined by fdset INPUTS).
    Return true if the display might require updating. Returns immediately
    if a Lisp error has occurred. */
-static rep_bool
+static bool
 handle_input(fd_set *inputs, int ready)
 {
     static int idle_period;
-    rep_bool refreshp = rep_FALSE;
+    bool refreshp = false;
 
     if(ready > 0)
     {
@@ -506,7 +506,7 @@ handle_input(fd_set *inputs, int ready)
 		if(input_actions[i] != NULL)
 		{
 		    input_actions[i](i);
-		    refreshp = rep_TRUE;
+		    refreshp = true;
 		}
 	    }
 	}
@@ -515,13 +515,13 @@ handle_input(fd_set *inputs, int ready)
     {
 	/* A timeout. */
 	if(rep_INTERRUPTP || rep_on_idle(idle_period))
-	    refreshp = rep_TRUE;
+	    refreshp = true;
 
 	idle_period++;
     }
 
     if(!rep_INTERRUPTP && rep_proc_periodically())
-	refreshp = rep_TRUE;
+	refreshp = true;
 
     return refreshp;
 }
@@ -538,7 +538,7 @@ rep_event_loop(void)
     while(1)
     {
 	int ready;
-	rep_bool refreshp = rep_FALSE;
+	bool refreshp = false;
 	fd_set copy;
 
 	if (rep_throw_value == rep_NULL)
@@ -554,7 +554,7 @@ rep_event_loop(void)
 	    if(rep_handle_input_exception(&result))
 		return result;
 	    else
-		refreshp = rep_TRUE;
+		refreshp = true;
 	}
 
 	if(refreshp && rep_redisplay_fun != 0)
@@ -649,7 +649,7 @@ rep_accept_input(int timeout_msecs, void (*callback)(int))
     return rep_accept_input_for_callbacks (timeout_msecs, 1, &callback);
 }
 
-rep_bool
+bool
 rep_poll_input(int fd)
 {
     fd_set in;
@@ -683,8 +683,8 @@ rep_alloc(size_t length)
     {
 	struct alloc_data *x = mem;
 
-	/* Check that the alignment promised actually occurs */
-	assert((((rep_PTR_SIZED_INT)mem) & (rep_MALLOC_ALIGNMENT - 1)) == 0);
+	/* Check that the required alignment actually occurs */
+	assert((((rep_PTR_SIZED_INT)mem) & 3) == 0);
 
 	mem = ((char *)mem) + SIZEOF_ALLOC_DATA;
 	x->next = allocations;
@@ -706,8 +706,8 @@ rep_realloc(void *ptr, size_t length)
     {
 	struct alloc_data *x = mem;
 
-	/* Check that the alignment promised actually occurs */
-	assert((((rep_PTR_SIZED_INT)mem) & (rep_MALLOC_ALIGNMENT - 1)) == 0);
+	/* Check that the required alignment actually occurs */
+	assert((((rep_PTR_SIZED_INT)mem) & 3) == 0);
 
 	if(allocations == ptr)
 	    allocations = x;
@@ -774,7 +774,7 @@ Output a list of all allocated memory blocks to standard error.
 
 /* Standard signal handlers */
 
-static volatile rep_bool in_fatal_signal_handler;
+static volatile bool in_fatal_signal_handler;
 
 /* Invoked by any of the handlable error reporting signals */
 static RETSIGTYPE
@@ -787,7 +787,7 @@ fatal_signal_handler(int sig)
     /* Check for nested calls to this function */
     if(in_fatal_signal_handler)
 	raise(sig);
-    in_fatal_signal_handler = rep_TRUE;
+    in_fatal_signal_handler = true;
 
 #ifdef HAVE_PSIGNAL
     psignal(sig, "rep: received fatal signal");
@@ -914,7 +914,7 @@ rep_pre_sys_os_init(void)
     if(signal(SIGINT, interrupt_signal_handler) == SIG_IGN)
 	signal(SIGINT, SIG_IGN);
     else
-	rep_sig_restart (SIGINT, rep_FALSE);
+	rep_sig_restart (SIGINT, false);
 #endif
 
     /* Finally, the termination signals */
@@ -922,13 +922,13 @@ rep_pre_sys_os_init(void)
     if(signal(SIGTERM, termination_signal_handler) == SIG_IGN)
 	signal(SIGTERM, SIG_IGN);
     else
-	rep_sig_restart (SIGTERM, rep_FALSE);
+	rep_sig_restart (SIGTERM, false);
 #endif
 #ifdef SIGHUP
     if(signal(SIGHUP, termination_signal_handler) == SIG_IGN)
 	signal(SIGHUP, SIG_IGN);
     else
-	rep_sig_restart (SIGHUP, rep_FALSE);
+	rep_sig_restart (SIGHUP, false);
 #endif
 
 #ifdef SIGUSR1

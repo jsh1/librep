@@ -96,7 +96,7 @@ make_socket_ (int sock_fd, int namespace, int style)
     s->next = socket_list;
     socket_list = s;
 
-    rep_unix_set_fd_cloexec (sock_fd);
+    rep_set_fd_cloexec (sock_fd);
 
     DB (("made socket proxy for fd %d\n", s->sock));
 
@@ -177,7 +177,7 @@ client_socket_output (int fd)
 	{
 	    buf[actual] = 0;
 	    if (s->stream != Qnil)
-		rep_stream_puts (s->stream, buf, actual, rep_FALSE);
+		rep_stream_puts (s->stream, buf, actual, false);
 	}
     } while (actual > 0 || (actual < 0 && errno == EINTR));
 
@@ -198,7 +198,7 @@ make_client_socket (int namespace, int style, void *addr, size_t length)
     {
 	if (connect (s->sock, addr, length) == 0)
 	{
-	    rep_unix_set_fd_nonblocking (s->sock);
+	    rep_set_fd_nonblocking (s->sock);
 	    rep_register_input_fd (s->sock, client_socket_output);
 	    s->car |= IS_REGISTERED;
 	    return s;
@@ -233,7 +233,7 @@ make_server_socket (int namespace, int style, void *addr, size_t length)
 	{
 	    if (listen (s->sock, 5) == 0)
 	    {
-		rep_unix_set_fd_nonblocking (s->sock);
+		rep_set_fd_nonblocking (s->sock);
 		rep_register_input_fd (s->sock, server_socket_output);
 		s->car |= IS_REGISTERED;
 		return s;
@@ -472,7 +472,7 @@ subsequently call `close-socket' on the created client.
     if (new != -1)
     {
 	rep_socket *client = make_socket_ (new, s->namespace, s->style);
-	rep_unix_set_fd_nonblocking (new);
+	rep_set_fd_nonblocking (new);
 	rep_register_input_fd (new, client_socket_output);
 	client->car |= IS_REGISTERED;
 	client->stream = stream;
@@ -640,7 +640,7 @@ Return true if ARG is an unclosed socket object.
 
 DEFSTRING (inactive_socket, "Inactive socket");
 
-static rep_bool
+static bool
 poll_for_input (int fd)
 {
     fd_set inputs;
@@ -654,7 +654,7 @@ poll_for_input (int fd)
 }
 
 /* Returns the number of bytes actually written. */
-static rep_intptr_t
+static intptr_t
 blocking_write (rep_socket *s, char *data, size_t bytes)
 {
     size_t done = 0;
@@ -667,7 +667,7 @@ blocking_write (rep_socket *s, char *data, size_t bytes)
     }
 
     do {
-	rep_intptr_t actual = write (s->sock, data + done, bytes - done);
+	intptr_t actual = write (s->sock, data + done, bytes - done);
 	if (actual < 0)
 	{
 	    if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -697,8 +697,8 @@ socket_putc (repv stream, int c)
     return blocking_write (SOCKET (stream), &data, 1);
 }
 
-static rep_intptr_t
-socket_puts (repv stream, void *data, rep_intptr_t len, rep_bool is_lisp)
+static intptr_t
+socket_puts (repv stream, void *data, intptr_t len, bool is_lisp)
 {
     char *buf = is_lisp ? rep_STR(data) : data;
     return blocking_write (SOCKET (stream), buf, len);
@@ -746,7 +746,7 @@ socket_sweep (void)
 static void
 socket_print (repv stream, repv arg)
 {
-    rep_stream_puts (stream, "#<socket>", -1, rep_FALSE);
+    rep_stream_puts (stream, "#<socket>", -1, false);
 }
 
 

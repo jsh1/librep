@@ -56,7 +56,7 @@ completion_generator (char *word, int state)
 	{
 	    completions = (rep_call_with_barrier
 			   (Ffuncall, rep_list_2 (fun, rep_string_dup (word)),
-			    rep_TRUE, 0, 0, 0));
+			    true, 0, 0, 0));
 	}
 	else
 	{

@@ -1345,15 +1345,15 @@ loaded and a warning is displayed.
 ::end:: */
 {
     /* Avoid the need to protect these args from GC. */
-    rep_bool no_error_p = !rep_NILP(noerr_p);
-    rep_bool no_suffix_p = !rep_NILP(nosuf_p);
-    rep_bool interp_mode = Fsymbol_value (Qinterpreted_mode, Qt) != Qnil;
+    bool no_error_p = !rep_NILP(noerr_p);
+    bool no_suffix_p = !rep_NILP(nosuf_p);
+    bool interp_mode = Fsymbol_value (Qinterpreted_mode, Qt) != Qnil;
 
     repv name = Qnil, path;
     repv dir = rep_NULL, try = rep_NULL;
     repv result = rep_NULL;
     repv suffixes;
-    rep_bool trying_dl = rep_FALSE;
+    bool trying_dl = false;
 
     rep_GC_root gc_file, gc_name, gc_path, gc_dir, gc_try, gc_result, gc_suffixes;
 
@@ -1466,7 +1466,7 @@ research:
 	}
 	else
 	    path = rep_LIST_1(rep_null_string());
-	trying_dl = rep_TRUE;
+	trying_dl = true;
 	goto research;
     }
 #endif

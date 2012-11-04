@@ -1,3 +1,9 @@
+2012-11-04  John Harper  <jsh@unfactored.org>
+
+	* trying to modernize. Assume we can now use intptr_t to find
+	our Lisp pointer-sized-integer type. Use standard bool type.
+	Removed embedded libintl. Assume we're a "Unix-like" OS
+
 2012-11-03  John Harper  <jsh@unfactored.org>
 
 	* values.c, unix_processes.c, unix_main.c, unix_files.c,

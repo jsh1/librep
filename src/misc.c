@@ -60,9 +60,7 @@ A string describing when, where, and by who the running version of the
 LISP interpreter was built.
 ::end:: */
 
-#ifdef rep_HAVE_UNIX
 DEFSYM(unix, "unix");
-#endif
 
 DEFSYM(upcase_table, "upcase-table");
 DEFSYM(downcase_table, "downcase-table");
@@ -223,7 +221,7 @@ containing (DAYS . SECONDS), the number of DAYS since the epoch, and the
 number of seconds since the start of the day (universal time).
 ::end:: */
 {
-    rep_uintptr_t time = rep_time();
+    uintptr_t time = rep_time();
     return rep_MAKE_TIME(time);
 }
 
@@ -234,7 +232,7 @@ current-utime
 Return the current time in microseconds.
 ::end:: */
 {
-    rep_long_long time = rep_utime ();
+    long long time = rep_utime ();
     return rep_make_longlong_int (time);
 }
 
@@ -246,7 +244,7 @@ Ensure that the two parts of TIMESTAMP are mutually consistent. If not
 TIMESTAMP is altered. Returns TIMESTAMP.
 ::end:: */
 {
-    rep_uintptr_t timestamp;
+    uintptr_t timestamp;
     rep_DECLARE1(time, rep_TIMEP);
     timestamp = rep_GET_TIME(time);
     rep_CAR(time) = rep_MAKE_INT(timestamp / 86400);
@@ -298,7 +296,7 @@ time-later-p TIME-STAMP1 TIME-STAMP2
 Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
 ::end:: */
 {
-    rep_uintptr_t time1, time2;
+    uintptr_t time1, time2;
     rep_DECLARE1(t1, rep_TIMEP);
     rep_DECLARE2(t2, rep_TIMEP);
     time1 = rep_GET_TIME(t1);
@@ -598,10 +596,8 @@ rep_misc_init(void)
     tem = rep_push_structure ("rep.system");
 
     rep_INTERN(operating_system);
-#ifdef rep_HAVE_UNIX
     rep_INTERN(unix);
     Fset (Qoperating_system, Qunix);
-#endif
 
     rep_INTERN_SPECIAL(process_environment);
     Fset (Qprocess_environment, Qnil);

@@ -188,7 +188,7 @@ repv gh_long2scm(long x)
 
 repv gh_double2scm(double x)
 {
-    return rep_make_float (x, rep_FALSE);
+    return rep_make_float (x, false);
 }
 
 repv gh_char2scm(char c)
@@ -235,7 +235,7 @@ repv gh_doubles2scm(const double *d, long n)
 
     vec = rep_make_vector (n);
     for (i = 0; i < n; i++)
-	rep_VECTI (vec, i) = rep_make_float (d[i], rep_FALSE);
+	rep_VECTI (vec, i) = rep_make_float (d[i], false);
 
     return vec;
 }

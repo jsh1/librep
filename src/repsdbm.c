@@ -231,11 +231,11 @@ dbm_sweep (void)
 static void
 dbm_print (repv stream, repv dbm)
 {
-    rep_stream_puts (stream, "#<dbm ", -1, rep_FALSE);
+    rep_stream_puts (stream, "#<dbm ", -1, false);
     if (rep_STRINGP(rep_DBM(dbm)->path))
-	rep_stream_puts (stream, rep_PTR(rep_DBM(dbm)->path), -1, rep_TRUE);
+	rep_stream_puts (stream, rep_PTR(rep_DBM(dbm)->path), -1, true);
     else
-	rep_stream_puts (stream, "nil", -1, rep_FALSE);
+	rep_stream_puts (stream, "nil", -1, false);
     rep_stream_putc (stream, '>');
 }
 

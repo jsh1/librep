@@ -608,7 +608,7 @@ again: {
 
 	BEGIN_INSN_WITH_ARG (OP_CALL)
 	    struct rep_Call lc;
-	    rep_bool was_closed;
+	    bool was_closed;
 
 	    /* args are still available above the top of the stack,
 	       this just makes things a bit easier. */
@@ -619,12 +619,12 @@ again: {
 	    rep_PUSH_CALL (lc);
 	    SYNC_GC;
 
-	    was_closed = rep_FALSE;
+	    was_closed = false;
 	    if (rep_FUNARGP(tmp))
 	    {
 		rep_USE_FUNARG(tmp);
 		tmp = rep_FUNARG(tmp)->fun;
-		was_closed = rep_TRUE;
+		was_closed = true;
 	    }
 
 	    if (!rep_CELLP (tmp))
@@ -843,7 +843,7 @@ again: {
 		    tmp2 = Fcons (x, tmp2);
 		}
 		rep_POP_CALL (lc);
-		TOP = rep_funcall(TOP, tmp2, rep_FALSE);
+		TOP = rep_funcall(TOP, tmp2, false);
 		NEXT;
 	    }
 	    rep_POP_CALL(lc);
@@ -1229,7 +1229,7 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp) && rep_INTP (tmp2))
 	    {
-		rep_intptr_t x = rep_INT (tmp2) + rep_INT (tmp);
+		intptr_t x = rep_INT (tmp2) + rep_INT (tmp);
 		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -1245,7 +1245,7 @@ again: {
 	    tmp = TOP;
 	    if (rep_INTP (tmp))
 	    {
-		rep_intptr_t x = - rep_INT (tmp);
+		intptr_t x = - rep_INT (tmp);
 		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -1262,7 +1262,7 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp) && rep_INTP (tmp2))
 	    {
-		rep_intptr_t x = rep_INT (tmp2) - rep_INT (tmp);
+		intptr_t x = rep_INT (tmp2) - rep_INT (tmp);
 		if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -1422,7 +1422,7 @@ again: {
 	    tmp = TOP;
 	    if (rep_INTP (tmp))
 	    {
-		rep_intptr_t x = rep_INT (tmp) + 1;
+		intptr_t x = rep_INT (tmp) + 1;
 		if (x <= rep_LISP_MAX_INT)
 		{
 		    TOP = rep_MAKE_INT (x);
@@ -1437,7 +1437,7 @@ again: {
 	    tmp = TOP;
 	    if (rep_INTP (tmp))
 	    {
-		rep_intptr_t x = rep_INT (tmp) - 1;
+		intptr_t x = rep_INT (tmp) - 1;
 		if (x >= rep_LISP_MIN_INT)
 		{
 		    TOP = rep_MAKE_INT (x);

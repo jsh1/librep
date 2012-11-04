@@ -457,10 +457,10 @@ static void
 structure_print (repv stream, repv arg)
 {
     if (rep_STRUCTURE (arg)->name == Qnil)
-	rep_stream_puts (stream, "#<structure>", -1, rep_FALSE);
+	rep_stream_puts (stream, "#<structure>", -1, false);
     else
     {
-	rep_stream_puts (stream, "#<structure ", -1, rep_FALSE);
+	rep_stream_puts (stream, "#<structure ", -1, false);
 	rep_princ_val (stream, rep_STRUCTURE(arg)->name);
 	rep_stream_putc (stream, '>');
     }
@@ -471,21 +471,21 @@ structure_print (repv stream, repv arg)
 
 /* Return true iff structure S exports a binding of symbol VAR that it
    inherits from one of its opened structures */
-static rep_bool
+static bool
 structure_exports_inherited_p (rep_struct *s, repv var)
 {
     if (s->car & rep_STF_EXPORT_ALL)
-	return rep_TRUE;
+	return true;
     else
     {
 	repv tem = s->inherited;
 	while (rep_CONSP (tem))
 	{
 	    if (rep_CAR (tem) == var)
-		return rep_TRUE;
+		return true;
 	    tem = rep_CDR (tem);
 	}
-	return rep_FALSE;
+	return false;
     }
 }
 
@@ -1532,7 +1532,7 @@ rep_bootstrap_structure (const char *s)
 }
 
 repv
-rep_add_subr(rep_xsubr *subr, rep_bool export)
+rep_add_subr(rep_xsubr *subr, bool export)
 {
     repv sym = Fintern (subr->name, Qnil);
     if (sym)
@@ -1569,13 +1569,13 @@ DEFUN("structure-set-binds", Fstructure_set_binds,
 }
 
 void
-rep_structure_exports_all (repv s, rep_bool status)
+rep_structure_exports_all (repv s, bool status)
 {
     Fstructure_exports_all (s, status ? Qt : Qnil);
 }
 
 void
-rep_structure_set_binds (repv s, rep_bool status)
+rep_structure_set_binds (repv s, bool status)
 {
     Fstructure_set_binds (s, status ? Qt : Qnil);
 }

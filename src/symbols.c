@@ -142,7 +142,7 @@ symbol_cmp(repv v1, repv v2)
 static void
 symbol_princ(repv strm, repv obj)
 {
-    rep_stream_puts(strm, rep_PTR(rep_SYM(obj)->name), -1, rep_TRUE);
+    rep_stream_puts(strm, rep_PTR(rep_SYM(obj)->name), -1, true);
 }
 
 static void
@@ -152,7 +152,7 @@ symbol_print(repv strm, repv obj)
     char *buf = alloca (rep_STRING_LEN (rep_SYM (obj)->name) * 2);
     register char *out = buf;
     register char *s;
-    rep_bool seen_digit = rep_FALSE;
+    bool seen_digit = false;
 
     if (rep_SYMBOL_LITERAL_P (obj))
     {
@@ -165,7 +165,7 @@ symbol_print(repv strm, repv obj)
     {
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-	seen_digit = rep_TRUE;
+	seen_digit = true;
 
     case '-': case '+': case '.':
 
@@ -179,7 +179,7 @@ symbol_print(repv strm, repv obj)
 
 	case '0': case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
-	    seen_digit = rep_TRUE;
+	    seen_digit = true;
 	case '/': case '.':
 	    goto pass1;
 	}
@@ -214,7 +214,7 @@ symbol_print(repv strm, repv obj)
 	*out++ = c;
     }
 out:
-    rep_stream_puts (strm, buf, out - buf, rep_FALSE);
+    rep_stream_puts (strm, buf, out - buf, false);
 }
 
 void
@@ -226,10 +226,10 @@ rep_intern_static(repv *symp, repv name)
 	abort();
 }
 
-static inline rep_uintptr_t
+static inline uintptr_t
 hash(char *str)
 {
-    rep_uintptr_t value = 0;
+    uintptr_t value = 0;
     while(*str)
 	value = (value * 33) + *str++;
     return(value);
@@ -685,7 +685,7 @@ variable will be set (if necessary) not the local value.)
     {
 	int spec;
 	repv sym = rep_CAR(args), val;
-	rep_bool need_to_eval;
+	bool need_to_eval;
 	repv tmp = Fdefault_boundp(sym);
 	if(!tmp)
 	    return rep_NULL;
@@ -701,7 +701,7 @@ variable will be set (if necessary) not the local value.)
 	    args = Qnil;
 	}
 
-	need_to_eval = rep_TRUE;
+	need_to_eval = true;
 	if(!rep_NILP(tmp))
 	{
 	    /* Variable is bound, see if it's an autoload defn to overwrite. */
@@ -734,7 +734,7 @@ variable will be set (if necessary) not the local value.)
 	    if (tem)
 	    {
 		val = tem;
-		need_to_eval = rep_FALSE;
+		need_to_eval = false;
 		tmp = Qnil;
 	    }
 	}
@@ -854,7 +854,7 @@ values look for one of those first.
     }
 
     if (rep_SYM(sym)->car & rep_SF_DEBUG)
-	rep_single_step_flag = rep_TRUE;
+	rep_single_step_flag = true;
 
     if(no_err == Qnil && rep_VOIDP(val))
 	return Fsignal(Qvoid_value, rep_LIST_1(sym));
@@ -1273,7 +1273,7 @@ is non-nil it is considered a match.
 		    if(pred && !rep_NILP(pred))
 		    {
 			repv tmp;
-			if(!(tmp = rep_funcall(pred, rep_LIST_1(chain), rep_FALSE))
+			if(!(tmp = rep_funcall(pred, rep_LIST_1(chain), false))
 			   || rep_NILP(tmp))
 			{
 			    goto next;
@@ -1416,10 +1416,10 @@ rep_pre_symbols_init(void)
     {
 	rep_mark_static(&rep_obarray);
 	rep_mark_static(&rep_keyword_obarray);
-	return rep_TRUE;
+	return true;
     }
     else
-	return rep_FALSE;
+	return false;
 }
 
 void

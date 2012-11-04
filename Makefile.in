@@ -23,7 +23,7 @@ ETAGS:= etags
 top_builddir=.
 VPATH=@srcdir@
 
-ALL_SUBDIRS = intl src lisp man
+ALL_SUBDIRS = src lisp man
 INSTALL_SUBDIRS = src lisp man
 
 all : build.h rules.mk doc-strings

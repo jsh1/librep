@@ -152,8 +152,8 @@ static int process_run_count;
 
 static int process_type;
 
-/* Set to rep_TRUE by the SIGCHLD handler */
-static volatile rep_bool got_sigchld;
+/* Set to true by the SIGCHLD handler */
+static volatile bool got_sigchld;
 
 static void read_from_one_fd(struct Proc *pr, int fd);
 static void read_from_process(int);
@@ -177,7 +177,7 @@ DEFSTRING(nosig, "Unknown signal");
 static RETSIGTYPE
 sigchld_handler(int sig)
 {
-    got_sigchld = rep_TRUE;
+    got_sigchld = true;
     if (rep_sigchld_fun != 0)
 	(*rep_sigchld_fun) ();
 }
@@ -213,11 +213,11 @@ queue_notify(struct Proc *pr)
 }
 
 /* Dispatch all queued notification.  */
-static rep_bool
+static bool
 proc_notification(void)
 {
     if(!notify_chain)
-	return(rep_FALSE);
+	return(false);
     while(notify_chain != NULL && !rep_INTERRUPTP)
     {
 	struct Proc *pr = notify_chain;
@@ -226,10 +226,10 @@ proc_notification(void)
 	if(pr->pr_NotifyFun && !rep_NILP(pr->pr_NotifyFun))
 	    rep_call_lisp1(pr->pr_NotifyFun, rep_VAL(pr));
     }
-    return rep_TRUE;
+    return true;
 }
 
-static inline rep_bool
+static inline bool
 notify_queued_p (struct Proc *pr)
 {
     return pr->pr_NotifyNext != 0;
@@ -251,13 +251,13 @@ notify_1 (struct Proc *pr)
 }
 
 /* Checks if any of my children are zombies, takes appropriate action. */
-static rep_bool
+static bool
 check_for_zombies(void)
 {
     if(!got_sigchld)
-	return rep_FALSE;
+	return false;
 
-    got_sigchld = rep_FALSE;
+    got_sigchld = false;
     while(process_run_count > 0)
     {
 	struct Proc *pr;
@@ -313,17 +313,17 @@ check_for_zombies(void)
 		break;
 	}
     }
-    return rep_TRUE;
+    return true;
 }
 
 /* Called by the event loop after each event or timeout. Returns true
    if the display should be updated. */
-static rep_bool
+static bool
 proc_periodically(void)
 {
-    rep_bool rc = check_for_zombies();
+    bool rc = check_for_zombies();
     if(proc_notification())
-	rc = rep_TRUE;
+	rc = true;
     return rc;
 }
 
@@ -341,7 +341,7 @@ read_from_one_fd(struct Proc *pr, int fd)
 	{
 	    buf[actual] = 0;
 	    if(!rep_NILP(stream))
-		rep_stream_puts(stream, buf, actual, rep_FALSE);
+		rep_stream_puts(stream, buf, actual, false);
 	}
     } while((actual > 0) || (actual < 0 && errno == EINTR));
 
@@ -379,10 +379,10 @@ read_from_process(int fd)
     }
 }
 
-static rep_intptr_t
-write_to_process(repv pr, char *buf, rep_intptr_t bufLen)
+static intptr_t
+write_to_process(repv pr, char *buf, intptr_t bufLen)
 {
-    rep_intptr_t act = 0;
+    intptr_t act = 0;
     if(!PROCESSP(pr))
 	return(0);
     if(PR_ACTIVE_P(VPROC(pr)))
@@ -414,10 +414,10 @@ write_to_process(repv pr, char *buf, rep_intptr_t bufLen)
     return(act);
 }
 
-static rep_bool
-signal_process(struct Proc *pr, int sig, rep_bool do_grp)
+static bool
+signal_process(struct Proc *pr, int sig, bool do_grp)
 {
-    rep_bool rc = rep_TRUE;
+    bool rc = true;
     if(do_grp)
     {
 	if(pr->pr_Stdin && PR_CONN_PTY_P(pr))
@@ -428,14 +428,14 @@ signal_process(struct Proc *pr, int sig, rep_bool do_grp)
 	    else if(PR_ACTIVE_P(pr))
 		kill(-pr->pr_Pid, sig);
 	    else
-		rc = rep_FALSE;
+		rc = false;
 	}
 	else
 	{
 	    if(PR_ACTIVE_P(pr))
 		kill(-pr->pr_Pid, sig);
 	    else
-		rc = rep_FALSE;
+		rc = false;
 	}
     }
     else
@@ -443,7 +443,7 @@ signal_process(struct Proc *pr, int sig, rep_bool do_grp)
 	if(PR_ACTIVE_P(pr))
 	    kill(pr->pr_Pid, sig);
 	else
-	    rc = rep_FALSE;
+	    rc = false;
     }
     return(rc);
 }
@@ -457,7 +457,7 @@ kill_process(struct Proc *pr)
     if(PR_ACTIVE_P(pr))
     {
 	/* is this too heavy-handed?? */
-	if(!signal_process(pr, SIGKILL, rep_TRUE))
+	if(!signal_process(pr, SIGKILL, true))
 	    kill(-pr->pr_Pid, SIGKILL);
 	waitpid(pr->pr_Pid, &pr->pr_ExitStatus, 0);
 	process_run_count--;
@@ -555,20 +555,20 @@ child_build_environ (void)
    is non-NULL it means to run the process synchronously with it's
    stdin connected to the file SYNC_INPUT. Otherwise this function returns
    immediately after starting the process.  */
-static rep_bool
+static bool
 run_process(struct Proc *pr, char **argv, char *sync_input)
 {
-    rep_bool rc = rep_FALSE;
+    bool rc = false;
     if(PR_DEAD_P(pr))
     {
-	rep_bool usepty = PR_CONN_PTY_P(pr);
+	bool usepty = PR_CONN_PTY_P(pr);
 	char slavenam[32];
 	int stdin_fds[2], stdout_fds[2], stderr_fds[2]; /* only for pipes */
 	pr->pr_ExitStatus = -1;
 
 	if(sync_input != NULL || !usepty)
 	{
-	    usepty = rep_FALSE;
+	    usepty = false;
 	    pr->pr_ConnType = Qpipe;
 	    if(pipe(stdout_fds) == 0)
 	    {
@@ -792,12 +792,12 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 			    pr->pr_Stdin = pr->pr_Stdout;
 			}
 		    }
-		    rep_unix_set_fd_cloexec(pr->pr_Stdin);
-		    rep_unix_set_fd_nonblocking(pr->pr_Stdout);
+		    rep_set_fd_cloexec(pr->pr_Stdin);
+		    rep_set_fd_nonblocking(pr->pr_Stdout);
 		    rep_register_input_fd(pr->pr_Stdout, read_from_process);
 		    if(pr->pr_Stderr != pr->pr_Stdout)
 		    {
-			rep_unix_set_fd_nonblocking(pr->pr_Stderr);
+			rep_set_fd_nonblocking(pr->pr_Stderr);
 			rep_register_input_fd(pr->pr_Stderr,
 					      read_from_process);
 		    }
@@ -809,8 +809,8 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 		    char buf[1025];
 		    int actual;
 		    fd_set inputs;
-		    rep_bool done_out = rep_FALSE, done_err = rep_FALSE;
-		    rep_bool exited = rep_FALSE;
+		    bool done_out = false, done_err = false;
+		    bool exited = false;
 		    int interrupt_count = 0;
 #ifdef KLUDGE_SYNCHRONOUS_OUTPUT
 		    int post_exit_count = 0;
@@ -831,10 +831,10 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 			timeout.tv_sec = 1;
 			timeout.tv_usec = 0;
 
-			rep_sig_restart(SIGCHLD, rep_FALSE);
+			rep_sig_restart(SIGCHLD, false);
 			number = select(FD_SETSIZE, &copy, NULL,
 					NULL, &timeout);
-			rep_sig_restart(SIGCHLD, rep_TRUE);
+			rep_sig_restart(SIGCHLD, true);
 
 			rep_TEST_INT_SLOW;
 			if(rep_INTERRUPTP)
@@ -852,7 +852,7 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 			    default:
 				signal = SIGKILL;
 			    }
-			    signal_process(pr, signal, rep_TRUE);
+			    signal_process(pr, signal, true);
 			    if(rep_throw_value == rep_int_cell)
 				rep_throw_value = 0;
 			}
@@ -871,7 +871,7 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 				    if(!rep_NILP(pr->pr_OutputStream))
 				    {
 					rep_stream_puts(pr->pr_OutputStream, buf,
-						    actual, rep_FALSE);
+						    actual, false);
 				    }
 				}
 				else if(actual == 0
@@ -879,7 +879,7 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 					    && errno != EAGAIN
 					    && errno != EWOULDBLOCK))
 				{
-				    done_out = rep_TRUE;
+				    done_out = true;
 				    FD_CLR(pr->pr_Stdout, &inputs);
 				}
 			    }
@@ -892,7 +892,7 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 				    if(!rep_NILP(pr->pr_ErrorStream))
 				    {
 					rep_stream_puts(pr->pr_ErrorStream, buf,
-						    actual, rep_FALSE);
+						    actual, false);
 				    }
 				}
 				else if(actual == 0
@@ -900,7 +900,7 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 					    && errno != EAGAIN
 					    && errno != EWOULDBLOCK))
 				{
-				    done_err = rep_TRUE;
+				    done_err = true;
 				    FD_CLR(pr->pr_Stderr, &inputs);
 				}
 			    }
@@ -931,7 +931,7 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 			   && waitpid(pr->pr_Pid,
 				      &pr->pr_ExitStatus,
 				      WNOHANG) == pr->pr_Pid)
-			    exited = rep_TRUE;
+			    exited = true;
 #endif
 		    }
 		    if(!exited)
@@ -944,7 +944,7 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 		    PR_SET_STATUS(pr, PR_DEAD);
 		    queue_notify(pr);
 		}
-		rc = rep_TRUE;
+		rc = true;
 		break;
 	    }
 	}
@@ -1021,16 +1021,16 @@ proc_prin(repv strm, repv obj)
 {
     struct Proc *pr = VPROC(obj);
     char buf[40];
-    rep_stream_puts(strm, "#<process", -1, rep_FALSE);
+    rep_stream_puts(strm, "#<process", -1, false);
     if(PR_RUNNING_P(pr))
     {
-	rep_stream_puts(strm, " running: ", -1, rep_FALSE);
-	rep_stream_puts(strm, rep_PTR(pr->pr_Prog), -1, rep_TRUE);
+	rep_stream_puts(strm, " running: ", -1, false);
+	rep_stream_puts(strm, rep_PTR(pr->pr_Prog), -1, true);
     }
     else if(PR_STOPPED_P(pr))
     {
-	rep_stream_puts(strm, " stopped: ", -1, rep_FALSE);
-	rep_stream_puts(strm, rep_PTR(pr->pr_Prog), -1, rep_TRUE);
+	rep_stream_puts(strm, " stopped: ", -1, false);
+	rep_stream_puts(strm, rep_PTR(pr->pr_Prog), -1, true);
     }
     else
     {
@@ -1041,7 +1041,7 @@ proc_prin(repv strm, repv obj)
 #else
 	    sprintf(buf, " exited: 0x%x", pr->pr_ExitStatus);
 #endif
-	    rep_stream_puts(strm, buf, -1, rep_FALSE);
+	    rep_stream_puts(strm, buf, -1, false);
 	}
     }
     rep_stream_putc(strm, '>');
@@ -1056,8 +1056,8 @@ proc_putc(repv stream, int c)
     return write_to_process(stream, tmps, 1);
 }
 
-static rep_intptr_t
-proc_puts(repv stream, void *data, rep_intptr_t len, rep_bool is_lisp)
+static intptr_t
+proc_puts(repv stream, void *data, intptr_t len, bool is_lisp)
 {
     char *buf = is_lisp ? rep_STR(data) : data;
     return write_to_process(stream, buf, len);
@@ -2018,7 +2018,7 @@ rep_system (char *command)
 
     default:
 	ret = Qnil;
-	rep_sig_restart (SIGCHLD, rep_FALSE);
+	rep_sig_restart (SIGCHLD, false);
 	while (1)
 	{
 	    struct timeval timeout;
@@ -2056,7 +2056,7 @@ rep_system (char *command)
 	    timeout.tv_usec = 0;
 	    select (FD_SETSIZE, NULL, NULL, NULL, &timeout);
 	}
-	rep_sig_restart (SIGCHLD, rep_TRUE);
+	rep_sig_restart (SIGCHLD, true);
 	return ret;
     }
 }

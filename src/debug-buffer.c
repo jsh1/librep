@@ -33,7 +33,7 @@ struct debug_buf {
     struct debug_buf *next;
     char *name;
     int size, ptr;
-    rep_bool wrapped;
+    bool wrapped;
     char data[1];
 };
 
@@ -53,7 +53,7 @@ rep_db_alloc(char *name, int size)
     db->name = name;
     db->size = size;
     db->ptr = 0;
-    db->wrapped = rep_FALSE;
+    db->wrapped = false;
     db->next = db_chain;
     db_chain = db;
 
@@ -97,7 +97,7 @@ rep_db_vprintf(void *_db, char *fmt, va_list args)
 	memcpy(db->data + db->ptr, buf, before);
 	memcpy(db->data, buf + before, after);
 	db->ptr = after;
-	db->wrapped = rep_TRUE;
+	db->wrapped = true;
     }
     else
     {
@@ -118,7 +118,7 @@ rep_db_printf(void *_db, char *fmt, ...)
 void
 rep_db_print_backtrace(void *_db, char *fun)
 {
-#if defined(__GNUC__) && ! defined(BROKEN_ALPHA_GCC)
+#if defined(__GNUC__)
 
 #define BT_BASE 1
 #define BT_DEPTH 8
@@ -176,7 +176,7 @@ rep_db_print_backtrace(void *_db, char *fun)
 void *
 rep_db_return_address(void)
 {
-#if defined(__GNUC__) && ! defined(BROKEN_ALPHA_GCC)
+#if defined(__GNUC__)
     return __builtin_return_address(1);
 #else
     return 0;

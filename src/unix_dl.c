@@ -121,7 +121,7 @@ struct dl_lib_info {
     repv feature_sym;
     repv structure;
     void *handle;
-    rep_bool is_rep_module;
+    bool is_rep_module;
 };
 
 static int n_dl_libs, n_alloc_dl_libs;
@@ -197,7 +197,7 @@ find_dl_by_feature(repv feature)
     return -1;
 }
 
-static rep_bool
+static bool
 load_requires (char *ptr)
 {
     ptr += strspn (ptr, " \t");
@@ -206,10 +206,10 @@ load_requires (char *ptr)
 	char *end = ptr + strcspn (ptr, " \t");
 	repv sym = Fintern (rep_string_dupn (ptr, end - ptr), Qnil);
 	if (Fintern_structure (sym) == rep_NULL)
-	    return rep_FALSE;
+	    return false;
 	ptr = end + strspn (end, " \t");
     }
-    return rep_TRUE;
+    return true;
 }
 
 static void
@@ -225,8 +225,8 @@ int
 rep_intern_dl_library (repv file_name)
 {
     const char *dlname = 0;
-    rep_bool open_globally = rep_FALSE;
-    rep_bool is_rep_module = rep_TRUE;
+    bool open_globally = false;
+    bool is_rep_module = true;
     int idx;
     const char *tem;
     int len;
@@ -291,7 +291,7 @@ rep_intern_dl_library (repv file_name)
 	    {
 		char *ptr = buf + sizeof ("rep_open_globally=") - 1;
 		if (strncmp ("yes", ptr, 3) == 0)
-		    open_globally = rep_TRUE;
+		    open_globally = true;
 	    }
 	    else if (strncmp("rep_requires='", buf,
 			     sizeof ("rep_requires='") - 1) == 0)
@@ -301,7 +301,7 @@ rep_intern_dl_library (repv file_name)
 		if (end != 0)
 		{
 		    rep_GC_root gc_file_name;
-		    rep_bool success;
+		    bool success;
 		    char *string = alloca (end - ptr + 1);
 		    memcpy (string, ptr, end - ptr);
 		    string[end - ptr] = 0;
@@ -320,7 +320,7 @@ rep_intern_dl_library (repv file_name)
 	/* not .la, assume a native library name */
 
 	dlname = rep_STR (file_name);
-	is_rep_module = rep_FALSE;
+	is_rep_module = false;
     }
 
     if (dlname == NULL)
@@ -337,12 +337,12 @@ rep_intern_dl_library (repv file_name)
     else
     {
 	void *handle;
-	rep_bool relocate_now = rep_FALSE;
+	bool relocate_now = false;
 	struct dl_lib_info *x;
 
 	if (Qdl_load_reloc_now && Fsymbol_value (Qdl_load_reloc_now, Qt) != Qnil)
 	{
-	    relocate_now = rep_TRUE;
+	    relocate_now = true;
 	}
 
 #if defined (HAVE_DLOPEN)
@@ -524,7 +524,7 @@ rep_find_dl_symbol (repv feature, char *symbol)
 
 /* Attempt to find the name and address of the nearest symbol before or
    equal to PTR */
-rep_bool
+bool
 rep_find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
 {
 #ifdef HAVE_DLADDR
@@ -533,19 +533,19 @@ rep_find_c_symbol(void *ptr, char **symbol_name_p, void **symbol_addr_p)
     {
 	*symbol_name_p = (char *)info.dli_sname;
 	*symbol_addr_p = info.dli_saddr;
-	return rep_TRUE;
+	return true;
     }
     else
 #endif
-	return rep_FALSE;
+	return false;
 }
 	
 #else /* HAVE_DYNAMIC_LOADING */
 
-rep_bool
+bool
 rep_find_c_symbol(void *ptr, char **name_p, void **addr_p)
 {
-    return rep_FALSE;
+    return false;
 }
 
 #endif /* !HAVE_DYNAMIC_LOADING */

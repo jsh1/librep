@@ -28,7 +28,7 @@ void *rep_common_db;
 
 int rep_recurse_depth = -1;
 
-rep_bool (*rep_on_idle_fun)(int since_last);
+bool (*rep_on_idle_fun)(int since_last);
 DEFSYM(idle_hook, "idle-hook"); /*
 ::doc:idle-hook::
 This hook gets evaluated every second while the editor is idle. Don't depend
@@ -76,7 +76,7 @@ DEFSTRING(noarg, "No argument for option");
 /* Look for the command line option called OPTION. If ARGP is non-null,
    the option requires an argument, it will be stored in *ARGP. If
    the option isn't given return false, else return true. */
-rep_bool
+bool
 rep_get_option (char *option, repv *argp)
 {
     int optlen = strlen(option);
@@ -95,30 +95,30 @@ rep_get_option (char *option, repv *argp)
 		    if (rep_STR(opt)[optlen] == '=')
 		    {
 			*argp = rep_string_dup (rep_STR(opt) + optlen + 1);
-			return rep_TRUE;
+			return true;
 		    }
 		    else if (rep_CONSP(cdr) && rep_STRINGP(rep_CAR(cdr)))
 		    {
 			*argp = rep_CAR(cdr);
 			Fset (Qcommand_line_args,
 			      Fdelq (*argp, Fsymbol_value(Qcommand_line_args, Qt)));
-			return rep_TRUE;
+			return true;
 		    }
 		    else
 		    {
 			Fsignal (Qerror, rep_list_2(rep_VAL(&noarg),
 						    rep_string_dup(option)));
-			return rep_FALSE;
+			return false;
 		    }
 		}
 		else
-		    return rep_TRUE;
+		    return true;
 	    }
 	}
 	tem = rep_CDR(tem);
 	rep_TEST_INT;
     }
-    return rep_FALSE;
+    return false;
 }
 
 static int
@@ -151,10 +151,10 @@ get_main_options(char *prog_name, int *argc_p, char ***argv_p)
 	Fset (Qinterpreted_mode, Qt);
 
 	/* XXX somewhat non-related, but.. */
-	rep_record_origins = rep_TRUE;
+	rep_record_origins = true;
     }
 
-    return rep_TRUE;
+    return true;
 }
 
 /* GCC 4 helpfully inlines this function and breaks the stack check. */
@@ -167,25 +167,6 @@ check_configuration (int *stack_low)
 {
     int stack_high;
     int stack_dir = (&stack_high < stack_low) ? -1 : +1;
-
-    if (sizeof (rep_PTR_SIZED_INT) < sizeof(void *))
-    {
-	fprintf (stderr,
-	" ** error: --with-value-type is incorrect; it should be `%s'\n",
-		 (sizeof (int) >= sizeof (void *)) ? "int"
-		 : (sizeof (long) >= sizeof (void *)) ? "long"
-		 : (sizeof (rep_long_long) >= sizeof (void *)) ? "long long"
-		 : "<unknown>");
-	exit (10);
-    }
-
-    if (sizeof (rep_PTR_SIZED_INT) != rep_PTR_SIZED_INT_SIZEOF)
-    {
-	fprintf (stderr,
-	" ** error: --with-value-sizeof is incorrect; it should be %d\n",
-		 (int) sizeof (rep_PTR_SIZED_INT));
-	exit (10);
-    }
 
     if (stack_dir != STACK_DIRECTION)
     {
@@ -218,9 +199,6 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
 {
     int dummy;
     check_configuration (&dummy);
-
-    if(!sys_memory_init())
-	exit(10);
 
     rep_common_db = rep_db_alloc("common", 4096);
 
@@ -331,19 +309,18 @@ rep_kill(void)
     rep_db_kill();
     rep_tuples_kill();
     rep_values_kill();
-    sys_memory_kill();
 }
 
 /* This function gets called when we have idle time available. The
    single argument is the number of seconds since we weren't idle.
    The first idle period after a non-idle period should pass zero.
-   Returns rep_TRUE if the display should be refreshed. */
-rep_bool
+   Returns true if the display should be refreshed. */
+bool
 rep_on_idle(int since_last_event)
 {
-    static rep_bool called_hook;
+    static bool called_hook;
     static int depth;
-    rep_bool res = rep_FALSE;
+    bool res = false;
 
     depth++;
 
@@ -355,10 +332,10 @@ rep_on_idle(int since_last_event)
 	* Run the `idle-hook' (only once per idle-period)  */
 
     if(since_last_event == 0)
-	called_hook = rep_FALSE;
+	called_hook = false;
 
     if(rep_on_idle_fun != 0 && (*rep_on_idle_fun)(since_last_event))
-	res = rep_TRUE;
+	res = true;
     else if(rep_data_after_gc > rep_idle_gc_threshold)
 	/* nothing was saved so try a GC */
 	Fgarbage_collect (Qnil);
@@ -368,9 +345,9 @@ rep_on_idle(int since_last_event)
 	if(!rep_VOIDP(hook) && !rep_NILP(hook))
 	{
 	    Fcall_hook(hook, Qnil, Qnil);
-	    res = rep_TRUE;
+	    res = true;
 	}
-	called_hook = rep_TRUE;
+	called_hook = true;
     }
 
     depth--;
@@ -378,9 +355,9 @@ rep_on_idle(int since_last_event)
 }
 
 /* The input loop should call this function when rep_throw_value == rep_NULL.
-   It returns rep_TRUE when the input loop should exit, returning whatever
+   It returns true when the input loop should exit, returning whatever
    is stored in *RESULT-P. */
-rep_bool
+bool
 rep_handle_input_exception(repv *result_p)
 {
     repv tv = rep_throw_value;
@@ -392,14 +369,14 @@ rep_handle_input_exception(repv *result_p)
     {
 	*result_p = rep_CDR(tv);
 	if(rep_recurse_depth > 0)
-	    return rep_TRUE;
+	    return true;
     }
     else if((car == Qtop_level) && (rep_recurse_depth == 0))
 	*result_p = rep_CDR(tv);
     else if(car == Qquit)
     {
 	*result_p = rep_CDR(tv);
-	return rep_TRUE;
+	return true;
     }
     else if(car == Quser_interrupt)
     {
@@ -430,7 +407,7 @@ rep_handle_input_exception(repv *result_p)
 	if(rep_recurse_depth == 0 && rep_on_termination_fun != 0)
 	    (*rep_on_termination_fun)();
 	*result_p = Qnil;
-	return rep_TRUE;
+	return true;
     }
 #if 0
     else if(rep_recurse_depth == 0)
@@ -440,9 +417,9 @@ rep_handle_input_exception(repv *result_p)
     {
     unhandled:
 	rep_throw_value = tv;
-	return rep_TRUE;
+	return true;
     }
-    return rep_FALSE;
+    return false;
 }
 
 /* should be called before exiting (for any reason). returns the value
@@ -539,12 +516,12 @@ original level.
 }
 
 void
-rep_deprecated (rep_bool *seen, const char *desc)
+rep_deprecated (bool *seen, const char *desc)
 {
     if (!*seen)
     {
 	fprintf (stderr, "rep: using deprecated feature - %s\n", desc);
-	*seen = rep_TRUE;
+	*seen = true;
     }
 }
 

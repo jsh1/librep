@@ -86,7 +86,7 @@ rep_scan_weak_refs (void)
 static void
 weak_ref_print (repv stream, repv arg)
 {
-    rep_stream_puts (stream, "#<weak-reference>", -1, rep_FALSE);
+    rep_stream_puts (stream, "#<weak-reference>", -1, false);
 }
 
 static int

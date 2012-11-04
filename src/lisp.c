@@ -45,6 +45,7 @@ char *alloca ();
 #include <stdarg.h>
 #include <ctype.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -175,8 +176,8 @@ DEFSYM(require, "require");
 
 DEFSYM(ellipsis, "...");
 
-/* When rep_TRUE Feval() calls the "debug-entry" function */
-rep_bool rep_single_step_flag;
+/* When true Feval() calls the "debug-entry" function */
+bool rep_single_step_flag;
 
 /* Lexical environment. A list of (SYMBOL . VALUE). Any unbound variables
    are dereferenced in the current structure (global namespace)  */
@@ -215,7 +216,7 @@ static int current_frame_id (void);
 
 static repv readl (repv, register int *, repv);
 
-static rep_bool read_local_file;
+static bool read_local_file;
 
 /* inline common case of reading from local files; this appears to
    decrease startup time by about 25% */
@@ -422,9 +423,9 @@ read_symbol(repv strm, int *c_p, repv obarray)
     /* For parsing numbers, while radix != zero, it might still be
        an integer that we're reading. */
     int radix = -1, sign = 1, nfirst = 0;
-    rep_bool exact = rep_TRUE, rational = rep_FALSE;
-    rep_bool exponent = rep_FALSE, had_sign = rep_FALSE;
-    rep_bool expecting_prefix = rep_FALSE;
+    bool exact = true, rational = false;
+    bool exponent = false, had_sign = false;
+    bool expecting_prefix = false;
     int force_exactness = 0;
 
     if (buffer == rep_NULL)
@@ -516,7 +517,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
 		    default:
 			radix = 0;
 		    }
-		    expecting_prefix = rep_FALSE;
+		    expecting_prefix = false;
 		    nfirst = i + 1;
 		}
 		/* It still may be a number that we're parsing */
@@ -527,13 +528,13 @@ read_symbol(repv strm, int *c_p, repv obarray)
 			if (had_sign)
 			    radix = 0;	/* not a number? */
 			else
-			    expecting_prefix = rep_TRUE;
+			    expecting_prefix = true;
 		    }
 		    else
 		    {
 			/* A leading sign */
 			sign = (c == '-') ? -1 : 1;
-			had_sign = rep_TRUE;
+			had_sign = true;
 		    }
 		    nfirst = i + 1;
 		}
@@ -547,7 +548,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
 			if (c == '.')
 			{
 			    radix = 10;
-			    exact = rep_FALSE;
+			    exact = false;
 			}
 			else if(!(c >= '0' && c <= '9'))
 			    radix = 0;
@@ -562,7 +563,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
 			   this char's an 'x' it's hexadecimal. */
 			switch (c)
 			{
-			    static rep_bool dep_hex, dep_octal;
+			    static bool dep_hex, dep_octal;
 
 			case 'x': case 'X':
 			    rep_deprecated (&dep_hex, "`0xNN' hexadecimal read syntax");
@@ -579,12 +580,12 @@ read_symbol(repv strm, int *c_p, repv obarray)
 
 			case '.': case 'e': case 'E':
 			    radix = 10;
-			    exact = rep_FALSE;
+			    exact = false;
 			    break;
 
 			case '/':
 			    radix = 10;
-			    rational = rep_TRUE;
+			    rational = true;
 			    break;
 
 			default:
@@ -599,14 +600,14 @@ read_symbol(repv strm, int *c_p, repv obarray)
 			{
 			case '.':
 			    if (exact && radix == 10 && !rational)
-				exact = rep_FALSE;
+				exact = false;
 			    else
 				radix = 0;
 			    break;
 
 			case '/':
 			    if (exact && !rational)
-				rational = rep_TRUE;
+				rational = true;
 			    else
 				radix = 0;
 			    break;
@@ -621,8 +622,8 @@ read_symbol(repv strm, int *c_p, repv obarray)
 			    {
 				if (!rational && !exponent)
 				{
-				    exponent = rep_TRUE;
-				    exact = rep_FALSE;
+				    exponent = true;
+				    exact = false;
 				}
 				else
 				    radix = 0;
@@ -1118,7 +1119,7 @@ repv
 rep_readl (repv stream, int *c_p)
 {
     repv form;
-    rep_bool old = read_local_file;
+    bool old = read_local_file;
     read_local_file = rep_FILEP (stream) && rep_LOCAL_FILE_P (stream);
     form = readl (stream, c_p, Qend_of_stream);
     read_local_file = old;
@@ -1210,7 +1211,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 
 	    if (argspec == ex_optional || argspec == Qamp_optional)
 	    {
-		static int dep;
+		static bool dep;
 		if (argspec == Qamp_optional)
 		    rep_deprecated (&dep, "&optional in lambda list");
 		if (state >= STATE_OPTIONAL) {
@@ -1229,7 +1230,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 	    }
 	    else if (argspec == ex_rest || argspec == Qamp_rest)
 	    {
-		static int dep;
+		static bool dep;
 		if (argspec == Qamp_rest)
 		    rep_deprecated (&dep, "&rest in lambda list");
 		if (state >= STATE_REST)
@@ -1744,7 +1745,7 @@ again:
    evaluated first. Note that both FUN and ARGLIST are gc-protected
    for the duration of this function. */
 repv
-rep_funcall(repv fun, repv arglist, rep_bool eval_args)
+rep_funcall(repv fun, repv arglist, bool eval_args)
 {
     if (eval_args)
     {
@@ -1871,9 +1872,9 @@ eval(repv obj, repv tail_posn)
 		{
 		    /* Debugging macros gets tedious; don't
 		    bother when debug-macros is nil. */
-		    rep_single_step_flag = rep_FALSE;
+		    rep_single_step_flag = false;
 		    form = Fmacroexpand(obj, Qnil);
-		    rep_single_step_flag = rep_TRUE;
+		    rep_single_step_flag = true;
 		}
 		else
 		    form = Fmacroexpand(obj, Qnil);
@@ -1942,7 +1943,7 @@ repv
 rep_eval (repv obj, repv tail_posn)
 {
     static int DbDepth;
-    rep_bool newssflag = rep_TRUE;
+    bool newssflag = true;
     repv result;
 
     rep_TEST_INT;
@@ -1973,10 +1974,10 @@ rep_eval (repv obj, repv tail_posn)
 	    struct rep_saved_regexp_data re_data;
 	    rep_PUSHGC(gc_dbargs, dbargs);
 	    rep_push_regexp_data(&re_data);
-	    rep_single_step_flag = rep_FALSE;
+	    rep_single_step_flag = false;
 	    dbres = (rep_call_with_barrier
 		     (Ffuncall, Fcons (Fsymbol_value (Qdebug_entry, Qt),
-				       dbargs), rep_TRUE, 0, 0, 0));
+				       dbargs), true, 0, 0, 0));
 	    rep_pop_regexp_data();
 	    if (dbres != rep_NULL && rep_CONSP(dbres))
 	    {
@@ -1984,9 +1985,9 @@ rep_eval (repv obj, repv tail_posn)
 		{
 		case 1:
 		    /* single step cdr and following stuff  */
-		    rep_single_step_flag = rep_TRUE;
+		    rep_single_step_flag = true;
 		    result = eval(rep_CDR(dbres), Qnil);
-		    rep_single_step_flag = rep_FALSE;
+		    rep_single_step_flag = false;
 		    break;
 		case 2:
 		    /* run through cdr and step following  */
@@ -1995,13 +1996,13 @@ rep_eval (repv obj, repv tail_posn)
 		case 3:
 		    /* run cdr and following  */
 		    result = eval(rep_CDR(dbres), Qnil);
-		    newssflag = rep_FALSE;
+		    newssflag = false;
 		    break;
 		case 4:
 		    /* result = cdr  */
-		    rep_single_step_flag = rep_TRUE;
+		    rep_single_step_flag = true;
 		    result = rep_CDR(dbres);
-		    rep_single_step_flag = rep_FALSE;
+		    rep_single_step_flag = false;
 		    break;
 		}
 		if(result)
@@ -2010,7 +2011,7 @@ rep_eval (repv obj, repv tail_posn)
 		    rep_CAR(dbargs) = result;
 		    dbres = (rep_call_with_barrier
 			     (Ffuncall, Fcons (Fsymbol_value (Qdebug_exit, Qt),
-					       dbargs), rep_TRUE, 0, 0, 0));
+					       dbargs), true, 0, 0, 0));
 		    if(!dbres)
 			result = rep_NULL;
 		    rep_pop_regexp_data();
@@ -2091,7 +2092,7 @@ rep_call_lispn (repv fun, int argc, repv *argv)
 	argv += argc;
 	while (argc-- > 0)
 	    args = Fcons (*(--argv), args);
-	return rep_funcall (fun, args, rep_FALSE);
+	return rep_funcall (fun, args, false);
     }
 }
 
@@ -2153,7 +2154,7 @@ rep_lisp_prin(repv strm, repv obj)
 	tem = Fsymbol_value(Qprint_level, Qt);
 	if(tem && rep_INTP(tem) && print_level >= rep_INT(tem))
 	{
-	    rep_stream_puts(strm, "...", 3, rep_FALSE);
+	    rep_stream_puts(strm, "...", 3, false);
 	    return;
 	}
 	print_level++;
@@ -2164,7 +2165,7 @@ rep_lisp_prin(repv strm, repv obj)
 	{
 	    if(tem && rep_INTP(tem) && print_length >= rep_INT(tem))
 	    {
-		rep_stream_puts(strm, "...", 3, rep_FALSE);
+		rep_stream_puts(strm, "...", 3, false);
 		goto cons_out;
 	    }
 	    rep_print_val(strm, rep_CAR(obj));
@@ -2176,13 +2177,13 @@ rep_lisp_prin(repv strm, repv obj)
 	    print_length++;
 	}
 	if(tem && rep_INTP(tem) && print_length >= rep_INT(tem))
-	    rep_stream_puts(strm, "...", 3, rep_FALSE);
+	    rep_stream_puts(strm, "...", 3, false);
 	else
 	{
 	    rep_print_val(strm, rep_CAR(obj));
 	    if(!rep_NILP(rep_CDR(obj)))
 	    {
-		rep_stream_puts(strm, " . ", -1, rep_FALSE);
+		rep_stream_puts(strm, " . ", -1, false);
 		rep_print_val(strm, rep_CDR(obj));
 	    }
 	}
@@ -2203,7 +2204,7 @@ rep_lisp_prin(repv strm, repv obj)
 		if(rep_VECT(obj)->array[j])
 		    rep_print_val(strm, rep_VECT(obj)->array[j]);
 		else
-		    rep_stream_puts(strm, "#<void>", -1, rep_FALSE);
+		    rep_stream_puts(strm, "#<void>", -1, false);
 		if(j != (len - 1))
 		    rep_stream_putc(strm, ' ');
 	    }
@@ -2223,7 +2224,7 @@ rep_lisp_prin(repv strm, repv obj)
 #else
 	sprintf(tbuf, "#<subr %s>", rep_STR(rep_XSUBR(obj)->name));
 #endif
-	rep_stream_puts(strm, tbuf, -1, rep_FALSE);
+	rep_stream_puts(strm, tbuf, -1, false);
 	break;
 
     case rep_SF:
@@ -2233,41 +2234,41 @@ rep_lisp_prin(repv strm, repv obj)
 #else
 	sprintf(tbuf, "#<special-form %s>", rep_STR(rep_XSUBR(obj)->name));
 #endif
-	rep_stream_puts(strm, tbuf, -1, rep_FALSE);
+	rep_stream_puts(strm, tbuf, -1, false);
 	break;
 
     case rep_Funarg:
-	rep_stream_puts (strm, "#<closure ", -1, rep_FALSE);
+	rep_stream_puts (strm, "#<closure ", -1, false);
 	if (rep_STRINGP(rep_FUNARG(obj)->name))
 	{
 	    rep_stream_puts (strm, rep_STR(rep_FUNARG(obj)->name),
-			     -1, rep_FALSE);
+			     -1, false);
 	}
 	else
 	{
 #ifdef HAVE_SNPRINTF
-	    snprintf (tbuf, sizeof(tbuf), "%" rep_PTR_SIZED_INT_CONV "x", obj);
+	    snprintf (tbuf, sizeof(tbuf), "%" PRIxPTR, obj);
 #else
-	    sprintf (tbuf, "%" rep_PTR_SIZED_INT_CONV "x", obj);
+	    sprintf (tbuf, "%" PRIxPTR, obj);
 #endif
-	    rep_stream_puts (strm, tbuf, -1, rep_FALSE);
+	    rep_stream_puts (strm, tbuf, -1, false);
 	}
 	rep_stream_putc (strm, '>');
 	break;
 
     case rep_Void:
-	rep_stream_puts(strm, "#<void>", -1, rep_FALSE);
+	rep_stream_puts(strm, "#<void>", -1, false);
 	break;
 
     default:
-	rep_stream_puts(strm, "#<unknown object type>", -1, rep_FALSE);
+	rep_stream_puts(strm, "#<unknown object type>", -1, false);
     }
 }
 
 void
 rep_string_princ(repv strm, repv obj)
 {
-    rep_stream_puts(strm, rep_PTR(obj), -1, rep_TRUE);
+    rep_stream_puts(strm, rep_PTR(obj), -1, true);
 }
 
 void
@@ -2282,20 +2283,20 @@ rep_string_print(repv strm, repv obj)
 #define OUT(c)							\
     do {							\
 	if (bufptr == BUFSIZ) {					\
-	    rep_stream_puts (strm, buf, BUFSIZ, rep_FALSE);	\
+	    rep_stream_puts (strm, buf, BUFSIZ, false);	\
 	    bufptr = 0;						\
 	}							\
 	buf[bufptr++] = (c);					\
     } while (0)
 
-    rep_bool escape_all, escape_newlines;
+    bool escape_all, escape_newlines;
     repv tem = Fsymbol_value(Qprint_escape, Qt);
     if(tem == Qnewlines)
-	escape_all = rep_FALSE, escape_newlines = rep_TRUE;
+	escape_all = false, escape_newlines = true;
     else if(tem == Qt)
-	escape_all = rep_TRUE, escape_newlines = rep_TRUE;
+	escape_all = true, escape_newlines = true;
     else
-	escape_all = rep_FALSE, escape_newlines = rep_FALSE;
+	escape_all = false, escape_newlines = false;
 
     OUT ('"');
     while(len-- > 0)
@@ -2345,7 +2346,7 @@ rep_string_print(repv strm, repv obj)
     }
     OUT ('"');
     if (bufptr > 0)
-	rep_stream_puts (strm, buf, bufptr, rep_FALSE);
+	rep_stream_puts (strm, buf, bufptr, false);
 }
 
 #undef OUT
@@ -2399,7 +2400,7 @@ repv Fnconc (repv args)
 /* Used to assign a list of argument values into separate variables.
    Note that optional args without values _are not_ initialized to nil,
    the caller of this function should do that.. */
-rep_bool
+bool
 rep_assign_args (repv list, int required, int total, ...)
 {
     int i;
@@ -2411,20 +2412,20 @@ rep_assign_args (repv list, int required, int total, ...)
 	if (!rep_CONSP (list))
 	{
 	    if (i >= required)
-		return rep_TRUE;
+		return true;
 	    else
 	    {
 		rep_signal_missing_arg (i);
-		return rep_FALSE;
+		return false;
 	    }
 	}
 	*varp = rep_CAR (list);
 	list = rep_CDR (list);
 	rep_TEST_INT;
 	if (rep_INTERRUPTP)
-	    return rep_FALSE;
+	    return false;
     }
-    return rep_TRUE;
+    return true;
 }
 
 /* Used for easy handling of `var' objects */
@@ -2455,7 +2456,7 @@ break
 The next form to be evaluated will be done so through the Lisp debugger.
 ::end:: */
 {
-    rep_single_step_flag = rep_TRUE;
+    rep_single_step_flag = true;
     return Qt;
 }
 
@@ -2467,8 +2468,8 @@ Use the Lisp debugger to evaluate FORM.
 ::end:: */
 {
     repv res;
-    rep_bool oldssf = rep_single_step_flag;
-    rep_single_step_flag = rep_TRUE;
+    bool oldssf = rep_single_step_flag;
+    rep_single_step_flag = true;
     res = rep_eval(form, Qnil);
     rep_single_step_flag = oldssf;
     return res;
@@ -2510,18 +2511,18 @@ handler.
     {
 	/* Enter debugger. */
 	rep_GC_root gc_on_error;
-	rep_bool oldssflag = rep_single_step_flag;
+	bool oldssflag = rep_single_step_flag;
 	Fset(Qdebug_on_error, Qnil);
-	rep_single_step_flag = rep_FALSE;
+	rep_single_step_flag = false;
 	rep_PUSHGC(gc_on_error, on_error);
 	tmp = (rep_call_with_barrier
 	       (Ffuncall, Fcons (Fsymbol_value (Qdebug_error_entry, Qt),
 				 rep_list_2(errlist, rep_MAKE_INT (current_frame_id ()))),
-		rep_TRUE, 0, 0, 0));
+		true, 0, 0, 0));
 	rep_POPGC;
 	Fset(Qdebug_on_error, on_error);
 	if(tmp && (tmp == Qt))
-	    rep_single_step_flag = rep_TRUE;
+	    rep_single_step_flag = true;
 	else
 	    rep_single_step_flag = oldssflag;
     }
@@ -2530,22 +2531,22 @@ handler.
 }
 
 /* For an error rep_ERROR (the cdr of rep_throw_value), if it matches the error
-   handler HANDLER (the car of the handler list), return rep_TRUE. */
-rep_bool
+   handler HANDLER (the car of the handler list), return true. */
+bool
 rep_compare_error(repv error, repv handler)
 {
     if(rep_CONSP(error))
     {
 	repv error_sym = rep_CAR(error);
 	if(rep_SYMBOLP(handler) && (error_sym == handler || handler == Qerror))
-	    return rep_TRUE;
+	    return true;
 	else if(rep_CONSP(handler))
 	{
 	    handler = Fmemq(error_sym, handler);
 	    return handler != rep_NULL && !rep_NILP(handler);
 	}
     }
-    return rep_FALSE;
+    return false;
 }
 
 void
@@ -2684,14 +2685,14 @@ ARGLIST had been evaluated or not before being put into the stack.
 	    char buf[16];
 
 	    sprintf (buf, "#%-3d ", i);
-	    rep_stream_puts (strm, buf, -1, rep_FALSE);
+	    rep_stream_puts (strm, buf, -1, false);
 
 	    rep_princ_val (strm, function_name);
 
 	    if (rep_VOIDP (lc->args)
 		|| (rep_STRINGP (function_name)
 		    && strcmp (rep_STR (function_name), "run-byte-code") == 0))
-		rep_stream_puts (strm, " ...", -1, rep_FALSE);
+		rep_stream_puts (strm, " ...", -1, false);
 	    else
 	    {
 		rep_stream_putc (strm, ' ');
@@ -2713,7 +2714,7 @@ ARGLIST had been evaluated or not before being put into the stack.
 			     rep_STR (rep_CAR (origin)),
 			     (int) rep_INT (rep_CDR (origin)));
 #endif
-		    rep_stream_puts (strm, buf, -1, rep_FALSE);
+		    rep_stream_puts (strm, buf, -1, false);
 		}
 	    }
 

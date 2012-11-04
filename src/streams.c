@@ -151,7 +151,7 @@ rep_stream_getc(repv stream)
 int
 rep_stream_ungetc(repv stream, int c)
 {
-    int rc = rep_FALSE;
+    int rc = false;
     if(rep_NILP(stream)
        && !(stream = Fsymbol_value(Qstandard_input, Qnil)))
 	return(rc);
@@ -166,7 +166,7 @@ top:
 	if(rep_INTP(tmp) && rep_STRINGP(rep_CDR(stream)))
 	{
 	    rep_CAR(stream) = rep_MAKE_INT(rep_INT(tmp) - 1);
-	    rc = rep_TRUE;
+	    rc = true;
 	    break;
 	}
 	else if(tmp == Qlambda)
@@ -185,7 +185,7 @@ top:
     function:
 	tmp = rep_MAKE_INT(c);
 	if((tmp = rep_call_lisp1(stream, tmp)) && !rep_NILP(tmp))
-	    rc = rep_TRUE;
+	    rc = true;
 	break;
 
     default:
@@ -320,12 +320,12 @@ bottom:
     return 1;
 }
 
-rep_intptr_t
-rep_stream_puts(repv stream, void *data, rep_intptr_t bufLen,
-		rep_bool isValString)
+intptr_t
+rep_stream_puts(repv stream, void *data, intptr_t bufLen,
+		bool isValString)
 {
     char *buf;
-    rep_intptr_t rc = -1;
+    intptr_t rc = -1;
 
     if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
 	goto bottom;
@@ -537,7 +537,7 @@ a string LENGTH can define how many characters to write.
     int actual;
     switch (rep_TYPE (data))
     {
-	rep_bool vstring;
+	bool vstring;
 	void *arg;
 
     case rep_Int:
@@ -553,18 +553,18 @@ a string LENGTH can define how many characters to write.
 	    if (actual == rep_STRING_LEN (data))
 	    {
 		arg = rep_PTR (data);
-		vstring = rep_TRUE;
+		vstring = true;
 	    }
 	    else
 	    {
 		arg = rep_STR (data);
-		vstring = rep_FALSE;
+		vstring = false;
 	    }
 	}
 	else
 	{
 	    actual = rep_STRING_LEN (data);
-	    vstring = rep_TRUE;
+	    vstring = true;
 	    arg = rep_PTR (data);
 	}
 	actual = rep_stream_puts (stream, arg, actual, vstring);
@@ -699,7 +699,7 @@ read. Returns the number of characters copied.
 	if (i == BUFSIZ)
 	{
 	    buf[i] = 0;
-	    rep_stream_puts (dest, buf, BUFSIZ, rep_FALSE);
+	    rep_stream_puts (dest, buf, BUFSIZ, false);
 	    rep_TEST_INT;
 	    if (rep_INTERRUPTP)
 		return rep_NULL;
@@ -711,7 +711,7 @@ read. Returns the number of characters copied.
     if (i != 0)
     {
 	buf[i] = 0;
-	rep_stream_puts (dest, buf, i, rep_FALSE);
+	rep_stream_puts (dest, buf, i, false);
     }
     return !rep_INTERRUPTP ? rep_MAKE_INT (len) : rep_NULL;
 }
@@ -844,7 +844,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 ::end:: */
 {
     char *fmt, *last_fmt;
-    rep_bool make_string;
+    bool make_string;
     repv stream, format, extra_formats = rep_NULL;
     rep_GC_root gc_stream, gc_format, gc_args, gc_extra_formats;
     char c;
@@ -857,10 +857,10 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
     if (stream == Qnil)
     {
 	stream = Fcons (rep_string_dupn ("", 0), rep_MAKE_INT (0));
-	make_string = rep_TRUE;
+	make_string = true;
     }
     else
-	make_string = rep_FALSE;
+	make_string = false;
 
     if (!rep_CONSP (args))
 	return rep_signal_missing_arg (2);
@@ -879,8 +879,8 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
     {
 	if (c == '%')
 	{
-	    rep_bool left_justify = rep_FALSE, truncate_field = rep_FALSE;
-	    rep_bool pad_zeros = rep_FALSE;
+	    bool left_justify = false, truncate_field = false;
+	    bool pad_zeros = false;
 	    char leading_char = 0;
 	    int field_width = 0, precision = 0;
 	    char *tem;
@@ -888,7 +888,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	    if (last_fmt != fmt - 1)
 	    {
 		rep_stream_puts (stream, last_fmt,
-				 fmt - last_fmt - 1, rep_FALSE);
+				 fmt - last_fmt - 1, false);
 		if (rep_INTERRUPTP)
 		    goto exit;
 	    }
@@ -927,13 +927,13 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		switch (c)
 		{
 		case '-':
-		    left_justify = rep_TRUE; break;
+		    left_justify = true; break;
 
 		case '^':
-		    truncate_field = rep_TRUE; break;
+		    truncate_field = true; break;
 
 		case '0':
-		    pad_zeros = rep_TRUE; break;
+		    pad_zeros = true; break;
 
 		case '+': case ' ':
 		    leading_char = c;
@@ -973,7 +973,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	    {
 		repv fun;
 		repv val = Fnth (rep_MAKE_INT (this_arg), args);
-		rep_bool free_str = rep_FALSE;
+		bool free_str = false;
 
 		if (val == rep_NULL)
 		    goto exit;
@@ -1001,7 +1001,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    ptr = rep_print_number_to_string (val, radix, precision);
 		    if (ptr == 0)
 			break;
-		    free_str = rep_TRUE;
+		    free_str = true;
 		    len = strlen (ptr);
 		    goto string_out;
 
@@ -1031,7 +1031,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 			    rep_stream_putc (stream, leading_char);
 			rep_stream_puts (stream, ptr, truncate_field
 					 ? (field_width - (leading_char != 0))
-					 : len, rep_FALSE);
+					 : len, false);
 		    }
 		    else
 		    {
@@ -1041,14 +1041,14 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 			{
 			    if (leading_char)
 				rep_stream_putc (stream, leading_char);
-			    rep_stream_puts (stream, ptr, len, rep_FALSE);
+			    rep_stream_puts (stream, ptr, len, false);
 			}
-			rep_stream_puts (stream, buf, slen, rep_FALSE);
+			rep_stream_puts (stream, buf, slen, false);
 			if (!left_justify)
 			{
 			    if (leading_char)
 				rep_stream_putc (stream, leading_char);
-			    rep_stream_puts (stream, ptr, len, rep_FALSE);
+			    rep_stream_puts (stream, ptr, len, false);
 			}
 		    }
 		    if (free_str)
@@ -1094,7 +1094,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
     }
 
     if (last_fmt != fmt - 1)
-	rep_stream_puts (stream, last_fmt, fmt - last_fmt - 1, rep_FALSE);
+	rep_stream_puts (stream, last_fmt, fmt - last_fmt - 1, false);
     if (make_string)
     {
 	if (rep_STRING_LEN (rep_CAR (stream)) != rep_INT (rep_CDR (stream)))

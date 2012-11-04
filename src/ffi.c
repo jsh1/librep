@@ -152,13 +152,13 @@ static rep_ffi_interface **ffi_interfaces;
 #define rep_VALID_INTERFACE_P(x) \
     (rep_INTP (x) && rep_INT (x) >= 0 && rep_INT (x) < n_ffi_interfaces)
 
-static rep_bool
+static bool
 ffi_types_equal_p (const rep_ffi_type *a, const rep_ffi_type *b)
 {
     if (a->type != NULL && a->type == b->type)
-	return rep_TRUE;
+	return true;
     if (a->subtype != b->subtype)
-	return rep_FALSE;
+	return false;
 
     switch (a->subtype)
     {
@@ -175,15 +175,15 @@ ffi_types_equal_p (const rep_ffi_type *a, const rep_ffi_type *b)
 	sb = (rep_ffi_struct *) b;
 
 	if (sa->n_elements != sb->n_elements)
-	    return rep_FALSE;
+	    return false;
 
 	for (i = 0; i < sa->n_elements; i++)
 	{
 	    if (sa->element_ids[i] != sb->element_ids[i])
-		return rep_FALSE;
+		return false;
 	}
 
-	return rep_TRUE;
+	return true;
     }
 
     case rep_FFI_ALIAS: {
@@ -199,11 +199,11 @@ ffi_types_equal_p (const rep_ffi_type *a, const rep_ffi_type *b)
     }
 
     default:
-	return rep_FALSE;
+	return false;
     }
 }
 
-static rep_bool
+static bool
 ffi_interfaces_equal_p (const rep_ffi_interface *a, const rep_ffi_interface *b)
 {
     unsigned int i;
@@ -211,16 +211,16 @@ ffi_interfaces_equal_p (const rep_ffi_interface *a, const rep_ffi_interface *b)
     if (a->n_args != b->n_args
 	|| a->args_size != b->args_size || a->ret != b->ret)
     {
-	return rep_FALSE;
+	return false;
     }
 
     for (i = 0; i < a->n_args; i++)
     {
 	if (a->args[i] != b->args[i])
-	    return rep_FALSE;
+	    return false;
     }
 
-    return rep_TRUE;
+    return true;
 }
 
 static unsigned int
@@ -435,16 +435,16 @@ rep_ffi_demarshal (unsigned int type_id, char *ptr, repv *value)
 	    return ptr + sizeof (int);
 
 	case FFI_TYPE_FLOAT:
-	    *value = rep_make_float (*(float *)ptr, rep_TRUE);
+	    *value = rep_make_float (*(float *)ptr, true);
 	    return ptr + sizeof (float);
 
 	case FFI_TYPE_DOUBLE:
-	    *value = rep_make_float (*(double *)ptr, rep_TRUE);
+	    *value = rep_make_float (*(double *)ptr, true);
 	    return ptr + sizeof (double);
 
 #if FFI_TYPE_LONGDOUBLE != FFI_TYPE_DOUBLE
 	case FFI_TYPE_LONGDOUBLE:
-	    *value = rep_make_float (*(long double *)ptr, rep_TRUE);
+	    *value = rep_make_float (*(long double *)ptr, true);
 	    return ptr + sizeof (long double);
 #endif
 

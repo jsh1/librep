@@ -50,9 +50,9 @@ extern void rep_lisp_prin(repv, repv);
 extern void rep_string_princ(repv, repv);
 extern void rep_string_print(repv, repv);
 extern repv rep_copy_list(repv);
-extern rep_bool rep_compare_error(repv error, repv handler);
+extern bool rep_compare_error(repv error, repv handler);
 extern void rep_lisp_init(void);
-extern rep_bool rep_single_step_flag;
+extern bool rep_single_step_flag;
 
 /* from lispcmds.c */
 extern rep_xsubr Slambda;
@@ -80,7 +80,7 @@ extern void rep_lispmach_kill(void);
 
 /* from main.c */
 extern char *rep_stack_bottom;
-extern void rep_deprecated (rep_bool *seen, const char *desc);
+extern void rep_deprecated (bool *seen, const char *desc);
 
 /* from macros.c */
 extern void rep_macros_before_gc (void);
@@ -112,7 +112,7 @@ extern repv Fmin(int, repv *);
 extern repv Fgcd (int, repv *);
 
 /* from origin.c */
-extern rep_bool rep_record_origins;
+extern bool rep_record_origins;
 extern void rep_record_origin (repv form, repv stream, int start_line);
 extern repv Flexical_origin (repv form);
 extern void rep_mark_origins (void);
@@ -178,8 +178,6 @@ extern repv Fweak_ref_set (repv ref, repv value);
 extern void rep_scan_weak_refs (void);
 extern void rep_weak_refs_init (void);
 
-#ifdef rep_HAVE_UNIX
-
 /* from unix_dl.c */
 extern repv rep_open_dl_library(repv file_name);
 extern void rep_mark_dl_data(void);
@@ -237,7 +235,5 @@ extern void rep_proc_kill(void);
 /* from realpath.c */
 extern char *realpath (const char *name, char *resolved);
 #endif
-
-#endif /* rep_HAVE_UNIX */
 
 #endif /* REPINT_SUBRS_H */

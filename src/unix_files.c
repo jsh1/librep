@@ -136,7 +136,7 @@ rep_expand_file_name(repv file)
 		/* `XXX/..[/]' Try to back up over the parent directory */
 
 		char *back = optr;
-		rep_bool all_dots = rep_TRUE;
+		bool all_dots = true;
 		char *end;
 
 		/* Step over any contiguous `/' characters */
@@ -149,7 +149,7 @@ rep_expand_file_name(repv file)
 		{
 		    back--;
 		    if (back[0] != '.')
-			all_dots = rep_FALSE;
+			all_dots = false;
 		}
 
 		if(back < optr && back >= buf && *back != '/'

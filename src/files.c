@@ -291,7 +291,7 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
 	op_data.next = rep_blocked_ops[op];
 	rep_blocked_ops[op] = &op_data;
 	/* handler and arg_list are automatically protected by rep_funcall */
-	res = rep_funcall(handler, arg_list, rep_FALSE);
+	res = rep_funcall(handler, arg_list, false);
 	rep_blocked_ops[op] = op_data.next;
 	rep_pop_regexp_data();
     }
@@ -707,14 +707,14 @@ file_sweep(void)
 static void
 file_prin(repv strm, repv obj)
 {
-    rep_stream_puts(strm, "#<file ", -1, rep_FALSE);
+    rep_stream_puts(strm, "#<file ", -1, false);
     if(rep_FILE(obj)->name != Qnil)
     {
-	rep_stream_puts(strm, rep_PTR(rep_FILE(obj)->name), -1, rep_TRUE);
+	rep_stream_puts(strm, rep_PTR(rep_FILE(obj)->name), -1, true);
 	rep_stream_putc(strm, '>');
     }
     else
-	rep_stream_puts(strm, "*unbound*>", -1, rep_FALSE);
+	rep_stream_puts(strm, "*unbound*>", -1, false);
 }
 
 static void
@@ -1416,10 +1416,10 @@ cell storing two integers, the low 24 bits, and the high bits.
 				     Qfile_modtime, 1, file);
 }
 
-rep_bool
+bool
 rep_file_newer_than(repv name1, repv name2)
 {
-    rep_bool res = rep_FALSE;
+    bool res = false;
     repv time1;
     rep_GC_root gc_name1, gc_name2;
 
@@ -1439,7 +1439,7 @@ rep_file_newer_than(repv name1, repv name2)
 	{
 	    repv foo = Ftime_later_p(time1, time2);
 	    if(foo && !rep_NILP(foo))
-		res = rep_TRUE;
+		res = true;
 	}
     }
     rep_POPGC; rep_POPGC;

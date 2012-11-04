@@ -351,7 +351,7 @@ timer_print (repv stream, repv arg)
 #else
     sprintf (buf, "#<timer %lds, %ldms>", TIMER(arg)->secs, TIMER(arg)->msecs);
 #endif
-    rep_stream_puts (stream, buf, -1, rep_FALSE);
+    rep_stream_puts (stream, buf, -1, false);
 }
 
 
@@ -366,12 +366,10 @@ rep_dl_init (void)
 					timer_mark_active, 0, 0, 0, 0, 0, 0);
     pipe (pipe_fds);
     rep_register_input_fd (pipe_fds[0], timer_fd_handler);
-#ifdef rep_HAVE_UNIX
-    rep_unix_set_fd_cloexec (pipe_fds[1]);
-#endif
+    rep_set_fd_cloexec (pipe_fds[1]);
     sigemptyset (&alrm_sigset);
     sigaddset (&alrm_sigset, SIGALRM);
-    rep_sig_restart (SIGALRM, rep_TRUE);
+    rep_sig_restart (SIGALRM, true);
 
     tem = rep_push_structure ("rep.io.timers");
     /* ::alias:timers rep.io.timers:: */
