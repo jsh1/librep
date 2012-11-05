@@ -204,7 +204,7 @@ load_requires (char *ptr)
     while (*ptr != 0)
     {
 	char *end = ptr + strcspn (ptr, " \t");
-	repv sym = Fintern (rep_string_dupn (ptr, end - ptr), Qnil);
+	repv sym = Fintern (rep_string_dupn (ptr, end - ptr), rep_nil);
 	if (Fintern_structure (sym) == rep_NULL)
 	    return false;
 	ptr = end + strspn (end, " \t");
@@ -340,7 +340,7 @@ rep_intern_dl_library (repv file_name)
 	bool relocate_now = false;
 	struct dl_lib_info *x;
 
-	if (Qdl_load_reloc_now && Fsymbol_value (Qdl_load_reloc_now, Qt) != Qnil)
+	if (Qdl_load_reloc_now && Fsymbol_value (Qdl_load_reloc_now, Qt) != rep_nil)
 	{
 	    relocate_now = true;
 	}
@@ -390,8 +390,8 @@ rep_intern_dl_library (repv file_name)
 
 	x->file_name = file_name;
 	x->handle = handle;
-	x->feature_sym = Qnil;
-	x->structure = Qnil;
+	x->feature_sym = rep_nil;
+	x->structure = rep_nil;
 	x->is_rep_module = is_rep_module;
 
 	if (is_rep_module)
@@ -405,8 +405,8 @@ rep_intern_dl_library (repv file_name)
 
 		ret = init_func(file_name);
 
-		if(Qnil != rep_NULL			/* initialising */
-		   && (ret == rep_NULL || ret == Qnil))
+		if(rep_nil != rep_NULL			/* initialising */
+		   && (ret == rep_NULL || ret == rep_nil))
 		{
 		    /* error. abort abort.. */
 
@@ -441,7 +441,7 @@ rep_open_dl_library(repv file_name)
 
     if (dl_libs[idx].is_rep_module)
     {
-	if (dl_libs[idx].feature_sym != Qnil && dl_libs[idx].structure == Qnil)
+	if (dl_libs[idx].feature_sym != rep_nil && dl_libs[idx].structure == rep_nil)
 	{
 	    /* only `provide' the feature if there's no associated
 	       structure (since we haven't actually imported it) */

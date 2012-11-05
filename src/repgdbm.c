@@ -60,7 +60,7 @@ gdbm-open PATH ACCESS-TYPE [MODE] [FLAGS]
     uflags |= (type == Qwrite ? GDBM_NEWDB
 	       : type == Qappend ? GDBM_WRCREAT : GDBM_READER);
     umode = rep_INTP(mode) ? rep_INT(mode) : 0666;
-    dbm = rep_ALLOC_CELL (sizeof (rep_dbm));
+    dbm = rep_alloc (sizeof (rep_dbm));
     if (dbm == 0)
 	return rep_mem_error();
     rep_data_after_gc += sizeof (rep_dbm);
@@ -77,7 +77,7 @@ gdbm-open PATH ACCESS-TYPE [MODE] [FLAGS]
     }
     else
     {
-	rep_FREE_CELL (dbm);
+	rep_free (dbm);
 	return rep_signal_file_error (file);
     }
 }
@@ -90,9 +90,9 @@ gdbm-close DBM
     rep_DECLARE1 (dbm, rep_DBMP);
     gdbm_close (rep_DBM(dbm)->dbm);
     rep_DBM(dbm)->dbm = 0;
-    rep_DBM(dbm)->path = Qnil;
-    rep_DBM(dbm)->access = Qnil;
-    rep_DBM(dbm)->mode = Qnil;
+    rep_DBM(dbm)->path = rep_nil;
+    rep_DBM(dbm)->access = rep_nil;
+    rep_DBM(dbm)->mode = rep_nil;
     return Qt;
 }
 
@@ -108,7 +108,7 @@ gdbm-fetch DBM KEY
     dkey.dsize = rep_STRING_LEN (key);
     dvalue = gdbm_fetch (rep_DBM(dbm)->dbm, dkey);
     if (dvalue.dptr == 0)
-	return Qnil;
+	return rep_nil;
     else
     {
 	/* The string isn't always zero-terminated, so need to copy it.. */
@@ -134,7 +134,7 @@ gdbm-store DBM KEY VALUE [FLAGS]
     dvalue.dsize = rep_STRING_LEN (val);
     dflags = (flags == Qinsert ? GDBM_INSERT : GDBM_REPLACE);
     return (gdbm_store (rep_DBM(dbm)->dbm, dkey, dvalue, dflags) == 0
-	    ? Qt : Qnil);
+	    ? Qt : rep_nil);
 }
 
 DEFUN("gdbm-delete", Fgdbm_delete, Sgdbm_delete, (repv dbm, repv key), rep_Subr2) /*
@@ -147,7 +147,7 @@ gdbm-delete DBM KEY
     rep_DECLARE2 (key, rep_STRINGP);
     dkey.dptr = rep_STR (key);
     dkey.dsize = rep_STRING_LEN (key);
-    return gdbm_delete (rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : Qnil;
+    return gdbm_delete (rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : rep_nil;
 }
 
 DEFUN("gdbm-walk", Fgdbm_walk, Sgdbm_walk, (repv fun, repv dbm), rep_Subr2) /*
@@ -156,7 +156,7 @@ gdbm-walk FUN DBM
 ::end:: */
 {
     rep_GC_root gc_dbm, gc_fun;
-    repv ret = Qnil;
+    repv ret = rep_nil;
     datum dkey;
     rep_DECLARE1 (dbm, rep_DBMP);
     rep_PUSHGC (gc_dbm, dbm);
@@ -183,7 +183,7 @@ gdbmp ARG
 Returns t if ARG is an gdbm object (created by `gdbm-open').
 ::end:: */
 {
-    return rep_DBMP(arg) ? Qt : Qnil;
+    return rep_DBMP(arg) ? Qt : rep_nil;
 }
 
 
@@ -208,7 +208,7 @@ dbm_sweep (void)
 	{
 	    if (x->dbm != 0)
 		gdbm_close (x->dbm);
-	    rep_FREE_CELL (x);
+	    rep_free (x);
 	}
 	else
 	{

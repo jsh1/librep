@@ -237,7 +237,7 @@ fast_getc (repv stream)
 static repv
 signal_reader_error (repv type, repv stream, char *message)
 {
-    repv error_data = Qnil;
+    repv error_data = rep_nil;
     if (message != 0)
 	error_data = Fcons (rep_string_dup (message), error_data);
     if (rep_FILEP (stream))
@@ -295,7 +295,7 @@ read_comment (repv strm, int *c_p)
 static repv
 read_list(repv strm, register int *c_p)
 {
-    repv result = Qnil;
+    repv result = rep_nil;
     repv last = rep_NULL;
     int start_line = read_local_file ? rep_FILE (strm)->line_number : -1;
     rep_GC_root gc_result;
@@ -387,7 +387,7 @@ read_list(repv strm, register int *c_p)
 
 	default: do_default:
 	    {
-		register repv this = Fcons(Qnil, Qnil);
+		register repv this = Fcons(rep_nil, rep_nil);
 		if(last)
 		    rep_CDR(last) = this;
 		else
@@ -674,7 +674,7 @@ done:
     {
 intern:	rep_set_string_len(buffer, i);
 	result = Ffind_symbol (rep_VAL(buffer), obarray);
-	if (result != rep_NULL && result == Qnil)
+	if (result != rep_NULL && result == rep_nil)
 	{
 	    result = Fmake_symbol (rep_string_dupn (buf, i));
 	    if (result != rep_NULL)
@@ -856,7 +856,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    /* 'X => (quote X)
 	       `X => (backquote X) */
 	    form = Fcons(*c_p == '\'' ? Qquote : Qbackquote,
-			    Fcons(Qnil, Qnil));
+			    Fcons(rep_nil, rep_nil));
 	    rep_PUSHGC(gc_form, form);
 	    if((*c_p = rep_stream_getc(strm)) == EOF)
 	    {
@@ -874,7 +874,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	case ',':
 	    /* ,@X => (backquote-splice X)
 	       ,X  => (backquote-unquote X) */
-	    form = Fcons(Qbackquote_unquote, Fcons(Qnil, Qnil));
+	    form = Fcons(Qbackquote_unquote, Fcons(rep_nil, rep_nil));
 	    rep_PUSHGC(gc_form, form);
 	    switch((*c_p = rep_stream_getc(strm)))
 	    {
@@ -936,7 +936,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 					    strm, "During # syntax");
 
 	    case '\'':
-		form = Fcons(Qfunction, Fcons(Qnil, Qnil));
+		form = Fcons(Qfunction, Fcons(rep_nil, rep_nil));
 		rep_PUSHGC(gc_form, form);
 		if((*c_p = rep_stream_getc(strm)) == EOF)
 		{
@@ -1044,7 +1044,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    case '!':
 		if (rep_FILEP(strm))
 		{
-		    repv pos = Fseek_file (strm, Qnil, Qnil);
+		    repv pos = Fseek_file (strm, rep_nil, rep_nil);
 		    if (pos && rep_INTP(pos) && rep_INT(pos) == 2)
 		    {
 			/* #! at the start of the file. Skip until !# */
@@ -1133,7 +1133,7 @@ rep_readl (repv stream, int *c_p)
 static repv
 eval_list(repv list)
 {
-    repv result = Qnil;
+    repv result = rep_nil;
     repv *last = &result;
     rep_GC_root gc_result, gc_list;
     rep_PUSHGC(gc_result, result);
@@ -1141,12 +1141,12 @@ eval_list(repv list)
     while(rep_CONSP(list))
     {
 	repv tmp;
-	if(!(tmp = rep_eval(rep_CAR(list), Qnil)))
+	if(!(tmp = rep_eval(rep_CAR(list), rep_nil)))
 	{
 	    result = rep_NULL;
 	    break;
 	}
-	if(!(*last = Fcons(tmp, Qnil)))
+	if(!(*last = Fcons(tmp, rep_nil)))
 	{
 	    result = rep_NULL;
 	    break;
@@ -1161,7 +1161,7 @@ eval_list(repv list)
 	}
     }
     if(result && last && !rep_NILP(list))
-	*last = rep_eval(list, Qnil);
+	*last = rep_eval(list, rep_nil);
     rep_POPGC; rep_POPGC;
     return result;
 }
@@ -1239,11 +1239,11 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 		continue;
 	    }
 	}
-	else if (lambdaList != Qnil && rep_SYMBOLP (lambdaList))
+	else if (lambdaList != rep_nil && rep_SYMBOLP (lambdaList))
 	{
 	    state = STATE_REST;
 	    argspec = lambdaList;
-	    lambdaList = Qnil;
+	    lambdaList = rep_nil;
 	}
 	else
 	    break;
@@ -1251,7 +1251,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 	if (rep_SYMBOLP (argspec))
 	{
 	    VAR (nvars, VAR_SYM) = argspec;
-	    def = Qnil;
+	    def = rep_nil;
 	}
 	else if (rep_CONSP (argspec) && rep_SYMBOLP (rep_CAR (argspec)))
 	{
@@ -1259,12 +1259,12 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 	    if (rep_CONSP (rep_CDR (argspec)))
 		def = rep_CADR (argspec);
 	    else
-		def = Qnil;
+		def = rep_nil;
 	}
 	else
 	    goto invalid;
 
-	VAR (nvars, VAR_EVALP) = Qnil;
+	VAR (nvars, VAR_EVALP) = rep_nil;
 	switch (state)
 	{
 	    repv key;
@@ -1284,7 +1284,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 	    }
 	    else
 	    {
-		repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
+		repv fun = rep_call_stack != 0 ? rep_call_stack->fun : rep_nil;
 		return Fsignal (Qmissing_arg, rep_list_2 (fun, argspec));
 	    }
 	    break;
@@ -1298,7 +1298,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 		if (args[i] == key && args[i+1] != rep_NULL)
 		{
 		    VAR (nvars, VAR_VALUE) = args[i+1];
-		    VAR (nvars, VAR_EVALP) = Qnil;
+		    VAR (nvars, VAR_EVALP) = rep_nil;
 		    args[i] = args[i+1] = rep_NULL;
 		    break;
 		}
@@ -1307,13 +1307,13 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 
 	case STATE_REST:
 	    {
-		repv list = Qnil;
+		repv list = rep_nil;
 		repv *ptr = &list;
 		while (nargs > 0)
 		{
 		    if (*args != rep_NULL)
 		    {
-			*ptr = Fcons (*args, Qnil);
+			*ptr = Fcons (*args, rep_nil);
 			ptr = rep_CDRLOC (*ptr);
 		    }
 		    args++; nargs--;
@@ -1340,7 +1340,7 @@ out:
 	rep_PUSHGCN (gc_vars, vars, nvars * VAR_SIZE);
 	for (i = 0; i < nvars; i++)
 	{
-	    if (VAR (i, VAR_EVALP) != Qnil)
+	    if (VAR (i, VAR_EVALP) != rep_nil)
 	    {
 		repv tem = Feval (VAR (i, VAR_VALUE));
 		if (tem == rep_NULL)
@@ -1419,7 +1419,7 @@ again:
 	{
 	    /* The body of the function is only in the tail position
 	       if the parameter list only creates lexical bindings */
-	    repv new_tail_posn = !rep_SPEC_BINDINGS (boundlist) ? Qt : Qnil;
+	    repv new_tail_posn = !rep_SPEC_BINDINGS (boundlist) ? Qt : rep_nil;
 
 	    rep_GC_root gc_boundlist;
 	    rep_PUSHGC(gc_boundlist, boundlist);
@@ -1427,7 +1427,7 @@ again:
 	    rep_POPGC;
 	    rep_unbind_symbols(boundlist);
 
-	    if (tail_posn == Qnil
+	    if (tail_posn == rep_nil
 		&& result == rep_NULL && rep_throw_value
 		&& rep_CAR (rep_throw_value) == TAIL_CALL_TAG
 		&& rep_CONSP (rep_CDR (rep_throw_value)))
@@ -1492,7 +1492,7 @@ rep_load_autoload(repv funarg)
     /* loading a file */
 
     /* Check if the current environment is allowed to load */
-    load = Fsymbol_value (Qload, Qnil);
+    load = Fsymbol_value (Qload, rep_nil);
     if (load != rep_NULL)
     {
 	rep_GC_root gc_fun, gc_funarg;
@@ -1500,7 +1500,7 @@ rep_load_autoload(repv funarg)
 
 	/* trash the autoload defn, so we don't keep trying to
 	   autoload indefinitely. */
-	rep_CDR(aload_def) = Qnil;
+	rep_CDR(aload_def) = rep_nil;
 
 	rep_PUSHGC(gc_funarg, funarg);
 	rep_PUSHGC(gc_fun, fun);
@@ -1511,7 +1511,7 @@ rep_load_autoload(repv funarg)
 	if (!tmp)
 	    return rep_NULL;
 
-	fun = Fsymbol_value (fun, Qnil);
+	fun = Fsymbol_value (fun, rep_nil);
     }
     else
 	fun = rep_NULL;
@@ -1530,7 +1530,7 @@ rep_load_autoload(repv funarg)
 	    rep_FUNARG(funarg)->structure = rep_FUNARG(tmp)->structure;
 	}
 	else
-	    rep_FUNARG(funarg)->fun = Qnil;
+	    rep_FUNARG(funarg)->fun = rep_nil;
     }
     return fun;
 }
@@ -1575,7 +1575,7 @@ apply (repv fun, repv arglist, repv tail_posn)
     rep_PUSH_CALL (lc);
 
     if(rep_data_after_gc >= rep_gc_threshold)
-	Fgarbage_collect (Qnil);
+	Fgarbage_collect (rep_nil);
 
 again:
     if (rep_FUNARGP(fun))
@@ -1614,27 +1614,27 @@ again:
 
     case rep_Subr1:
 	nargs = 1;
-	argv[0] = Qnil;
+	argv[0] = rep_nil;
 	goto do_subr;
 
     case rep_Subr2:
 	nargs = 2;
-	argv[0] = argv[1] = Qnil;
+	argv[0] = argv[1] = rep_nil;
 	goto do_subr;
 
     case rep_Subr3:
 	nargs = 3;
-	argv[0] = argv[1] = argv[2] = Qnil;
+	argv[0] = argv[1] = argv[2] = rep_nil;
 	goto do_subr;
 
     case rep_Subr4:
 	nargs = 4;
-	argv[0] = argv[1] = argv[2] = argv[3] = Qnil;
+	argv[0] = argv[1] = argv[2] = argv[3] = rep_nil;
 	goto do_subr;
 
     case rep_Subr5:
 	nargs = 5;
-	argv[0] = argv[1] = argv[2] = argv[3] = argv[4] = Qnil;
+	argv[0] = argv[1] = argv[2] = argv[3] = argv[4] = rep_nil;
 	/* FALL THROUGH */
 
     do_subr:
@@ -1727,7 +1727,7 @@ again:
 	|| (result != rep_NULL && rep_throw_value != rep_NULL))
     {
 	fprintf (stderr, "rep: function returned both exception and value, or neither!\n");
-	if (lc.fun && Fsubrp (lc.fun) != Qnil
+	if (lc.fun && Fsubrp (lc.fun) != rep_nil
 	    && rep_STRINGP (rep_XSUBR (lc.fun)->name))
 	{
 	    fprintf (stderr, "rep: culprit is subr %s\n",
@@ -1755,13 +1755,13 @@ rep_funcall(repv fun, repv arglist, bool eval_args)
 	rep_POPGC;
     }
 
-    return apply (fun, arglist, Qnil);
+    return apply (fun, arglist, rep_nil);
 }
 
 repv
 rep_apply (repv fun, repv args)
 {
-    return apply (fun, args, Qnil);
+    return apply (fun, args, rep_nil);
 }
 
 DEFUN("funcall", Ffuncall, Sfuncall, (repv args), rep_SubrN) /*
@@ -1774,7 +1774,7 @@ Calls FUNCTION with arguments ARGS... and returns the result.
     if(!rep_CONSP(args))
 	return rep_signal_missing_arg(1);
     else
-	return apply(rep_CAR(args), rep_CDR(args), Qnil);
+	return apply(rep_CAR(args), rep_CDR(args), rep_nil);
 }
 
 DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
@@ -1787,13 +1787,13 @@ ie,
    => 21
 ::end:: */
 {
-    repv list = Qnil, *last;
+    repv list = rep_nil, *last;
     last = &list;
     if(rep_CONSP(args))
     {
 	while(rep_CONSP(rep_CDR(args)))
 	{
-	    if(!(*last = Fcons(rep_CAR(args), Qnil)))
+	    if(!(*last = Fcons(rep_CAR(args), rep_nil)))
 		return(rep_NULL);
 	    last = &rep_CDR(*last);
 	    args = rep_CDR(args);
@@ -1819,7 +1819,7 @@ eval(repv obj, repv tail_posn)
 
     case rep_Symbol:
 	if (!rep_KEYWORDP (obj))
-	    return Fsymbol_value(obj, Qnil);
+	    return Fsymbol_value(obj, rep_nil);
 	else
 	    return obj;
 
@@ -1856,7 +1856,7 @@ eval(repv obj, repv tail_posn)
 	    repv funcobj;
 	    rep_GC_root gc_obj;
 	    rep_PUSHGC (gc_obj, obj);
-	    funcobj = rep_eval (rep_CAR(obj), Qnil);
+	    funcobj = rep_eval (rep_CAR(obj), rep_nil);
 	    rep_POPGC;
 	    if(funcobj == rep_NULL)
 		ret = rep_NULL;
@@ -1873,15 +1873,15 @@ eval(repv obj, repv tail_posn)
 		    /* Debugging macros gets tedious; don't
 		    bother when debug-macros is nil. */
 		    rep_single_step_flag = false;
-		    form = Fmacroexpand(obj, Qnil);
+		    form = Fmacroexpand(obj, rep_nil);
 		    rep_single_step_flag = true;
 		}
 		else
-		    form = Fmacroexpand(obj, Qnil);
+		    form = Fmacroexpand(obj, rep_nil);
 
 		ret = form ? rep_eval (form, tail_posn) : rep_NULL;
 	    }
-	    else if (tail_posn != Qnil &&
+	    else if (tail_posn != rep_nil &&
 		     (rep_FUNARGP (funcobj) || funcobj == rep_VAL (&Sapply)))
 	    {
 		/* This call can be performed later without losing any
@@ -1954,7 +1954,7 @@ rep_eval (repv obj, repv tail_posn)
     {
 	rep_GC_root gc_obj;
 	rep_PUSHGC(gc_obj, obj);
-	Fgarbage_collect (Qnil);
+	Fgarbage_collect (rep_nil);
 	rep_POPGC;
     }
 
@@ -1986,16 +1986,16 @@ rep_eval (repv obj, repv tail_posn)
 		case 1:
 		    /* single step cdr and following stuff  */
 		    rep_single_step_flag = true;
-		    result = eval(rep_CDR(dbres), Qnil);
+		    result = eval(rep_CDR(dbres), rep_nil);
 		    rep_single_step_flag = false;
 		    break;
 		case 2:
 		    /* run through cdr and step following  */
-		    result = eval(rep_CDR(dbres), Qnil);
+		    result = eval(rep_CDR(dbres), rep_nil);
 		    break;
 		case 3:
 		    /* run cdr and following  */
-		    result = eval(rep_CDR(dbres), Qnil);
+		    result = eval(rep_CDR(dbres), rep_nil);
 		    newssflag = false;
 		    break;
 		case 4:
@@ -2028,7 +2028,7 @@ rep_eval (repv obj, repv tail_posn)
 repv
 Feval (repv form)
 {
-    return rep_eval (form, Qnil);
+    return rep_eval (form, rep_nil);
 }
 
 DEFUN("progn", Fprogn, Sprogn, (repv args, repv tail_posn), rep_SF) /*
@@ -2039,7 +2039,7 @@ Eval's each of the FORMS in order returning the value of the last
 one.
 ::end:: */
 {
-    repv result = Qnil;
+    repv result = rep_nil;
     repv old_current = rep_call_stack != 0 ? rep_call_stack->current_form : 0;
     rep_GC_root gc_args, gc_old_current;
     rep_PUSHGC (gc_args, args);
@@ -2050,7 +2050,7 @@ one.
 	    rep_call_stack->current_form = rep_CAR (args);
 
 	result = rep_eval(rep_CAR(args),
-			  rep_CDR (args) == Qnil ? tail_posn : Qnil);
+			  rep_CDR (args) == rep_nil ? tail_posn : rep_nil);
 	args = rep_CDR(args);
 	rep_TEST_INT;
 	if(!result || rep_INTERRUPTP)
@@ -2088,7 +2088,7 @@ rep_call_lispn (repv fun, int argc, repv *argv)
     }
     else
     {
-	repv args = Qnil;
+	repv args = rep_nil;
 	argv += argc;
 	while (argc-- > 0)
 	    args = Fcons (*(--argv), args);
@@ -2373,7 +2373,7 @@ rep_copy_list(repv list)
     repv *last = &result;
     while(rep_CONSP(list))
     {
-	if(!(*last = Fcons(rep_CAR(list), Qnil)))
+	if(!(*last = Fcons(rep_CAR(list), rep_nil)))
 	    return rep_NULL;
 	list = rep_CDR(list);
 	last = &rep_CDR(*last);
@@ -2444,9 +2444,9 @@ repv
 rep_handle_var_long_int(repv val, long *data)
 {
     long old = *data;
-    if(rep_LONG_INTP(val))
-	*data = rep_LONG_INT(val);
-    return rep_MAKE_LONG_INT(old);
+    if(rep_long_int_p(val))
+	*data = rep_get_long_int(val);
+    return rep_make_long_int(old);
 }
 
 DEFUN("break", Fbreak, Sbreak, (void), rep_Subr0) /*
@@ -2470,7 +2470,7 @@ Use the Lisp debugger to evaluate FORM.
     repv res;
     bool oldssf = rep_single_step_flag;
     rep_single_step_flag = true;
-    res = rep_eval(form, Qnil);
+    res = rep_eval(form, rep_nil);
     rep_single_step_flag = oldssf;
     return res;
 }
@@ -2496,7 +2496,7 @@ handler.
     on_error = Fsymbol_value (Qbacktrace_on_error, Qt);
     if ((on_error == Qt && error != Qend_of_stream)
 	|| (rep_CONSP(on_error)
-	    && (tmp = Fmemq (error, on_error)) && tmp != Qnil))
+	    && (tmp = Fmemq (error, on_error)) && tmp != rep_nil))
     {
 	fprintf (stderr, "\nLisp backtrace:\n");
 	Fbacktrace (Fstderr_file());
@@ -2512,7 +2512,7 @@ handler.
 	/* Enter debugger. */
 	rep_GC_root gc_on_error;
 	bool oldssflag = rep_single_step_flag;
-	Fset(Qdebug_on_error, Qnil);
+	Fset(Qdebug_on_error, rep_nil);
 	rep_single_step_flag = false;
 	rep_PUSHGC(gc_on_error, on_error);
 	tmp = (rep_call_with_barrier
@@ -2558,7 +2558,7 @@ rep_handle_error(repv error, repv data)
     if (mutex++ == 0)
     {
 	repv fun = Fsymbol_value (Qerror_handler_function, Qt);
-	if (Ffunctionp (fun) != Qnil)
+	if (Ffunctionp (fun) != rep_nil)
 	{
 	    rep_call_lisp2 (fun, error, data);
 	    goto out;
@@ -2566,7 +2566,7 @@ rep_handle_error(repv error, repv data)
     }
 
     Fbeep();
-    Fwrite (Qt, rep_VAL (&some_error), Qnil);
+    Fwrite (Qt, rep_VAL (&some_error), rep_nil);
 
 out:
     mutex--;
@@ -2575,14 +2575,14 @@ out:
 repv
 rep_signal_arg_error(repv obj, int argNum)
 {
-    repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
+    repv fun = rep_call_stack != 0 ? rep_call_stack->fun : rep_nil;
     return Fsignal (Qbad_arg, rep_list_3 (fun, obj, rep_MAKE_INT (argNum)));
 }
 
 repv
 rep_signal_missing_arg(int argnum)
 {
-    repv fun = rep_call_stack != 0 ? rep_call_stack->fun : Qnil;
+    repv fun = rep_call_stack != 0 ? rep_call_stack->fun : rep_nil;
     return Fsignal (Qmissing_arg, rep_list_2 (fun, rep_MAKE_INT (argnum)));
 }
 
@@ -2591,7 +2591,7 @@ rep_mem_error(void)
 {
 #if 0
     /* Nothing really checks for this error.. it will just cause crashes.. */
-    return Fsignal(Qno_memory, Qnil);
+    return Fsignal(Qno_memory, rep_nil);
 #else
     fprintf (stderr, "rep: virtual memory exhausted\n");
     abort ();
@@ -2647,7 +2647,7 @@ ARGLIST had been evaluated or not before being put into the stack.
     repv old_print_escape = Fsymbol_value (Qprint_escape, Qt);
     int total_frames, i;
 
-    if(rep_NILP(strm) && !(strm = Fsymbol_value(Qstandard_output, Qnil)))
+    if(rep_NILP(strm) && !(strm = Fsymbol_value(Qstandard_output, rep_nil)))
 	return rep_signal_arg_error (strm, 1);
 
     Fset (Qprint_escape, Qt);
@@ -2658,7 +2658,7 @@ ARGLIST had been evaluated or not before being put into the stack.
     for (i = total_frames - 1; i >= 0; i--)
     {
 	struct rep_Call *lc = stack_frame_ref (i);
-	repv function_name = Qnil;
+	repv function_name = rep_nil;
 
 	if (lc == 0)
 	    continue;
@@ -2668,7 +2668,7 @@ ARGLIST had been evaluated or not before being put into the stack.
 	    if (rep_STRINGP (rep_FUNARG (lc->fun)->name))
 		function_name = rep_FUNARG (lc->fun)->name;
 	}
-	else if (Fsubrp (lc->fun) != Qnil)
+	else if (Fsubrp (lc->fun) != rep_nil)
 	{
 	    if (rep_STRINGP (rep_XSUBR (lc->fun)->name))
 		function_name = rep_XSUBR (lc->fun)->name;
@@ -2680,7 +2680,7 @@ ARGLIST had been evaluated or not before being put into the stack.
 					Qellipsis);
 	}
 
-	if (function_name != Qnil)
+	if (function_name != rep_nil)
 	{
 	    char buf[16];
 
@@ -2702,7 +2702,7 @@ ARGLIST had been evaluated or not before being put into the stack.
 	    if (lc->current_form != rep_NULL)
 	    {
 		repv origin = Flexical_origin (lc->current_form);
-		if (origin && origin != Qnil)
+		if (origin && origin != rep_nil)
 		{
 		    char buf[256];
 #ifdef HAVE_SNPRINTF
@@ -2740,11 +2740,11 @@ DEFUN ("stack-frame-ref", Fstack_frame_ref,
     {
 	return rep_list_5 (lc->fun, rep_VOIDP (lc->args)
 			   ? rep_undefined_value : lc->args,
-			   lc->current_form ? lc->current_form : Qnil,
+			   lc->current_form ? lc->current_form : rep_nil,
 			   lc->saved_env, lc->saved_structure);
     }
     else
-	return Qnil;
+	return rep_nil;
 }
 
 DEFUN("max-lisp-depth", Fmax_lisp_depth, Smax_lisp_depth, (repv val), rep_Subr1) /*
@@ -2830,24 +2830,24 @@ rep_lisp_init(void)
     rep_INTERN(term_interrupt);
 
     rep_INTERN_SPECIAL(debug_on_error);
-    Fset (Qdebug_on_error, Qnil);
+    Fset (Qdebug_on_error, rep_nil);
     rep_INTERN_SPECIAL(backtrace_on_error);
-    Fset (Qbacktrace_on_error, Qnil);
+    Fset (Qbacktrace_on_error, rep_nil);
     rep_INTERN_SPECIAL(debug_macros);
-    Fset (Qdebug_macros, Qnil);
+    Fset (Qdebug_macros, rep_nil);
     rep_INTERN_SPECIAL(error_handler_function);
 
-    rep_int_cell = Fcons(Quser_interrupt, Qnil);
+    rep_int_cell = Fcons(Quser_interrupt, rep_nil);
     rep_mark_static(&rep_int_cell);
-    rep_term_cell = Fcons(Qterm_interrupt, Qnil);
+    rep_term_cell = Fcons(Qterm_interrupt, rep_nil);
     rep_mark_static(&rep_term_cell);
 
     rep_INTERN_SPECIAL(print_escape); 
     rep_INTERN_SPECIAL(print_length);
     rep_INTERN_SPECIAL(print_level);
-    Fset (Qprint_escape, Qnil);
-    Fset (Qprint_length, Qnil);
-    Fset (Qprint_level, Qnil);
+    Fset (Qprint_escape, rep_nil);
+    Fset (Qprint_length, rep_nil);
+    Fset (Qprint_level, rep_nil);
     rep_INTERN(newlines);
 
     rep_INTERN(load);

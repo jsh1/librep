@@ -246,7 +246,7 @@ Note that the timer will only fire _once_, use the `set-timer' function
 to re-enable it.
 ::end:: */
 {
-    Lisp_Timer *t = rep_ALLOC_CELL (sizeof (Lisp_Timer));
+    Lisp_Timer *t = rep_alloc (sizeof (Lisp_Timer));
     rep_data_after_gc += sizeof (Lisp_Timer);
     t->car = timer_type;
     t->function = fun;
@@ -287,7 +287,7 @@ duration. Otherwise, the existing values are preserved.
     rep_DECLARE2_OPT(secs, rep_NUMERICP);
     rep_DECLARE3_OPT(msecs, rep_NUMERICP);
     delete_timer (TIMER(timer));
-    if (secs != Qnil || msecs != Qnil)
+    if (secs != rep_nil || msecs != rep_nil)
     {
 	TIMER(timer)->secs = (int) rep_get_long_int (secs);
 	TIMER(timer)->msecs = (int) rep_get_long_int (msecs);
@@ -330,7 +330,7 @@ timer_sweep (void)
     {
 	Lisp_Timer *next = x->next_alloc;
 	if (!rep_GC_CELL_MARKEDP (rep_VAL(x)))
-	    rep_FREE_CELL (x);
+	    rep_free (x);
 	else
 	{
 	    rep_GC_CLR_CELL (rep_VAL(x));

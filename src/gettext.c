@@ -50,7 +50,7 @@ DEFUN("bindtextdomain", Fbindtextdomain,
 	dirname = rep_STR(dir);
 
     out = bindtextdomain (domainname, dirname);
-    return out ? rep_string_dup (out) : Qnil;
+    return out ? rep_string_dup (out) : rep_nil;
 }
 
 
@@ -66,7 +66,7 @@ DEFUN("bindtextdomaincodeset", Fbindtextdomaincodeset,
 
     out = bind_textdomain_codeset (domainname, codeset);
 
-    return out ? rep_string_dup (out) : Qnil;
+    return out ? rep_string_dup (out) : rep_nil;
 }
 
 
@@ -78,7 +78,7 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 	domainname = rep_STR(dom);
 
     out = textdomain (domainname);
-    return out ? rep_string_dup (out) : Qnil;
+    return out ? rep_string_dup (out) : rep_nil;
 }
 
 
@@ -102,7 +102,7 @@ rep_dl_init(void)
     /* Update binding of `_' in `rep' structure to point at the
        gettext function */
     tem = rep_push_structure ("rep");
-    Fset (Fintern (rep_VAL (&underscore), Qnil), rep_VAL (&Sgettext));
+    Fset (Fintern (rep_VAL (&underscore), rep_nil), rep_VAL (&Sgettext));
     rep_pop_structure (tem);
 
     return ret;

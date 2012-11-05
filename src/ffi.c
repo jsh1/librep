@@ -630,7 +630,7 @@ DEFUN ("ffi-interface", Fffi_interface, Sffi_interface,
     unsigned int i, n;
     rep_ffi_interface *s;
 
-    if (ret != Qnil)
+    if (ret != rep_nil)
 	rep_DECLARE (1, ret, rep_VALID_TYPE_P (ret));
 
     if (rep_VECTORP (args))
@@ -646,7 +646,7 @@ DEFUN ("ffi-interface", Fffi_interface, Sffi_interface,
 
     s->n_args = n;
 
-    s->ret = (ret != Qnil) ? rep_INT (ret) : 0;
+    s->ret = (ret != rep_nil) ? rep_INT (ret) : 0;
     s->ret_type = ffi_types[s->ret]->type;
 
     s->args_size = 0;
@@ -761,7 +761,7 @@ DEFUN ("ffi-new", Fffi_new, Sffi_new, (repv type_id, repv count), rep_Subr2)
     void *ptr;
 
     rep_DECLARE1 (type_id, rep_VALID_TYPE_P);
-    if (count != Qnil)
+    if (count != rep_nil)
 	rep_DECLARE2 (count, rep_INTP);
     else
 	count = rep_MAKE_INT (1);
@@ -852,7 +852,7 @@ static repv
 no_libffi_error (void)
 {
     DEFSTRING (err, "ffi support is not present in this installation");
-    return Fsignal (Qerror, Fcons (rep_VAL (&err), Qnil));
+    return Fsignal (Qerror, Fcons (rep_VAL (&err), rep_nil));
 }
 
 DEFUN ("ffi-struct", Fffi_struct, Sffi_struct, (repv fields), rep_Subr1)
@@ -930,15 +930,15 @@ DEFUN ("ffi-lookup-symbol", Fffi_lookup_symbol,
 {
     void *ptr;
 
-    if (handle != Qnil)
+    if (handle != rep_nil)
 	rep_DECLARE (1, handle, rep_INTP (handle));
     rep_DECLARE (2, name, rep_STRINGP (name));
 
     /* anything outside the range of valid handles means RTLD_DEFAULT. */
-    ptr = rep_lookup_dl_symbol (handle != Qnil ? rep_INT (handle) : -1,
+    ptr = rep_lookup_dl_symbol (handle != rep_nil ? rep_INT (handle) : -1,
 				rep_STR (name));
 
-    return ptr != NULL ? rep_make_pointer (ptr) : Qnil;
+    return ptr != NULL ? rep_make_pointer (ptr) : rep_nil;
 }
 
 
@@ -992,19 +992,19 @@ rep_dl_init (void)
     Fset (Qffi_type_longdouble, ffi_add_primitive_type (&ffi_type_longdouble));
     Fset (Qffi_type_pointer, ffi_add_primitive_type (&ffi_type_pointer));
 #else
-    Fset (Qffi_type_void, Qnil);
-    Fset (Qffi_type_uint8, Qnil);
-    Fset (Qffi_type_sint8, Qnil);
-    Fset (Qffi_type_uint16, Qnil);
-    Fset (Qffi_type_sint16, Qnil);
-    Fset (Qffi_type_uint32, Qnil);
-    Fset (Qffi_type_sint32, Qnil);
-    Fset (Qffi_type_uint64, Qnil);
-    Fset (Qffi_type_sint64, Qnil);
-    Fset (Qffi_type_float, Qnil);
-    Fset (Qffi_type_double, Qnil);
-    Fset (Qffi_type_longdouble, Qnil);
-    Fset (Qffi_type_pointer, Qnil);
+    Fset (Qffi_type_void, rep_nil);
+    Fset (Qffi_type_uint8, rep_nil);
+    Fset (Qffi_type_sint8, rep_nil);
+    Fset (Qffi_type_uint16, rep_nil);
+    Fset (Qffi_type_sint16, rep_nil);
+    Fset (Qffi_type_uint32, rep_nil);
+    Fset (Qffi_type_sint32, rep_nil);
+    Fset (Qffi_type_uint64, rep_nil);
+    Fset (Qffi_type_sint64, rep_nil);
+    Fset (Qffi_type_float, rep_nil);
+    Fset (Qffi_type_double, rep_nil);
+    Fset (Qffi_type_longdouble, rep_nil);
+    Fset (Qffi_type_pointer, rep_nil);
 #endif
 
     Fexport_binding (Qffi_type_void);

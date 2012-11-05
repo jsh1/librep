@@ -43,7 +43,7 @@ rep_make_tuple (repv car, repv a, repv b)
     rep_tuple *t;
     if (tuple_freelist == 0)
     {
-	rep_tuple_block *sb = rep_ALLOC_CELL (sizeof (rep_tuple_block));
+	rep_tuple_block *sb = rep_alloc (sizeof (rep_tuple_block));
 	if (sb != 0)
 	{
 	    int i;
@@ -115,7 +115,7 @@ rep_tuples_kill(void)
     while (sb != 0)
     {
 	rep_tuple_block *nxt = sb->next;
-	rep_FREE_CELL (sb);
+	rep_free (sb);
 	sb = nxt;
     }
     tuple_block_chain = NULL;

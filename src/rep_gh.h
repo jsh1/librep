@@ -60,8 +60,8 @@ extern "C" {
 
 typedef repv SCM;
 
-#define SCM_EOL Qnil
-#define SCM_BOOL_F Qnil
+#define SCM_EOL rep_nil
+#define SCM_BOOL_F rep_nil
 #define SCM_BOOL_T Qt
 #define SCM_UNDEFINED rep_undefined_value
 #define SCM_UNSPECIFIED rep_undefined_value

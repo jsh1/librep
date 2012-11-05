@@ -102,7 +102,7 @@ repv
 rep_file_name_absolute_p(repv file)
 {
     return (((rep_STR(file)[0] == '/') || (rep_STR(file)[0] == '~'))
-	    ? Qt : Qnil);
+	    ? Qt : rep_nil);
 }
 
 repv
@@ -363,19 +363,19 @@ rep_copy_file(repv src, repv dst)
 repv
 rep_file_readable_p(repv file)
 {
-    return access(rep_STR(file), R_OK) == 0 ? Qt : Qnil;
+    return access(rep_STR(file), R_OK) == 0 ? Qt : rep_nil;
 }
 
 repv
 rep_file_writable_p(repv file)
 {
-    return access(rep_STR(file), W_OK) == 0 ? Qt : Qnil;
+    return access(rep_STR(file), W_OK) == 0 ? Qt : rep_nil;
 }
 
 repv
 rep_file_exists_p(repv file)
 {
-    return access(rep_STR(file), F_OK) == 0 ? Qt : Qnil;
+    return access(rep_STR(file), F_OK) == 0 ? Qt : rep_nil;
 }
 
 repv
@@ -383,9 +383,9 @@ rep_file_regular_p(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return S_ISREG(st->st_mode) ? Qt : Qnil;
+	return S_ISREG(st->st_mode) ? Qt : rep_nil;
     else
-	return Qnil;
+	return rep_nil;
 }
 
 repv
@@ -393,9 +393,9 @@ rep_file_directory_p(repv file)
 {
     struct stat *st = stat_file(file);
     if(st != 0)
-	return S_ISDIR(st->st_mode) ? Qt : Qnil;
+	return S_ISDIR(st->st_mode) ? Qt : rep_nil;
     else
-	return Qnil;
+	return rep_nil;
 }
 
 repv
@@ -403,9 +403,9 @@ rep_file_symlink_p(repv file)
 {
     struct stat st;
     if(lstat(rep_STR(file), &st) == 0)
-	return S_ISLNK(st.st_mode) ? Qt : Qnil;
+	return S_ISLNK(st.st_mode) ? Qt : rep_nil;
     else
-	return Qnil;
+	return rep_nil;
 }
 
 repv
@@ -414,9 +414,9 @@ rep_file_owner_p(repv file)
     struct stat *st = stat_file(file);
     if(st != 0)
 	return ((st->st_uid == geteuid() && st->st_gid == getegid())
-		? Qt : Qnil);
+		? Qt : rep_nil);
     else
-	return Qnil;
+	return rep_nil;
 }
 
 repv
@@ -426,7 +426,7 @@ rep_file_nlinks(repv file)
     if(st != 0)
 	return rep_MAKE_INT(st->st_nlink);
     else
-	return Qnil;
+	return rep_nil;
 }
 
 repv
@@ -436,7 +436,7 @@ rep_file_size(repv file)
     if(st != 0)
 	return rep_make_long_uint(st->st_size);
     else
-	return Qnil;
+	return rep_nil;
 }
 
 repv
@@ -446,7 +446,7 @@ rep_file_modes(repv file)
     if(st != 0)
 	return rep_MAKE_INT(st->st_mode & 07777);
     else
-	return Qnil;
+	return rep_nil;
 }
 
 repv
@@ -517,7 +517,7 @@ rep_directory_files(repv dir_name)
     dir = opendir(rep_STR(dir_name));
     if(dir)
     {
-	repv list = Qnil;
+	repv list = rep_nil;
 	struct dirent *de;
 	while((de = readdir(dir)))
 	{
@@ -565,7 +565,7 @@ rep_getpwd(void)
 #else
     if(!getwd(buf))
 #endif
-	return rep_signal_file_error(Qnil);
+	return rep_signal_file_error(rep_nil);
     else
     {
 	/* Ensure that it ends with "/" */

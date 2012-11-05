@@ -169,7 +169,6 @@ extern void rep_cons_free(repv);
 extern void rep_pre_values_init (void);
 extern void rep_values_init(void);
 extern void rep_values_kill (void);
-extern void rep_dumped_init(char *file);
 
 /* from weak-refs.c */
 extern repv Fmake_weak_ref (repv value);

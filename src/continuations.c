@@ -354,8 +354,8 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 	{
 	    DB (("caught barrier exit throw\n"));
 	    rep_throw_value = rep_CDR (exit_barrier_cell);
-	    ret = (rep_throw_value == rep_NULL) ? Qnil : rep_NULL;
-	    rep_CDR (exit_barrier_cell) = Qnil;
+	    ret = (rep_throw_value == rep_NULL) ? rep_nil : rep_NULL;
+	    rep_CDR (exit_barrier_cell) = rep_nil;
 	}
 
 	if (rep_throw_value == rep_NULL && b.active != 0)
@@ -585,7 +585,7 @@ primitive_invoke_continuation (rep_continuation *c, repv ret)
 DEFUN("primitive-invoke-continuation", Fprimitive_invoke_continuation,
       Sprimitive_invoke_continuation, (repv ret), rep_Subr1)
 {
-    repv cont = Fsymbol_value (Qcontinuation, Qnil);
+    repv cont = Fsymbol_value (Qcontinuation, rep_nil);
 
     if (cont == rep_NULL || !rep_CONTINP(cont)
 	|| (rep_CONTIN(cont)->car & CF_INVALID))
@@ -601,7 +601,7 @@ DEFUN("primitive-invoke-continuation", Fprimitive_invoke_continuation,
 static repv
 get_cont (repv arg)
 {
-    return Fsymbol_value (Qcontinuation, Qnil);
+    return Fsymbol_value (Qcontinuation, rep_nil);
 }
 
 DEFUN("continuation-callable-p", Fcontinuation_callable_p,
@@ -618,14 +618,14 @@ execution point of the interpreter.
     int depth;
 
     rep_DECLARE1(cont, rep_FUNARGP);
-    cont = rep_call_with_closure (cont, get_cont, Qnil);
+    cont = rep_call_with_closure (cont, get_cont, rep_nil);
     if (cont == rep_NULL)
 	return rep_NULL;
     rep_DECLARE1(cont, rep_CONTINP);
     c = rep_CONTIN (cont);
 
     if (c->car & CF_INVALID)
-	return Qnil;
+	return rep_nil;
 
     /* copied from above function */
 
@@ -634,7 +634,7 @@ execution point of the interpreter.
     depth = trace_barriers (c, dest_hist);
 
     anc = common_ancestor (barriers, dest_hist, depth);
-    return anc == 0 ? Qnil : Qt;
+    return anc == 0 ? rep_nil : Qt;
 }
 
 static repv
@@ -652,7 +652,7 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data,
 
     if (c == 0)
     {
-	c = rep_ALLOC_CELL (sizeof (rep_continuation));
+	c = rep_alloc (sizeof (rep_continuation));
 	rep_data_after_gc += sizeof (rep_continuation);
 	c->next = continuations;
 	continuations = c;
@@ -751,7 +751,7 @@ static repv
 inner_call_cc (rep_continuation *c, void *data)
 {
     repv proxy;
-    proxy = Fmake_closure (rep_VAL(&Sprimitive_invoke_continuation), Qnil);
+    proxy = Fmake_closure (rep_VAL(&Sprimitive_invoke_continuation), rep_nil);
     rep_FUNARG(proxy)->env
 	= rep_add_binding_to_env (rep_FUNARG(proxy)->env,
 				  Qcontinuation, rep_VAL(c));
@@ -893,7 +893,7 @@ inner_thread_invoke (rep_continuation *c, void *data)
     rep_thread_lock = root_barrier->head->lock;
     DB (("invoking thread %p\n", root_barrier->head));
     thread_load_environ (root_barrier->head);
-    primitive_invoke_continuation (root_barrier->head->cont, Qnil);
+    primitive_invoke_continuation (root_barrier->head->cont, rep_nil);
     return rep_NULL;
 }
 
@@ -922,7 +922,7 @@ again:
 	    rep_thread_lock = root_barrier->head->lock;
 	    DB (("invoking thread %p\n", root_barrier->head));
 	    thread_load_environ (root_barrier->head);
-	    primitive_invoke_continuation (root_barrier->head->cont, Qnil);
+	    primitive_invoke_continuation (root_barrier->head->cont, rep_nil);
 	}
     }
     else
@@ -992,7 +992,7 @@ inner_make_thread (rep_continuation *c, void *data)
 static rep_thread *
 new_thread (repv name)
 {
-    rep_thread *t = rep_ALLOC_CELL (sizeof (rep_thread));
+    rep_thread *t = rep_alloc (sizeof (rep_thread));
     rep_data_after_gc += sizeof (rep_thread);
     memset (t, 0, sizeof (rep_thread));
     t->car = thread_type ();
@@ -1011,7 +1011,7 @@ ensure_default_thread (void)
     if (root_barrier->active == 0)
     {
 	/* entering threaded execution. make the default thread */
-	rep_thread *x = new_thread (Qnil);
+	rep_thread *x = new_thread (rep_nil);
 	thread_save_environ (x);
 	/* this continuation will never get called,
 	   but it simplifies things.. */
@@ -1142,7 +1142,7 @@ thread_suspend (rep_thread *t, u_long msecs,
     }
     t->poll = poll;
     t->poll_arg = poll_arg;
-    t->exit_val = Qnil;
+    t->exit_val = rep_nil;
     enqueue_thread (t, root);
     if (root_barrier->active == t)
 	thread_invoke ();
@@ -1281,7 +1281,7 @@ sweep_cont (void)
 	if (!rep_GC_CELL_MARKEDP (rep_VAL (c)))
 	{
 	    rep_free (c->stack_copy);
-	    rep_FREE_CELL (c);
+	    rep_free (c);
 	}
 	else
 	{
@@ -1334,7 +1334,7 @@ sweep_thread (void)
     {
 	rep_thread *next = t->next_alloc;
 	if (!rep_GC_CELL_MARKEDP (rep_VAL (t)))
-	    rep_FREE_CELL (t);
+	    rep_free (t);
 	else
 	{
 	    rep_GC_CLR_CELL (rep_VAL (t));
@@ -1422,7 +1422,7 @@ bind_object(repv obj)
     if (t->bind != 0)
 	return t->bind(obj);
     else
-	return Qnil;
+	return rep_nil;
 }
 
 static void
@@ -1430,7 +1430,7 @@ unbind_object (repv handle)
 {
     repv obj;
     rep_type *t;
-    if (handle == Qnil)
+    if (handle == rep_nil)
 	return;
     else if (rep_CONSP (handle))
 	obj = rep_CAR (handle);
@@ -1513,7 +1513,7 @@ static void
 call_in (void *data_)
 {
     repv *data = data_;
-    if (data[0] != Qnil)
+    if (data[0] != rep_nil)
 	rep_call_lisp0 (data[0]);
 }
 
@@ -1521,7 +1521,7 @@ static void
 call_out (void *data_)
 {
     repv *data = data_;
-    if (data[1] != Qnil)
+    if (data[1] != rep_nil)
 	rep_call_lisp0 (data[1]);
 }
 
@@ -1548,7 +1548,7 @@ The value of this function is the value returned by THUNK.
     thunks[1] = out;
     rep_PUSHGCN (gc_thunks, thunks, 2);
     ret = rep_call_with_barrier (rep_call_lisp0, thunk,
-				 closed == Qnil ? false : true,
+				 closed == rep_nil ? false : true,
 				 call_in, call_out, thunks);
     rep_POPGCN;
     return ret;
@@ -1595,9 +1595,9 @@ to run.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    return thread_yield () ? Qt : Qnil;
+    return thread_yield () ? Qt : rep_nil;
 #else
-    return Qnil;
+    return rep_nil;
 #endif
 }
 
@@ -1612,11 +1612,11 @@ thread results forces the containing dynamic root to be closed.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    if (th == Qnil)
-	th = Fcurrent_thread (Qnil);
+    if (th == rep_nil)
+	th = Fcurrent_thread (rep_nil);
     rep_DECLARE1 (th, THREADP);
     thread_delete (THREAD (th));
-    return Qnil;
+    return rep_nil;
 #else
     return rep_signal_arg_error (th, 1);
 #endif
@@ -1638,15 +1638,15 @@ Returns true if the timeout was reached.
 #ifdef WITH_CONTINUATIONS
     long timeout;
     repv no_timeout;
-    if (th == Qnil)
-	th = Fcurrent_thread (Qnil);
+    if (th == rep_nil)
+	th = Fcurrent_thread (rep_nil);
     rep_DECLARE1 (th, THREADP);
     rep_DECLARE2_OPT (msecs, rep_NUMERICP);
-    timeout = (msecs == Qnil) ? 1 : rep_get_long_int (msecs);
+    timeout = (msecs == rep_nil) ? 1 : rep_get_long_int (msecs);
     thread_suspend (THREAD (th), timeout, 0, 0);
     no_timeout = THREAD (th)->exit_val;
     THREAD (th)->exit_val = rep_NULL;
-    return no_timeout == Qnil ? Qt : Qnil;
+    return no_timeout == rep_nil ? Qt : rep_nil;
 #else
     return rep_signal_arg_error (th, 1);
 #endif
@@ -1675,7 +1675,7 @@ current dynamic root.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    repv self = Fcurrent_thread (Qnil);
+    repv self = Fcurrent_thread (rep_nil);
     rep_DECLARE (1, th, XTHREADP (th) && th != self
 		 && THREAD (th)->cont->root == root_barrier);
     if (THREADP (self))
@@ -1706,12 +1706,12 @@ being runnable once more.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    if (th == Qnil)
-	th = Fcurrent_thread (Qnil);
+    if (th == rep_nil)
+	th = Fcurrent_thread (rep_nil);
     rep_DECLARE1 (th, THREADP);
     THREAD (th)->exit_val = Qt;		/* signals timeout not reached */
     thread_wake (THREAD (th));
-    return Qnil;
+    return rep_nil;
 #else
     return rep_signal_arg_error (th, 1);
 #endif
@@ -1725,9 +1725,9 @@ Return `t' if ARG is a thread object.
 ::end:: */
 {
 #ifdef WITH_CONTINUATIONS
-    return XTHREADP (arg) ? Qt : Qnil;
+    return XTHREADP (arg) ? Qt : rep_nil;
 #else
-    return Qnil;
+    return rep_nil;
 #endif
 }
 
@@ -1741,7 +1741,7 @@ Return `t' if THREAD is currently suspended from running.
 {
 #ifdef WITH_CONTINUATIONS
     rep_DECLARE1 (th, THREADP);
-    return (THREAD (th)->car & TF_SUSPENDED) ? Qt : Qnil;
+    return (THREAD (th)->car & TF_SUSPENDED) ? Qt : rep_nil;
 #else
     return rep_signal_arg_error (th, 1);
 #endif
@@ -1757,7 +1757,7 @@ Return `t' if THREAD has exited.
 {
 #ifdef WITH_CONTINUATIONS
     rep_DECLARE1 (th, XTHREADP);
-    return (THREAD (th)->car & TF_EXITED) ? Qt : Qnil;
+    return (THREAD (th)->car & TF_EXITED) ? Qt : rep_nil;
 #else
     return rep_signal_arg_error (th, 1);
 #endif
@@ -1775,7 +1775,7 @@ Return the currently executing thread.
     rep_barrier *root;
 
     rep_DECLARE1_OPT (depth, rep_INTP);
-    if (depth == Qnil)
+    if (depth == rep_nil)
 	depth = rep_MAKE_INT (0);
 
     if (depth == rep_MAKE_INT (0))
@@ -1783,11 +1783,11 @@ Return the currently executing thread.
 
     root = get_dynamic_root (rep_INT (depth));
     if (root == 0)
-	return Qnil;
+	return rep_nil;
     else
-	return (root->active) ? rep_VAL (root->active) : Qnil;
+	return (root->active) ? rep_VAL (root->active) : rep_nil;
 #else
-    return Qnil;
+    return rep_nil;
 #endif
 }
 
@@ -1802,7 +1802,7 @@ Return a list of all threads.
     rep_barrier *root;
 
     rep_DECLARE1_OPT (depth, rep_INTP);
-    if (depth == Qnil)
+    if (depth == rep_nil)
 	depth = rep_MAKE_INT (0);
 
     if (depth == rep_MAKE_INT (0))
@@ -1810,10 +1810,10 @@ Return a list of all threads.
 
     root = get_dynamic_root (rep_INT (depth));
     if (root == 0)
-	return Qnil;
+	return rep_nil;
     else
     {
-	repv out = Qnil;
+	repv out = rep_nil;
 	rep_thread *ptr;
 	for (ptr = root->susp_tail; ptr != 0; ptr = ptr->pred)
 	    out = Fcons (rep_VAL (ptr), out);
@@ -1822,7 +1822,7 @@ Return a list of all threads.
 	return out;
     }
 #else
-    return Qnil;
+    return rep_nil;
 #endif
 }
 
@@ -1836,7 +1836,7 @@ as this function returns.
 ::end:: */
 {
     rep_FORBID;
-    return rep_PREEMPTABLE_P ? Qnil : Qt;
+    return rep_PREEMPTABLE_P ? rep_nil : Qt;
 }
 
 DEFUN("thread-permit", Fthread_permit, Sthread_permit, (void), rep_Subr0) /*
@@ -1849,7 +1849,7 @@ as this function returns.
 ::end:: */
 {
     rep_PERMIT;
-    return rep_PREEMPTABLE_P ? Qnil : Qt;
+    return rep_PREEMPTABLE_P ? rep_nil : Qt;
 }
 
 DEFUN("thread-name", Fthread_name, Sthread_name, (repv th), rep_Subr1) /*
@@ -1876,7 +1876,7 @@ rep_continuations_init (void)
     repv tem = rep_push_structure ("rep.lang.interpreter");
 
 #ifdef WITH_CONTINUATIONS
-    exit_barrier_cell = Fcons (Qnil, Qnil);
+    exit_barrier_cell = Fcons (rep_nil, rep_nil);
     rep_mark_static (&exit_barrier_cell);
     rep_INTERN(continuation);
     rep_ADD_INTERNAL_SUBR(Sprimitive_invoke_continuation);

@@ -49,10 +49,10 @@ completion_generator (char *word, int state)
     if (state == 0)
     {
 	repv fun = completion_fun;
-	if (fun == Qnil)
+	if (fun == rep_nil)
 	    /* backwards compatibility, ugh */
 	    fun = Fsymbol_value (Qrl_completion_generator, Qt);
-	if (Ffunctionp (fun) != Qnil)
+	if (Ffunctionp (fun) != rep_nil)
 	{
 	    completions = (rep_call_with_barrier
 			   (Ffuncall, rep_list_2 (fun, rep_string_dup (word)),
@@ -63,13 +63,13 @@ completion_generator (char *word, int state)
 	    repv re = Fquote_regexp (rep_string_dup (word));
 	    repv boundp = Fsymbol_value (Qboundp, Qt);
 	    completions = Fapropos (rep_concat2("^", rep_STR(re)),
-				    boundp, Qnil);
+				    boundp, rep_nil);
 	}
 	if (completions == rep_NULL)
-	    completions = Qnil;
+	    completions = rep_nil;
     }
 
-    if (completions != Qnil && rep_CONSP(completions)
+    if (completions != rep_nil && rep_CONSP(completions)
 	&& (rep_SYMBOLP(rep_CAR(completions))
 	    || rep_STRINGP(rep_CAR(completions))))
     {
@@ -178,7 +178,7 @@ DEFUN("readline", Freadline, Sreadline,
     char *prompt = rep_STRINGP(prompt_) ? ((char *) rep_STR(prompt_)) : "> ";
 #ifdef HAVE_LIBREADLINE
     char *input;
-    repv ret = Qnil, saved;
+    repv ret = rep_nil, saved;
     rep_GC_root gc_saved;
 
     saved = completion_fun;
@@ -199,7 +199,7 @@ DEFUN("readline", Freadline, Sreadline,
 	rep_STR(ret)[len+1] = 0;
 	free (input);
     }
-    completions = Qnil;
+    completions = rep_nil;
     return ret;
 #else
     if (isatty (0))
@@ -221,8 +221,8 @@ rep_dl_init(void)
     repv tem;
     rep_INTERN(rl_completion_generator);
     rep_INTERN(boundp);
-    completions = Qnil;
-    completion_fun = Qnil;
+    completions = rep_nil;
+    completion_fun = rep_nil;
     rep_mark_static (&completions);
     rep_mark_static (&completion_fun);
 

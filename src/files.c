@@ -173,11 +173,11 @@ static inline repv
 file_handler_ref (repv handler)
 {
     repv tem = Fget_structure (Qrep_io_file_handlers);
-    if (tem != Qnil)
+    if (tem != rep_nil)
     {
 	tem = F_structure_ref (tem, handler);
 	if (!tem || rep_VOIDP (tem))
-	    tem = Qnil;
+	    tem = rep_nil;
     }
     return tem;
 }
@@ -185,13 +185,13 @@ file_handler_ref (repv handler)
 repv
 rep_signal_file_error(repv cdr)
 {
-    repv data = Fcons(rep_lookup_errno(), Qnil);
+    repv data = Fcons(rep_lookup_errno(), rep_nil);
     if(cdr)
     {
 	if(rep_CONSP(cdr) || rep_NILP(cdr))
 	    rep_CDR(data) = cdr;
 	else
-	    rep_CDR(data) = Fcons(cdr, Qnil);
+	    rep_CDR(data) = Fcons(cdr, rep_nil);
     }
     return Fsignal(Qfile_error, data);
 }
@@ -211,13 +211,13 @@ rep_get_file_handler(repv file_name, int op)
     repv list = Fsymbol_value(Qfile_handler_alist, Qt);
     struct rep_saved_regexp_data matches;
     if(!list)
-	return Qnil;
+	return rep_nil;
     rep_DECLARE1(file_name, rep_STRINGP);
     rep_push_regexp_data(&matches);
     while(rep_CONSP(list) && rep_CONSP(rep_CAR(list)))
     {
 	repv tem = Fstring_match(rep_CAR(rep_CAR(list)), file_name,
-				     Qnil, Qnil);
+				     rep_nil, rep_nil);
 	if(tem && !rep_NILP(tem))
 	{
 	    /* Check that this operation isn't already active. */
@@ -237,7 +237,7 @@ rep_get_file_handler(repv file_name, int op)
 	    break;
     }
     rep_pop_regexp_data();
-    return Qnil;
+    return rep_nil;
 }
 
 /* Call the file handler function HANDLER, for file operation
@@ -249,7 +249,7 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
 {
     struct blocked_op op_data;
     struct rep_saved_regexp_data matches;
-    repv arg_list = Qnil;
+    repv arg_list = rep_nil;
     repv *ptr = &arg_list;
     repv res;
     int i;
@@ -258,7 +258,7 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
     va_start(args, nargs);
     for(i = 0; i < nargs; i++)
     {
-	*ptr = Fcons((repv)va_arg(args, repv), Qnil);
+	*ptr = Fcons((repv)va_arg(args, repv), rep_nil);
 	ptr = &rep_CDR(*ptr);
     }
     va_end(args);
@@ -316,18 +316,18 @@ rep_get_handler_from_file_or_name(repv *filep, int op)
 	    return rep_unbound_file_error(file);
 	handler = rep_FILE(file)->handler;
 	if(handler == Qt)
-	    handler = Qnil;
+	    handler = rep_nil;
     }
     else
     {
-	file = Fexpand_file_name(file, Qnil);
+	file = Fexpand_file_name(file, rep_nil);
 	if(file)
 	{
 	    *filep = file;
 	    handler = rep_get_file_handler(file, op);
 	}
 	else
-	    handler = Qnil;
+	    handler = rep_nil;
     }
     return handler;
 }
@@ -339,7 +339,7 @@ rep_expand_and_get_handler(repv *file_namep, int op)
 {
     repv file_name = *file_namep, handler;
     rep_DECLARE1(file_name, rep_STRINGP);
-    file_name = Fexpand_file_name(file_name, Qnil);
+    file_name = Fexpand_file_name(file_name, rep_nil);
     if(!file_name)
 	return rep_NULL;
     handler = rep_get_file_handler(file_name, op);
@@ -359,7 +359,7 @@ rep_localise_and_get_handler(repv *file_namep, int op)
 	return rep_NULL;
     if(rep_NILP(file_name))
     {
-	file_name = Fexpand_file_name(*file_namep, Qnil);
+	file_name = Fexpand_file_name(*file_namep, rep_nil);
 	if(!file_name)
 	    return rep_NULL;
     }
@@ -433,7 +433,7 @@ or whatever).
 	if(!rep_STRINGP(dir_name))
 	    dir_name = Fsymbol_value(Qdefault_directory, Qt);
 	if(rep_VOIDP(dir_name))
-	    dir_name = Qnil;
+	    dir_name = rep_nil;
 	dir_name = Ffile_name_as_directory(dir_name);
 	if(dir_name && rep_STRINGP(dir_name) && rep_STRING_LEN(dir_name) > 0)
 	    file_name = rep_concat2(rep_STR(dir_name), rep_STR(file_name));
@@ -611,7 +611,7 @@ on LOCAL-FILE. Note that this makes LOCAL-FILE do non-blocking input.
     int fd;
     rep_DECLARE(1, file, rep_FILEP(file) && rep_LOCAL_FILE_P(file));
     fd = fileno(rep_FILE(file)->file.fh);
-    if (function != Qnil)
+    if (function != rep_nil)
     {
 	struct input_handler *x;
 	for (x = input_handlers; x != 0; x = x->next)
@@ -643,7 +643,7 @@ on LOCAL-FILE. Note that this makes LOCAL-FILE do non-blocking input.
 		rep_free (x);
 	    }
 	}
-	return Qnil;
+	return rep_nil;
     }
 }
 
@@ -663,15 +663,15 @@ mark_input_handlers (void)
 static repv
 make_file(void)
 {
-    repv file = rep_VAL(rep_ALLOC_CELL(sizeof(rep_file)));
+    repv file = rep_VAL(rep_alloc(sizeof(rep_file)));
     if(file == rep_NULL)
 	return rep_mem_error();
     rep_data_after_gc += sizeof (rep_file);
     rep_FILE(file)->car = rep_file_type | rep_LFF_BOGUS_LINE_NUMBER;
-    rep_FILE(file)->name = Qnil;
-    rep_FILE(file)->handler = Qnil;
-    rep_FILE(file)->handler_data = Qnil;
-    rep_FILE(file)->file.stream = Qnil;
+    rep_FILE(file)->name = rep_nil;
+    rep_FILE(file)->handler = rep_nil;
+    rep_FILE(file)->handler_data = rep_nil;
+    rep_FILE(file)->file.stream = rep_nil;
     rep_FILE(file)->next = file_list;
     file_list = rep_FILE(file);
     return file;
@@ -692,7 +692,7 @@ file_sweep(void)
 	    {
 		fclose(lf->file.fh);
 	    }
-	    rep_FREE_CELL(lf);
+	    rep_free(lf);
 	}
 	else
 	{
@@ -708,7 +708,7 @@ static void
 file_prin(repv strm, repv obj)
 {
     rep_stream_puts(strm, "#<file ", -1, false);
-    if(rep_FILE(obj)->name != Qnil)
+    if(rep_FILE(obj)->name != rep_nil)
     {
 	rep_stream_puts(strm, rep_PTR(rep_FILE(obj)->name), -1, true);
 	rep_stream_putc(strm, '>');
@@ -734,7 +734,7 @@ filep ARG
 Returns t if ARG is a file object.
 ::end:: */
 {
-    return rep_FILEP(arg) ? Qt : Qnil;
+    return rep_FILEP(arg) ? Qt : rep_nil;
 }
 
 DEFUN("file-binding", Ffile_binding, Sfile_binding,
@@ -759,7 +759,7 @@ Returns true if FILE is linked to a tty.
 {
     rep_DECLARE1 (file, rep_FILEP);
     return (rep_LOCAL_FILE_P (file)
-	    && isatty (fileno (rep_FILE (file)->file.fh))) ? Qt : Qnil;
+	    && isatty (fileno (rep_FILE (file)->file.fh))) ? Qt : rep_nil;
 }
 
 DEFUN("file-bound-stream", Ffile_bound_stream, Sfile_bound_stream,
@@ -772,7 +772,7 @@ that it's bound to.
 ::end:: */
 {
     rep_DECLARE1(file, rep_FILEP);
-    return !rep_LOCAL_FILE_P(file) ? rep_FILE(file)->file.stream : Qnil;
+    return !rep_LOCAL_FILE_P(file) ? rep_FILE(file)->file.stream : rep_nil;
 }
 
 DEFUN("file-handler-data", Ffile_handler_data, Sfile_handler_data,
@@ -823,7 +823,7 @@ for ACCESS-TYPE requests. ACCESS-TYPE can be one of the symbols:
     rep_DECLARE2(access_type, rep_SYMBOLP);
 
     rep_PUSHGC(gc, access_type);
-    file_name = Fexpand_file_name(file_name, Qnil);
+    file_name = Fexpand_file_name(file_name, rep_nil);
     rep_POPGC;
     if(!file_name)
 	return file_name;
@@ -897,7 +897,7 @@ Signal that there will be no more I/O through the file object FILE.
 	return rep_unbound_file_error(file);
     if(rep_LOCAL_FILE_P(file))
     {
-	Fset_input_handler (file, Qnil);
+	Fset_input_handler (file, rep_nil);
 	if (!(rep_FILE(file)->car & rep_LFF_DONT_CLOSE))
 	    fclose(rep_FILE(file)->file.fh);
 	else
@@ -915,9 +915,9 @@ Signal that there will be no more I/O through the file object FILE.
     else
 	rep_call_file_handler(rep_FILE(file)->handler, op_close_file,
 			      Qclose_file, 1, file);
-    rep_FILE(file)->name = Qnil;
-    rep_FILE(file)->handler = Qnil;
-    rep_FILE(file)->file.stream = Qnil;
+    rep_FILE(file)->name = rep_nil;
+    rep_FILE(file)->handler = rep_nil;
+    rep_FILE(file)->file.stream = rep_nil;
     return Qt;
 }
 
@@ -967,7 +967,7 @@ current position will also fail.
 	return rep_unbound_file_error(file);
     if(rep_LOCAL_FILE_P(file))
     {
-	if(offset == Qnil)
+	if(offset == rep_nil)
 	    return rep_make_long_int (ftell(rep_FILE(file)->file.fh));
 	else
 	{
@@ -989,7 +989,7 @@ current position will also fail.
 		     rep_get_long_int(offset), whence) != 0)
 	    {
 		if (rep_FILE (file)->car & rep_LFF_SILENT_ERRORS)
-		    return Qnil;
+		    return rep_nil;
 		else
 		    return rep_signal_file_error(rep_LIST_1(file));
 	    }
@@ -1007,7 +1007,7 @@ DEFUN("set-file-ignore-errors", Fset_file_ignore_errors,
 {
     rep_DECLARE1 (file, rep_FILEP);
     rep_FILE (file)->car &= ~rep_LFF_SILENT_ERRORS;
-    rep_FILE (file)->car |= (status == Qnil) ? 0 : rep_LFF_SILENT_ERRORS;
+    rep_FILE (file)->car |= (status == rep_nil) ? 0 : rep_LFF_SILENT_ERRORS;
     return rep_undefined_value;
 }
 
@@ -1623,7 +1623,7 @@ rep_files_init(void)
     rep_mark_static (&Qfh_env_key);
 
     rep_INTERN_SPECIAL(file_handler_alist);
-    Fset (Qfile_handler_alist, Qnil);
+    Fset (Qfile_handler_alist, rep_nil);
 
     rep_INTERN_SPECIAL(default_directory);
     tem = rep_getpwd();
@@ -1749,7 +1749,7 @@ rep_files_kill(void)
 	{
 	    fclose(lf->file.fh);
 	}
-	rep_FREE_CELL(lf);
+	rep_free(lf);
 	lf = nxt;
     }
     file_list = NULL;

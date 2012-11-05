@@ -279,10 +279,6 @@ extern repv Fmacroexpand(repv, repv);
 /* from main.c */
 extern void rep_init(char *prog_name, int *argc, char ***argv,
 		     void (*sys_symbols)(void), void (*sys_usage)(void));
-extern void rep_init_from_dump(char *prog_name, int *argc, char ***argv,
-			       void (*sys_symbols)(void),
-			       void (*sys_usage)(void),
-			       char *dump_file);
 extern repv rep_load_environment (repv file);
 extern void rep_kill(void);
 extern bool rep_get_option (char *option, repv *argp);
@@ -345,10 +341,11 @@ extern repv Fchar_upcase(repv);
 extern repv Fchar_downcase(repv);
 
 /* from numbers.c */
+extern bool rep_long_int_p (repv value);
 extern repv rep_make_long_uint (uintptr_t in);
 extern repv rep_make_long_int (intptr_t in);
-extern uintptr_t rep_get_long_uint (repv in);
-extern intptr_t rep_get_long_int (repv in);
+extern uintptr_t rep_get_long_uint (repv value);
+extern intptr_t rep_get_long_int (repv value);
 extern repv rep_make_longlong_int (long long in);
 extern long long rep_get_longlong_int (repv in);
 extern repv rep_make_float (double in, bool force);
@@ -502,9 +499,6 @@ extern void rep_mark_tuple (repv t);
 
 /* from values.c */
 extern repv Qafter_gc_hook;
-extern rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
-extern rep_symbol *rep_dumped_symbols_start, *rep_dumped_symbols_end;
-extern repv rep_dumped_non_constants;
 extern int rep_guardian_type;
 extern repv rep_box_pointer (void *p);
 void *rep_unbox_pointer (repv v);

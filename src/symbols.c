@@ -110,21 +110,6 @@ function definition are both void and it has a nil property-list.
     return rep_make_tuple (rep_Symbol, rep_NULL, name);
 }
 
-static void
-symbol_sweep(void)
-{
-    /* Need to clear mark bits of dumped symbols, since they're mutable */
-    if (rep_dumped_symbols_start != rep_dumped_symbols_end)
-    {
-	rep_symbol *s;
-	for(s = rep_dumped_symbols_start; s < rep_dumped_symbols_end; s++)
-	{
-	    if(rep_GC_CELL_MARKEDP(rep_VAL(s)))
-		rep_GC_CLR_CELL(rep_VAL(s));
-	}
-    }
-}
-
 static int
 symbol_cmp(repv v1, repv v2)
 {
@@ -220,7 +205,7 @@ out:
 void
 rep_intern_static(repv *symp, repv name)
 {
-    if((*symp = Fintern(name, Qnil)))
+    if((*symp = Fintern(name, rep_nil)))
 	rep_mark_static(symp);
     else
 	abort();
@@ -260,7 +245,7 @@ the default `rep_obarray' if nil), or nil if no such symbol exists.
     if(!rep_VECTORP(ob))
 	ob = rep_obarray;
     if((vsize = rep_VECT_LEN(ob)) == 0)
-	return(Qnil);
+	return(rep_nil);
     ob = rep_VECT(ob)->array[hash(rep_STR(name)) % vsize];
     while(rep_SYMBOLP(ob))
     {
@@ -268,7 +253,7 @@ the default `rep_obarray' if nil), or nil if no such symbol exists.
 	    return(ob);
 	ob = rep_SYM(ob)->next;
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFSTRING(already_interned, "Symbol is already interned");
@@ -364,7 +349,7 @@ current environment.
     rep_funarg *f;
     if(!funarg_freelist)
     {
-	rep_funarg_block *sb = rep_ALLOC_CELL(sizeof(rep_funarg_block));
+	rep_funarg_block *sb = rep_alloc(sizeof(rep_funarg_block));
 	if(sb)
 	{
 	    int i;
@@ -432,7 +417,7 @@ DEFUN ("set-closure-structure", Fset_closure_structure,
     rep_DECLARE1 (closure, rep_FUNARGP);
     rep_DECLARE2 (structure, rep_STRUCTUREP);
     rep_FUNARG (closure)->structure = structure;
-    return Qnil;
+    return rep_nil;
 }
 
 DEFUN("closure-name", Fclosure_name,
@@ -454,7 +439,7 @@ funargp ARG
 Returns t if ARG is a closure
 ::end:: */
 {
-    return rep_FUNARGP(arg) ? Qt : Qnil;
+    return rep_FUNARGP(arg) ? Qt : rep_nil;
 }
 
 DEFUN("set-special-environment", Fset_special_environment,
@@ -503,7 +488,7 @@ static repv
 search_environment (repv sym)
 {
     register repv env;
-    for (env = rep_env; env != Qnil; env = rep_CDR (env))
+    for (env = rep_env; env != rep_nil; env = rep_CDR (env))
     {
 	if (rep_CONSP (rep_CAR (env))
 	    && rep_CAAR(env) == LEXTAG
@@ -512,7 +497,7 @@ search_environment (repv sym)
 	    return rep_CDAR (env);
 	}
     }
-    return Qnil;
+    return rep_nil;
 }
 
 /* this is also in lispmach.c and fluids.c */
@@ -520,12 +505,12 @@ static inline repv
 inlined_search_special_bindings (repv sym)
 {
     register repv env;
-    for (env = rep_special_bindings; env != Qnil; env = rep_CDR (env))
+    for (env = rep_special_bindings; env != rep_nil; env = rep_CDR (env))
     {
 	if (rep_CAAR(env) == sym)
 	    return rep_CAR (env);
     }
-    return Qnil;
+    return rep_nil;
 }
 
 static repv
@@ -571,7 +556,7 @@ rep_call_with_closure (repv closure, repv (*fun)(repv arg), repv arg)
     if (rep_FUNARGP (closure))
     {
 	struct rep_Call lc;
-	lc.fun = lc.args = Qnil;
+	lc.fun = lc.args = rep_nil;
 	rep_PUSH_CALL (lc);
 	rep_USE_FUNARG (closure);
 	ret = fun (arg);
@@ -603,7 +588,7 @@ rep_bind_special (repv oldList, repv symbol, repv newVal)
 repv
 rep_bind_symbol(repv oldList, repv symbol, repv newVal)
 {
-    if (oldList == Qnil)
+    if (oldList == rep_nil)
 	oldList = rep_NEW_FRAME;
 
     if (rep_SYM(symbol)->car & rep_SF_SPECIAL)
@@ -624,7 +609,7 @@ rep_bind_symbol(repv oldList, repv symbol, repv newVal)
 int
 rep_unbind_symbols(repv oldList)
 {
-    if (oldList != Qnil)
+    if (oldList != rep_nil)
     {
 	register repv tem;
 	int lexicals, specials;
@@ -697,8 +682,8 @@ variable will be set (if necessary) not the local value.)
 	}
 	else
 	{
-	    val = Qnil;
-	    args = Qnil;
+	    val = rep_nil;
+	    args = rep_nil;
 	}
 
 	need_to_eval = true;
@@ -712,7 +697,7 @@ variable will be set (if necessary) not the local value.)
 		if(rep_CONSP(val) && rep_CAR(val) == Qautoload)
 		{
 		    Fmakunbound (sym);
-		    tmp = Qnil;
+		    tmp = rep_nil;
 		}
 	    }
 	}
@@ -735,7 +720,7 @@ variable will be set (if necessary) not the local value.)
 	    {
 		val = tem;
 		need_to_eval = false;
-		tmp = Qnil;
+		tmp = rep_nil;
 	    }
 	}
 
@@ -836,7 +821,7 @@ values look for one of those first.
 	    if (val == rep_void_value)
 	    {
 		repv tem = inlined_search_special_bindings (sym);
-		if (tem != Qnil)
+		if (tem != rep_nil)
 		    val = rep_CDR (tem);
 		else
 		    val = F_structure_ref (rep_specials_structure, sym);
@@ -847,7 +832,7 @@ values look for one of those first.
     {
 	/* lexical variable */
 	repv tem = search_environment (sym);
-	if (tem != Qnil)
+	if (tem != rep_nil)
 	    val = rep_CDR(tem);
 	else
 	    val = F_structure_ref (rep_structure, sym);
@@ -856,7 +841,7 @@ values look for one of those first.
     if (rep_SYM(sym)->car & rep_SF_DEBUG)
 	rep_single_step_flag = true;
 
-    if(no_err == Qnil && rep_VOIDP(val))
+    if(no_err == rep_nil && rep_VOIDP(val))
 	return Fsignal(Qvoid_value, rep_LIST_1(sym));
     else
 	return val;
@@ -880,7 +865,7 @@ SYMBOL in buffers or windows which do not have their own local value.
 	if (spec < 0 || (spec > 0 && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)))
 	{
 	    repv tem = search_special_bindings (sym);
-	    if (tem != Qnil)
+	    if (tem != rep_nil)
 		val = rep_CDR (tem);
 	    else
 		val = F_structure_ref (rep_specials_structure, sym);
@@ -889,7 +874,7 @@ SYMBOL in buffers or windows which do not have their own local value.
     else
 	val = F_structure_ref (rep_structure, sym);
 
-    if(no_err == Qnil && rep_VOIDP(val))
+    if(no_err == rep_nil && rep_VOIDP(val))
 	return Fsignal(Qvoid_value, rep_LIST_1(sym));
     else
 	return val;
@@ -922,7 +907,7 @@ do_set (repv sym, repv val, repv (*setter)(repv st, repv var, repv val))
 		/* Fall through and set the default value. */
 	    }
 	    tem = inlined_search_special_bindings (sym);
-	    if (tem != Qnil)
+	    if (tem != rep_nil)
 		rep_CDR (tem) = val;
 	    else
 		val = Fstructure_define (rep_specials_structure, sym, val);
@@ -934,7 +919,7 @@ do_set (repv sym, repv val, repv (*setter)(repv st, repv var, repv val))
     {
 	/* lexical binding */
 	repv tem = search_environment (sym);
-	if (tem != Qnil)
+	if (tem != rep_nil)
 	    rep_CDR(tem) = val;
 	else
 	    val = setter (rep_structure, sym, val);
@@ -978,7 +963,7 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
 		return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
 	    tem = search_special_bindings (sym);
-	    if (tem != Qnil)
+	    if (tem != rep_nil)
 		rep_CDR (tem) = val;
 	    else
 		val = Fstructure_define (rep_specials_structure, sym, val);
@@ -1030,12 +1015,12 @@ Returns t if SYMBOL has a default value.
     if (rep_SYM(sym)->car & rep_SF_SPECIAL)
     {
 	repv tem = search_special_bindings (sym);
-	if (tem != Qnil)
-	    return rep_VOIDP (rep_CDR (tem)) ? Qnil : Qt;
+	if (tem != rep_nil)
+	    return rep_VOIDP (rep_CDR (tem)) ? rep_nil : Qt;
 	else
 	{
 	    tem = F_structure_ref (rep_specials_structure, sym);
-	    return rep_VOIDP (tem) ? Qnil : Qt;
+	    return rep_VOIDP (tem) ? rep_nil : Qt;
 	}
     }
     else
@@ -1050,7 +1035,7 @@ Returns t if SYMBOL has a value as a variable.
 ::end:: */
 {
     rep_DECLARE1(sym, rep_SYMBOLP);
-    return(rep_VOIDP(Fsymbol_value(sym, Qt)) ? Qnil : Qt);
+    return(rep_VOIDP(Fsymbol_value(sym, Qt)) ? rep_nil : Qt);
 }
 
 DEFUN("symbol-plist", Fsymbol_plist, Ssymbol_plist, (repv sym), rep_Subr1) /*
@@ -1068,7 +1053,7 @@ Returns the property-list of SYMBOL.
 	return Fsignal (Qvoid_value, rep_LIST_1(sym));	/* XXX */
 
     plist = F_structure_ref (plist_structure, sym);
-    return rep_VOIDP (plist) ? Qnil : plist;
+    return rep_VOIDP (plist) ? rep_nil : plist;
 }
 
 DEFUN("gensym", Fgensym, Sgensym, (void), rep_Subr0) /*
@@ -1096,7 +1081,7 @@ symbolp ARG
 Returns t if ARG is a symbol.
 ::end:: */
 {
-    return(rep_SYMBOLP(sym) ? Qt : Qnil);
+    return(rep_SYMBOLP(sym) ? Qt : rep_nil);
 }
 
 DEFUN("setq", Fsetq, Ssetq, (repv args, repv tail_posn), rep_SF) /*
@@ -1107,7 +1092,7 @@ Sets the value of each SYMBOL to the value of its corresponding FORM
 evaluated, returns the value of the last evaluation.
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_GC_root gc_args;
     rep_PUSHGC(gc_args, args);
     while(rep_CONSP(args) && rep_CONSP(rep_CDR(args)) && rep_SYMBOLP(rep_CAR(args)))
@@ -1135,7 +1120,7 @@ the result of the evaluation. If such a binding already exists, it will
 be overwritten.
 ::end:: */
 {
-    repv var, value, doc = Qnil;
+    repv var, value, doc = rep_nil;
     rep_GC_root gc_var, gc_doc;
 
     if (!rep_assign_args (args, 2, 3, &var, &value, &doc))
@@ -1151,10 +1136,10 @@ be overwritten.
     value = Fstructure_define (rep_structure, var, value);
     if (value != rep_NULL)
     {
-	if (doc != Qnil)
+	if (doc != rep_nil)
 	{
 	    repv prop = rep_documentation_property (rep_structure);
-	    if (prop != Qnil)
+	    if (prop != rep_nil)
 	    {
 		if (Fput (var, prop, doc) == rep_NULL)
 		    value = rep_NULL;
@@ -1186,7 +1171,7 @@ Returns the value of SYMBOL's property PROPERTY. See `put'.
     rep_DECLARE1(sym, rep_SYMBOLP);
     plist = F_structure_ref (plist_structure, sym);
     if (rep_VOIDP (plist))
-	return Qnil;
+	return rep_nil;
     while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
 	if(rep_CAR(plist) == prop
@@ -1197,7 +1182,7 @@ Returns the value of SYMBOL's property PROPERTY. See `put'.
 	}
 	plist = rep_CDR(rep_CDR(plist));
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("put", Fput, Sput, (repv sym, repv prop, repv val), rep_Subr3) /*
@@ -1217,7 +1202,7 @@ retrieved with the `get' function.
 
     old = F_structure_ref (plist_structure, sym);
     if (rep_VOIDP (old))
-	old = Qnil;
+	old = rep_nil;
     plist = old;
     while(rep_CONSP(plist) && rep_CONSP(rep_CDR(plist)))
     {
@@ -1225,12 +1210,6 @@ retrieved with the `get' function.
 	   || (!rep_SYMBOLP(prop)
 	       && rep_value_cmp (rep_CAR(plist), prop) == 0))
 	{
-	    if(!rep_CONS_WRITABLE_P(rep_CDR(plist)))
-	    {
-		/* Can't write into a dumped cell; need to cons
-		   onto the head. */
-		break;
-	    }
 	    rep_CAR(rep_CDR(plist)) = val;
 	    return val;
 	}
@@ -1257,7 +1236,7 @@ is non-nil it is considered a match.
     prog = rep_regcomp(rep_STR(re));
     if(prog)
     {
-	repv last = Qnil;
+	repv last = rep_nil;
 	int i, len = rep_VECT_LEN(ob);
 	rep_GC_root gc_last, gc_ob, gc_pred;
 	rep_PUSHGC(gc_last, last);
@@ -1324,7 +1303,7 @@ Returns t if SYMBOL is a special variable (dynamically scoped).
 ::end:: */
 {
     rep_DECLARE1(sym, rep_SYMBOLP);
-    return (rep_SYM(sym)->car & rep_SF_SPECIAL) ? Qt : Qnil;
+    return (rep_SYM(sym)->car & rep_SF_SPECIAL) ? Qt : rep_nil;
 }
 
 DEFUN_INT("trace", Ftrace, Strace, (repv sym), rep_Subr1, "aFunction to trace") /*
@@ -1357,7 +1336,7 @@ DEFUN("obarray", Fobarray, Sobarray, (repv val), rep_Subr1) /*
 obarray [NEW-VALUE]
 ::end:: */
 {
-    if(val != Qnil)
+    if(val != rep_nil)
     {
 	rep_DECLARE1(val, rep_VECTORP);
 	rep_obarray = val;
@@ -1399,14 +1378,14 @@ keywordp ARG
 Return true if ARG is a keyword symbol.
 ::end:: */
 {
-    return rep_KEYWORDP (arg) ? Qt : Qnil;
+    return rep_KEYWORDP (arg) ? Qt : rep_nil;
 }
 
 int
 rep_pre_symbols_init(void)
 {
     rep_register_type(rep_Symbol, "symbol", symbol_cmp, symbol_princ,
-		      symbol_print, symbol_sweep, 0, 0, 0, 0, 0, 0, 0, 0);
+		      symbol_print, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     rep_obarray = Fmake_obarray(rep_MAKE_INT(rep_OBSIZE));
     rep_keyword_obarray = Fmake_obarray(rep_MAKE_INT(rep_KEY_OBSIZE));
     rep_register_type(rep_Funarg, "funarg", rep_ptr_cmp,
@@ -1431,16 +1410,16 @@ rep_symbols_init(void)
 
     repv tem;
 
-    rep_pre_datums_init ();		/* initializes Qnil */
+    rep_pre_datums_init ();		/* initializes rep_nil */
     rep_INTERN(t);
     rep_pre_structures_init ();
 
     rep_USE_DEFAULT_ENV;
-    rep_special_bindings = Qnil;
+    rep_special_bindings = rep_nil;
     rep_mark_static (&rep_env);
     rep_mark_static (&rep_special_bindings);
 
-    plist_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
+    plist_structure = Fmake_structure (rep_nil, rep_nil, rep_nil, rep_nil);
     rep_mark_static (&plist_structure);
 
     rep_INTERN(documentation);

@@ -467,7 +467,7 @@ wait_for_input(fd_set *inputs, int timeout_msecs)
 
 	if (ready == 0 && actual_timeout_msecs < this_timeout_msecs)
 	{
-	    Fthread_suspend (Qnil, rep_MAKE_INT (this_timeout_msecs
+	    Fthread_suspend (rep_nil, rep_MAKE_INT (this_timeout_msecs
 						 - actual_timeout_msecs));
 	}
 	
@@ -530,7 +530,7 @@ handle_input(fd_set *inputs, int ready)
 repv
 rep_event_loop(void)
 {
-    repv result = Qnil;
+    repv result = rep_nil;
 
     if (rep_redisplay_fun != 0)
 	(*rep_redisplay_fun)();
@@ -582,11 +582,11 @@ rep_sit_for(int timeout_msecs)
     if(rep_INTERRUPTP)
 	return rep_NULL;
     else
-	return (ready > 0) ? Qnil : Qt;
+	return (ready > 0) ? rep_nil : Qt;
 }
 
 /* Wait TIMEOUT_MSECS for input, ignoring any input fds that would
-   invoke any callback function except CALLBACKS. Return Qnil if any
+   invoke any callback function except CALLBACKS. Return rep_nil if any
    input was serviced, Qt if the timeout expired, rep_NULL for an error. */
 repv
 rep_accept_input_for_callbacks (int timeout_msecs, int ncallbacks,
@@ -616,11 +616,11 @@ rep_accept_input_for_callbacks (int timeout_msecs, int ncallbacks,
     if(rep_INTERRUPTP)
 	return rep_NULL;
     else
-	return ready > 0 ? Qnil : Qt;
+	return ready > 0 ? rep_nil : Qt;
 }
 
 /* Wait TIMEOUT_MSECS for input from the NFDS file descriptors stored in FDS.
-   Return Qnil if any input was serviced, Qt if the timeout expired, rep_NULL
+   Return rep_nil if any input was serviced, Qt if the timeout expired, rep_NULL
    for an error. */
 repv
 rep_accept_input_for_fds (int timeout_msecs, int nfds, int *fds)
@@ -639,7 +639,7 @@ rep_accept_input_for_fds (int timeout_msecs, int nfds, int *fds)
     if(rep_INTERRUPTP)
 	return rep_NULL;
     else
-	return ready > 0 ? Qnil : Qt;
+	return ready > 0 ? rep_nil : Qt;
 }
 
 /* obsolete, for compatibility only */
@@ -947,7 +947,7 @@ rep_sys_os_init(void)
     char **ptr;
 
     /* Initialise process-environment variable */
-    env = Qnil;
+    env = rep_nil;
     if (environ != 0)
     {
 	ptr = environ;

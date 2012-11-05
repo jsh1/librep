@@ -296,7 +296,7 @@ still case-significant.
 	    res = Qt;
 	}
 	else
-	    res = Qnil;
+	    res = rep_nil;
 	return(res);
     }
     return rep_NULL;
@@ -328,7 +328,7 @@ Updates the match data.
 	    res = Qt;
 	}
 	else
-	    res = Qnil;
+	    res = rep_nil;
 	return res;
     }
     return rep_NULL;
@@ -383,12 +383,12 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
     {
 	if(last_matches.obj.startp[i] != rep_NULL)
 	    return last_matches.obj.startp[i];
-	return Qnil;
+	return rep_nil;
     }
     else
     {
 	if(last_matches.string.startp[i] == NULL)
-	    return(Qnil);
+	    return(rep_nil);
 	i = last_matches.string.startp[i] - (char *)rep_STR(last_match_data);
 	return(rep_MAKE_INT(i));
     }
@@ -419,12 +419,12 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
     {
 	if(last_matches.obj.endp[i] != rep_NULL)
 	    return last_matches.obj.endp[i];
-	return Qnil;
+	return rep_nil;
     }
     else
     {
 	if(last_matches.string.endp[i] == NULL)
-	    return(Qnil);
+	    return(rep_nil);
 	i = last_matches.string.endp[i] - (char *)rep_STR(last_match_data);
 	return(rep_MAKE_INT(i));
     }

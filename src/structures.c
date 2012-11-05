@@ -430,7 +430,7 @@ free_structure (rep_struct *x)
     }
     if (x->total_buckets > 0)
 	rep_free (x->buckets);
-    rep_FREE_CELL (x);
+    rep_free (x);
 }
 
 static void
@@ -456,7 +456,7 @@ structure_sweep (void)
 static void
 structure_print (repv stream, repv arg)
 {
-    if (rep_STRUCTURE (arg)->name == Qnil)
+    if (rep_STRUCTURE (arg)->name == rep_nil)
 	rep_stream_puts (stream, "#<structure>", -1, false);
     else
     {
@@ -651,7 +651,7 @@ such structure.
     rep_struct_node *n;
     rep_DECLARE1 (name, rep_SYMBOLP);
     n = lookup (rep_STRUCTURE (rep_structures_structure), name);
-    return n ? n->binding : Qnil;
+    return n ? n->binding : rep_nil;
 }
 
 DEFUN("name-structure", Fname_structure,
@@ -663,20 +663,20 @@ Assign the name NAME (a symbol) to structure object STRUCTURE.
 ::end:: */
 {
     rep_DECLARE1 (structure, rep_STRUCTUREP);
-    if (name != Qnil)
+    if (name != rep_nil)
     {
 	rep_DECLARE2 (name, rep_SYMBOLP);
 	Fstructure_define (rep_structures_structure, name, structure);
 
 	/* XXX I'm not sure about this..? */
-	if (rep_STRUCTURE (structure)->name == Qnil)
+	if (rep_STRUCTURE (structure)->name == rep_nil)
 	    rep_STRUCTURE (structure)->name = name;
     }
-    else if (rep_STRUCTURE (structure)->name != Qnil)
+    else if (rep_STRUCTURE (structure)->name != rep_nil)
     {
 	/* remove the name->structure relation */
 	Fstructure_define (rep_structures_structure,
-			   rep_STRUCTURE (structure)->name, Qnil);
+			   rep_STRUCTURE (structure)->name, rep_nil);
     }
     cache_flush ();
     return name;
@@ -714,21 +714,21 @@ BODY-THUNK may be modified by this function!
     rep_GC_root gc_body;
 
     rep_DECLARE1 (sig, rep_INTERFACEP);
-    if (header_thunk != Qnil)
+    if (header_thunk != rep_nil)
 	rep_DECLARE2 (header_thunk, rep_FUNARGP);
-    if (body_thunk != Qnil)
+    if (body_thunk != rep_nil)
 	rep_DECLARE3 (body_thunk, rep_FUNARGP);
-    if (name != Qnil)
+    if (name != rep_nil)
 	rep_DECLARE4 (name, rep_SYMBOLP);
 
-    s = rep_ALLOC_CELL (sizeof (rep_struct));
+    s = rep_alloc (sizeof (rep_struct));
     rep_data_after_gc += sizeof (rep_struct);
     s->car = rep_structure_type;
     s->inherited = sig;
     s->name = name;
     s->total_buckets = s->total_bindings = 0;
-    s->imports = Qnil;
-    s->accessible = Qnil;
+    s->imports = rep_nil;
+    s->accessible = rep_nil;
     s->special_env = Qt;
     if (rep_structure != rep_NULL)
 	s->apply_bytecode = rep_STRUCTURE (rep_structure)->apply_bytecode;
@@ -740,11 +740,11 @@ BODY-THUNK may be modified by this function!
     s_ = rep_VAL (s);
     rep_PUSHGC (gc_s, s_);
 
-    if (s->name != Qnil)
+    if (s->name != rep_nil)
 	Fname_structure (rep_VAL (s), s->name);
 
     rep_PUSHGC (gc_body, body_thunk);
-    if (header_thunk != Qnil)
+    if (header_thunk != rep_nil)
     {
 	repv tem;
 	s->imports = Fcons (Q_meta, s->imports);
@@ -756,7 +756,7 @@ BODY-THUNK may be modified by this function!
     }
     rep_POPGC;
 
-    if (s != 0 && body_thunk != Qnil)
+    if (s != 0 && body_thunk != rep_nil)
     {
 	repv tem;
 	rep_FUNARG (body_thunk)->structure = s_;
@@ -772,8 +772,8 @@ BODY-THUNK may be modified by this function!
     {
 	/* initialization failed. */
 	s = rep_STRUCTURE (s_);
-	if (s->name != Qnil)
-	    Fname_structure (rep_VAL (s), Qnil);
+	if (s->name != rep_nil)
+	    Fname_structure (rep_VAL (s), rep_nil);
 	return rep_NULL;
     }
 }
@@ -814,7 +814,7 @@ Return `t' if symbol VAR has a non-void binding in STRUCTURE.
 {
     repv tem = F_structure_ref (structure, var);
     if (tem != rep_NULL)
-	tem = rep_VOIDP (tem) ? Qnil : Qt;
+	tem = rep_VOIDP (tem) ? rep_nil : Qt;
     return tem;
 }
 
@@ -857,7 +857,7 @@ STRUCTURE to VALUE. If no such binding exists, an error is signalled.
     else
     {
 	remove_binding (s, var);
-	return Qnil;
+	return rep_nil;
     }
 }
 
@@ -892,7 +892,7 @@ STRUCTURE to VALUE. If no such binding exists, one is created.
     else
     {
 	remove_binding (s, var);
-	return Qnil;
+	return rep_nil;
     }
 }
 
@@ -915,9 +915,9 @@ Signals an error if no such binding exists.
 
     /* XXX caching here? */
     tem = Fmemq (name, rep_STRUCTURE (rep_structure)->accessible);
-    if (tem == Qnil)
+    if (tem == rep_nil)
 	tem = Fmemq (name, rep_STRUCTURE (rep_structure)->imports);
-    if (tem && tem != Qnil)
+    if (tem && tem != rep_nil)
     {
 	rep_struct_node *n = lookup_recursively (name, var);
 	if (n != 0)
@@ -981,10 +981,10 @@ VAR.
     rep_DECLARE2 (var, rep_SYMBOLP);
     n = lookup (rep_STRUCTURE (structure), var);
     if (n != 0)
-	return n->is_exported ? Qlocal : Qnil;
+	return n->is_exported ? Qlocal : rep_nil;
     else
 	return (structure_exports_inherited_p
-		(rep_STRUCTURE (structure), var) ? Qexternal : Qnil);
+		(rep_STRUCTURE (structure), var) ? Qexternal : rep_nil);
 }
 
 DEFUN ("structure-imports", Fstructure_imports,
@@ -1076,7 +1076,7 @@ attempt to load it.
     repv tem;
     rep_DECLARE1 (name, rep_SYMBOLP);
     tem = Fget_structure (name);
-    if (tem == Qnil)
+    if (tem == rep_nil)
     {
 	repv old = rep_structure;
 	rep_GC_root gc_name, gc_old;
@@ -1097,13 +1097,13 @@ attempt to load it.
 
 	rep_PUSHGC (gc_old, old);
 	rep_PUSHGC (gc_name, name);
-	tem = Fload (Fstructure_file (name), Qnil, Qnil, Qnil, Qnil);
+	tem = Fload (Fstructure_file (name), rep_nil, rep_nil, rep_nil, rep_nil);
 	rep_POPGC; rep_POPGC;
 
 	rep_structure = old;
 
 	if (tem != rep_NULL && !rep_STRUCTUREP (tem))
-	    tem = Qnil;
+	    tem = rep_nil;
     }
     return tem;
 }
@@ -1121,13 +1121,13 @@ named in the list STRUCT-NAMES.
 {
     rep_struct *dst = rep_STRUCTURE (rep_structure);
     rep_GC_root gc_args;
-    repv ret = Qnil;
+    repv ret = rep_nil;
     rep_DECLARE1 (args, rep_LISTP);
     rep_PUSHGC (gc_args, args);
     while (rep_CONSP (args))
     {
 	repv tem = Fmemq (rep_CAR (args), dst->imports);
-	if (tem == Qnil)
+	if (tem == rep_nil)
 	{
 	    repv s = rep_CAR (args);
 	    if (rep_SYMBOLP (s))
@@ -1158,13 +1158,13 @@ named in the list STRUCT-NAMES.
 {
     rep_struct *dst = rep_STRUCTURE (rep_structure);
     rep_GC_root gc_args;
-    repv ret = Qnil;
+    repv ret = rep_nil;
     rep_DECLARE1 (args, rep_LISTP);
     rep_PUSHGC (gc_args, args);
     while (rep_CONSP (args))
     {
 	repv tem = Fmemq (rep_CAR (args), dst->accessible);
-	if (tem == Qnil)
+	if (tem == rep_nil)
 	{
 	    repv s = Fintern_structure (rep_CAR (args));
 	    if (s == rep_NULL || !rep_STRUCTUREP (s))
@@ -1200,7 +1200,7 @@ structurep ARG
 Return `t' if ARG is a structure object.
 ::end:: */
 {
-    return rep_STRUCTUREP (arg) ? Qt : Qnil;
+    return rep_STRUCTUREP (arg) ? Qt : rep_nil;
 }
 
 DEFUN ("eval", Freal_eval, Seval_real,
@@ -1216,7 +1216,7 @@ Return the result of evaluating FORM inside structure object STRUCTURE
     repv old = rep_structure, old_env = rep_env;
     rep_GC_root gc_old, gc_old_env;
 
-    if (structure == Qnil)
+    if (structure == rep_nil)
 	structure = rep_structure;
     rep_DECLARE2 (structure, rep_STRUCTUREP);
 
@@ -1245,7 +1245,7 @@ value.
 ::end:: */
 {
     rep_GC_root gc_fun, gc_structure;
-    repv ret = Qnil;
+    repv ret = rep_nil;
     rep_struct *s;
     int i;
     rep_DECLARE2 (structure, rep_STRUCTUREP);
@@ -1322,14 +1322,14 @@ constant.
 {
     rep_struct_node *n;
     rep_DECLARE1(var, rep_SYMBOLP);
-    if (structure != Qnil)
+    if (structure != rep_nil)
 	rep_DECLARE2(structure, rep_STRUCTUREP);
     else
 	structure = rep_structure;
     n = lookup (rep_STRUCTURE (structure), var);
     if (n == 0)
 	n = rep_search_imports (rep_STRUCTURE (structure), var);
-    return (n != 0 && n->is_constant) ? Qt : Qnil;
+    return (n != 0 && n->is_constant) ? Qt : rep_nil;
 }
 
 repv
@@ -1357,7 +1357,7 @@ Fexport_binding (repv var)
 	cache_invalidate_symbol (var);
     }
 
-    return Qnil;
+    return rep_nil;
 }
 
 DEFUN ("export-bindings", Fexport_bindings,
@@ -1373,7 +1373,7 @@ DEFUN ("export-bindings", Fexport_bindings,
 	vars = rep_CDR (vars);
     }
 
-    return Qnil;
+    return rep_nil;
 }
 
 
@@ -1390,7 +1390,7 @@ structure.
     repv value;
     rep_DECLARE1 (feature, rep_SYMBOLP);
     value = F_structure_ref (rep_structure, Qfeatures);
-    return rep_VOIDP (value) ? Qnil : Fmemq (feature, value);
+    return rep_VOIDP (value) ? rep_nil : Fmemq (feature, value);
 }
 
 DEFUN("provide", Fprovide, Sprovide, (repv feature), rep_Subr1) /*
@@ -1405,9 +1405,9 @@ structure.
     rep_DECLARE1 (feature, rep_SYMBOLP);
     value = F_structure_ref (rep_structure, Qfeatures);
     if (rep_VOIDP (value))
-	value = Qnil;
+	value = rep_nil;
     tem = Fmemq (feature, value);
-    if (tem && tem == Qnil)
+    if (tem && tem == rep_nil)
 	value = Fcons (feature, value);
     Fstructure_define (rep_structure, Qfeatures, value);
     return feature;
@@ -1427,7 +1427,7 @@ loaded is either FILE (if given), or the print name of FEATURE.
 
     rep_DECLARE1 (feature, rep_SYMBOLP);
 
-    if (Ffeaturep (feature) != Qnil)
+    if (Ffeaturep (feature) != rep_nil)
 	return feature;
 
     /* Need to do all this locally, since the file providing the
@@ -1437,14 +1437,14 @@ loaded is either FILE (if given), or the print name of FEATURE.
        with only the %meta structure imported */
 
     tem = Fmemq (feature, dst->imports);
-    if (tem == Qnil)
+    if (tem == rep_nil)
     {
 	tem = Fget_structure (feature);
 	if (!rep_STRUCTUREP (tem))
 	{
 	    rep_GC_root gc_feature;
 	    rep_PUSHGC (gc_feature, feature);
-	    tem = Fload (Fstructure_file (feature), Qnil, Qnil, Qnil, Qnil);
+	    tem = Fload (Fstructure_file (feature), rep_nil, rep_nil, rep_nil, rep_nil);
 	    rep_POPGC;
 	    
 	    if (tem == rep_NULL)
@@ -1470,18 +1470,18 @@ repv
 rep_push_structure_name (repv name)
 {
     if (rep_STRINGP (name))
-	name = Fintern (name, Qnil);
+	name = Fintern (name, rep_nil);
     if (rep_SYMBOLP (name))
     {
 	repv s = Fget_structure (name);
 	repv old = rep_structure;
-	if (s == Qnil)
-	    s = Fmake_structure (Qnil, Qnil, Qnil, name);
+	if (s == rep_nil)
+	    s = Fmake_structure (rep_nil, rep_nil, rep_nil, name);
 	rep_structure = s;
 	return old;
     }
     else
-	return Qnil;
+	return rep_nil;
 }
 
 repv
@@ -1500,13 +1500,13 @@ rep_pop_structure (repv old)
 	return new;
     }
     else
-	return Qnil;
+	return rep_nil;
 }
 
 void
 rep_alias_structure (const char *name)
 {
-    repv sym = Fintern (rep_string_dup (name), Qnil);
+    repv sym = Fintern (rep_string_dup (name), rep_nil);
     Fname_structure (rep_structure, sym);
 }
 
@@ -1525,7 +1525,7 @@ rep_bootstrap_structure (const char *s)
 	  tem->imports = Fcons (Qrep_lang_interpreter, tem->imports);
       tem->imports = Fcons (Qrep_vm_interpreter, tem->imports); }
 
-    ret = Fload (Fstructure_file (name), Qnil, Qnil, Qnil, Qnil);
+    ret = Fload (Fstructure_file (name), rep_nil, rep_nil, rep_nil, rep_nil);
 
     rep_pop_structure (tem);
     return ret;
@@ -1534,7 +1534,7 @@ rep_bootstrap_structure (const char *s)
 repv
 rep_add_subr(rep_xsubr *subr, bool export)
 {
-    repv sym = Fintern (subr->name, Qnil);
+    repv sym = Fintern (subr->name, rep_nil);
     if (sym)
     {
 	rep_struct *s = rep_STRUCTURE (rep_structure);
@@ -1571,13 +1571,13 @@ DEFUN("structure-set-binds", Fstructure_set_binds,
 void
 rep_structure_exports_all (repv s, bool status)
 {
-    Fstructure_exports_all (s, status ? Qt : Qnil);
+    Fstructure_exports_all (s, status ? Qt : rep_nil);
 }
 
 void
 rep_structure_set_binds (repv s, bool status)
 {
-    Fstructure_set_binds (s, status ? Qt : Qnil);
+    Fstructure_set_binds (s, status ? Qt : rep_nil);
 }
 
 static repv
@@ -1592,14 +1592,14 @@ DEFUN("structure-install-vm", Fstructure_install_vm,
     rep_struct *s;
     rep_DECLARE1 (structure, rep_STRUCTUREP);
     s = rep_STRUCTURE (structure);
-    if (vm == Qnil)
+    if (vm == rep_nil)
     {
 	s->apply_bytecode = invalid_apply_bytecode;
-	return Qnil;
+	return rep_nil;
     }
     else
     {
-	rep_DECLARE (2, vm, Ffunctionp (vm) != Qnil);
+	rep_DECLARE (2, vm, Ffunctionp (vm) != rep_nil);
 	return rep_call_lisp1 (vm, structure);
     }
 }
@@ -1644,13 +1644,13 @@ rep_documentation_property (repv structure)
     char *buf;
 
     if (!rep_SYMBOLP (name))
-	return Qnil;
+	return rep_nil;
 
     name = rep_SYM (name)->name;
     buf = alloca (rep_STRING_LEN (name) + 32);
     sprintf (buf, "documentation#%s", rep_STR (name));
 
-    return Fintern (rep_string_dup (buf), Qnil);
+    return Fintern (rep_string_dup (buf), rep_nil);
 }
 
 
@@ -1665,9 +1665,9 @@ rep_pre_structures_init (void)
 						structure_sweep,
 						structure_mark,
 						0, 0, 0, 0, 0, 0, 0);
-    rep_default_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
-    rep_specials_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
-    rep_structures_structure = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
+    rep_default_structure = Fmake_structure (rep_nil, rep_nil, rep_nil, rep_nil);
+    rep_specials_structure = Fmake_structure (rep_nil, rep_nil, rep_nil, rep_nil);
+    rep_structures_structure = Fmake_structure (rep_nil, rep_nil, rep_nil, rep_nil);
 }
 
 void

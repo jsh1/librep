@@ -79,7 +79,7 @@ rep_stream_getc(repv stream)
 {
     int c = EOF;
     if(rep_NILP(stream)
-       && !(stream = Fsymbol_value(Qstandard_input, Qnil)))
+       && !(stream = Fsymbol_value(Qstandard_input, rep_nil)))
 	return c;
     switch(rep_TYPE(stream))
     {
@@ -153,7 +153,7 @@ rep_stream_ungetc(repv stream, int c)
 {
     int rc = false;
     if(rep_NILP(stream)
-       && !(stream = Fsymbol_value(Qstandard_input, Qnil)))
+       && !(stream = Fsymbol_value(Qstandard_input, rep_nil)))
 	return(rc);
 top:
     switch(rep_TYPE(stream))
@@ -215,7 +215,7 @@ rep_stream_putc(repv stream, int c)
 {
     int rc = -1;
 
-    if (stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
+    if (stream == rep_nil && !(stream = Fsymbol_value (Qstandard_output, rep_nil)))
 	goto bottom;
 
 top:
@@ -327,7 +327,7 @@ rep_stream_puts(repv stream, void *data, intptr_t bufLen,
     char *buf;
     intptr_t rc = -1;
 
-    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
+    if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_output, rep_nil)))
 	goto bottom;
 
     buf = isValString ? rep_STR (data) : data;
@@ -589,7 +589,7 @@ are available returns nil.
     if(rc != EOF)
 	return rep_MAKE_INT (rc);
     else
-	return Qnil;
+	return rep_nil;
 }
 
 DEFUN("peek-char", Fpeek_char, Speek_char, (repv stream), rep_Subr1) /*
@@ -608,7 +608,7 @@ characters are available returns nil.
 	return rep_MAKE_INT (c);
     }
     else
-	return Qnil;
+	return rep_nil;
 }
 
 DEFUN("read-chars", Fread_chars, Sread_chars,
@@ -647,7 +647,7 @@ that point. If no characters are read, nil will be returned.
     if (len > 0)
 	return rep_string_dupn (buf, len);
     else
-	return Qnil;
+	return rep_nil;
 }
 
 DEFUN("read-line", Fread_line, Sread_line, (repv stream), rep_Subr1) /*
@@ -664,7 +664,7 @@ Read one line of text from STREAM.
 	if (fgets (buf, sizeof (buf), rep_FILE (stream)->file.fh))
 	    return rep_string_dup (buf);
 	else
-	    return Qnil;
+	    return rep_nil;
     }
     else
     {
@@ -678,7 +678,7 @@ Read one line of text from STREAM.
 		break;
 	}
 	if (len == 0)
-	    return Qnil;
+	    return rep_nil;
 	return rep_string_dupn (buf, len);
     }
 }
@@ -726,7 +726,7 @@ variable `standard-input' if STREAM is unspecified) and return it.
 {
     repv res;
     int c;
-    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_input, Qnil)))
+    if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_input, rep_nil)))
     {
 	rep_signal_arg_error (stream, 1);
 	return rep_NULL;
@@ -751,7 +751,7 @@ STREAM (or the contents of the variable `standard-output') in a form suitable
 for `read'.
 ::end:: */
 {
-    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
+    if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_output, rep_nil)))
     {
 	rep_signal_arg_error (stream, 1);
 	return rep_NULL;
@@ -769,7 +769,7 @@ Prints a text representation of OBJECT to STREAM (or the contents of the
 variable `standard-output') in a form suitable for `read'.
 ::end:: */
 {
-    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
+    if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_output, rep_nil)))
     {
 	rep_signal_arg_error (stream, 1);
 	return rep_NULL;
@@ -787,7 +787,7 @@ variable standard-output), no strange characters are quoted and no quotes
 are printed around strings.
 ::end:: */
 {
-    if(stream == Qnil && !(stream = Fsymbol_value (Qstandard_output, Qnil)))
+    if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_output, rep_nil)))
     {
 	rep_signal_arg_error (stream, 1);
 	return rep_NULL;
@@ -854,7 +854,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	return rep_signal_missing_arg (1);
     stream = rep_CAR (args);
     args = rep_CDR (args);
-    if (stream == Qnil)
+    if (stream == rep_nil)
     {
 	stream = Fcons (rep_string_dupn ("", 0), rep_MAKE_INT (0));
 	make_string = true;
@@ -1074,7 +1074,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 			    goto exit;
 			else
 			{
-			    if (val == Qnil)
+			    if (val == rep_nil)
 				val = rep_null_string ();
 			    goto unquoted;
 			}
@@ -1176,7 +1176,7 @@ input-stream-p ARG
 Returns t if ARG is an input stream.
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     switch (rep_TYPE (arg))
     {
 	repv car, cdr;
@@ -1220,7 +1220,7 @@ output-stream-p ARG
 Returns t if ARG is an output stream.
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     switch (rep_TYPE (arg))
     {
 	repv car, cdr;

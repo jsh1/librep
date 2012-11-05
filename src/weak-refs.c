@@ -76,7 +76,7 @@ rep_scan_weak_refs (void)
 		&& !rep_GC_MARKEDP (WEAK_REF (ref)))
 	    {
 		/* but the object it points to was */
-		WEAK_REF (ref) = Qnil;
+		WEAK_REF (ref) = rep_nil;
 	    }
 	}
 	ref = next;

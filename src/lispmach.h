@@ -97,7 +97,7 @@ inline_unbind (repv item)
 	rep_special_bindings = list_tail (rep_special_bindings, specials);
 	return specials;
     }
-    else if (item == Qnil || (rep_CONSP (item) && rep_CAR (item) == Qerror))
+    else if (item == rep_nil || (rep_CONSP (item) && rep_CAR (item) == Qerror))
 	return 0;
     else
 	abort ();
@@ -134,9 +134,9 @@ static repv
 search_special_bindings (repv sym)
 {
     register repv env = rep_special_bindings;
-    while (env != Qnil && rep_CAAR(env) != sym)
+    while (env != rep_nil && rep_CAAR(env) != sym)
 	env = rep_CDR(env);
-    return env != Qnil ? rep_CAR(env) : env;
+    return env != rep_nil ? rep_CAR(env) : env;
 }
 
 /* Zero out N lisp pointers starting from address S */
@@ -156,7 +156,7 @@ list_ref (repv list, int elt)
 {
     while (rep_CONSP(list) && elt-- > 0)
 	list = rep_CDR(list);
-    return rep_CONSP(list) ? rep_CAR(list) : Qnil;
+    return rep_CONSP(list) ? rep_CAR(list) : rep_nil;
 }
 
 #ifdef CACHE_TOS
@@ -638,17 +638,17 @@ again: {
 		    break;
 
 		case rep_Subr1:
-		    TOP = rep_SUBR1FUN(tmp)(arg >= 1 ? stackp[1] : Qnil);
+		    TOP = rep_SUBR1FUN(tmp)(arg >= 1 ? stackp[1] : rep_nil);
 		    break;
 
 		case rep_Subr2:
 		    switch(arg)
 		    {
 		    case 0:
-			TOP = rep_SUBR2FUN(tmp)(Qnil, Qnil);
+			TOP = rep_SUBR2FUN(tmp)(rep_nil, rep_nil);
 			break;
 		    case 1:
-			TOP = rep_SUBR2FUN(tmp)(stackp[1], Qnil);
+			TOP = rep_SUBR2FUN(tmp)(stackp[1], rep_nil);
 			break;
 		    default:
 			TOP = rep_SUBR2FUN(tmp)(stackp[1], stackp[2]);
@@ -660,13 +660,13 @@ again: {
 		    switch(arg)
 		    {
 		    case 0:
-			TOP = rep_SUBR3FUN(tmp)(Qnil, Qnil, Qnil);
+			TOP = rep_SUBR3FUN(tmp)(rep_nil, rep_nil, rep_nil);
 			break;
 		    case 1:
-			TOP = rep_SUBR3FUN(tmp)(stackp[1], Qnil, Qnil);
+			TOP = rep_SUBR3FUN(tmp)(stackp[1], rep_nil, rep_nil);
 			break;
 		    case 2:
-			TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], Qnil);
+			TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], rep_nil);
 			break;
 		    default:
 			TOP = rep_SUBR3FUN(tmp)(stackp[1], stackp[2], stackp[3]);
@@ -678,16 +678,16 @@ again: {
 		    switch(arg)
 		    {
 		    case 0:
-			TOP = rep_SUBR4FUN(tmp)(Qnil, Qnil, Qnil, Qnil);
+			TOP = rep_SUBR4FUN(tmp)(rep_nil, rep_nil, rep_nil, rep_nil);
 			break;
 		    case 1:
-			TOP = rep_SUBR4FUN(tmp)(stackp[1], Qnil, Qnil, Qnil);
+			TOP = rep_SUBR4FUN(tmp)(stackp[1], rep_nil, rep_nil, rep_nil);
 			break;
 		    case 2:
-			TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2], Qnil, Qnil);
+			TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2], rep_nil, rep_nil);
 			break;
 		    case 3:
-			TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2], stackp[3], Qnil);
+			TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2], stackp[3], rep_nil);
 			break;
 		    default:
 			TOP = rep_SUBR4FUN(tmp)(stackp[1], stackp[2], stackp[3], stackp[4]);
@@ -699,19 +699,19 @@ again: {
 		    switch(arg)
 		    {
 		    case 0:
-			TOP = rep_SUBR5FUN(tmp)(Qnil, Qnil, Qnil, Qnil, Qnil);
+			TOP = rep_SUBR5FUN(tmp)(rep_nil, rep_nil, rep_nil, rep_nil, rep_nil);
 			break;
 		    case 1:
-			TOP = rep_SUBR5FUN(tmp)(stackp[1], Qnil, Qnil, Qnil, Qnil);
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], rep_nil, rep_nil, rep_nil, rep_nil);
 			break;
 		    case 2:
-			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], Qnil, Qnil, Qnil);
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], rep_nil, rep_nil, rep_nil);
 			break;
 		    case 3:
-			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3], Qnil, Qnil);
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3], rep_nil, rep_nil);
 			break;
 		    case 4:
-			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3], stackp[4], Qnil);
+			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3], stackp[4], rep_nil);
 			break;
 		    default:
 			TOP = rep_SUBR5FUN(tmp)(stackp[1], stackp[2], stackp[3], stackp[4], stackp[5]);
@@ -726,7 +726,7 @@ again: {
 		    }
 		    else
 		    {
-			tmp2 = Qnil;
+			tmp2 = rep_nil;
 			POPN(-arg); /* reclaim my args */
 			while(arg-- != 0)
 			{
@@ -837,7 +837,7 @@ again: {
 		/* a call to intepreted code, just cons up the args
 		   and send it to the interpreter.. */
 		POPN(- ((int) arg));
-		for (tmp2 = Qnil; arg-- > 0;)
+		for (tmp2 = rep_nil; arg-- > 0;)
 		{
 		    repv x; POP1 (x);
 		    tmp2 = Fcons (x, tmp2);
@@ -1104,7 +1104,7 @@ again: {
 #endif /* !OPTIMIZE_FOR_SPACE */
 
 	BEGIN_INSN (OP_REF)
-	    TOP = Fsymbol_value(TOP, Qnil);
+	    TOP = Fsymbol_value(TOP, rep_nil);
 	    NEXT;
 	END_INSN
 
@@ -1116,7 +1116,7 @@ again: {
 
 	BEGIN_INSN (OP_FLUID_REF)
 	    tmp = search_special_bindings (TOP);
-	    if (tmp != Qnil)
+	    if (tmp != rep_nil)
 	    {
 		TOP = rep_CDR (tmp);
 		SAFE_NEXT;
@@ -1131,7 +1131,7 @@ again: {
 	END_INSN
 
 	BEGIN_INSN (OP_ENCLOSE)
-	    TOP = Fmake_closure (TOP, Qnil);
+	    TOP = Fmake_closure (TOP, rep_nil);
 	    INLINE_NEXT;
 	END_INSN
 
@@ -1164,7 +1164,7 @@ again: {
 	END_INSN
 
 	BEGIN_INSN (OP_NIL)
-	    PUSH(Qnil);
+	    PUSH(rep_nil);
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1182,7 +1182,7 @@ again: {
 	    if(rep_CONSP(tmp))
 		TOP = rep_CAR(tmp);
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1191,7 +1191,7 @@ again: {
 	    if(rep_CONSP(tmp))
 		TOP = rep_CDR(tmp);
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1290,18 +1290,18 @@ again: {
 	END_INSN
 
 	BEGIN_INSN (OP_NOT)
-	    if(TOP == Qnil)
+	    if(TOP == rep_nil)
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_NULL)
-	    if(TOP == Qnil)
+	    if(TOP == rep_nil)
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1319,13 +1319,13 @@ again: {
 
 	BEGIN_INSN (OP_EQUAL)
 	    POP1 (tmp);
-	    TOP = (rep_value_cmp(TOP, tmp) == 0) ? Qt : Qnil;
+	    TOP = (rep_value_cmp(TOP, tmp) == 0) ? Qt : rep_nil;
 	    NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_EQ)
 	    POP1 (tmp);
-	    TOP = (TOP == tmp) ? Qt : Qnil;
+	    TOP = (TOP == tmp) ? Qt : rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1334,7 +1334,7 @@ again: {
 	END_INSN
 
 	BEGIN_INSN (OP_SCM_TEST)
-	    TOP = (TOP == rep_scm_f) ? Qnil : Qt;
+	    TOP = (TOP == rep_scm_f) ? rep_nil : Qt;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1343,17 +1343,17 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
 	    {
-		TOP = (rep_INT (tmp2) > rep_INT (tmp)) ? Qt : Qnil;
+		TOP = (rep_INT (tmp2) > rep_INT (tmp)) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 	    {
-		TOP = (rep_compare_numbers (tmp2, tmp) > 0) ? Qt : Qnil;
+		TOP = (rep_compare_numbers (tmp2, tmp) > 0) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else
 	    {
-		TOP = (rep_value_cmp (tmp2, tmp) > 0) ? Qt : Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) > 0) ? Qt : rep_nil;
 		NEXT;
 	    }
 	END_INSN
@@ -1363,17 +1363,17 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
 	    {
-		TOP = (rep_INT (tmp2) >= rep_INT (tmp)) ? Qt : Qnil;
+		TOP = (rep_INT (tmp2) >= rep_INT (tmp)) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 	    {
-		TOP = (rep_compare_numbers (tmp2, tmp) >= 0) ? Qt : Qnil;
+		TOP = (rep_compare_numbers (tmp2, tmp) >= 0) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else
 	    {
-		TOP = (rep_value_cmp (tmp2, tmp) >= 0) ? Qt : Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) >= 0) ? Qt : rep_nil;
 		NEXT;
 	    }
 	END_INSN
@@ -1383,17 +1383,17 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
 	    {
-		TOP = (rep_INT (tmp2) < rep_INT (tmp)) ? Qt : Qnil;
+		TOP = (rep_INT (tmp2) < rep_INT (tmp)) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 	    {
-		TOP = (rep_compare_numbers (tmp2, tmp) < 0) ? Qt : Qnil;
+		TOP = (rep_compare_numbers (tmp2, tmp) < 0) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else
 	    {
-		TOP = (rep_value_cmp (tmp2, tmp) < 0) ? Qt : Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) < 0) ? Qt : rep_nil;
 		NEXT;
 	    }
 	END_INSN
@@ -1403,17 +1403,17 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp2) && rep_INTP (tmp))
 	    {
-		TOP = (rep_INT (tmp2) <= rep_INT (tmp)) ? Qt : Qnil;
+		TOP = (rep_INT (tmp2) <= rep_INT (tmp)) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 	    {
-		TOP = (rep_compare_numbers (tmp2, tmp) <= 0) ? Qt : Qnil;
+		TOP = (rep_compare_numbers (tmp2, tmp) <= 0) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else
 	    {
-		TOP = (rep_value_cmp (tmp2, tmp) <= 0) ? Qt : Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) <= 0) ? Qt : rep_nil;
 		NEXT;
 	    }
 	END_INSN
@@ -1456,7 +1456,7 @@ again: {
 	    tmp = TOP;
 	    if (rep_INTP (tmp))
 	    {
-		TOP = (tmp == rep_MAKE_INT (0)) ? Qt : Qnil;
+		TOP = (tmp == rep_MAKE_INT (0)) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    TOP = Fzerop (tmp);
@@ -1467,12 +1467,12 @@ again: {
 	    tmp = TOP;
 	    if (rep_INTP (tmp))
 	    {
-		TOP = (tmp != rep_MAKE_INT (0)) ? Qt : Qnil;
+		TOP = (tmp != rep_MAKE_INT (0)) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    tmp = Fzerop (tmp);
 	    if (tmp != rep_NULL)
-		tmp = (tmp == Qnil) ? Qt : Qnil;
+		tmp = (tmp == rep_nil) ? Qt : rep_nil;
 	    TOP = tmp;
 	    NEXT;
 	END_INSN
@@ -1481,7 +1481,7 @@ again: {
 	    if(!rep_CONSP(TOP))
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1489,7 +1489,7 @@ again: {
 	    if(rep_CONSP(TOP))
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1497,7 +1497,7 @@ again: {
 	    if(rep_CONSP(TOP) || rep_NILP(TOP))
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1505,7 +1505,7 @@ again: {
 	    if(rep_NUMERICP(TOP))
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1513,7 +1513,7 @@ again: {
 	    if(rep_STRINGP(TOP))
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1521,7 +1521,7 @@ again: {
 	    if(rep_VECTORP(TOP))
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1536,7 +1536,7 @@ again: {
 	    if(rep_CONSP(tmp2) && rep_CAR(tmp2) == tmp)
 	    {
 		TOP = rep_CDR(tmp2);	/* leave result at stk[1] */
-		PUSH(Qnil);		/* cancel error */
+		PUSH(rep_nil);		/* cancel error */
 	    }
 	    SAFE_NEXT;
 	END_INSN
@@ -1582,7 +1582,7 @@ again: {
 	    if(rep_SYMBOLP(TOP))
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1610,7 +1610,7 @@ again: {
 		tmp = rep_CDR(TOP);	/* the error data */
 		rep_env = Fcons (tmp, rep_env);
 		BIND_PUSH(rep_MARK_LEX_BINDING (rep_NEW_FRAME));
-		TOP = Qnil;
+		TOP = rep_nil;
 	    }
 	    NEXT;
 	END_INSN
@@ -1784,7 +1784,7 @@ again: {
 	    if (rep_CONSP(tmp) && rep_CONSP(rep_CAR(tmp)))
 		TOP = rep_CAAR(tmp);
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1793,7 +1793,7 @@ again: {
 	    if (rep_CONSP(tmp) && rep_CONSP(rep_CDR(tmp)))
 		TOP = rep_CADR(tmp);
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1802,7 +1802,7 @@ again: {
 	    if (rep_CONSP(tmp) && rep_CONSP(rep_CAR(tmp)))
 		TOP = rep_CDAR(tmp);
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1811,7 +1811,7 @@ again: {
 	    if (rep_CONSP(tmp) && rep_CONSP(rep_CDR(tmp)))
 		TOP = rep_CDDR(tmp);
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1905,13 +1905,13 @@ again: {
 
 	BEGIN_INSN (OP_FORBID)
 	    rep_FORBID;
-	    PUSH (rep_PREEMPTABLE_P ? Qnil : Qt);
+	    PUSH (rep_PREEMPTABLE_P ? rep_nil : Qt);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_PERMIT)
 	    rep_PERMIT;
-	    PUSH (rep_PREEMPTABLE_P ? Qnil : Qt);
+	    PUSH (rep_PREEMPTABLE_P ? rep_nil : Qt);
 	    SAFE_NEXT;
 	END_INSN
 
@@ -1970,7 +1970,7 @@ again: {
 	    if(rep_FUNARGP(TOP))
 		TOP = Qt;
 	    else
-		TOP = Qnil;
+		TOP = rep_nil;
 	    SAFE_NEXT;
 	END_INSN
 
@@ -2002,28 +2002,28 @@ again: {
 	    tmp2 = TOP;
 	    if (rep_INTP (tmp) && rep_INTP (tmp2))
 	    {
-		TOP = (tmp2 == tmp) ? Qt : Qnil;
+		TOP = (tmp2 == tmp) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else if (rep_NUMBERP (tmp2) || rep_NUMBERP (tmp))
 	    {
-		TOP = (rep_compare_numbers (tmp2, tmp) == 0) ? Qt : Qnil;
+		TOP = (rep_compare_numbers (tmp2, tmp) == 0) ? Qt : rep_nil;
 		SAFE_NEXT;
 	    }
 	    else
 	    {
-		TOP = (rep_value_cmp (tmp2, tmp) == 0) ? Qt : Qnil;
+		TOP = (rep_value_cmp (tmp2, tmp) == 0) ? Qt : rep_nil;
 		NEXT;
 	    }
 	END_INSN
 
 	BEGIN_INSN (OP_TEST_SCM)
-	    TOP = (TOP == Qnil) ? rep_scm_f : rep_scm_t;
+	    TOP = (TOP == rep_nil) ? rep_scm_f : rep_scm_t;
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_TEST_SCM_F)
-	    if (TOP == Qnil)
+	    if (TOP == rep_nil)
 		TOP = rep_scm_f;
 	    SAFE_NEXT;
 	END_INSN
@@ -2049,13 +2049,13 @@ again: {
 	END_INSN
 
 	BEGIN_INSN (OP_OPTIONAL_ARG)
-	    PUSH ((argptr < argc) ? argv[argptr++] : Qnil);
+	    PUSH ((argptr < argc) ? argv[argptr++] : rep_nil);
 	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP_REST_ARG)
 	    int i;
-	    tmp = Qnil;
+	    tmp = rep_nil;
 	    for (i = argc - 1; i >= argptr; i--)
 	    {
 		if (argv[i] != rep_NULL)
@@ -2078,7 +2078,7 @@ again: {
 		    SAFE_NEXT;
 		}
 	    }
-	    PUSH (Qnil);
+	    PUSH (rep_nil);
 	    SAFE_NEXT;
 	END_INSN
 
@@ -2090,7 +2090,7 @@ again: {
 	    }
 	    else
 	    {
-		PUSH (Qnil);
+		PUSH (rep_nil);
 	    }
 	    SAFE_NEXT;
 	END_INSN
@@ -2108,7 +2108,7 @@ again: {
 		    SAFE_NEXT;
 		}
 	    }
-	    PUSH (Qnil);
+	    PUSH (rep_nil);
 	    SAFE_NEXT;
 	END_INSN
 
@@ -2190,7 +2190,7 @@ again: {
 
 	    /* ...or if it's time to gc... */
 	    if(rep_data_after_gc >= rep_gc_threshold)
-		Fgarbage_collect (Qnil);
+		Fgarbage_collect (rep_nil);
 
 	    /* ...or time to switch threads */
 	    rep_MAY_YIELD;
@@ -2279,7 +2279,7 @@ quit:
 
     /* moved to after the execution, to avoid needing to gc protect argv */
     if(rep_data_after_gc >= rep_gc_threshold)
-	Fgarbage_collect (Qnil);
+	Fgarbage_collect (rep_nil);
     rep_MAY_YIELD;
 
     rep_lisp_depth--;

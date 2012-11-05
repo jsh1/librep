@@ -26,7 +26,6 @@
 
 #define _GNU_SOURCE
 
-#define rep_DEFINE_QNIL 1
 #include "repint.h"
 
 static int datum_type;
@@ -40,8 +39,8 @@ static repv printer_alist;
 #define DATUM_ID(x) (rep_TUPLE(x)->a)
 #define DATUM_VALUE(x) (rep_TUPLE(x)->b)
 
-/* This is what Qnil points to */
 rep_tuple rep_eol_datum;
+repv Qnil;
 
 
 /* type hooks */
@@ -58,7 +57,7 @@ datum_cmp (repv d1, repv d2)
 static void
 datum_print (repv stream, repv arg)
 {    
-    if (arg == Qnil)
+    if (arg == rep_nil)
     {
 	DEFSTRING (eol, "()");
 	rep_stream_puts (stream, rep_PTR (rep_VAL (&eol)), 2, true);
@@ -66,7 +65,7 @@ datum_print (repv stream, repv arg)
     else
     {
 	repv printer = Fassq (DATUM_ID (arg), printer_alist);
-	if (printer && rep_CONSP (printer) && rep_CDR (printer) != Qnil)
+	if (printer && rep_CONSP (printer) && rep_CDR (printer) != rep_nil)
 	    rep_call_lisp2 (rep_CDR (printer), arg, stream);
 	else if (rep_SYMBOLP (DATUM_ID (arg)))
 	{
@@ -147,7 +146,7 @@ Return `t' if object ARG has data type ID (and thus was initially
 created using the `make-datum' function).
 ::end:: */
 {
-    return (DATUMP (arg) && DATUM_ID (arg) == id) ? Qt : Qnil;
+    return (DATUMP (arg) && DATUM_ID (arg) == id) ? Qt : rep_nil;
 }
 
 
@@ -167,6 +166,8 @@ rep_pre_datums_init (void)
     rep_eol_datum.car = datum_type | rep_CELL_STATIC_BIT | rep_CELL_MARK_BIT;
     rep_eol_datum.a = rep_VAL (&rep_eol_datum);
     rep_eol_datum.b = rep_VAL (&rep_eol_datum);
+
+    Qnil = rep_nil;
 }
 
 void
@@ -179,7 +180,7 @@ rep_datums_init (void)
     rep_ADD_SUBR (Sdatum_ref);
     rep_ADD_SUBR (Sdatum_set);
     rep_ADD_SUBR (Shas_type_p);
-    printer_alist = Qnil;
+    printer_alist = rep_nil;
     rep_mark_static (&printer_alist);
 
     rep_pop_structure (tem);

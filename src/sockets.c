@@ -82,7 +82,7 @@ struct rep_socket_struct {
 static rep_socket *
 make_socket_ (int sock_fd, int namespace, int style)
 {
-    rep_socket *s = rep_ALLOC_CELL (sizeof (rep_socket));
+    rep_socket *s = rep_alloc (sizeof (rep_socket));
     rep_data_after_gc += sizeof (rep_socket);
 
     s->car = socket_type | IS_ACTIVE;
@@ -91,7 +91,7 @@ make_socket_ (int sock_fd, int namespace, int style)
     s->style = style;
     s->addr = rep_NULL;
     s->p_addr = rep_NULL;
-    s->sentinel = s->stream = Qnil;
+    s->sentinel = s->stream = rep_nil;
 
     s->next = socket_list;
     socket_list = s;
@@ -134,7 +134,7 @@ static void
 shutdown_socket_and_call_sentinel (rep_socket *s)
 {
     shutdown_socket (s);
-    if (s->sentinel != Qnil)
+    if (s->sentinel != rep_nil)
 	rep_call_lisp1 (s->sentinel, rep_VAL (s));
 }
 
@@ -144,7 +144,7 @@ delete_socket (rep_socket *s)
     if (SOCKET_IS_ACTIVE (s))
 	shutdown_socket (s);
 
-    rep_FREE_CELL (s);
+    rep_free (s);
 }
 
 static rep_socket *
@@ -176,7 +176,7 @@ client_socket_output (int fd)
 	if (actual > 0)
 	{
 	    buf[actual] = 0;
-	    if (s->stream != Qnil)
+	    if (s->stream != rep_nil)
 		rep_stream_puts (s->stream, buf, actual, false);
 	}
     } while (actual > 0 || (actual < 0 && errno == EINTR));
@@ -218,7 +218,7 @@ server_socket_output (int fd)
 
     DB (("server_socket_output for %d\n", fd));
 
-    if (s->stream != Qnil)
+    if (s->stream != rep_nil)
 	rep_call_lisp1 (s->stream, rep_VAL (s));
 }
     
@@ -426,7 +426,7 @@ cause the SENTINEL function associated with SOCKET to run.
 {
     rep_DECLARE (1, sock, SOCKETP (sock));
     shutdown_socket (SOCKET (sock));
-    return Qnil;
+    return rep_nil;
 }
 
 DEFUN ("socket-accept", Fsocket_accept, Ssocket_accept,
@@ -480,7 +480,7 @@ subsequently call `close-socket' on the created client.
 	return rep_VAL (client);
     }
     else
-	return Qnil;
+	return rep_nil;
 }
 
 static void
@@ -518,8 +518,8 @@ fill_in_address (rep_socket *s)
 	}
 	if (s->addr == rep_NULL)
 	{
-	    s->addr = Qnil;
-	    s->port = Qnil;
+	    s->addr = rep_nil;
+	    s->port = rep_nil;
 	}
     }
 }
@@ -545,8 +545,8 @@ fill_in_peer_address (rep_socket *s)
 	}
 	if (s->p_addr == rep_NULL)
 	{
-	    s->p_addr = Qnil;
-	    s->p_port = Qnil;
+	    s->p_addr = rep_nil;
+	    s->p_port = rep_nil;
 	}
     }
 }
@@ -632,7 +632,7 @@ socketp ARG
 Return true if ARG is an unclosed socket object.
 ::end:: */
 {
-    return (SOCKETP (arg) && SOCKET_IS_ACTIVE (SOCKET (arg))) ? Qt : Qnil;
+    return (SOCKETP (arg) && SOCKET_IS_ACTIVE (SOCKET (arg))) ? Qt : rep_nil;
 }
 
 

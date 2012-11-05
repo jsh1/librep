@@ -119,7 +119,7 @@ DEFUN ("lexical-origin", Flexical_origin,
 	form = rep_FUNARG (form)->fun;
 
     if (!rep_CONSP (form))
-	return Qnil;
+	return rep_nil;
 
     for (item = buckets[HASH (form)]; item != 0; item = item->next)
     {
@@ -131,12 +131,12 @@ DEFUN ("lexical-origin", Flexical_origin,
     while (rep_CONSP (form))
     {
 	repv out = Flexical_origin (rep_CAR (form));
-	if (out != Qnil)
+	if (out != rep_nil)
 	    return out;
 	form = rep_CDR (form);
     }
 
-    return Qnil;
+    return rep_nil;
 }
 
 void
@@ -155,7 +155,7 @@ rep_mark_origins (void)
 DEFUN ("origin-after-gc", Forigin_after_gc, Sorigin_after_gc, (void), rep_Subr0)
 {
     repv form;
-    while ((form = Fprimitive_guardian_pop (guardian)) != Qnil)
+    while ((form = Fprimitive_guardian_pop (guardian)) != rep_nil)
     {
 	origin_item **ptr = buckets + HASH (form);
 	while (*ptr != 0)
@@ -171,7 +171,7 @@ DEFUN ("origin-after-gc", Forigin_after_gc, Sorigin_after_gc, (void), rep_Subr0)
 		ptr = &(*ptr)->next;
 	}
     }
-    return Qnil;
+    return rep_nil;
 }
 
 void
@@ -183,7 +183,7 @@ rep_origin_init (void)
 
     tem = Fsymbol_value (Qafter_gc_hook, Qt);
     if (rep_VOIDP (tem))
-	tem = Qnil;
+	tem = rep_nil;
     Fset (Qafter_gc_hook, Fcons (rep_VAL(&Sorigin_after_gc), tem));
 
     tem = rep_push_structure ("rep.lang.debug");

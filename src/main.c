@@ -130,11 +130,11 @@ get_main_options(char *prog_name, int *argc_p, char ***argv_p)
 
     /* any command line args are made into a list of strings
        in symbol command-line-args.  */
-    head = Qnil;
+    head = rep_nil;
     last = &head;
     while(argc > 0)
     {
-	*last = Fcons(rep_string_dup(*argv), Qnil);
+	*last = Fcons(rep_string_dup(*argv), rep_nil);
 	last = &rep_CDR(*last);
 	argc--;
 	argv++;
@@ -177,25 +177,9 @@ check_configuration (int *stack_low)
     }
 }
 
-/* Note that `argc' _must_ (I mean _must_!) be a pointer to the real
-   argc on the stack frame of the outermost procedure */
 void
 rep_init(char *prog_name, int *argc, char ***argv,
 	 void (*sys_symbols)(void), void (*obsolete_sys_usage)(void))
-{
-#ifdef ENABLE_BROKEN_DUMPING
-    char *dump_file = getenv ("REPDUMPFILE");
-#else
-    char *dump_file = 0;
-#endif
-    rep_init_from_dump (prog_name, argc, argv,
-			sys_symbols, obsolete_sys_usage, dump_file);
-}
-
-void
-rep_init_from_dump(char *prog_name, int *argc, char ***argv,
-		   void (*sys_symbols)(void), void (*obsolete_sys_usage)(void),
-		   char *dump_file)
 {
     int dummy;
     check_configuration (&dummy);
@@ -206,12 +190,6 @@ rep_init_from_dump(char *prog_name, int *argc, char ***argv,
     rep_pre_sys_os_init();
     if(rep_pre_symbols_init())
     {
-#ifdef ENABLE_BROKEN_DUMPING
-	char *tem = getenv ("REPUNDUMPED");
-	if (dump_file && (!tem || atoi(tem) == 0))
-	    rep_dumped_init (dump_file);
-#endif
-
 	rep_symbols_init();
 	rep_structures_init ();
 	rep_numbers_init ();
@@ -272,25 +250,20 @@ rep_load_environment (repv file)
     };
     const char **ptr;
 
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_GC_root gc_file;
 
     rep_PUSHGC (gc_file, file);
 
     /* 1. Do the rep bootstrap */
 
-    if (rep_dumped_non_constants != rep_NULL)
-	res = Feval (rep_dumped_non_constants);
-
     for (ptr = init; res != rep_NULL && *ptr != 0; ptr++)
-    {
 	res = rep_bootstrap_structure (*ptr);
-    }
 
     /* 2. Do the caller-local bootstrap */
 
     if (res != rep_NULL && rep_STRINGP(file))
-	res = Fload (file, Qnil, Qnil, Qnil, Qnil);
+	res = Fload (file, rep_nil, rep_nil, rep_nil, rep_nil);
 
     rep_POPGC;
     return res;
@@ -338,13 +311,13 @@ rep_on_idle(int since_last_event)
 	res = true;
     else if(rep_data_after_gc > rep_idle_gc_threshold)
 	/* nothing was saved so try a GC */
-	Fgarbage_collect (Qnil);
+	Fgarbage_collect (rep_nil);
     else if(!called_hook && depth == 1)
     {
 	repv hook = Fsymbol_value(Qidle_hook, Qt);
 	if(!rep_VOIDP(hook) && !rep_NILP(hook))
 	{
-	    Fcall_hook(hook, Qnil, Qnil);
+	    Fcall_hook(hook, rep_nil, rep_nil);
 	    res = true;
 	}
 	called_hook = true;
@@ -384,7 +357,7 @@ rep_handle_input_exception(repv *result_p)
 	if (tem == Qexit && rep_recurse_depth == 0)
 	    goto terminate;
 	else if (rep_recurse_depth == 0 || tem != Qtop_level)
-	    rep_handle_error(car, Qnil);
+	    rep_handle_error(car, rep_nil);
 	else
 	    goto unhandled;
     }
@@ -406,7 +379,7 @@ rep_handle_input_exception(repv *result_p)
     terminate:
 	if(rep_recurse_depth == 0 && rep_on_termination_fun != 0)
 	    (*rep_on_termination_fun)();
-	*result_p = Qnil;
+	*result_p = rep_nil;
 	return true;
     }
 #if 0
@@ -447,7 +420,7 @@ rep_top_level_exit (void)
     }
 
     rep_PUSHGC(gc_throw, throw);
-    Fcall_hook (Qbefore_exit_hook, Qnil, Qnil);
+    Fcall_hook (Qbefore_exit_hook, rep_nil, rep_nil);
     rep_throw_value = rep_NULL;
     rep_POPGC;
 
@@ -539,13 +512,13 @@ rep_main_init(void)
     rep_INTERN_SPECIAL(command_line_args);
     rep_INTERN_SPECIAL(idle_hook);
     rep_INTERN_SPECIAL(batch_mode);
-    Fset (Qbatch_mode, Qnil);
+    Fset (Qbatch_mode, rep_nil);
     rep_INTERN_SPECIAL(interpreted_mode);
-    Fset (Qinterpreted_mode, Qnil);
+    Fset (Qinterpreted_mode, rep_nil);
     rep_INTERN_SPECIAL(program_name);
     rep_INTERN_SPECIAL(error_mode);
-    Fset (Qerror_mode, Qnil);
+    Fset (Qerror_mode, rep_nil);
     rep_INTERN_SPECIAL(interrupt_mode);
-    Fset (Qinterrupt_mode, Qnil);
+    Fset (Qinterrupt_mode, rep_nil);
     rep_INTERN_SPECIAL(before_exit_hook);
 }

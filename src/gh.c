@@ -168,7 +168,7 @@ repv gh_new_procedure5_0(const char *proc_name, repv (*fn)(repv, repv, repv, rep
 /* C to Scheme conversion */
 repv gh_bool2scm(int x)
 {
-    return x ? Qt : Qnil;
+    return x ? Qt : rep_nil;
 }
 
 repv gh_int2scm(int x)
@@ -213,7 +213,7 @@ void gh_set_substr(char *src, repv dst, long start, size_t len)
 
 repv gh_symbol2scm(const char *symbol_str)
 {
-    return Fintern (rep_string_dup (symbol_str), Qnil);
+    return Fintern (rep_string_dup (symbol_str), rep_nil);
 }
 
 repv gh_ints2scm(const int *d, long n)
@@ -243,7 +243,7 @@ repv gh_doubles2scm(const double *d, long n)
 /* Scheme to C conversion */
 int gh_scm2bool(repv obj)
 {
-    return obj != Qnil;
+    return obj != rep_nil;
 }
 
 int gh_scm2int(repv obj)
@@ -427,7 +427,7 @@ int gh_string_p(repv val)
 int gh_procedure_p(repv val)
 {
     val = Ffunctionp (val);
-    return val && val != Qnil;
+    return val && val != rep_nil;
 }
 
 int gh_list_p(repv val)
@@ -438,13 +438,13 @@ int gh_list_p(repv val)
 int gh_inexact_p(repv val)
 {
     val = Fexactp (val);
-    return val && val == Qnil;
+    return val && val == rep_nil;
 }
 
 int gh_exact_p(repv val)
 {
     val = Fexactp (val);
-    return val && val != Qnil;
+    return val && val != rep_nil;
 }
 
 
@@ -457,13 +457,13 @@ int gh_eq_p(repv x, repv y)
 int gh_eqv_p(repv x, repv y)
 {
     repv val = Feql (x, y);
-    return val && val != Qnil;
+    return val && val != rep_nil;
 }
 
 int gh_equal_p(repv x, repv y)
 {
     repv val = Fequal (x, y);
-    return val && val != Qnil;
+    return val && val != rep_nil;
 }
 
 int gh_string_equal_p(repv s1, repv s2)
@@ -473,7 +473,7 @@ int gh_string_equal_p(repv s1, repv s2)
 
 int gh_null_p(repv l)
 {
-    return l == Qnil;
+    return l == rep_nil;
 }
 
 
@@ -481,7 +481,7 @@ int gh_null_p(repv l)
 
 repv gh_not(repv val)
 {
-    return val == Qnil ? Qt : Qnil;
+    return val == rep_nil ? Qt : rep_nil;
 }
 
 
@@ -594,7 +594,7 @@ repv gh_cons(repv x, repv y)
 
 repv gh_list(repv elt, ...)
 {
-    repv lst = Qnil;
+    repv lst = rep_nil;
     va_list args;
 
     va_start (args, elt);

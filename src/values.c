@@ -62,11 +62,6 @@ typedef struct rep_string_block_struct {
     rep_string data[rep_STRINGBLK_SIZE];
 } rep_string_block;
 
-/* Dumped data */
-rep_cons *rep_dumped_cons_start, *rep_dumped_cons_end;
-rep_symbol *rep_dumped_symbols_start, *rep_dumped_symbols_end;
-repv rep_dumped_non_constants;
-
 int rep_guardian_type;
 
 DEFSYM(after_gc_hook, "after-gc-hook");
@@ -597,7 +592,7 @@ repv
 rep_make_vector(int size)
 {
     int len = rep_VECT_SIZE(size);
-    rep_vector *v = rep_ALLOC_CELL(len);
+    rep_vector *v = rep_alloc(len);
     if(v != NULL)
     {
 	rep_SET_VECT_LEN(rep_VAL(v), size);
@@ -619,7 +614,7 @@ vector_sweep(void)
     {
 	rep_vector *nxt = this->next;
 	if(!rep_GC_CELL_MARKEDP(rep_VAL(this)))
-	    rep_FREE_CELL(this);
+	    rep_free(this);
 	else
 	{
 	    this->next = vector_chain;
@@ -653,11 +648,11 @@ static rep_guardian *guardians;
 DEFUN("make-primitive-guardian", Fmake_primitive_guardian,
       Smake_primitive_guardian, (void), rep_Subr0)
 {
-    rep_guardian *g = rep_ALLOC_CELL (sizeof (rep_guardian));
+    rep_guardian *g = rep_alloc (sizeof (rep_guardian));
     rep_data_after_gc += sizeof (rep_guardian);
     g->car = rep_guardian_type;
-    g->accessible = Qnil;
-    g->inaccessible = Qnil;
+    g->accessible = rep_nil;
+    g->inaccessible = rep_nil;
     g->next = guardians;
     guardians = g;
     return rep_VAL(g);
@@ -675,14 +670,14 @@ DEFUN("primitive-guardian-pop", Fprimitive_guardian_pop,
       Sprimitive_guardian_pop, (repv g), rep_Subr1)
 {
     rep_DECLARE1 (g, rep_GUARDIANP);
-    if (rep_GUARDIAN(g)->inaccessible != Qnil)
+    if (rep_GUARDIAN(g)->inaccessible != rep_nil)
     {
 	repv ret = rep_CAR (rep_GUARDIAN(g)->inaccessible);
 	rep_GUARDIAN(g)->inaccessible = rep_CDR (rep_GUARDIAN(g)->inaccessible);
 	return ret;
     }
     else
-	return Qnil;
+	return rep_nil;
 }
 
 static void
@@ -706,7 +701,7 @@ run_guardians (void)
     {
 	repv *ptr = &g->accessible;
 	/* cons cells store mark bit in CDR, so mask it out. */
-	while ((*ptr & ~rep_VALUE_CONS_MARK_BIT) != Qnil)
+	while ((*ptr & ~rep_VALUE_CONS_MARK_BIT) != rep_nil)
 	{
 	    repv cell = *ptr & ~rep_VALUE_CONS_MARK_BIT;
 	    if (!rep_GC_MARKEDP (rep_CAR (cell)))
@@ -749,7 +744,7 @@ sweep_guardians (void)
     {
 	rep_guardian *next = g->next;
 	if (!rep_GC_CELL_MARKEDP (rep_VAL (g)))
-	    rep_FREE_CELL (g);
+	    rep_free (g);
 	else
 	{
 	    rep_GC_CLR_CELL (rep_VAL (g));
@@ -827,29 +822,22 @@ again:
     /* must be a cell */
     if(rep_CELL_CONS_P(val))
     {
-	if(rep_CONS_WRITABLE_P(val))
+	/* A cons. Attempts to walk though whole lists at a time
+	   (since Lisp lists mainly link from the cdr).  */
+	rep_GC_SET_CONS(val);
+	if(rep_NILP(rep_GCDR(val)))
 	{
-	    /* A cons. Attempts to walk though whole lists at a time
-	       (since Lisp lists mainly link from the cdr).  */
-	    rep_GC_SET_CONS(val);
-	    if(rep_NILP(rep_GCDR(val)))
-		/* End of a list. We can safely
-		   mark the car non-recursively.  */
-		val = rep_CAR(val);
-	    else
-	    {
-		rep_MARKVAL(rep_CAR(val));
-		val = rep_GCDR(val);
-	    }
-	    if(val && !rep_INTP(val) && !rep_GC_MARKEDP(val))
-		goto again;
-	    return;
+	    /* End of a list. We can safely mark the car non-recursively.  */
+	    val = rep_CAR(val);
 	}
 	else
 	{
-	    /* A constant cons cell. */
-	    return;
+	    rep_MARKVAL(rep_CAR(val));
+	    val = rep_GCDR(val);
 	}
+	if(val && !rep_INTP(val) && !rep_GC_MARKEDP(val))
+	    goto again;
+	return;
     }
 
     if (rep_CELL16P(val))
@@ -879,7 +867,6 @@ again:
 	break;
 
     case rep_Symbol:
-	/* Dumped symbols are dumped read-write, so no worries.. */
 	rep_GC_SET_CELL(val);
 	rep_MARKVAL(rep_SYM(val)->name);
 	val = rep_SYM(val)->next;
@@ -1046,9 +1033,9 @@ last garbage-collection is greater than `garbage-threshold'.
 	    ((int)&dummy) - (int)gc_stack_high_tide);
 #endif
 
-    Fcall_hook (Qafter_gc_hook, Qnil, Qnil);
+    Fcall_hook (Qafter_gc_hook, rep_nil, rep_nil);
 
-    if(stats != Qnil)
+    if(stats != rep_nil)
     {
 	return rep_list_5(Fcons(rep_MAKE_INT(rep_used_cons),
 				rep_MAKE_INT(rep_allocated_cons - rep_used_cons)),
@@ -1134,7 +1121,7 @@ rep_values_kill(void)
     while(v != NULL)
     {
 	rep_vector *nxt = v->next;
-	rep_FREE_CELL(v);
+	rep_free(v);
 	v = nxt;
     }
     while(s != NULL)
@@ -1153,36 +1140,3 @@ rep_values_kill(void)
     vector_chain = NULL;
     string_block_chain = NULL;
 }
-
-
-/* Support for dumped Lisp code */
-
-#ifdef ENABLE_BROKEN_DUMPING
-void
-rep_dumped_init(char *file)
-{
-    void *dl = rep_open_dl_library (rep_string_dup (file));
-    if (dl == 0)
-	fprintf (stderr, "warning: couldn't open dumped filed %s\n", file);
-    else
-    {
-	/* Main function is to go through all dumped symbols, interning
-	   them, and changing rep_NULL values to be void. */
-	rep_symbol *s;
-
-	/* But first, intern nil, it'll be filled in later. */
-	Qnil = Fintern_symbol (rep_VAL(rep_dumped_symbols_end - 1),
-			       rep_void_value);
-
-	/* Stop one symbol too early, since we've already added it */
-	for (s = rep_dumped_symbols_start; s < rep_dumped_symbols_end - 1; s++)
-	{
-	    /* Second arg is [OBARRAY], but it's only checked against
-	       being a vector. */
-	    Fintern_symbol (rep_VAL(s), rep_void_value);
-	    if (s->value == rep_NULL)
-		s->value = rep_void_value;
-	}
-    }
-}
-#endif

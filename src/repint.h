@@ -34,12 +34,6 @@
 #define rep_INTERNAL 1
 #include "rep.h"
 
-#ifndef ENABLE_BROKEN_DUMPING
-  /* No point incurring the overhead if it's unnecessary */
-# undef rep_CONS_WRITABLE_P
-# define rep_CONS_WRITABLE_P(x) true
-#endif
-
 enum file_ops {
     op_file_name_absolute_p = 0,
     op_expand_file_name,
@@ -158,7 +152,7 @@ extern int rep_structure_type;
 
 #define rep_USE_DEFAULT_ENV			\
     do {					\
-	rep_env = Qnil;				\
+	rep_env = rep_nil;				\
 	rep_structure = rep_default_structure;	\
     } while (0)
 

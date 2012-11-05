@@ -245,7 +245,7 @@ notify_1 (struct Proc *pr)
 	    ptr = &((*ptr)->pr_NotifyNext);
 	*ptr = pr->pr_NotifyNext;
 	pr->pr_NotifyNext = NULL;
-	if (pr->pr_NotifyFun && pr->pr_NotifyFun != Qnil)
+	if (pr->pr_NotifyFun && pr->pr_NotifyFun != rep_nil)
 	    rep_call_lisp1 (pr->pr_NotifyFun, rep_VAL (pr));
     }
 }
@@ -463,7 +463,7 @@ kill_process(struct Proc *pr)
 	process_run_count--;
 	close_proc_files(pr);
     }
-    rep_FREE_CELL(pr);
+    rep_free(pr);
 }
 
 /* Return the file descriptor (or 0 if an error) of the first available
@@ -1081,7 +1081,7 @@ If the DIR parameter is nil it will be inherited from the
 `default-directory' variable of the current buffer.
 ::end:: */
 {
-    repv pr = rep_VAL(rep_ALLOC_CELL(sizeof(struct Proc)));
+    repv pr = rep_VAL(rep_alloc(sizeof(struct Proc)));
     if(pr != rep_NULL)
     {
 	rep_GC_root gc_pr;
@@ -1109,7 +1109,7 @@ If the DIR parameter is nil it will be inherited from the
 	if(dir && rep_STRINGP(dir))
 	    VPROC(pr)->pr_Dir = dir;
 	else
-	    VPROC(pr)->pr_Dir = Qnil;
+	    VPROC(pr)->pr_Dir = rep_nil;
 
 	return pr;
     }
@@ -1128,7 +1128,7 @@ object PROCESS.
 {
     rep_DECLARE1(proc, PROCESSP);
     close_proc_files(VPROC(proc));
-    return(Qnil); 
+    return(rep_nil); 
 }
 
 DEFUN("start-process", Fstart_process, Sstart_process, (repv arg_list), rep_SubrN) /*
@@ -1148,7 +1148,7 @@ set in the PROCESS prior to calling this function.
 ::end:: */
 {
     struct Proc *pr = NULL;
-    repv res = Qnil;
+    repv res = rep_nil;
     if(rep_CONSP(arg_list))
     {
 	if(PROCESSP(rep_CAR(arg_list)))
@@ -1157,8 +1157,8 @@ set in the PROCESS prior to calling this function.
     }
     if(pr == NULL)
     {
-	pr = VPROC(Fmake_process(Qnil, Qnil, Qnil,
-				    Qnil, Qnil));
+	pr = VPROC(Fmake_process(rep_nil, rep_nil, rep_nil,
+				    rep_nil, rep_nil));
 	if(pr == NULL)
 	    return rep_NULL;
     }
@@ -1224,7 +1224,7 @@ set in the PROCESS prior to calling this function.
 ::end:: */
 {
     struct Proc *pr = NULL;
-    repv res = Qnil, infile = rep_VAL(&dev_null);
+    repv res = rep_nil, infile = rep_VAL(&dev_null);
     if(rep_CONSP(arg_list))
     {
 	if(PROCESSP(rep_CAR(arg_list)))
@@ -1233,8 +1233,8 @@ set in the PROCESS prior to calling this function.
     }
     if(pr == NULL)
     {
-	pr = VPROC(Fmake_process(Qnil, Qnil, Qnil,
-				    Qnil, Qnil));
+	pr = VPROC(Fmake_process(rep_nil, rep_nil, rep_nil,
+				    rep_nil, rep_nil));
 	if(pr == NULL)
 	    return rep_NULL;
     }
@@ -1311,7 +1311,7 @@ set in the PROCESS prior to calling this function.
 static repv
 do_signal_command(repv proc, int signal, repv signal_group)
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_DECLARE1(proc, PROCESSP);
     if(PR_ACTIVE_P(VPROC(proc)))
     {
@@ -1546,11 +1546,11 @@ the symbol `INT' for the UNIX SIGINT signal.
     else
     {
 	int r;
-	if (grp != Qnil)
+	if (grp != rep_nil)
 	    r = kill (- rep_INT(proc), signal);
 	else
 	    r = kill (rep_INT(proc), signal);
-	return (r == 0) ? Qt : Qnil;
+	return (r == 0) ? Qt : rep_nil;
     }
 }
 
@@ -1562,7 +1562,7 @@ Returns the unprocessed exit-status of the last process to be run on the
 process-object PROCESS. If PROCESS is currently running, return nil.
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_DECLARE1(proc, PROCESSP);
     if(PR_DEAD_P(VPROC(proc)))
     {
@@ -1582,7 +1582,7 @@ Returns the return-value of the last process to be run on PROCESS, or nil if:
   c) PROCESS exited abnormally
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_DECLARE1(proc, PROCESSP);
     if((PR_DEAD_P(VPROC(proc)))
        && (VPROC(proc)->pr_ExitStatus != -1))
@@ -1600,11 +1600,11 @@ with it (ie, its pid).
 If PROCESS is nil, return the process id of the Lisp interpreter.
 ::end:: */
 {
-    if (proc == Qnil)
+    if (proc == rep_nil)
 	return rep_MAKE_INT(getpid ());
     else
     {
-	repv res = Qnil;
+	repv res = rep_nil;
 	rep_DECLARE1(proc, PROCESSP);
 	if(PR_ACTIVE_P(VPROC(proc)))
 	    res = rep_MAKE_INT(VPROC(proc)->pr_Pid);
@@ -1624,7 +1624,7 @@ Return t if PROCESS is running.
     if(PR_RUNNING_P(VPROC(proc)))
 	res = Qt;
     else
-	res = Qnil;
+	res = rep_nil;
     return(res);
 }
 
@@ -1640,7 +1640,7 @@ Return t if PROCESS has been stopped.
     if(PR_STOPPED_P(VPROC(proc)))
 	res = Qt;
     else
-	res = Qnil;
+	res = rep_nil;
     return(res);
 }
 
@@ -1657,7 +1657,7 @@ process has stopped.
     if(PR_ACTIVE_P(VPROC(proc)))
 	res = Qt;
     else
-	res = Qnil;
+	res = rep_nil;
     return(res);
 }
 
@@ -1670,7 +1670,7 @@ Return t is ARG is a process-object.
 {
     if(PROCESSP(arg))
 	return(Qt);
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("process-prog", Fprocess_prog, Sprocess_prog, (repv proc), rep_Subr1) /*
@@ -1836,7 +1836,7 @@ Set the directory of PROCESS to DIR.
     if(dir && rep_STRINGP(dir))
 	VPROC(proc)->pr_Dir = dir;
     else
-	VPROC(proc)->pr_Dir = Qnil;
+	VPROC(proc)->pr_Dir = rep_nil;
 
     return VPROC(proc)->pr_Dir;;
 }
@@ -1888,14 +1888,14 @@ active-processes
 Return a list containing all active process objects.
 ::end:: */
 {
-    repv head = Qnil;
+    repv head = rep_nil;
     repv *ptr = &head;
     struct Proc *p = process_chain;
     while(p != 0)
     {
 	if(PR_ACTIVE_P(p))
 	{
-	    *ptr = Fcons(rep_VAL(p), Qnil);
+	    *ptr = Fcons(rep_VAL(p), rep_nil);
 	    ptr = &(rep_CDR(*ptr));
 	}
 	p = p->pr_Next;
@@ -1938,7 +1938,7 @@ Note that output includes notification of process termination.
     }
     if(got_sigchld || notify_chain)
     {
-	result = Qnil;
+	result = rep_nil;
 	rep_proc_periodically();
     }
     return result;
@@ -2003,7 +2003,7 @@ rep_system (char *command)
 	DEFSTRING (cant_fork, "can't fork ()");
 
     case -1:
-	return Fsignal (Qerror, Fcons (rep_VAL (&cant_fork), Qnil));
+	return Fsignal (Qerror, Fcons (rep_VAL (&cant_fork), rep_nil));
 
     case 0:
 	child_build_environ ();
@@ -2017,7 +2017,7 @@ rep_system (char *command)
 	_exit (255);
 
     default:
-	ret = Qnil;
+	ret = rep_nil;
 	rep_sig_restart (SIGCHLD, false);
 	while (1)
 	{
@@ -2042,7 +2042,7 @@ rep_system (char *command)
 		{
 		    DEFSTRING (cant_waitpid, "can't waitpid ()");
 		    ret = Fsignal (Qerror,
-				   Fcons (rep_VAL (&cant_waitpid), Qnil));
+				   Fcons (rep_VAL (&cant_waitpid), rep_nil));
 		    break;
 		}
 	    }

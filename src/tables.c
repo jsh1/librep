@@ -95,7 +95,7 @@ free_table (table *x)
     }
     if (x->total_buckets > 0)
 	rep_free (x->buckets);
-    rep_FREE_CELL (x);
+    rep_free (x);
 }
 
 static void
@@ -241,10 +241,10 @@ compare two keys (should return true if the keys are considered equal).
 ::end:: */
 {
     table *tab;
-    rep_DECLARE(1, hash_fun, Ffunctionp (hash_fun) != Qnil);
-    rep_DECLARE(2, cmp_fun, Ffunctionp (cmp_fun) != Qnil);
+    rep_DECLARE(1, hash_fun, Ffunctionp (hash_fun) != rep_nil);
+    rep_DECLARE(2, cmp_fun, Ffunctionp (cmp_fun) != rep_nil);
 
-    tab = rep_ALLOC_CELL (sizeof (table));
+    tab = rep_alloc (sizeof (table));
     rep_data_after_gc += sizeof (table);
     tab->car = table_type;
     tab->next = all_tables;
@@ -253,7 +253,7 @@ compare two keys (should return true if the keys are considered equal).
     tab->compare_fun = cmp_fun;
     tab->total_buckets = 0;
     tab->total_nodes = 0;
-    tab->guardian = (is_weak == Qnil) ? rep_NULL : Fmake_primitive_guardian ();
+    tab->guardian = (is_weak == rep_nil) ? rep_NULL : Fmake_primitive_guardian ();
 
     return rep_VAL(tab);
 }
@@ -282,7 +282,7 @@ tablep ARG
 Return true if ARG is a hash table.
 ::end:: */
 {
-    return TABLEP(arg) ? Qt : Qnil;
+    return TABLEP(arg) ? Qt : rep_nil;
 }
 
 static uintptr_t
@@ -296,7 +296,7 @@ hash_key (repv tab, repv key)
     else if (TABLE(tab)->hash_fun == rep_VAL(&Seq_hash))
 	hash = Feq_hash (key);
     else if (TABLE(tab)->hash_fun == rep_VAL(&Sequal_hash))
-	hash = Fequal_hash (key, Qnil);
+	hash = Fequal_hash (key, rep_nil);
     else
     {
 	rep_GC_root gc_tab;
@@ -321,7 +321,7 @@ compare (repv tab, repv val1, repv val2)
     rep_PUSHGC (gc_tab, tab);
     ret = rep_call_lisp2 (TABLE(tab)->compare_fun, val1, val2);
     rep_POPGC;
-    return ret != Qnil;
+    return ret != rep_nil;
 }
 
 static node *
@@ -353,7 +353,7 @@ Returns false if no such value exists.
     node *n;
     rep_DECLARE1(tab, TABLEP);
     n = lookup (tab, key);
-    return n ? n->value : Qnil;
+    return n ? n->value : rep_nil;
 }
 
 DEFUN("table-bound-p", Ftable_bound_p,
@@ -368,7 +368,7 @@ KEY.
     node *n;
     rep_DECLARE1(tab, TABLEP);
     n = lookup (tab, key);
-    return n ? Qt : Qnil;
+    return n ? Qt : rep_nil;
 }
 
 DEFUN("table-set", Ftable_set, Stable_set,
@@ -466,7 +466,7 @@ Remove any value stored in TABLE associated with KEY.
 	    }
 	}
     }
-    return Qnil;
+    return rep_nil;
 }
 
 DEFUN("table-walk", Ftable_walk, Stable_walk,
@@ -496,7 +496,7 @@ each pair, the function is called with arguments `(KEY VALUE)'.
     }
 
     rep_POPGC; rep_POPGC;
-    return rep_throw_value ? rep_NULL : Qnil;
+    return rep_throw_value ? rep_NULL : rep_nil;
 }
 
 DEFUN ("table-size", Ftable_size, Stable_size,
@@ -519,7 +519,7 @@ DEFUN("tables-after-gc", Ftables_after_gc, Stables_after_gc, (void), rep_Subr0)
 	if (x->guardian)
 	{
 	    repv key;
-	    while ((key = Fprimitive_guardian_pop (x->guardian)) != Qnil)
+	    while ((key = Fprimitive_guardian_pop (x->guardian)) != rep_nil)
 	    {
 		rep_GC_root gc_key;
 		rep_PUSHGC (gc_key, key);
@@ -528,7 +528,7 @@ DEFUN("tables-after-gc", Ftables_after_gc, Stables_after_gc, (void), rep_Subr0)
 	    }
 	}
     }
-    return Qnil;
+    return rep_nil;
 }
 
 
@@ -543,7 +543,7 @@ rep_dl_init (void)
 					0, 0, 0, 0, 0, 0, 0);
     tem = Fsymbol_value (Qafter_gc_hook, Qt);
     if (rep_VOIDP (tem))
-	tem = Qnil;
+	tem = rep_nil;
     Fset (Qafter_gc_hook, Fcons (rep_VAL(&Stables_after_gc), tem));
 
     tem = rep_push_structure ("rep.data.tables");

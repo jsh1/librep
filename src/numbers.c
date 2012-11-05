@@ -147,7 +147,7 @@ typedef struct rep_number_block_struct {
 #define rep_NUMBER_INEXACT_P(v) (rep_NUMBERP(v) && rep_NUMBER_FLOAT_P(v))
 
 #define ZEROP(x) \
-    (rep_INTP (x) ? (x) == rep_MAKE_INT (0) : Fzerop (x) != Qnil)
+    (rep_INTP (x) ? (x) == rep_MAKE_INT (0) : Fzerop (x) != rep_nil)
 
 
 /* number object handling */
@@ -526,6 +526,13 @@ promote_dup (repv *n1p, repv *n2p)
 	return n1;
     else
 	return promote_dup__ (n1p, n2p);
+}
+
+bool
+rep_long_int_p (repv v)
+{
+    return (rep_INTEGERP(v)
+	    || (rep_CONSP(v) && rep_INTP(rep_CAR(v)) && rep_INTP(rep_CDR(v))));
 }
 
 repv
@@ -2036,9 +2043,9 @@ same, they will be considered `eql'.
 ::end:: */
 {
     if(rep_NUMERICP (arg1) && rep_NUMERICP (arg2))
-	return number_cmp (arg1, arg2) == 0 ? Qt : Qnil;
+	return number_cmp (arg1, arg2) == 0 ? Qt : rep_nil;
     else
-	return arg1 == arg2 ? Qt : Qnil;
+	return arg1 == arg2 ? Qt : rep_nil;
 }
 
 DEFUN("zerop", Fzerop, Szerop, (repv num), rep_Subr1) /*
@@ -2053,25 +2060,25 @@ Return t if NUMBER is zero.
 	switch (rep_NUMERIC_TYPE (num))
 	{
 	case rep_NUMBER_INT:
-	    return num == rep_MAKE_INT (0) ? Qt : Qnil;
+	    return num == rep_MAKE_INT (0) ? Qt : rep_nil;
 
 	case rep_NUMBER_BIGNUM:
 #ifdef HAVE_GMP
-	    return mpz_sgn (rep_NUMBER(num,z)) == 0 ? Qt : Qnil;
+	    return mpz_sgn (rep_NUMBER(num,z)) == 0 ? Qt : rep_nil;
 #else
-	    return rep_NUMBER (num,z) == 0 ? Qt : Qnil;
+	    return rep_NUMBER (num,z) == 0 ? Qt : rep_nil;
 #endif
 
 #ifdef HAVE_GMP
 	case rep_NUMBER_RATIONAL:
-	    return mpq_sgn (rep_NUMBER(num,q)) == 0 ? Qt : Qnil;
+	    return mpq_sgn (rep_NUMBER(num,q)) == 0 ? Qt : rep_nil;
 #endif
 
 	case rep_NUMBER_FLOAT:
-	    return rep_NUMBER(num,f) == 0 ? Qt : Qnil;
+	    return rep_NUMBER(num,f) == 0 ? Qt : rep_nil;
 	}
     }
-    return Qnil;
+    return rep_nil;
 }
 
 DEFUN("1+", Fplus1, Splus1, (repv num), rep_Subr1) /*
@@ -2384,7 +2391,7 @@ natural logarithm of X.
 
     d = rep_get_float (arg);
 
-    if (base != Qnil)
+    if (base != rep_nil)
     {
 	b = rep_get_float (base);
 	if (d >= 0 && b >= 0)
@@ -2400,7 +2407,7 @@ natural logarithm of X.
 }
 
 /* XXX compat */
-repv Flog (repv x) { return Flog_ (x, Qnil); }
+repv Flog (repv x) { return Flog_ (x, rep_nil); }
 
 DEFUN("sin", Fsin, Ssin, (repv arg), rep_Subr1) /*
 ::doc:rep.lang.math#sin::
@@ -2587,7 +2594,7 @@ numberp ARG
 Return t if ARG is a number.
 ::end:: */
 {
-    return rep_NUMERICP (arg) ? Qt : Qnil;
+    return rep_NUMERICP (arg) ? Qt : rep_nil;
 }
 
 DEFUN("integerp", Fintegerp, Sintegerp, (repv arg), rep_Subr1) /*
@@ -2598,17 +2605,17 @@ Return t if ARG is a integer.
 ::end:: */
 {
     if (!rep_NUMERICP (arg))
-	return Qnil;
+	return rep_nil;
     switch (rep_NUMERIC_TYPE (arg))
     {
     case rep_NUMBER_INT: case rep_NUMBER_BIGNUM:
 	return Qt;
 
     case rep_NUMBER_RATIONAL:
-	return Qnil;
+	return rep_nil;
 
     case rep_NUMBER_FLOAT:
-	return (floor (rep_NUMBER(arg,f)) == rep_NUMBER(arg,f)) ? Qt : Qnil;
+	return (floor (rep_NUMBER(arg,f)) == rep_NUMBER(arg,f)) ? Qt : rep_nil;
 
     default:
 	abort ();
@@ -2623,7 +2630,7 @@ Return t if ARG is a fixnum (i.e. an integer that fits in a Lisp
 pointer).
 ::end:: */
 {
-    return rep_INTP (arg) ? Qt : Qnil;
+    return rep_INTP (arg) ? Qt : rep_nil;
 }
 
 DEFUN("exactp", Fexactp, Sexactp, (repv arg), rep_Subr1) /*
@@ -2634,7 +2641,7 @@ Return t if ARG is an exact number.
 ::end:: */
 {
     return (rep_INTP (arg)
-	    || (rep_NUMBERP (arg) && !rep_NUMBER_FLOAT_P (arg))) ? Qt : Qnil;
+	    || (rep_NUMBERP (arg) && !rep_NUMBER_FLOAT_P (arg))) ? Qt : rep_nil;
 }
 
 DEFUN("exact->inexact", Fexact_to_inexact,
@@ -2817,7 +2824,7 @@ number is parsed from that base, otherwise base 10 is assumed.
     repv ret;
 
     rep_DECLARE1 (string, rep_STRINGP);
-    if (radix_ == Qnil)
+    if (radix_ == rep_nil)
 	radix_ = rep_MAKE_INT (10);
     rep_DECLARE (2, radix_, rep_INTP (radix_) && rep_INT (radix_) > 0);
 
@@ -2853,7 +2860,7 @@ number is parsed from that base, otherwise base 10 is assumed.
 	    break;
 
 	default:
-	    return Qnil;
+	    return rep_nil;
 	}
 	ptr += 2;
     }
@@ -2876,7 +2883,7 @@ number is parsed from that base, otherwise base 10 is assumed.
     ret = rep_parse_number (ptr, rep_STRING_LEN (string)
 			    - (ptr - rep_STR (string)), radix, sign, type);
     if (ret == rep_NULL)
-	ret = Qnil;
+	ret = rep_nil;
     else if (force_exactness > 0)
 	ret = Finexact_to_exact (ret);
     else if (force_exactness < 0)
@@ -2897,13 +2904,13 @@ in base 10.
 {
     char *out;
     rep_DECLARE1 (z, rep_NUMERICP);
-    if (radix == Qnil)
+    if (radix == rep_nil)
 	radix = rep_MAKE_INT (10);
     rep_DECLARE (2, radix, rep_INTP (radix) && rep_INT (radix) > 0);
 
     out = rep_print_number_to_string (z, rep_INT (radix), -1);
     if (out == 0)
-	return Qnil;
+	return rep_nil;
     else
 	return rep_box_string (out, strlen (out));
 }

@@ -53,7 +53,7 @@ sdbm-open PATH ACCESS-TYPE [MODE]
     uflags = (flags == Qwrite ? O_RDWR | O_CREAT | O_TRUNC
 	      : (flags == Qappend ? O_RDWR | O_CREAT : O_RDONLY));
     umode = rep_INTP(mode) ? rep_INT(mode) : 0666;
-    dbm = rep_ALLOC_CELL (sizeof (rep_dbm));
+    dbm = rep_alloc (sizeof (rep_dbm));
     if (dbm == 0)
 	return rep_mem_error();
     rep_data_after_gc += sizeof (rep_dbm);
@@ -70,7 +70,7 @@ sdbm-open PATH ACCESS-TYPE [MODE]
     }
     else
     {
-	rep_FREE_CELL (dbm);
+	rep_free (dbm);
 	return rep_signal_file_error (file);
     }
 }
@@ -83,9 +83,9 @@ sdbm-close DBM
     rep_DECLARE1 (dbm, rep_DBMP);
     sdbm_close (rep_DBM(dbm)->dbm);
     rep_DBM(dbm)->dbm = 0;
-    rep_DBM(dbm)->path = Qnil;
-    rep_DBM(dbm)->access = Qnil;
-    rep_DBM(dbm)->mode = Qnil;
+    rep_DBM(dbm)->path = rep_nil;
+    rep_DBM(dbm)->access = rep_nil;
+    rep_DBM(dbm)->mode = rep_nil;
     return Qt;
 }
 
@@ -101,7 +101,7 @@ sdbm-fetch DBM KEY
     dkey.dsize = rep_STRING_LEN (key);
     dvalue = sdbm_fetch (rep_DBM(dbm)->dbm, dkey);
     if (dvalue.dptr == 0)
-	return Qnil;
+	return rep_nil;
     else
 	return rep_string_dupn (dvalue.dptr, dvalue.dsize);
 }
@@ -122,7 +122,7 @@ sdbm-store DBM KEY VALUE [FLAGS]
     dvalue.dsize = rep_STRING_LEN (val);
     dflags = (flags == Qinsert ? SDBM_INSERT : SDBM_REPLACE);
     return (sdbm_store (rep_DBM(dbm)->dbm, dkey, dvalue, dflags) == 0
-	    ? Qt : Qnil);
+	    ? Qt : rep_nil);
 }
 
 DEFUN("sdbm-delete", Fsdbm_delete, Ssdbm_delete, (repv dbm, repv key), rep_Subr2) /*
@@ -135,7 +135,7 @@ sdbm-delete DBM KEY
     rep_DECLARE2 (key, rep_STRINGP);
     dkey.dptr = rep_STR (key);
     dkey.dsize = rep_STRING_LEN (key) + 1;
-    return sdbm_delete (rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : Qnil;
+    return sdbm_delete (rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : rep_nil;
 }
 
 DEFUN("sdbm-firstkey", Fsdbm_firstkey, Ssdbm_firstkey, (repv dbm), rep_Subr1) /*
@@ -147,7 +147,7 @@ sdbm-firstkey DBM
     rep_DECLARE1 (dbm, rep_DBMP);
     dkey = sdbm_firstkey (rep_DBM(dbm)->dbm);
     if (dkey.dptr == 0)
-	return Qnil;
+	return rep_nil;
     else
 	return rep_string_dupn (dkey.dptr, dkey.dsize);
 }
@@ -161,7 +161,7 @@ sdbm-nextkey DBM
     rep_DECLARE1 (dbm, rep_DBMP);
     dkey = sdbm_nextkey (rep_DBM(dbm)->dbm);
     if (dkey.dptr == 0)
-	return Qnil;
+	return rep_nil;
     else
 	return rep_string_dupn (dkey.dptr, dkey.dsize);
 }
@@ -172,7 +172,7 @@ sdbm-rdonly DBM
 ::end:: */
 {
     rep_DECLARE1 (dbm, rep_DBMP);
-    return sdbm_rdonly (rep_DBM(dbm)->dbm) ? Qt : Qnil;
+    return sdbm_rdonly (rep_DBM(dbm)->dbm) ? Qt : rep_nil;
 }
 
 DEFUN("sdbm-error", Fsdbm_error, Ssdbm_error, (repv dbm), rep_Subr1) /*
@@ -181,7 +181,7 @@ sdbm-error DBM
 ::end:: */
 {
     rep_DECLARE1 (dbm, rep_DBMP);
-    return sdbm_error (rep_DBM(dbm)->dbm) ? Qt : Qnil;
+    return sdbm_error (rep_DBM(dbm)->dbm) ? Qt : rep_nil;
 }
 
 DEFUN("sdbmp", Fsdbmp, Ssdbmp, (repv arg), rep_Subr1) /*
@@ -191,7 +191,7 @@ sdbmp ARG
 Returns t if ARG is an sdbm object (created by `sdbm-open').
 ::end:: */
 {
-    return rep_DBMP(arg) ? Qt : Qnil;
+    return rep_DBMP(arg) ? Qt : rep_nil;
 }
 
 
@@ -216,7 +216,7 @@ dbm_sweep (void)
 	{
 	    if (x->dbm != 0)
 		sdbm_close (x->dbm);
-	    rep_FREE_CELL (x);
+	    rep_free (x);
 	}
 	else
 	{

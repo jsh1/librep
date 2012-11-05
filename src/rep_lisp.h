@@ -80,12 +80,6 @@ typedef uintptr_t repv;
 #define rep_VALUE_INT_SHIFT	2
 #define rep_CELL_ALIGNMENT	sizeof(intptr_t)
 
-/* Allocate SIZE bytes of memory. */
-#define rep_ALLOC_CELL(n) rep_alloc(n)
-
-/* Free something allocated by rep_ALLOC_CELL */
-#define rep_FREE_CELL(x)  rep_free(x)
-
 /* A ``null pointer'', i.e. an invalid object. This has the important
    property of being a proper null pointer (i.e. (void *)0) when
    converted to a pointer, i.e. rep_PTR(rep_NULL) == NULL. */
@@ -118,13 +112,6 @@ typedef uintptr_t repv;
 				  << (rep_LISP_INT_BITS - 1)) - 1)
 #define rep_LISP_MIN_INT	(-(rep_VALUE_CONST(1) \
 				   << (rep_LISP_INT_BITS - 1)))
-
-/* backwards compatibility */
-#define rep_MAKE_LONG_INT(x) rep_make_long_int(x)
-#define rep_LONG_INT(v) rep_get_long_int(v)
-#define rep_LONG_INTP(v) 						\
-    (rep_INTEGERP(v)							\
-     || (rep_CONSP(v) && rep_INTP(rep_CAR(v)) && rep_INTP(rep_CDR(v))))
 
 
 /* Structure of a cell */
@@ -210,11 +197,6 @@ typedef struct {
 
 /* Get the cdr when GC is in progress. */
 #define rep_GCDR(v)	(rep_CDR(v) & ~rep_VALUE_CONS_MARK_BIT)
-
-/* True if cons cell V is mutable (i.e. not read-only). */
-#define rep_CONS_WRITABLE_P(v) \
-    (! (rep_CONS(v) >= rep_dumped_cons_start \
-	&& rep_CONS(v) < rep_dumped_cons_end))
 
 
 /* Type data */
@@ -314,6 +296,15 @@ typedef struct {
 } rep_tuple;
 
 #define rep_TUPLE(v)		((rep_tuple *) rep_PTR (v))
+
+
+/* End-of-list / false value. */
+
+extern rep_tuple rep_eol_datum;
+
+#define rep_nil rep_VAL(&rep_eol_datum)
+
+extern repv Qnil;
 
 
 /* Numbers (private defs in numbers.c) */
@@ -430,7 +421,7 @@ typedef struct {
 #define rep_SYM(v)		((rep_symbol *)rep_PTR(v))
 #define rep_SYMBOLP(v)		rep_CELL8_TYPEP(v, rep_Symbol)
 
-#define rep_NILP(v)		((v) == Qnil)
+#define rep_NILP(v)		((v) == rep_nil)
 #define rep_LISTP(v)		(rep_NILP(v) || rep_CONSP(v))
 
 #define rep_KEYWORDP(v)		(rep_SYMBOLP(v) \
@@ -480,11 +471,11 @@ typedef struct rep_vector_struct {
 
 /* Optional fifth element is documentation. */
 #define rep_COMPILED_DOC(v)	((rep_VECT_LEN(v) >= 4) \
-				 ? rep_VECTI(v, 3) : Qnil)
+				 ? rep_VECTI(v, 3) : rep_nil)
 
 /* Optional sixth element is interactive specification. */
 #define rep_COMPILED_INTERACTIVE(v) ((rep_VECT_LEN(v) >= 5) \
-				     ? rep_VECTI(v, 4) : Qnil)
+				     ? rep_VECTI(v, 4) : rep_nil)
 
 
 /* Files */
@@ -605,7 +596,7 @@ typedef struct rep_funarg_struct {
 #define rep_VOIDP(v)	rep_CELL8_TYPEP(v, rep_Void)
 
 /* Building lists */
-#define rep_LIST_1(v1)			Fcons(v1, Qnil)
+#define rep_LIST_1(v1)			Fcons(v1, rep_nil)
 #define rep_LIST_2(v1,v2)		Fcons(v1, rep_LIST_1(v2))
 #define rep_LIST_3(v1,v2,v3)		Fcons(v1, rep_LIST_2(v2, v3))
 #define rep_LIST_4(v1,v2,v3,v4)		Fcons(v1, rep_LIST_3(v2, v3, v4))
@@ -821,11 +812,11 @@ typedef struct rep_gc_n_roots {
 #define rep_DECLARE4(x,t) rep_DECLARE(4,x,t(x))
 #define rep_DECLARE5(x,t) rep_DECLARE(5,x,t(x))
 
-#define rep_DECLARE1_OPT(x,t) rep_DECLARE(1, x, (x) == Qnil || t(x))
-#define rep_DECLARE2_OPT(x,t) rep_DECLARE(2, x, (x) == Qnil || t(x))
-#define rep_DECLARE3_OPT(x,t) rep_DECLARE(3, x, (x) == Qnil || t(x))
-#define rep_DECLARE4_OPT(x,t) rep_DECLARE(4, x, (x) == Qnil || t(x))
-#define rep_DECLARE5_OPT(x,t) rep_DECLARE(5, x, (x) == Qnil || t(x))
+#define rep_DECLARE1_OPT(x,t) rep_DECLARE(1, x, (x) == rep_nil || t(x))
+#define rep_DECLARE2_OPT(x,t) rep_DECLARE(2, x, (x) == rep_nil || t(x))
+#define rep_DECLARE3_OPT(x,t) rep_DECLARE(3, x, (x) == rep_nil || t(x))
+#define rep_DECLARE4_OPT(x,t) rep_DECLARE(4, x, (x) == rep_nil || t(x))
+#define rep_DECLARE5_OPT(x,t) rep_DECLARE(5, x, (x) == rep_nil || t(x))
 
 
 /* Macros for interrupt handling */
@@ -874,28 +865,6 @@ typedef struct rep_gc_n_roots {
 /* True when an interrupt has occurred; this means that the function
    should exit as soon as possible, returning rep_NULL. */
 #define rep_INTERRUPTP (rep_throw_value != rep_NULL)
-
-
-/* End-of-list / false value
-
-   The canonical method of getting '() is to access the `Qnil' variable.
-
-   But we know that that currently points to `rep_eol_datum'. So avoid
-   lots of global variable referencing by hardcoding that value for
-   library-internal code. */
-
-extern repv Qnil;
-
-#ifdef rep_INTERNAL
-  extern rep_tuple rep_eol_datum;
-# ifdef rep_DEFINE_QNIL
-    repv Qnil = rep_VAL (&rep_eol_datum);
-# endif
-  /* OS X has problems with this */
-# ifndef __APPLE__
-#  define Qnil rep_VAL(&rep_eol_datum)
-# endif
-#endif
 
 
 /* Storing timestamps */

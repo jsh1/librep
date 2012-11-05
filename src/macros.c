@@ -42,7 +42,7 @@
 #define HIST_HASH_FN(x) (((x) >> 4) % HIST_SIZE)
 
 /* Each entry is a chain of cons cells. But note that the last cell's
-   cdr is dotted to ((repv)0) not Qnil */
+   cdr is dotted to ((repv)0) not rep_nil */
 static repv history[HIST_SIZE];
 
 static int macro_hits, macro_misses;
@@ -77,7 +77,7 @@ pass the value of the `macro-environment' variable to this parameter.
     if (!rep_CONSP (form))
 	return form;
 
-    if (env != Qnil && Ffunctionp (env) != Qnil)
+    if (env != rep_nil && Ffunctionp (env) != rep_nil)
 	return rep_call_lisp1 (env, form);
 
 again:
@@ -96,7 +96,7 @@ again:
     else if (rep_CONSP(car) && rep_CAR(car) == Qmacro)
 	car = rep_CDR(car);
 
-    if (Ffunctionp(car) == Qnil)
+    if (Ffunctionp(car) == rep_nil)
 	return form;
 
     if (rep_FUNARGP (car))
@@ -107,8 +107,8 @@ again:
 	    /* an autoload. handle this locally. */
 	    struct rep_Call lc;
 	    rep_GC_root gc_form, gc_env;
-	    lc.fun = Qnil;
-	    lc.args = Qnil;
+	    lc.fun = rep_nil;
+	    lc.args = rep_nil;
 
 	    rep_PUSH_CALL (lc);
 	    rep_USE_FUNARG (car);
@@ -125,7 +125,7 @@ again:
 	}
     }
 
-    bindings = rep_bind_symbol (Qnil, Qmacro_environment, rep_structure);
+    bindings = rep_bind_symbol (rep_nil, Qmacro_environment, rep_structure);
     rep_PUSHGC(gc_bindings, bindings);
     form = rep_funcall (car, rep_CDR(form), false);
     rep_POPGC;
@@ -207,7 +207,7 @@ rep_macros_init (void)
     rep_ADD_SUBR(Smacroexpand);
     rep_ADD_SUBR(Smacroexpand_1);
     rep_INTERN_SPECIAL(macro_environment);
-    Fset (Qmacro_environment, Qnil);
+    Fset (Qmacro_environment, rep_nil);
     rep_macros_clear_history ();
     rep_pop_structure (tem);
 }

@@ -113,7 +113,7 @@ Evaluates to an anonymous function.
 ::end:: */
 {
     if(rep_CONSP(args))
-	return Fmake_closure (Fcons (Qlambda, args), Qnil);
+	return Fmake_closure (Fcons (Qlambda, args), rep_nil);
     else
 	return rep_signal_missing_arg(1);
 }
@@ -128,7 +128,7 @@ is nil.
 {
     if(rep_CONSP(cons))
 	return(rep_CAR(cons));
-    return(Qnil);
+    return(rep_nil);
 }
 DEFUN("cdr", Fcdr, Scdr, (repv cons), rep_Subr1) /*
 ::doc:rep.data#cdr::
@@ -140,7 +140,7 @@ is nil.
 {
     if(rep_CONSP(cons))
 	return(rep_CDR(cons));
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("list", Flist, Slist, (int argc, repv *argv), rep_SubrV) /*
@@ -150,7 +150,7 @@ list ARGS...
 Returns a new list with elements ARGS...
 ::end:: */
 {
-    repv lst = Qnil;
+    repv lst = rep_nil;
     int i;
 
     for (i = argc - 1; i >= 0; i--)
@@ -173,7 +173,7 @@ Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
     int i;
 
     if (argc == 0)
-	return Qnil;
+	return rep_nil;
 
     lst = argv[argc - 1];
     for (i = argc - 2; i >= 0; i--)
@@ -193,7 +193,7 @@ INITIAL-repv, or nil.
 ::end:: */
 {
     int i;
-    repv list = Qnil;
+    repv list = rep_nil;
     rep_DECLARE1(len, rep_INTP);
     if(rep_INT(len) < 0)
 	return rep_signal_arg_error(len, 1);
@@ -211,7 +211,7 @@ new list which is returned.
 ::end:: */
 {
     int i;
-    repv res = Qnil, *res_end = &res;
+    repv res = rep_nil, *res_end = &res;
 
     for (i = 0; i < argc; i++)
     {
@@ -248,7 +248,7 @@ to the beginning of the next list. Returns the new list.
 ::end:: */
 {
     int i;
-    repv res = Qnil, *res_end = &res;
+    repv res = rep_nil, *res_end = &res;
 
     for (i = 0; i < argc; i++)
     {
@@ -256,9 +256,6 @@ to the beginning of the next list. Returns the new list.
 	{
 	    if (!rep_LISTP (argv[i]))
 		return rep_signal_arg_error (argv[i], i + 1);
-
-	    if (!rep_CONS_WRITABLE_P (argv[i]))
-		return Fsignal (Qsetting_constant, rep_LIST_1 (argv[i]));
 	}
 
 	*res_end = argv[i];
@@ -284,8 +281,6 @@ Returns the CONS-CELL.
 ::end:: */
 {
     rep_DECLARE1(cons, rep_CONSP);
-    if(!rep_CONS_WRITABLE_P(cons))
-	return Fsignal(Qsetting_constant, rep_LIST_1(cons));
     rep_CAR(cons) = car;
     return(cons);
 }
@@ -299,8 +294,6 @@ Returns the CONS-CELL.
 ::end:: */
 {
     rep_DECLARE1(cons, rep_CONSP);
-    if(!rep_CONS_WRITABLE_P(cons))
-	return Fsignal(Qsetting_constant, rep_LIST_1(cons));
     rep_CDR(cons) = cdr;
     return(cons);
 }
@@ -313,7 +306,7 @@ Returns a new list which is a copy of LIST except that the members are in
 reverse order.
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_DECLARE1(head, rep_LISTP);
     while(rep_CONSP(head))
     {
@@ -334,13 +327,11 @@ Returns LIST altered so that it's members are in reverse order to what they
 were. This function is destructive towards it's argument.
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     repv nxt;
     rep_DECLARE1(head, rep_LISTP);
     if(rep_NILP(head))
 	return(head);
-    if(!rep_CONS_WRITABLE_P(head))
-	return Fsignal(Qsetting_constant, rep_LIST_1(head));
     do {
 	if(rep_CONSP(rep_CDR(head)))
 	    nxt = rep_CDR(head);
@@ -378,7 +369,7 @@ For example,
 	if(rep_INTERRUPTP)
 	    return(rep_NULL);
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("assq", Fassq, Sassq, (repv elt, repv list), rep_Subr2) /*
@@ -401,7 +392,7 @@ association.
 	if(rep_INTERRUPTP)
 	    return(rep_NULL);
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("rassoc", Frassoc, Srassoc, (repv elt, repv list), rep_Subr2) /*
@@ -426,7 +417,7 @@ For example,
 	if(rep_INTERRUPTP)
 	    return(rep_NULL);
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("rassq", Frassq, Srassq, (repv elt, repv list), rep_Subr2) /*
@@ -448,7 +439,7 @@ Returns the first matching cons-cell, else nil.
 	if(rep_INTERRUPTP)
 	    return(rep_NULL);
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("nth", Fnth, Snth, (repv index, repv list), rep_Subr2) /*
@@ -471,7 +462,7 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
 	if(rep_INTERRUPTP)
 	    return rep_NULL;
     }
-    return (i <= 0 && rep_CONSP(list)) ? rep_CAR(list) : Qnil;
+    return (i <= 0 && rep_CONSP(list)) ? rep_CAR(list) : rep_nil;
 }
 
 DEFUN("nthcdr", Fnthcdr, Snthcdr, (repv index, repv list), rep_Subr2) /*
@@ -516,7 +507,7 @@ Returns the last element of LIST.
 	}
 	return(rep_CAR(list));
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("mapcar", Fmapcar, Smapcar, (repv fun, repv list), rep_Subr2) /*
@@ -529,7 +520,7 @@ returns a new list constructed from the results, ie,
    => (2 3 4)
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     repv *last = &res;
     rep_GC_root gc_list, gc_fun, gc_res;
     rep_DECLARE2(list, rep_LISTP);
@@ -541,7 +532,7 @@ returns a new list constructed from the results, ie,
     {
 	rep_TEST_INT;
 	if(rep_INTERRUPTP
-	   || !(*last = Fcons(Qnil, Qnil))
+	   || !(*last = Fcons(rep_nil, rep_nil))
 	   || !(rep_CAR(*last) = rep_call_lisp1(fun, rep_CAR(list))))
 	    res = rep_NULL;
 	else
@@ -561,7 +552,7 @@ mapc FUNCTION LIST
 Applies FUNCTION to each element in LIST, discards the results.
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_GC_root gc_fun, gc_list;
     rep_DECLARE2(list, rep_LISTP);
     rep_PUSHGC(gc_fun, fun);
@@ -590,7 +581,7 @@ PREDICATE returns t when applied to; i.e. something like
 		       LIST))
 ::end:: */
 {
-    repv output = Qnil, *ptr = &output;
+    repv output = rep_nil, *ptr = &output;
     rep_GC_root gc_pred, gc_list, gc_output;
     rep_DECLARE2(list, rep_LISTP);
     rep_PUSHGC(gc_pred, pred);
@@ -607,7 +598,7 @@ PREDICATE returns t when applied to; i.e. something like
 	}
 	if(!rep_NILP(tem))
 	{
-	    *ptr = Fcons(rep_CAR(list), Qnil);
+	    *ptr = Fcons(rep_CAR(list), rep_nil);
 	    ptr = &rep_CDR(*ptr);
 	}
 	list = rep_CDR(list);
@@ -637,7 +628,7 @@ from the matched ELT, ie,
 	if(rep_INTERRUPTP)
 	    return(rep_NULL);
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("memq", Fmemq, Smemq, (repv elt, repv list), rep_Subr2) /*
@@ -661,7 +652,7 @@ from the matched ELT, ie,
 	if(rep_INTERRUPTP)
 	    return(rep_NULL);
     }
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("memql", Fmemql, Smemql, (repv elt, repv list), rep_Subr2) /*
@@ -680,7 +671,7 @@ from the matched ELT. `memql' uses `eql' to compare list items.
 	else
 	{
 	    repv tem = Feql (elt, rep_CAR (list));
-	    if (tem && tem != Qnil)
+	    if (tem && tem != rep_nil)
 		return list;
 	}
 	list = rep_CDR (list);
@@ -688,7 +679,7 @@ from the matched ELT. `memql' uses `eql' to compare list items.
 	if (rep_INTERRUPTP)
 	    return rep_NULL;
     }
-    return Qnil;
+    return rep_nil;
 }
 
 DEFUN("delete", Fdelete, Sdelete, (repv elt, repv list), rep_Subr2) /*
@@ -853,7 +844,7 @@ arrayp ARG
 Returns t when ARG is an array.
 ::end:: */
 {
-    return((rep_VECTORP(arg) || rep_STRINGP(arg) || rep_COMPILEDP(arg)) ? Qt : Qnil);
+    return((rep_VECTORP(arg) || rep_STRINGP(arg) || rep_COMPILEDP(arg)) ? Qt : rep_nil);
 }
 
 DEFUN("aset", Faset, Saset, (repv array, repv index, repv new), rep_Subr3) /*
@@ -1082,7 +1073,7 @@ length SEQUENCE
 Returns the number of elements in SEQUENCE (a string, list or vector).
 ::end:: */
 {
-    if (sequence == Qnil)
+    if (sequence == rep_nil)
 	return rep_MAKE_INT (0);
 
     switch(rep_TYPE(sequence))
@@ -1118,9 +1109,9 @@ copy-sequence SEQUENCE
 Returns a new sequence whose elements are eq to those in SEQUENCE.
 ::end:: */
 {
-    repv res = Qnil;
-    if (seq == Qnil)
-	return Qnil;
+    repv res = rep_nil;
+    if (seq == rep_nil)
+	return rep_nil;
     switch(rep_TYPE(seq))
     {
     case rep_Cons:
@@ -1131,7 +1122,7 @@ Returns a new sequence whose elements are eq to those in SEQUENCE.
 		rep_TEST_INT;
 		if(rep_INTERRUPTP)
 		    return(rep_NULL);
-		if(!(*last = Fcons(rep_CAR(seq), Qnil)))
+		if(!(*last = Fcons(rep_CAR(seq), rep_nil)))
 		    return(rep_NULL);
 		last = &rep_CDR(*last);
 		seq = rep_CDR(seq);
@@ -1191,13 +1182,13 @@ Note the use of plain `t' on it's own for the last CONDITION, this is
 like the last else in an else-if statement in C.
 ::end:: */
 {
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_GC_root gc_args;
     rep_PUSHGC(gc_args, args);
     while(rep_CONSP(args) && rep_CONSP(rep_CAR(args)))
     {
 	repv cndlist = rep_CAR(args);
-	if(!(res = rep_eval(rep_CAR(cndlist), Qnil)))
+	if(!(res = rep_eval(rep_CAR(cndlist), rep_nil)))
 	    break;
 	if(!rep_NILP(res))
 	{
@@ -1218,11 +1209,11 @@ static inline repv
 load_file_exists_p (repv name)
 {
     repv tem = Ffile_readable_p (name);
-    if (tem && tem != Qnil)
+    if (tem && tem != rep_nil)
     {
 	tem = Ffile_directory_p (name);
 	if (tem)
-	    return (tem == Qnil) ? Qt : Qnil;
+	    return (tem == rep_nil) ? Qt : rep_nil;
     }
     return tem;
 }
@@ -1237,12 +1228,12 @@ paths searched). The file is loaded in a null lexical environment,
 within STRUCTURE. The value of the last form evaluated is returned.
 ::end:: */
 {
-    repv stream, bindings = Qnil, result, tem;
+    repv stream, bindings = rep_nil, result, tem;
     rep_GC_root gc_stream, gc_bindings;
     struct rep_Call lc;
     int c;
 
-    if (structure == Qnil)
+    if (structure == rep_nil)
 	structure = rep_structure;
 
     rep_DECLARE1 (name, rep_STRINGP);
@@ -1260,18 +1251,18 @@ within STRUCTURE. The value of the last form evaluated is returned.
     rep_PUSHGC (gc_bindings, bindings);
 
     /* Create the lexical environment for the file. */
-    lc.fun = Qnil;
-    lc.args = Qnil;
+    lc.fun = rep_nil;
+    lc.args = rep_nil;
     rep_PUSH_CALL (lc);
-    rep_env = Qnil;
+    rep_env = rep_nil;
     rep_structure = structure;
 
-    result = Qnil;
+    result = rep_nil;
     c = rep_stream_getc (stream);
     while ((c != EOF) && (tem = rep_readl (stream, &c)))
     {
 	rep_TEST_INT;
-	if (rep_INTERRUPTP || !(result = rep_eval (tem, Qnil)))
+	if (rep_INTERRUPTP || !(result = rep_eval (tem, rep_nil)))
 	{
 	    result = rep_NULL;
 	    goto out;
@@ -1303,17 +1294,17 @@ DEFUN ("load-dl-file", Fload_dl_file, Sload_dl_file,
     struct rep_Call lc;
     repv result;
 
-    if (structure == Qnil)
+    if (structure == rep_nil)
 	structure = rep_structure;
 
     rep_DECLARE1 (name, rep_STRINGP);
     rep_DECLARE2 (structure, rep_STRUCTUREP);
 
     /* Create the lexical environment for the file. */
-    lc.fun = Qnil;
-    lc.args = Qnil;
+    lc.fun = rep_nil;
+    lc.args = rep_nil;
     rep_PUSH_CALL (lc);
-    rep_env = Qnil;
+    rep_env = rep_nil;
     rep_structure = structure;
 
 #ifdef HAVE_DYNAMIC_LOADING
@@ -1347,9 +1338,9 @@ loaded and a warning is displayed.
     /* Avoid the need to protect these args from GC. */
     bool no_error_p = !rep_NILP(noerr_p);
     bool no_suffix_p = !rep_NILP(nosuf_p);
-    bool interp_mode = Fsymbol_value (Qinterpreted_mode, Qt) != Qnil;
+    bool interp_mode = Fsymbol_value (Qinterpreted_mode, Qt) != rep_nil;
 
-    repv name = Qnil, path;
+    repv name = rep_nil, path;
     repv dir = rep_NULL, try = rep_NULL;
     repv result = rep_NULL;
     repv suffixes;
@@ -1360,12 +1351,12 @@ loaded and a warning is displayed.
     rep_DECLARE1(file, rep_STRINGP);
     if(rep_NILP(nopath_p))
     {
-	path = Fsymbol_value(Qload_path, Qnil);
+	path = Fsymbol_value(Qload_path, rep_nil);
 	if(!path)
 	    return(rep_NULL);
     }
     else
-	path = Fcons(rep_null_string(), Qnil);
+	path = Fcons(rep_null_string(), rep_nil);
 
     suffixes = F_structure_ref (rep_structure, Q_load_suffixes);
     if (!suffixes || !rep_CONSP (suffixes))
@@ -1422,9 +1413,9 @@ research:
 			tem = load_file_exists_p (try);
 			if(!tem)
 			    goto path_error;
-			if(tem != Qnil)
+			if(tem != rep_nil)
 			{
-			    if(name != Qnil)
+			    if(name != rep_nil)
 			    {
 				if(rep_file_newer_than(try, name))
 				{
@@ -1439,13 +1430,13 @@ research:
 		    }
 		}
 	    }
-	    if(!trying_dl && name == Qnil && no_suffix_p)
+	    if(!trying_dl && name == rep_nil && no_suffix_p)
 	    {
 		/* Try without a suffix */
 		repv tem = load_file_exists_p (dir);
 		if(!tem)
 		    goto path_error;
-		if(tem != Qnil)
+		if(tem != rep_nil)
 		    name = dir;
 	    }
 	}
@@ -1460,7 +1451,7 @@ research:
     {
 	if(rep_NILP(nopath_p))
 	{
-	    path = Fsymbol_value(Qdl_load_path, Qnil);
+	    path = Fsymbol_value(Qdl_load_path, rep_nil);
 	    if(!path)
 		return rep_NULL;
 	}
@@ -1479,7 +1470,7 @@ path_error:
 	if(!no_error_p)
 	    return rep_signal_file_error(file);
 	else
-	    return Qnil;
+	    return rep_nil;
     }
 
     rep_PUSHGC (gc_file, file);
@@ -1495,7 +1486,7 @@ path_error:
 
     /* Loading succeeded. Look for an applicable item in
        the after-load-alist. */
-    if (rep_STRUCTUREP (result) && rep_STRUCTURE (result)->name != Qnil)
+    if (rep_STRUCTUREP (result) && rep_STRUCTURE (result)->name != rep_nil)
 	/* use the canonical name in case of aliasing.. */
 	file = rep_SYM (rep_STRUCTURE (result)->name)->name;
     rep_PUSHGC (gc_result, result);
@@ -1545,7 +1536,7 @@ strings built from the same characters in the same order even if the strings'
 location in memory is different.
 ::end:: */
 {
-    return (rep_value_cmp(val1, val2) == 0) ? Qt : Qnil;
+    return (rep_value_cmp(val1, val2) == 0) ? Qt : rep_nil;
 }
 
 DEFUN("eq", Feq, Seq, (repv val1, repv val2), rep_Subr2) /*
@@ -1556,7 +1547,7 @@ Returns t if VALUE1 and VALUE2 are one and the same object. Note that
 this may or may not be true for numbers of the same value (see `eql').
 ::end:: */
 {
-    return (val1 == val2) ? Qt : Qnil;
+    return (val1 == val2) ? Qt : rep_nil;
 }
 
 DEFUN("not", Fnot, Snot, (repv arg), rep_Subr1) /*
@@ -1568,7 +1559,7 @@ If ARG is nil returns t, else returns nil.
 {
     if(rep_NILP(arg))
 	return(Qt);
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("string-head-eq", Fstring_head_eq, Sstring_head_eq, (repv str1, repv str2), rep_Subr2) /*
@@ -1590,11 +1581,11 @@ Returns t if STRING2 matches the beginning of STRING1, ie,
     while(*s1 && *s2)
     {
 	if(*s1++ != *s2++)
-	    return(Qnil);
+	    return(rep_nil);
     }
     if(*s1 || (*s1 == *s2))
 	return(Qt);
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("string-equal", Fstring_equal, Sstring_equal, (repv str1, repv str2), rep_Subr2) /*
@@ -1612,10 +1603,10 @@ Returns t if STRING1 and STRING2 are the same, ignoring case.
     while(*s1 && *s2)
     {
 	if (toupper (*s1) != toupper (*s2))
-	    return Qnil;
+	    return rep_nil;
 	s1++; s2++;
     }
-    return (*s1 || *s2) ? Qnil : Qt;
+    return (*s1 || *s2) ? rep_nil : Qt;
 }
 
 DEFUN("string-lessp", Fstring_lessp, Sstring_lessp, (repv str1, repv str2), rep_Subr2) /*
@@ -1633,10 +1624,10 @@ Returns t if STRING1 is `less' than STRING2, ignoring case.
     while(*s1 && *s2)
     {
 	if (toupper (*s1) != toupper (*s2))
-	    return (toupper (*s1) < toupper (*s2)) ? Qt : Qnil;
+	    return (toupper (*s1) < toupper (*s2)) ? Qt : rep_nil;
 	s1++; s2++;
     }
-    return *s2 ? Qt : Qnil;
+    return *s2 ? Qt : rep_nil;
 }
 
 #define APPLY_COMPARISON(op)				\
@@ -1651,7 +1642,7 @@ Returns t if STRING1 is `less' than STRING2, ignoring case.
 	else						\
 	    sign = rep_value_cmp (a, b);		\
 	if (!(sign op 0))				\
-	    return Qnil;				\
+	    return rep_nil;				\
     }							\
     return Qt;
 
@@ -1677,7 +1668,7 @@ ignored.)
 ::end:: */
 {
     repv ret = Fnum_eq (argc, argv);
-    return !ret ? rep_NULL : ret == Qnil ? Qt : Qnil;
+    return !ret ? rep_NULL : ret == rep_nil ? Qt : rep_nil;
 }
 
 DEFUN(">", Fgtthan, Sgtthan, (int argc, repv *argv), rep_SubrV) /*
@@ -1732,7 +1723,7 @@ null ARG
 Returns t if ARG is nil.
 ::end:: */
 {
-    return rep_NILP(arg) ? Qt : Qnil;
+    return rep_NILP(arg) ? Qt : rep_nil;
 }
 
 DEFUN("atom", Fatom, Satom, (repv arg), rep_Subr1) /*
@@ -1742,7 +1733,7 @@ atom ARG
 Returns t if ARG is not a cons-cell.
 ::end:: */
 {
-    return rep_CONSP(arg) ? Qnil : Qt;
+    return rep_CONSP(arg) ? rep_nil : Qt;
 }
 
 DEFUN("consp", Fconsp, Sconsp, (repv arg), rep_Subr1) /*
@@ -1752,7 +1743,7 @@ consp ARG
 Returns t if ARG is a cons-cell.
 ::end:: */
 {
-    return rep_CONSP(arg) ? Qt : Qnil;
+    return rep_CONSP(arg) ? Qt : rep_nil;
 }
 
 DEFUN("listp", Flistp, Slistp, (repv arg), rep_Subr1) /*
@@ -1762,7 +1753,7 @@ listp ARG
 Returns t if ARG is a list, (either a cons-cell or nil).
 ::end:: */
 {
-    return rep_LISTP(arg) ? Qt : Qnil;
+    return rep_LISTP(arg) ? Qt : rep_nil;
 }
 
 DEFUN("stringp", Fstringp, Sstringp, (repv arg), rep_Subr1) /*
@@ -1772,7 +1763,7 @@ stringp ARG
 Returns t is ARG is a string.
 ::end:: */
 {
-    return rep_STRINGP(arg) ? Qt : Qnil;
+    return rep_STRINGP(arg) ? Qt : rep_nil;
 }
 
 DEFUN("vectorp", Fvectorp, Svectorp, (repv arg), rep_Subr1) /*
@@ -1782,7 +1773,7 @@ vectorp ARG
 Returns t if ARG is a vector.
 ::end:: */
 {
-    return rep_VECTORP(arg) ? Qt : Qnil;
+    return rep_VECTORP(arg) ? Qt : rep_nil;
 }
 
 DEFUN("functionp", Ffunctionp, Sfunctionp, (repv arg), rep_Subr1) /*
@@ -1811,7 +1802,7 @@ Returns t if ARG is a function.
 	/* FALL THROUGH */
 
     default:
-	return(Qnil);
+	return(rep_nil);
     }
 }
 
@@ -1825,7 +1816,7 @@ Returns t if ARG is a macro.
     if(rep_CONSP(arg) && rep_CAR(arg) == Qmacro)
 	return Qt;
     else
-	return Qnil;
+	return rep_nil;
 }
 	
 DEFUN("special-form-p", Fspecial_form_p, Sspecial_form_p, (repv arg), rep_Subr1) /*
@@ -1837,7 +1828,7 @@ Returns t if ARG is a special-form.
 {
     if(rep_TYPEP(arg, rep_SF))
 	return(Qt);
-    return(Qnil);
+    return(rep_nil);
 }
 
 DEFUN("subrp", Fsubrp, Ssubrp, (repv arg), rep_Subr1) /*
@@ -1859,7 +1850,7 @@ Returns t if arg is a primitive function.
     case rep_SF:
 	return(Qt);
     default:
-	return(Qnil);
+	return(rep_nil);
     }
 }
 
@@ -1873,7 +1864,7 @@ Returns t is ARG is a sequence (a list, vector or string).
     if(rep_LISTP(arg) || rep_VECTORP(arg) || rep_STRINGP(arg) || rep_COMPILEDP(arg))
 	return Qt;
     else
-	return Qnil;
+	return rep_nil;
 }
 
 DEFUN("subr-name", Fsubr_name, Ssubr_name, (repv subr, repv useVar), rep_Subr2) /*
@@ -1895,7 +1886,7 @@ Returns the name (a string) associated with SUBR.
     case rep_SF:
 	return(rep_SUBR(subr)->name);
     default:
-	return(Qnil);
+	return(rep_nil);
     }
 }
 
@@ -1917,14 +1908,14 @@ returned.
 ::end:: */
 {
     rep_GC_root gc_hook, gc_arg_list, gc_type;
-    repv res = Qnil;
+    repv res = rep_nil;
     rep_DECLARE2(arg_list, rep_LISTP);
     if(!rep_LISTP(hook))
     {
 	rep_DECLARE1(hook, rep_SYMBOLP);
 	hook = Fsymbol_value(hook, Qt);
 	if(rep_VOIDP(hook) || rep_NILP(hook))
-	    return Qnil;
+	    return rep_nil;
     }
     rep_PUSHGC(gc_hook, hook);
     rep_PUSHGC(gc_arg_list, arg_list);
@@ -1962,8 +1953,8 @@ return its value.
     rep_GC_root gc_handler;
     repv ret;
 
-    rep_DECLARE (1, thunk, Ffunctionp (thunk) != Qnil);
-    rep_DECLARE (2, handler, Ffunctionp (handler) != Qnil);
+    rep_DECLARE (1, thunk, Ffunctionp (thunk) != rep_nil);
+    rep_DECLARE (2, handler, Ffunctionp (handler) != rep_nil);
 
     rep_PUSHGC (gc_handler, handler);
     ret = rep_call_lisp0 (thunk);
@@ -2004,7 +1995,7 @@ DEFSTRING(jlc, ".jlc");
 static void
 add_path (const char *env, repv var)
 {
-    repv list = Qnil, vec[2];
+    repv list = rep_nil, vec[2];
     char *ptr;
 
     ptr = getenv (env);
@@ -2150,26 +2141,26 @@ rep_lispcmds_init(void)
 
     rep_INTERN_SPECIAL(documentation_files);
     Fset (Qdocumentation_files,
-	  Fcons (Fsymbol_value (Qdocumentation_file, Qt), Qnil));
+	  Fcons (Fsymbol_value (Qdocumentation_file, Qt), rep_nil));
 
     rep_INTERN_SPECIAL(load_path);
     Fset (Qload_path, Fcons (Fsymbol_value (Qlisp_lib_directory, Qt),
 			     Fcons (Fsymbol_value (Qsite_lisp_directory, Qt),
-				    Fcons (rep_VAL(&dot), Qnil))));
+				    Fcons (rep_VAL(&dot), rep_nil))));
     add_path ("REP_LOAD_PATH", Qload_path);
 
     rep_INTERN_SPECIAL(dl_load_path);
     Fset (Qdl_load_path, Fcons (Fsymbol_value (Qexec_directory, Qt),
-				Fcons (rep_VAL (&common_exec), Qnil)));
+				Fcons (rep_VAL (&common_exec), rep_nil)));
     add_path ("REP_DL_LOAD_PATH", Qdl_load_path);
 
     rep_INTERN_SPECIAL(after_load_alist);
-    Fset (Qafter_load_alist, Qnil);
+    Fset (Qafter_load_alist, rep_nil);
 
     rep_INTERN(or); rep_INTERN(and);
 
     rep_INTERN_SPECIAL(dl_load_reloc_now);
-    Fset (Qdl_load_reloc_now, Qnil);
+    Fset (Qdl_load_reloc_now, rep_nil);
 
     rep_INTERN_SPECIAL(load_filename);
 

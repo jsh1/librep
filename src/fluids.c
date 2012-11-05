@@ -36,12 +36,12 @@ static inline repv
 inlined_search_special_bindings (repv sym)
 {
     register repv env;
-    for (env = rep_special_bindings; env != Qnil; env = rep_CDR (env))
+    for (env = rep_special_bindings; env != rep_nil; env = rep_CDR (env))
     {
 	if (rep_CAAR(env) == sym)
 	    return rep_CAR (env);
     }
-    return Qnil;
+    return rep_nil;
 }
 
 static repv
@@ -79,7 +79,7 @@ variable object FLUID.
     rep_DECLARE1(f, FLUIDP);
 
     tem = search_special_bindings (f);
-    if (tem != Qnil)
+    if (tem != rep_nil)
 	return rep_CDR (tem);
     else
 	return FLUID_GLOBAL_VALUE (f);
@@ -98,7 +98,7 @@ variable object FLUID to VALUE.
     rep_DECLARE1(f, FLUIDP);
 
     tem = search_special_bindings (f);
-    if (tem != Qnil)
+    if (tem != rep_nil)
 	rep_CDR (tem) = v;
     else
 	FLUID_GLOBAL_VALUE (f) = v;

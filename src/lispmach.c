@@ -163,7 +163,7 @@ Return an object that can be used as the function value of a symbol.
 	    used--;
     }
 
-    vec = Fmake_vector(rep_MAKE_INT(used), Qnil);
+    vec = Fmake_vector(rep_MAKE_INT(used), rep_nil);
     if(vec != rep_NULL)
     {
 	int i;
@@ -182,7 +182,7 @@ bytecodep ARG
 Returns t if ARG is a byte code subroutine (i.e. compiled Lisp code).
 ::end:: */
 {
-    return rep_COMPILEDP(arg) ? Qt : Qnil;
+    return rep_COMPILEDP(arg) ? Qt : rep_nil;
 }
 
 #ifdef BYTECODE_PROFILE
@@ -197,11 +197,11 @@ print_bytecode_profile (void)
 DEFUN ("bytecode-profile", Fbytecode_profile,
        Sbytecode_profile, (repv reset), rep_Subr1)
 {
-    if (reset != Qnil)
+    if (reset != rep_nil)
 	memset (bytecode_profile, 0, sizeof (bytecode_profile));
     else
 	print_bytecode_profile ();
-    return Qnil;
+    return rep_nil;
 }
 #endif
 

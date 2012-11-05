@@ -209,7 +209,7 @@ is t, all matching ignores character case.
     if(match)
 	return rep_string_dupn(match, matchlen);
     else
-	return Qnil;
+	return rep_nil;
 }
 
 DEFUN("current-time", Fcurrent_time, Scurrent_time, (void), rep_Subr0) /*
@@ -301,7 +301,7 @@ Returns t when TIME-STAMP1 refers to a later time than TIME-STAMP2.
     rep_DECLARE2(t2, rep_TIMEP);
     time1 = rep_GET_TIME(t1);
     time2 = rep_GET_TIME(t2);
-    return time1 > time2 ? Qt : Qnil;
+    return time1 > time2 ? Qt : rep_nil;
 }
 
 DEFUN("sleep-for", Fsleep_for, Ssleep_for, (repv secs, repv msecs),
@@ -357,7 +357,7 @@ the name to return in subsequent calls.
 {
     static repv saved_name;
     rep_DECLARE1_OPT (arg, rep_STRINGP);
-    if(arg != Qnil)
+    if(arg != rep_nil)
     {
 	if(!saved_name)
 	    rep_mark_static(&saved_name);
@@ -445,7 +445,7 @@ alpha-char-p CHAR
 Returns t if CHAR is an alphabetic character.
 ::end:: */
 {
-    return (rep_INTP(ch) && isalpha(rep_INT(ch))) ? Qt : Qnil;
+    return (rep_INTP(ch) && isalpha(rep_INT(ch))) ? Qt : rep_nil;
 }
 
 DEFUN("upper-case-p", Fupper_case_p, Supper_case_p, (repv ch), rep_Subr1) /*
@@ -455,7 +455,7 @@ upper-case-p CHAR
 Returns t if CHAR is upper case.
 ::end:: */
 {
-    return (rep_INTP(ch) && isupper(rep_INT(ch))) ? Qt : Qnil;
+    return (rep_INTP(ch) && isupper(rep_INT(ch))) ? Qt : rep_nil;
 }
 
 DEFUN("lower-case-p", Flower_case_p, Slower_case_p, (repv ch), rep_Subr1) /*
@@ -465,7 +465,7 @@ lower-case-p CHAR
 Returns t if CHAR is lower case.
 ::end:: */
 {
-    return (rep_INTP(ch) && islower(rep_INT(ch))) ? Qt : Qnil;
+    return (rep_INTP(ch) && islower(rep_INT(ch))) ? Qt : rep_nil;
 }
 
 DEFUN("digit-char-p", Fdigit_char_p, Sdigit_char_p, (repv ch), rep_Subr1) /*
@@ -475,7 +475,7 @@ digit-char-p CHAR
 Returns t if CHAR is a digit.
 ::end:: */
 {
-    return (rep_INTP(ch) && isdigit(rep_INT(ch))) ? Qt : Qnil;
+    return (rep_INTP(ch) && isdigit(rep_INT(ch))) ? Qt : rep_nil;
 }
 
 DEFUN("alphanumericp", Falphanumericp, Salphanumericp, (repv ch), rep_Subr1) /*
@@ -485,7 +485,7 @@ alphanumericp CHAR
 Returns t if CHAR is alpha-numeric.
 ::end:: */
 {
-    return (rep_INTP(ch) && isalnum(rep_INT(ch))) ? Qt : Qnil;
+    return (rep_INTP(ch) && isalnum(rep_INT(ch))) ? Qt : rep_nil;
 }
 
 DEFUN("space-char-p", Fspace_char_p, Sspace_char_p, (repv ch), rep_Subr1) /*
@@ -495,7 +495,7 @@ space-char-p CHAR
 Returns t if CHAR is whitespace.
 ::end:: */
 {
-    return (rep_INTP(ch) && isspace(rep_INT(ch))) ? Qt : Qnil;
+    return (rep_INTP(ch) && isspace(rep_INT(ch))) ? Qt : rep_nil;
 }
 
 DEFUN("char-upcase", Fchar_upcase, Schar_upcase, (repv ch), rep_Subr1) /*
@@ -551,10 +551,10 @@ supplied an error is signalled.
 {
     repv param = Qt;
     rep_DECLARE1(opt, rep_STRINGP);
-    if (rep_get_option (rep_STR(opt), (arg == Qnil) ? 0 : &param))
+    if (rep_get_option (rep_STR(opt), (arg == rep_nil) ? 0 : &param))
 	return param;
     else
-	return Qnil;
+	return rep_nil;
 }
 
 DEFUN ("crypt", Fcrypt, Scrypt, (repv key, repv salt), rep_Subr2) /*
@@ -600,7 +600,7 @@ rep_misc_init(void)
     Fset (Qoperating_system, Qunix);
 
     rep_INTERN_SPECIAL(process_environment);
-    Fset (Qprocess_environment, Qnil);
+    Fset (Qprocess_environment, rep_nil);
 
     rep_INTERN(rep_version);
     Fset (Qrep_version, rep_VAL(&rep_version_string));

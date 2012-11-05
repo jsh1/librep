@@ -111,7 +111,7 @@ test_interrupt (void)
 	repv *seen = alloca (rep_max_lisp_depth * sizeof (repv));
 	struct rep_Call *c;
 	int seen_i = 0;
-	for (c = rep_call_stack; c != 0 && c->fun != Qnil; c = c->next)
+	for (c = rep_call_stack; c != 0 && c->fun != rep_nil; c = c->next)
 	{
 	    repv name;
 	    switch (rep_TYPE (c->fun))
@@ -133,7 +133,7 @@ test_interrupt (void)
 		repv tem;
 		int j;
 
-		name = Fintern (name, Qnil);
+		name = Fintern (name, rep_nil);
 		for (j = 0; j < seen_i; j++)
 		{
 		    if (seen[j] == name)
@@ -162,7 +162,7 @@ test_interrupt (void)
 
 DEFUN ("start-profiler", Fstart_profiler, Sstart_profiler, (void), rep_Subr0)
 {
-    profile_table = Fmake_structure (Qnil, Qnil, Qnil, Qnil);
+    profile_table = Fmake_structure (rep_nil, rep_nil, rep_nil, rep_nil);
     profiling = true;
     set_timer ();
     return Qt;
@@ -177,7 +177,7 @@ DEFUN ("stop-profiler", Fstop_profiler, Sstop_profiler, (void), rep_Subr0)
 
 DEFUN ("fetch-profile", Ffetch_profile, Sfetch_profile, (void), rep_Subr0)
 {
-    return profile_table ? profile_table : Qnil;
+    return profile_table ? profile_table : rep_nil;
 }
 
 DEFUN ("profile-interval", Fprofile_interval,
