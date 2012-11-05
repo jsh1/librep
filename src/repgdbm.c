@@ -166,7 +166,7 @@ gdbm-walk FUN DBM
     {
 	if (!rep_call_lisp1 (fun, rep_string_dupn (dkey.dptr, dkey.dsize)))
 	{
-	    ret = rep_NULL;
+	    ret = 0;
 	    free (dkey.dptr);
 	    break;
 	}

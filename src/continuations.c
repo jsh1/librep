@@ -354,11 +354,11 @@ rep_call_with_barrier (repv (*callback)(repv), repv arg,
 	{
 	    DB (("caught barrier exit throw\n"));
 	    rep_throw_value = rep_CDR (exit_barrier_cell);
-	    ret = (rep_throw_value == rep_NULL) ? rep_nil : rep_NULL;
+	    ret = !rep_throw_value ? rep_nil : 0;
 	    rep_CDR (exit_barrier_cell) = rep_nil;
 	}
 
-	if (rep_throw_value == rep_NULL && b.active != 0)
+	if (!rep_throw_value && b.active != 0)
 	{
 	    /* An active thread exited. Calling thread_delete () on the
 	       active thread will call thread_invoke (). That will
@@ -587,7 +587,7 @@ DEFUN("primitive-invoke-continuation", Fprimitive_invoke_continuation,
 {
     repv cont = Fsymbol_value (Qcontinuation, rep_nil);
 
-    if (cont == rep_NULL || !rep_CONTINP(cont)
+    if (cont == 0 || !rep_CONTINP(cont)
 	|| (rep_CONTIN(cont)->car & CF_INVALID))
     {
 	DEFSTRING (invalid, "invalid continuation");
@@ -595,7 +595,7 @@ DEFUN("primitive-invoke-continuation", Fprimitive_invoke_continuation,
     }
 
     primitive_invoke_continuation (rep_CONTIN (cont), ret);
-    return rep_NULL;
+    return 0;
 }
 
 static repv
@@ -619,8 +619,8 @@ execution point of the interpreter.
 
     rep_DECLARE1(cont, rep_FUNARGP);
     cont = rep_call_with_closure (cont, get_cont, rep_nil);
-    if (cont == rep_NULL)
-	return rep_NULL;
+    if (cont == 0)
+	return 0;
     rep_DECLARE1(cont, rep_CONTINP);
     c = rep_CONTIN (cont);
 
@@ -683,7 +683,7 @@ primitive_call_cc (repv (*callback)(rep_continuation *, void *), void *data,
 	barriers = c->barriers;
 
 	ret = invoked_continuation_ret;
-	invoked_continuation_ret = rep_NULL;
+	invoked_continuation_ret = 0;
 
 	ancestor = invoked_continuation_ancestor;
 	invoked_continuation_ancestor = 0;
@@ -894,7 +894,7 @@ inner_thread_invoke (rep_continuation *c, void *data)
     DB (("invoking thread %p\n", root_barrier->head));
     thread_load_environ (root_barrier->head);
     primitive_invoke_continuation (root_barrier->head->cont, rep_nil);
-    return rep_NULL;
+    return 0;
 }
 
 static void
@@ -999,7 +999,7 @@ new_thread (repv name)
     t->name = name;
     t->poll = 0;
     t->poll_arg = 0;
-    t->exit_val = rep_NULL;
+    t->exit_val = 0;
     t->next_alloc = threads;
     threads = t;
     return t;
@@ -1047,7 +1047,7 @@ make_thread (repv thunk, repv name, bool suspended)
     {
 	ret = rep_call_lisp0 (thunk);
 	t->car |= TF_EXITED;
-	if (ret != rep_NULL)
+	if (ret != 0)
 	{
 	    t->exit_val = ret;
 	    thread_delete (t);
@@ -1445,20 +1445,20 @@ static void
 call_with_inwards (void *data_)
 {
     repv *data = data_;
-    if (data[0] != rep_NULL)
+    if (data[0] != 0)
 	data[1] = bind_object (data[0]);
     else
-	data[1] = rep_NULL;
+	data[1] = 0;
 }
 
 static void
 call_with_outwards (void *data_)
 {
     repv *data = data_;
-    if (data[1] != rep_NULL)
+    if (data[1] != 0)
     {
 	unbind_object (data[1]);
-	data[1] = rep_NULL;
+	data[1] = 0;
     }
 }
 
@@ -1479,7 +1479,7 @@ unbound. If THUNK is subsequently reentered, ARG will be rebound.
     repv data[2];			/* { ARG, HANDLE } */
     data[0] = arg;
     data[1] = bind_object(data[0]);
-    if (data[1] != rep_NULL)
+    if (data[1] != 0)
     {
 	repv ret;
 	rep_GC_n_roots gc_data;
@@ -1492,7 +1492,7 @@ unbound. If THUNK is subsequently reentered, ARG will be rebound.
 	return ret;
     }
     else
-	return rep_NULL;
+	return 0;
 }
 
 DEFUN("call-with-dynamic-root", Fcall_with_dynamic_root,
@@ -1645,7 +1645,7 @@ Returns true if the timeout was reached.
     timeout = (msecs == rep_nil) ? 1 : rep_get_long_int (msecs);
     thread_suspend (THREAD (th), timeout, 0, 0);
     no_timeout = THREAD (th)->exit_val;
-    THREAD (th)->exit_val = rep_NULL;
+    THREAD (th)->exit_val = 0;
     return no_timeout == rep_nil ? Qt : rep_nil;
 #else
     return rep_signal_arg_error (th, 1);
@@ -1686,7 +1686,7 @@ current dynamic root.
 	thread_suspend (THREAD (self),
 			rep_get_long_int (msecs),
 			thread_join_poller, THREAD (th));
-	THREAD (self)->exit_val = rep_NULL;
+	THREAD (self)->exit_val = 0;
 	rep_POPGC;
 	if ((THREAD (th)->car & TF_EXITED) && THREAD (th)->exit_val)
 	    return THREAD (th)->exit_val;

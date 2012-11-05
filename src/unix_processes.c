@@ -948,7 +948,7 @@ run_process(struct Proc *pr, char **argv, char *sync_input)
 		break;
 	    }
 	}
-	else if(rep_throw_value == rep_NULL)
+	else if(!rep_throw_value)
 	    Fsignal(Qprocess_error, rep_LIST_1(rep_lookup_errno()));
     }
     else
@@ -1082,7 +1082,7 @@ If the DIR parameter is nil it will be inherited from the
 ::end:: */
 {
     repv pr = rep_VAL(rep_alloc(sizeof(struct Proc)));
-    if(pr != rep_NULL)
+    if(pr != 0)
     {
 	rep_GC_root gc_pr;
 	rep_data_after_gc += sizeof (struct Proc);
@@ -1160,7 +1160,7 @@ set in the PROCESS prior to calling this function.
 	pr = VPROC(Fmake_process(rep_nil, rep_nil, rep_nil,
 				    rep_nil, rep_nil));
 	if(pr == NULL)
-	    return rep_NULL;
+	    return 0;
     }
     if(rep_CONSP(arg_list))
     {
@@ -1236,7 +1236,7 @@ set in the PROCESS prior to calling this function.
 	pr = VPROC(Fmake_process(rep_nil, rep_nil, rep_nil,
 				    rep_nil, rep_nil));
 	if(pr == NULL)
-	    return rep_NULL;
+	    return 0;
     }
     if(rep_CONSP(arg_list))
     {
@@ -2032,7 +2032,7 @@ rep_system (char *command)
 		    interrupt_count++;
 		kill (pid, signals[interrupt_count - 1]);
 		if (rep_throw_value == rep_int_cell)
-		    rep_throw_value = rep_NULL;
+		    rep_throw_value = 0;
 	    }
 
 	    x = waitpid (pid, &status, WNOHANG);

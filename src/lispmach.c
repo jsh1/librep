@@ -164,7 +164,7 @@ Return an object that can be used as the function value of a symbol.
     }
 
     vec = Fmake_vector(rep_MAKE_INT(used), rep_nil);
-    if(vec != rep_NULL)
+    if(vec != 0)
     {
 	int i;
 	rep_COMPILED(vec)->car = ((rep_COMPILED(vec)->car

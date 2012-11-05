@@ -730,7 +730,7 @@ BODY-THUNK may be modified by this function!
     s->imports = rep_nil;
     s->accessible = rep_nil;
     s->special_env = Qt;
-    if (rep_structure != rep_NULL)
+    if (rep_structure != 0)
 	s->apply_bytecode = rep_STRUCTURE (rep_structure)->apply_bytecode;
     else
 	s->apply_bytecode = 0;
@@ -751,7 +751,7 @@ BODY-THUNK may be modified by this function!
 	rep_FUNARG (header_thunk)->structure = s_;
 	tem = rep_call_lisp0 (header_thunk);
 	s->imports = Fdelq (Q_meta, s->imports);
-	if (tem == rep_NULL)
+	if (tem == 0)
 	    s = 0;
     }
     rep_POPGC;
@@ -761,7 +761,7 @@ BODY-THUNK may be modified by this function!
 	repv tem;
 	rep_FUNARG (body_thunk)->structure = s_;
 	tem = rep_call_lisp0 (body_thunk);
-	if (tem == rep_NULL)
+	if (tem == 0)
 	    s = 0;
     }
     rep_POPGC;
@@ -774,7 +774,7 @@ BODY-THUNK may be modified by this function!
 	s = rep_STRUCTURE (s_);
 	if (s->name != rep_nil)
 	    Fname_structure (rep_VAL (s), rep_nil);
-	return rep_NULL;
+	return 0;
     }
 }
 
@@ -813,7 +813,7 @@ Return `t' if symbol VAR has a non-void binding in STRUCTURE.
 ::end:: */
 {
     repv tem = F_structure_ref (structure, var);
-    if (tem != rep_NULL)
+    if (tem != 0)
 	tem = rep_VOIDP (tem) ? rep_nil : Qt;
     return tem;
 }
@@ -1102,7 +1102,7 @@ attempt to load it.
 
 	rep_structure = old;
 
-	if (tem != rep_NULL && !rep_STRUCTUREP (tem))
+	if (tem != 0 && !rep_STRUCTUREP (tem))
 	    tem = rep_nil;
     }
     return tem;
@@ -1167,7 +1167,7 @@ named in the list STRUCT-NAMES.
 	if (tem == rep_nil)
 	{
 	    repv s = Fintern_structure (rep_CAR (args));
-	    if (s == rep_NULL || !rep_STRUCTUREP (s))
+	    if (s == 0 || !rep_STRUCTUREP (s))
 	    {
 		ret = Fsignal (Qerror, rep_list_2 (rep_VAL (&no_struct),
 						   rep_CAR (args)));
@@ -1367,8 +1367,8 @@ DEFUN ("export-bindings", Fexport_bindings,
 
     while (rep_CONSP (vars))
     {
-	if (Fexport_binding (rep_CAR (vars)) == rep_NULL)
-	    return rep_NULL;
+	if (Fexport_binding (rep_CAR (vars)) == 0)
+	    return 0;
 
 	vars = rep_CDR (vars);
     }
@@ -1447,8 +1447,8 @@ loaded is either FILE (if given), or the print name of FEATURE.
 	    tem = Fload (Fstructure_file (feature), rep_nil, rep_nil, rep_nil, rep_nil);
 	    rep_POPGC;
 	    
-	    if (tem == rep_NULL)
-		return rep_NULL;
+	    if (tem == 0)
+		return 0;
 
 	    if (rep_STRUCTUREP (tem))
 		Fname_structure (tem, feature);
@@ -1634,7 +1634,7 @@ rep_get_initial_special_value (repv sym)
 	    }
 	}
     }
-    return rep_NULL;
+    return 0;
 }
 
 repv

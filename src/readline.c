@@ -65,7 +65,7 @@ completion_generator (char *word, int state)
 	    completions = Fapropos (rep_concat2("^", rep_STR(re)),
 				    boundp, rep_nil);
 	}
-	if (completions == rep_NULL)
+	if (completions == 0)
 	    completions = rep_nil;
     }
 

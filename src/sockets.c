@@ -89,8 +89,8 @@ make_socket_ (int sock_fd, int namespace, int style)
     s->sock = sock_fd;
     s->namespace = namespace;
     s->style = style;
-    s->addr = rep_NULL;
-    s->p_addr = rep_NULL;
+    s->addr = 0;
+    s->p_addr = 0;
     s->sentinel = s->stream = rep_nil;
 
     s->next = socket_list;
@@ -263,8 +263,8 @@ make_local_socket (repv addr, rep_socket *(maker)(int, int, void *, size_t),
     local = Flocal_file_name (addr);
     rep_POPGC; rep_POPGC; rep_POPGC;
 
-    if (local == rep_NULL)
-	return rep_NULL;
+    if (local == 0)
+	return 0;
     if (!rep_STRINGP (local))
     {
 	DEFSTRING (err, "Not a local file");
@@ -486,7 +486,7 @@ subsequently call `close-socket' on the created client.
 static void
 fill_in_address (rep_socket *s)
 {
-    if (s->addr == rep_NULL)
+    if (s->addr == 0)
     {
 	if (s->namespace == PF_INET)
 	{
@@ -516,7 +516,7 @@ fill_in_address (rep_socket *s)
 		s->port = rep_MAKE_INT (ntohs (name.sin_port));
 	    }
 	}
-	if (s->addr == rep_NULL)
+	if (s->addr == 0)
 	{
 	    s->addr = rep_nil;
 	    s->port = rep_nil;
@@ -527,7 +527,7 @@ fill_in_address (rep_socket *s)
 static void
 fill_in_peer_address (rep_socket *s)
 {
-    if (s->p_addr == rep_NULL)
+    if (s->p_addr == 0)
     {
 	if (s->namespace == PF_INET)
 	{
@@ -543,7 +543,7 @@ fill_in_peer_address (rep_socket *s)
 		}
 	    }
 	}
-	if (s->p_addr == rep_NULL)
+	if (s->p_addr == 0)
 	{
 	    s->p_addr = rep_nil;
 	    s->p_port = rep_nil;

@@ -203,7 +203,7 @@ rep_unbound_file_error(repv file)
     return rep_signal_file_error(rep_list_2(rep_VAL(&unbound_file), file));
 }
 
-/* Note that this function never returns rep_NULL. It preserves the
+/* Note that this function never returns 0. It preserves the
    regexp match data throughout. */
 repv
 rep_get_file_handler(repv file_name, int op)
@@ -285,7 +285,7 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
 	}
     }
 
-    if (handler != rep_NULL && !rep_VOIDP (handler))
+    if (handler != 0 && !rep_VOIDP (handler))
     {
 	rep_push_regexp_data(&matches);
 	op_data.next = rep_blocked_ops[op];
@@ -296,13 +296,13 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
 	rep_pop_regexp_data();
     }
     else
-	res = rep_NULL;
+	res = 0;
 
     return res;
 }
 
 /* *rep_FILEP may be an opened file, or the name of a file. Returns the handler
-   to call, or nil if no handler exists, or rep_NULL if an error occurred.
+   to call, or nil if no handler exists, or 0 if an error occurred.
    Expands *rep_FILEP to its canonical form, leaving this value in *rep_FILEP. */
 repv
 rep_get_handler_from_file_or_name(repv *filep, int op)
@@ -341,7 +341,7 @@ rep_expand_and_get_handler(repv *file_namep, int op)
     rep_DECLARE1(file_name, rep_STRINGP);
     file_name = Fexpand_file_name(file_name, rep_nil);
     if(!file_name)
-	return rep_NULL;
+	return 0;
     handler = rep_get_file_handler(file_name, op);
     *file_namep = file_name;
     return handler;
@@ -356,12 +356,12 @@ rep_localise_and_get_handler(repv *file_namep, int op)
     rep_DECLARE1(file_name, rep_STRINGP);
     file_name = Flocal_file_name(file_name);
     if(!file_name)
-	return rep_NULL;
+	return 0;
     if(rep_NILP(file_name))
     {
 	file_name = Fexpand_file_name(*file_namep, rep_nil);
 	if(!file_name)
-	    return rep_NULL;
+	    return 0;
     }
     handler = rep_get_file_handler(file_name, op);
     *file_namep = file_name;
@@ -424,7 +424,7 @@ or whatever).
     if(!abs)
     {
 	rep_POPGC; rep_POPGC;
-	return rep_NULL;
+	return 0;
     }
     else if(rep_NILP(abs))
     {
@@ -440,7 +440,7 @@ or whatever).
     }
     rep_POPGC; rep_POPGC;
     if(!file_name)
-	return rep_NULL;
+	return 0;
 
     /* Now simplify FILE-NAME. */
 
@@ -464,7 +464,7 @@ a file in the local system, return nil.
 {
     repv handler = rep_expand_and_get_handler(&file, op_local_file_name);
     if(!handler)
-	return rep_NULL;
+	return 0;
     if(rep_NILP(handler))
 	/* Assume that it's already a local file. */
 	return file;
@@ -489,7 +489,7 @@ operating systems, symbolic links will be expanded where possible.)
 {
     repv handler = rep_expand_and_get_handler(&file, op_canonical_file_name);
     if(!handler)
-	return rep_NULL;
+	return 0;
     if(rep_NILP(handler))
 	return rep_canonical_file_name(file);
     else
@@ -664,7 +664,7 @@ static repv
 make_file(void)
 {
     repv file = rep_VAL(rep_alloc(sizeof(rep_file)));
-    if(file == rep_NULL)
+    if(file == 0)
 	return rep_mem_error();
     rep_data_after_gc += sizeof (rep_file);
     rep_FILE(file)->car = rep_file_type | rep_LFF_BOGUS_LINE_NUMBER;
@@ -832,7 +832,7 @@ for ACCESS-TYPE requests. ACCESS-TYPE can be one of the symbols:
     if(rep_NILP(handler))
     {
 	file = make_file();
-	if(file != rep_NULL)
+	if(file != 0)
 	{
 	    rep_FILE(file)->file.fh = fopen(rep_STR(file_name),
 					    (access_type == Qwrite ? "w"
@@ -876,7 +876,7 @@ function HANDLER.
     repv file;
     rep_DECLARE1(file_name, rep_STRINGP);
     file = make_file();
-    if(file != rep_NULL)
+    if(file != 0)
     {
 	rep_FILE(file)->name = file_name;
 	rep_FILE(file)->handler = handler;
@@ -1052,7 +1052,7 @@ this almost certainly won't work across filing systems.
     new_handler = rep_localise_and_get_handler(&new, op_rename_file);
     rep_POPGC; rep_POPGC;
     if(!old_handler || !new_handler)
-	return rep_NULL;
+	return 0;
 
     if(old_handler == new_handler)
     {
@@ -1124,7 +1124,7 @@ Create a new copy of the file called SOURCE, as the file called DESTINATION.
     dst_handler = rep_localise_and_get_handler(&dst, op_copy_file);
     rep_POPGC; rep_POPGC;
     if(!src_handler || !dst_handler)
-	return rep_NULL;
+	return 0;
 
     if(src_handler == dst_handler)
     {
@@ -1165,7 +1165,7 @@ Create a new copy of the file called SOURCE, as the file called DESTINATION.
 	    remove(rep_STR(temp));
 	}
 	else
-	    res = rep_NULL;
+	    res = 0;
     }
     return res;
 }
@@ -1522,7 +1522,7 @@ rep_file_fdopen (int fd, char *mode)
     ptr->handler = Qt;
     ptr->file.fh = fdopen (fd, mode);
     if (ptr->file.fh == 0)
-	return rep_NULL;
+	return 0;
     else
 	return rep_VAL (ptr);
 }
@@ -1627,7 +1627,7 @@ rep_files_init(void)
 
     rep_INTERN_SPECIAL(default_directory);
     tem = rep_getpwd();
-    if (tem == rep_NULL)
+    if (tem == 0)
 	tem = rep_null_string ();
     Fset (Qdefault_directory, tem);
 

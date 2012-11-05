@@ -205,7 +205,7 @@ load_requires (char *ptr)
     {
 	char *end = ptr + strcspn (ptr, " \t");
 	repv sym = Fintern (rep_string_dupn (ptr, end - ptr), rep_nil);
-	if (Fintern_structure (sym) == rep_NULL)
+	if (Fintern_structure (sym) == 0)
 	    return false;
 	ptr = end + strspn (end, " \t");
     }
@@ -405,8 +405,8 @@ rep_intern_dl_library (repv file_name)
 
 		ret = init_func(file_name);
 
-		if(rep_nil != rep_NULL			/* initialising */
-		   && (ret == rep_NULL || ret == rep_nil))
+		if(rep_nil != 0			/* initialising */
+		   && (ret == 0 || ret == rep_nil))
 		{
 		    /* error. abort abort.. */
 
@@ -437,7 +437,7 @@ rep_open_dl_library(repv file_name)
 
     idx = rep_intern_dl_library (file_name);
     if (idx < 0)
-	return rep_NULL;
+	return 0;
 
     if (dl_libs[idx].is_rep_module)
     {

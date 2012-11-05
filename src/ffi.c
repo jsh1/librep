@@ -399,9 +399,9 @@ rep_ffi_marshal (unsigned int type_id, repv value, char *ptr)
     case rep_FFI_ALIAS: {
 	rep_ffi_alias *s = (rep_ffi_alias *) type;
 
-	if (s->conv_in != rep_NULL) {
+	if (s->conv_in != 0) {
 	    value = rep_call_lisp1 (s->conv_in, value);
-	    if (value == rep_NULL)
+	    if (value == 0)
 		return NULL;
 	}
 
@@ -519,9 +519,9 @@ rep_ffi_demarshal (unsigned int type_id, char *ptr, repv *value)
 
 	ptr = rep_ffi_marshal (s->base, *value, ptr);
 
-	if (s->conv_in != rep_NULL) {
+	if (s->conv_in != 0) {
 	    *value = rep_call_lisp1 (s->conv_out, *value);
-	    if (*value == rep_NULL)
+	    if (*value == 0)
 		return NULL;
 	}
 
@@ -562,9 +562,9 @@ DEFUN ("ffi-struct", Fffi_struct, Sffi_struct, (repv fields), rep_Subr1)
 	    x = rep_CAR (fields);
 	    fields = rep_CDR (fields);
 	} else
-	    x = rep_NULL;
+	    x = 0;
 
-	if (x == rep_NULL || !rep_VALID_TYPE_P (x))
+	if (x == 0 || !rep_VALID_TYPE_P (x))
 	{
 	    rep_free (s);
 	    return rep_signal_arg_error (x, 1);
@@ -735,7 +735,7 @@ DEFUN ("ffi-apply", Fffi_apply, Sffi_apply,
 	    args_ptr = rep_ffi_marshal (iface->args[i], elt, args_ptr);
 	    if (args_ptr == NULL) {
 		rep_POPGC;
-		return rep_NULL;
+		return 0;
 	    }
 	}
 
@@ -746,7 +746,7 @@ DEFUN ("ffi-apply", Fffi_apply, Sffi_apply,
 	if (ret_data != NULL)
 	{
 	    if (rep_ffi_demarshal (iface->ret, ret_data, &ret_value) == NULL)
-		return rep_NULL;
+		return 0;
 	}
 
 	return ret_value;
@@ -821,7 +821,7 @@ DEFUN ("ffi-set!", Fffi_set_, Sffi_set_,
     ptr = (void *) ALIGN (ptr, type->type->alignment);
 
     if (rep_ffi_marshal (rep_INT (type_id), value, ptr) == NULL)
-	return rep_NULL;
+	return 0;
 
     return rep_undefined_value;
 }
@@ -841,7 +841,7 @@ DEFUN ("ffi-get", Fffi_get, Sffi_get, (repv type_id, repv addr), rep_Subr2)
     ptr = (void *) ALIGN (ptr, type->type->alignment);
 
     if (rep_ffi_demarshal (rep_INT (type_id), ptr, &value) == NULL)
-	return rep_NULL;
+	return 0;
 
     return value;
 }

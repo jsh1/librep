@@ -523,11 +523,11 @@ rep_directory_files(repv dir_name)
 	{
 	    repv name = rep_string_dupn(de->d_name, NAMLEN(de));
 	    list = Fcons(name, list);
-	    if(name == rep_NULL || list == rep_NULL)
+	    if(name == 0 || list == 0)
 	    {
 		rep_mem_error();
 		closedir(dir);
-		return rep_NULL;
+		return 0;
 	    }
 	}
 	closedir(dir);

@@ -257,12 +257,12 @@ rep_load_environment (repv file)
 
     /* 1. Do the rep bootstrap */
 
-    for (ptr = init; res != rep_NULL && *ptr != 0; ptr++)
+    for (ptr = init; res != 0 && *ptr != 0; ptr++)
 	res = rep_bootstrap_structure (*ptr);
 
     /* 2. Do the caller-local bootstrap */
 
-    if (res != rep_NULL && rep_STRINGP(file))
+    if (res != 0 && rep_STRINGP(file))
 	res = Fload (file, rep_nil, rep_nil, rep_nil, rep_nil);
 
     rep_POPGC;
@@ -327,7 +327,7 @@ rep_on_idle(int since_last_event)
     return res;
 }
 
-/* The input loop should call this function when rep_throw_value == rep_NULL.
+/* The input loop should call this function when rep_throw_value == 0.
    It returns true when the input loop should exit, returning whatever
    is stored in *RESULT-P. */
 bool
@@ -335,8 +335,8 @@ rep_handle_input_exception(repv *result_p)
 {
     repv tv = rep_throw_value;
     repv car = rep_CAR(tv);
-    rep_throw_value = rep_NULL;
-    *result_p = rep_NULL;
+    rep_throw_value = 0;
+    *result_p = 0;
     
     if(car == Qexit)
     {
@@ -402,7 +402,7 @@ rep_top_level_exit (void)
 {
     rep_GC_root gc_throw;
     repv throw = rep_throw_value;
-    rep_throw_value = rep_NULL;
+    rep_throw_value = 0;
     if(throw && rep_CAR(throw) == Qerror)
     {
 	/* If quitting due to an error, print the error cell if
@@ -421,7 +421,7 @@ rep_top_level_exit (void)
 
     rep_PUSHGC(gc_throw, throw);
     Fcall_hook (Qbefore_exit_hook, rep_nil, rep_nil);
-    rep_throw_value = rep_NULL;
+    rep_throw_value = 0;
     rep_POPGC;
 
     if (throw && rep_CAR (throw) == Qquit && rep_INTP (rep_CDR(throw)))
@@ -469,7 +469,7 @@ again:
 	    && type != Qterm_interrupt
 	    && type != Quser_interrupt)
 	{
-	    rep_throw_value = rep_NULL;
+	    rep_throw_value = 0;
 	    rep_handle_error (Qno_catcher, rep_LIST_1 (type));
 	    goto again;
 	}

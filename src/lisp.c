@@ -296,13 +296,13 @@ static repv
 read_list(repv strm, register int *c_p)
 {
     repv result = rep_nil;
-    repv last = rep_NULL;
+    repv last = 0;
     int start_line = read_local_file ? rep_FILE (strm)->line_number : -1;
     rep_GC_root gc_result;
 
     *c_p = rep_stream_getc(strm);
     rep_PUSHGC(gc_result, result);
-    while(result != rep_NULL)
+    while(result != 0)
     {
 	switch(*c_p)
 	{
@@ -347,11 +347,11 @@ read_list(repv strm, register int *c_p)
 		if(last)
 		{
 		    repv this = readl(strm, c_p, Qpremature_end_of_stream);
-		    if (this != rep_NULL)
+		    if (this != 0)
 			rep_CDR (last) = this;
 		    else
 		    {
-			result = rep_NULL;
+			result = 0;
 			goto end;
 		    }
 		}
@@ -378,7 +378,7 @@ read_list(repv strm, register int *c_p)
 		    *c_p = c;
 		    read_comment (strm, c_p);
 		    if (rep_INTERRUPTP)
-			return rep_NULL;
+			return 0;
 		    continue;
 		}
 		rep_stream_ungetc (strm, c);
@@ -393,8 +393,8 @@ read_list(repv strm, register int *c_p)
 		else
 		    result = this;
 		rep_CAR(this) = readl(strm, c_p, Qpremature_end_of_stream);
-		if(rep_CAR (this) == rep_NULL)
-		    result = rep_NULL;
+		if(rep_CAR (this) == 0)
+		    result = 0;
 		last = this;
 	    }
 	}
@@ -402,7 +402,7 @@ read_list(repv strm, register int *c_p)
 end:
     rep_POPGC;
 
-    if (result != rep_NULL)
+    if (result != 0)
 	rep_record_origin (result, strm, start_line);
 
     return result;
@@ -412,7 +412,7 @@ end:
 static repv
 read_symbol(repv strm, int *c_p, repv obarray)
 {
-    static repv buffer = rep_NULL;
+    static repv buffer = 0;
     static size_t buflen = 240;
 
     repv result;
@@ -428,7 +428,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
     bool expecting_prefix = false;
     int force_exactness = 0;
 
-    if (buffer == rep_NULL)
+    if (buffer == 0)
     {
 	buffer = rep_make_string (buflen + 2);
 	rep_mark_static (&buffer);
@@ -663,7 +663,7 @@ done:
 	    result = rep_parse_number (buf + nfirst, i - nfirst, radix, sign,
 				       !exact ? rep_NUMBER_FLOAT
 				       : rational ? rep_NUMBER_RATIONAL : 0);
-	if (result == rep_NULL)
+	if (result == 0)
 	    goto intern;
 	if (force_exactness > 0)
 	    result = Finexact_to_exact (result);
@@ -674,10 +674,10 @@ done:
     {
 intern:	rep_set_string_len(buffer, i);
 	result = Ffind_symbol (rep_VAL(buffer), obarray);
-	if (result != rep_NULL && result == rep_nil)
+	if (result != 0 && result == rep_nil)
 	{
 	    result = Fmake_symbol (rep_string_dupn (buf, i));
-	    if (result != rep_NULL)
+	    if (result != 0)
 		result = Fintern_symbol (result, obarray);
 	}
     }
@@ -714,10 +714,10 @@ read_vector(repv strm, int *c_p)
 	    }
 	}
 	else
-	    result = rep_NULL;
+	    result = 0;
     }
     else
-	result = rep_NULL;
+	result = 0;
     return result;
 }
 
@@ -866,10 +866,10 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    }
 	    rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 	    rep_POPGC;
-	    if(rep_CADR(form) != rep_NULL)
+	    if(rep_CADR(form) != 0)
 		return form;
 	    else
-		return rep_NULL;
+		return 0;
 
 	case ',':
 	    /* ,@X => (backquote-splice X)
@@ -894,10 +894,10 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    }
 	    rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 	    rep_POPGC;
-	    if(rep_CADR(form) != rep_NULL)
+	    if(rep_CADR(form) != 0)
 		return form;
 	    else
-		return rep_NULL;
+		return 0;
 
 	case '[':
 	    return read_vector(strm, c_p);
@@ -946,15 +946,15 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		}
 		rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
 		rep_POPGC;
-		if(rep_CADR(form) == rep_NULL)
-		    return rep_NULL;
+		if(rep_CADR(form) == 0)
+		    return 0;
 		else
 		    return form;
 
 	    case '[':
 		{
 		    repv vec = read_vector(strm, c_p);
-		    if(vec != rep_NULL)
+		    if(vec != 0)
 		    {
 			if(rep_VECT_LEN(vec) >= rep_COMPILED_MIN_SLOTS
 			   && rep_STRINGP (rep_COMPILED_CODE (vec))
@@ -979,7 +979,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 		/* comment delimited by `#| ... |#' */
 		read_comment (strm, c_p);
 		if (rep_INTERRUPTP)
-		    return rep_NULL;
+		    return 0;
 		continue;
 
 	    case '\\':
@@ -1050,7 +1050,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 			/* #! at the start of the file. Skip until !# */
 			read_comment (strm, c_p);
 			if (rep_INTERRUPTP)
-			    return rep_NULL;
+			    return 0;
 			continue;
 		    }
 		}
@@ -1143,12 +1143,12 @@ eval_list(repv list)
 	repv tmp;
 	if(!(tmp = rep_eval(rep_CAR(list), rep_nil)))
 	{
-	    result = rep_NULL;
+	    result = 0;
 	    break;
 	}
 	if(!(*last = Fcons(tmp, rep_nil)))
 	{
-	    result = rep_NULL;
+	    result = 0;
 	    break;
 	}
 	list = rep_CDR(list);
@@ -1156,7 +1156,7 @@ eval_list(repv list)
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
 	{
-	    result = rep_NULL;
+	    result = 0;
 	    break;
 	}
     }
@@ -1295,11 +1295,11 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 	    VAR (nvars, VAR_EVALP) = Qt;
 	    for (i = 0; i < nargs - 1; i++)
 	    {
-		if (args[i] == key && args[i+1] != rep_NULL)
+		if (args[i] == key && args[i+1] != 0)
 		{
 		    VAR (nvars, VAR_VALUE) = args[i+1];
 		    VAR (nvars, VAR_EVALP) = rep_nil;
-		    args[i] = args[i+1] = rep_NULL;
+		    args[i] = args[i+1] = 0;
 		    break;
 		}
 	    }
@@ -1311,7 +1311,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 		repv *ptr = &list;
 		while (nargs > 0)
 		{
-		    if (*args != rep_NULL)
+		    if (*args != 0)
 		    {
 			*ptr = Fcons (*args, rep_nil);
 			ptr = rep_CDRLOC (*ptr);
@@ -1329,7 +1329,7 @@ bind_lambda_list_1 (repv lambdaList, repv *args, int nargs)
 
 	rep_TEST_INT;
 	if (rep_INTERRUPTP)
-	    return rep_NULL;
+	    return 0;
     }
 
 out:
@@ -1343,10 +1343,10 @@ out:
 	    if (VAR (i, VAR_EVALP) != rep_nil)
 	    {
 		repv tem = Feval (VAR (i, VAR_VALUE));
-		if (tem == rep_NULL)
+		if (tem == 0)
 		{
 		    rep_POPGCN;
-		    return rep_NULL;
+		    return 0;
 		}
 		VAR (i, VAR_VALUE) = tem;
 	    }
@@ -1403,7 +1403,7 @@ eval_lambda(repv lambdaExp, repv argList, repv tail_posn)
 {
     repv result;
 again:
-    result = rep_NULL;
+    result = 0;
     lambdaExp = rep_CDR(lambdaExp);
     if(rep_CONSP(lambdaExp))
     {
@@ -1428,14 +1428,14 @@ again:
 	    rep_unbind_symbols(boundlist);
 
 	    if (tail_posn == rep_nil
-		&& result == rep_NULL && rep_throw_value
+		&& result == 0 && rep_throw_value
 		&& rep_CAR (rep_throw_value) == TAIL_CALL_TAG
 		&& rep_CONSP (rep_CDR (rep_throw_value)))
 	    {
 		/* tail position ends here, so unwrap the saved call */
 		repv func = rep_CADR (rep_throw_value);
 		repv args = rep_CDDR (rep_throw_value);
-		rep_throw_value = rep_NULL;
+		rep_throw_value = 0;
 		if (rep_FUNARGP (func) && rep_CONSP (rep_FUNARG (func)->fun)
 		    && rep_CAR (rep_FUNARG (func)->fun) == Qlambda)
 		{
@@ -1449,7 +1449,7 @@ again:
 	    }
 	}
 	else
-	    result = rep_NULL;
+	    result = 0;
     }
     return result;
 }
@@ -1459,7 +1459,7 @@ DEFSTRING(invl_autoload, "Can only autoload from symbols");
 /* Autoloads a value; FUNARG is a closure enclosing the autoload
    definition. The definition is a list `(autoload SYMBOL FILE ...)'
    This function tries to load FILE, then returns the value of SYMBOL
-   if successful, or rep_NULL for some kind of error.
+   if successful, or 0 for some kind of error.
 
    IMPORTANT: to ensure security, closure FUNARG must be active when
    this function is called. */
@@ -1493,7 +1493,7 @@ rep_load_autoload(repv funarg)
 
     /* Check if the current environment is allowed to load */
     load = Fsymbol_value (Qload, rep_nil);
-    if (load != rep_NULL)
+    if (load != 0)
     {
 	rep_GC_root gc_fun, gc_funarg;
 	repv tmp;
@@ -1509,14 +1509,14 @@ rep_load_autoload(repv funarg)
 	rep_POPGC; rep_POPGC;
 
 	if (!tmp)
-	    return rep_NULL;
+	    return 0;
 
 	fun = Fsymbol_value (fun, rep_nil);
     }
     else
-	fun = rep_NULL;
+	fun = 0;
 
-    if (fun != rep_NULL)
+    if (fun != 0)
     {
 	/* Magically replace one closure by another without losing eq-ness */
 	repv tmp = fun;
@@ -1549,14 +1549,14 @@ static repv
 apply (repv fun, repv arglist, repv tail_posn)
 {
     int type;
-    repv result = rep_NULL;
+    repv result = 0;
     struct rep_Call lc;
-    repv closure = rep_NULL;
+    repv closure = 0;
     rep_GC_root gc_fun, gc_args, gc_closure;
 
     rep_TEST_INT;
     if(rep_INTERRUPTP)
-	return rep_NULL;
+	return 0;
 
     if(++rep_lisp_depth > rep_max_lisp_depth)
     {
@@ -1720,11 +1720,11 @@ again:
     }
 
     /* In case I missed a non-local exit somewhere.  */
-    if(rep_throw_value != rep_NULL)
-	result = rep_NULL;
+    if(rep_throw_value)
+	result = 0;
 
-    if ((result == rep_NULL && rep_throw_value == rep_NULL)
-	|| (result != rep_NULL && rep_throw_value != rep_NULL))
+    if ((result == 0 && !rep_throw_value)
+	|| (result != 0 && rep_throw_value))
     {
 	fprintf (stderr, "rep: function returned both exception and value, or neither!\n");
 	if (lc.fun && Fsubrp (lc.fun) != rep_nil
@@ -1794,12 +1794,12 @@ ie,
 	while(rep_CONSP(rep_CDR(args)))
 	{
 	    if(!(*last = Fcons(rep_CAR(args), rep_nil)))
-		return(rep_NULL);
+		return(0);
 	    last = &rep_CDR(*last);
 	    args = rep_CDR(args);
 	    rep_TEST_INT;
 	    if(rep_INTERRUPTP)
-		return(rep_NULL);
+		return(0);
 	}
 	if(!rep_NILP(Flistp(rep_CAR(args))))
 	    *last = rep_CAR(args);
@@ -1840,7 +1840,7 @@ eval(repv obj, repv tail_posn)
 	    ret = eval_list (rep_CDR (obj));
 	    rep_POPGC;
 
-	    if (ret != rep_NULL)
+	    if (ret != 0)
 	    {
 		lc.fun = rep_CAR (obj);
 		lc.args = ret;
@@ -1858,8 +1858,8 @@ eval(repv obj, repv tail_posn)
 	    rep_PUSHGC (gc_obj, obj);
 	    funcobj = rep_eval (rep_CAR(obj), rep_nil);
 	    rep_POPGC;
-	    if(funcobj == rep_NULL)
-		ret = rep_NULL;
+	    if(funcobj == 0)
+		ret = 0;
 	    else if(rep_CELL8_TYPEP(funcobj, rep_SF))
 		ret = rep_SFFUN(funcobj)(rep_CDR(obj), tail_posn);
 	    else if(rep_CONSP(funcobj) && rep_CAR(funcobj) == Qmacro)
@@ -1879,7 +1879,7 @@ eval(repv obj, repv tail_posn)
 		else
 		    form = Fmacroexpand(obj, rep_nil);
 
-		ret = form ? rep_eval (form, tail_posn) : rep_NULL;
+		ret = form ? rep_eval (form, tail_posn) : 0;
 	    }
 	    else if (tail_posn != rep_nil &&
 		     (rep_FUNARGP (funcobj) || funcobj == rep_VAL (&Sapply)))
@@ -1895,7 +1895,7 @@ eval(repv obj, repv tail_posn)
 		args = eval_list (rep_CDR (obj));
 		rep_POPGC;
 
-		if (args != rep_NULL)
+		if (args != 0)
 		{
 		    if (funcobj == rep_VAL (&Sapply))
 		    {
@@ -1914,7 +1914,7 @@ eval(repv obj, repv tail_posn)
 
 		    rep_throw_value = Fcons (TAIL_CALL_TAG, args);
 		}
-		ret = rep_NULL;
+		ret = 0;
 	    }
 	    else
 	    {
@@ -1924,7 +1924,7 @@ eval(repv obj, repv tail_posn)
 		ret = eval_list (rep_CDR (obj));
 		rep_POPGC;
 
-		if (ret != rep_NULL)
+		if (ret != 0)
 		    ret = apply (funcobj, ret, tail_posn);
 
 		return ret;
@@ -1948,7 +1948,7 @@ rep_eval (repv obj, repv tail_posn)
 
     rep_TEST_INT;
     if(rep_INTERRUPTP)
-	return rep_NULL;
+	return 0;
 
     if(rep_data_after_gc >= rep_gc_threshold)
     {
@@ -1962,7 +1962,7 @@ rep_eval (repv obj, repv tail_posn)
 	return eval(obj, tail_posn);
 
     DbDepth++;
-    result = rep_NULL;
+    result = 0;
 
     {
 	repv dbres;
@@ -1979,7 +1979,7 @@ rep_eval (repv obj, repv tail_posn)
 		     (Ffuncall, Fcons (Fsymbol_value (Qdebug_entry, Qt),
 				       dbargs), true, 0, 0, 0));
 	    rep_pop_regexp_data();
-	    if (dbres != rep_NULL && rep_CONSP(dbres))
+	    if (dbres != 0 && rep_CONSP(dbres))
 	    {
 		switch(rep_INT(rep_CAR(dbres)))
 		{
@@ -2013,7 +2013,7 @@ rep_eval (repv obj, repv tail_posn)
 			     (Ffuncall, Fcons (Fsymbol_value (Qdebug_exit, Qt),
 					       dbargs), true, 0, 0, 0));
 		    if(!dbres)
-			result = rep_NULL;
+			result = 0;
 		    rep_pop_regexp_data();
 		}
 	    }
@@ -2374,12 +2374,12 @@ rep_copy_list(repv list)
     while(rep_CONSP(list))
     {
 	if(!(*last = Fcons(rep_CAR(list), rep_nil)))
-	    return rep_NULL;
+	    return 0;
 	list = rep_CDR(list);
 	last = &rep_CDR(*last);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return rep_NULL;
+	    return 0;
     }
     *last = list;
     return result;
@@ -2490,7 +2490,7 @@ handler.
     repv tmp, errlist, on_error;
     /* Can only have one error at once.	 */
     if(rep_throw_value)
-	return rep_NULL;
+	return 0;
     rep_DECLARE1(error, rep_SYMBOLP);
 
     on_error = Fsymbol_value (Qbacktrace_on_error, Qt);
@@ -2505,7 +2505,7 @@ handler.
 
     errlist = Fcons(error, data);
     on_error = Fsymbol_value(Qdebug_on_error, Qt);
-    if(((on_error != rep_NULL && on_error == Qt && error != Qend_of_stream)
+    if(((on_error != 0 && on_error == Qt && error != Qend_of_stream)
 	|| (rep_CONSP(on_error)
 	    && (tmp = Fmemq(error, on_error)) && !rep_NILP(tmp))))
     {
@@ -2527,7 +2527,7 @@ handler.
 	    rep_single_step_flag = oldssflag;
     }
     rep_throw_value = Fcons(Qerror, errlist);
-    return rep_NULL;
+    return 0;
 }
 
 /* For an error rep_ERROR (the cdr of rep_throw_value), if it matches the error
@@ -2543,7 +2543,7 @@ rep_compare_error(repv error, repv handler)
 	else if(rep_CONSP(handler))
 	{
 	    handler = Fmemq(error_sym, handler);
-	    return handler != rep_NULL && !rep_NILP(handler);
+	    return handler != 0 && !rep_NILP(handler);
 	}
     }
     return false;
@@ -2699,7 +2699,7 @@ ARGLIST had been evaluated or not before being put into the stack.
 		rep_print_val (strm, lc->args);
 	    }
 
-	    if (lc->current_form != rep_NULL)
+	    if (lc->current_form != 0)
 	    {
 		repv origin = Flexical_origin (lc->current_form);
 		if (origin && origin != rep_nil)

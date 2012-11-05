@@ -197,7 +197,7 @@ INITIAL-repv, or nil.
     rep_DECLARE1(len, rep_INTP);
     if(rep_INT(len) < 0)
 	return rep_signal_arg_error(len, 1);
-    for(i = 0; list != rep_NULL && i < rep_INT(len); i++)
+    for(i = 0; list != 0 && i < rep_INT(len); i++)
 	list = Fcons(init, list);
     return(list);
 }
@@ -230,7 +230,7 @@ new list which is returned.
 	{
 	    rep_TEST_INT;
 	    if (rep_INTERRUPTP)
-		return rep_NULL;
+		return 0;
 	    res_end = rep_CDRLOC (*res_end);
 	}
     }
@@ -264,7 +264,7 @@ to the beginning of the next list. Returns the new list.
 	{
 	    rep_TEST_INT;
 	    if (rep_INTERRUPTP)
-		return rep_NULL;
+		return 0;
 	    res_end = rep_CDRLOC (*res_end);
 	}
     }
@@ -313,8 +313,8 @@ reverse order.
 	res = Fcons(rep_CAR(head), res);
 	head = rep_CDR(head);
 	rep_TEST_INT;
-	if(res == rep_NULL || rep_INTERRUPTP)
-	    return(rep_NULL);
+	if(res == 0 || rep_INTERRUPTP)
+	    return(0);
     }
     return(res);
 }
@@ -336,13 +336,13 @@ were. This function is destructive towards it's argument.
 	if(rep_CONSP(rep_CDR(head)))
 	    nxt = rep_CDR(head);
 	else
-	    nxt = rep_NULL;
+	    nxt = 0;
 	rep_CDR(head) = res;
 	res = head;
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
-    } while((head = nxt) != rep_NULL);
+	    return(0);
+    } while((head = nxt) != 0);
     return(res);
 }
 
@@ -367,7 +367,7 @@ For example,
 	list = rep_CDR(list);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
+	    return(0);
     }
     return(rep_nil);
 }
@@ -390,7 +390,7 @@ association.
 	list = rep_CDR(list);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
+	    return(0);
     }
     return(rep_nil);
 }
@@ -415,7 +415,7 @@ For example,
 	list = rep_CDR(list);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
+	    return(0);
     }
     return(rep_nil);
 }
@@ -437,7 +437,7 @@ Returns the first matching cons-cell, else nil.
 	list = rep_CDR(list);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
+	    return(0);
     }
     return(rep_nil);
 }
@@ -460,7 +460,7 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
 	list = rep_CDR(list);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return rep_NULL;
+	    return 0;
     }
     return (i <= 0 && rep_CONSP(list)) ? rep_CAR(list) : rep_nil;
 }
@@ -483,7 +483,7 @@ Returns the INDEXth cdr of LIST. The first is INDEX zero.
 	list = rep_CDR(list);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return rep_NULL;
+	    return 0;
     }
     return list;
 }
@@ -503,7 +503,7 @@ Returns the last element of LIST.
 	    list = rep_CDR(list);
 	    rep_TEST_INT;
 	    if(rep_INTERRUPTP)
-		return(rep_NULL);
+		return(0);
 	}
 	return(rep_CAR(list));
     }
@@ -528,13 +528,13 @@ returns a new list constructed from the results, ie,
     rep_PUSHGC(gc_res, res);
     rep_PUSHGC(gc_fun, fun);
     rep_PUSHGC(gc_list, list);
-    while(res != rep_NULL && rep_CONSP(list))
+    while(res != 0 && rep_CONSP(list))
     {
 	rep_TEST_INT;
 	if(rep_INTERRUPTP
 	   || !(*last = Fcons(rep_nil, rep_nil))
 	   || !(rep_CAR(*last) = rep_call_lisp1(fun, rep_CAR(list))))
-	    res = rep_NULL;
+	    res = 0;
 	else
 	{
 	    last = &rep_CDR(*last);
@@ -557,11 +557,11 @@ Applies FUNCTION to each element in LIST, discards the results.
     rep_DECLARE2(list, rep_LISTP);
     rep_PUSHGC(gc_fun, fun);
     rep_PUSHGC(gc_list, list);
-    while(res != rep_NULL && rep_CONSP(list))
+    while(res != 0 && rep_CONSP(list))
     {
 	rep_TEST_INT;
 	if(rep_INTERRUPTP || !rep_call_lisp1(fun, rep_CAR(list)))
-	    res = rep_NULL;
+	    res = 0;
 	list = rep_CDR(list);
     }
     rep_POPGC; rep_POPGC;
@@ -591,9 +591,9 @@ PREDICATE returns t when applied to; i.e. something like
     {
 	repv tem = rep_call_lisp1(pred, rep_CAR(list));
 	rep_TEST_INT;
-	if(tem == rep_NULL || rep_INTERRUPTP)
+	if(tem == 0 || rep_INTERRUPTP)
 	{
-	    output = rep_NULL;
+	    output = 0;
 	    break;
 	}
 	if(!rep_NILP(tem))
@@ -626,7 +626,7 @@ from the matched ELT, ie,
 	list = rep_CDR(list);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
+	    return(0);
     }
     return(rep_nil);
 }
@@ -650,7 +650,7 @@ from the matched ELT, ie,
 	list = rep_CDR(list);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
+	    return(0);
     }
     return(rep_nil);
 }
@@ -677,7 +677,7 @@ from the matched ELT. `memql' uses `eql' to compare list items.
 	list = rep_CDR (list);
 	rep_TEST_INT;
 	if (rep_INTERRUPTP)
-	    return rep_NULL;
+	    return 0;
     }
     return rep_nil;
 }
@@ -699,7 +699,7 @@ Returns LIST with any members `equal' to ELT destructively removed.
 	    head = &rep_CDR(*head);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
+	    return(0);
     }
     return(list);
 }
@@ -721,7 +721,7 @@ Returns LIST with any members `eq' to ELT destructively removed.
 	    head = &rep_CDR(*head);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    return(rep_NULL);
+	    return(0);
     }
     return(list);
 }
@@ -749,7 +749,7 @@ applied to that element, ie,
 	rep_TEST_INT;
 	if(rep_INTERRUPTP || !tmp)
 	{
-	    list = rep_NULL;
+	    list = 0;
 	    break;
 	}
 	if(!rep_NILP(tmp))
@@ -784,7 +784,7 @@ applied to that element, ie,
 	rep_TEST_INT;
 	if(rep_INTERRUPTP || !tmp)
 	{
-	    list = rep_NULL;
+	    list = 0;
 	    break;
 	}
 	if(rep_NILP(tmp))
@@ -805,7 +805,7 @@ Returns a new vector with ARGS... as its elements.
 {
     repv vec = rep_make_vector (argc);
 
-    if(vec != rep_NULL)
+    if(vec != 0)
     {
 	memcpy (rep_VECT (vec)->array, argv, argc * sizeof (repv));
     }
@@ -1093,7 +1093,7 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
 	    i++;
 	    rep_TEST_INT;
 	    if(rep_INTERRUPTP)
-		return(rep_NULL);
+		return(0);
 	}
 	return(rep_MAKE_INT(i));
 	break;
@@ -1121,9 +1121,9 @@ Returns a new sequence whose elements are eq to those in SEQUENCE.
 	    {
 		rep_TEST_INT;
 		if(rep_INTERRUPTP)
-		    return(rep_NULL);
+		    return(0);
 		if(!(*last = Fcons(rep_CAR(seq), rep_nil)))
-		    return(rep_NULL);
+		    return(0);
 		last = &rep_CDR(*last);
 		seq = rep_CDR(seq);
 	    }
@@ -1244,7 +1244,7 @@ within STRUCTURE. The value of the last form evaluated is returned.
     stream = Fopen_file (name, Qread);
     rep_POPGC; rep_POPGC;
     if (!stream || !rep_FILEP (stream))
-	return rep_NULL;
+	return 0;
 
     bindings = rep_bind_symbol (bindings, Qload_filename, name);
     rep_PUSHGC (gc_stream, stream);
@@ -1264,7 +1264,7 @@ within STRUCTURE. The value of the last form evaluated is returned.
 	rep_TEST_INT;
 	if (rep_INTERRUPTP || !(result = rep_eval (tem, rep_nil)))
 	{
-	    result = rep_NULL;
+	    result = 0;
 	    goto out;
 	}
     }
@@ -1274,7 +1274,7 @@ within STRUCTURE. The value of the last form evaluated is returned.
 	&& rep_CAR (rep_CDR(rep_throw_value)) == Qend_of_stream)
     {
 	/* lose the end-of-stream error. */
-	rep_throw_value = rep_NULL;
+	rep_throw_value = 0;
     }
 out:
     rep_POP_CALL (lc);
@@ -1341,8 +1341,8 @@ loaded and a warning is displayed.
     bool interp_mode = Fsymbol_value (Qinterpreted_mode, Qt) != rep_nil;
 
     repv name = rep_nil, path;
-    repv dir = rep_NULL, try = rep_NULL;
-    repv result = rep_NULL;
+    repv dir = 0, try = 0;
+    repv result = 0;
     repv suffixes;
     bool trying_dl = false;
 
@@ -1353,7 +1353,7 @@ loaded and a warning is displayed.
     {
 	path = Fsymbol_value(Qload_path, rep_nil);
 	if(!path)
-	    return(rep_NULL);
+	    return(0);
     }
     else
 	path = Fcons(rep_null_string(), rep_nil);
@@ -1376,7 +1376,7 @@ research:
 	if (rep_STRINGP (rep_CAR(path)))
 	{
 	    dir = Fexpand_file_name (file, rep_CAR(path));
-	    if(dir == rep_NULL || !rep_STRINGP(dir))
+	    if(dir == 0 || !rep_STRINGP(dir))
 		goto path_error;
 
 	    if(trying_dl || !no_suffix_p)
@@ -1453,7 +1453,7 @@ research:
 	{
 	    path = Fsymbol_value(Qdl_load_path, rep_nil);
 	    if(!path)
-		return rep_NULL;
+		return 0;
 	}
 	else
 	    path = rep_LIST_1(rep_null_string());
@@ -1481,8 +1481,8 @@ path_error:
 #endif
 	result = Fload_file (name, rep_structure);
     rep_POPGC;
-    if (result == rep_NULL)
-	return rep_NULL;
+    if (result == 0)
+	return 0;
 
     /* Loading succeeded. Look for an applicable item in
        the after-load-alist. */
@@ -1495,10 +1495,10 @@ path_error:
 	repv tem;
 again:
 	tem = Fsymbol_value(Qafter_load_alist, Qt);
-	if(tem != rep_NULL && rep_CONSP(tem))
+	if(tem != 0 && rep_CONSP(tem))
 	{
 	    tem = Fassoc(file, tem);
-	    if(tem != rep_NULL && rep_CONSP(tem))
+	    if(tem != 0 && rep_CONSP(tem))
 	    {
 		/* Delete this entry */
 		Fset(Qafter_load_alist,
@@ -1668,7 +1668,7 @@ ignored.)
 ::end:: */
 {
     repv ret = Fnum_eq (argc, argv);
-    return !ret ? rep_NULL : ret == rep_nil ? Qt : rep_nil;
+    return !ret ? 0 : ret == rep_nil ? Qt : rep_nil;
 }
 
 DEFUN(">", Fgtthan, Sgtthan, (int argc, repv *argv), rep_SubrV) /*
@@ -1926,8 +1926,8 @@ returned.
 	hook = rep_CDR(hook);
 	rep_TEST_INT;
 	if(rep_INTERRUPTP)
-	    res = rep_NULL;
-	if(res == rep_NULL
+	    res = 0;
+	if(res == 0
 	   || (type == Qand && rep_NILP(res))
 	   || (type == Qor && !rep_NILP(res)))
 	    break;
@@ -1947,7 +1947,7 @@ occurs, call HANDLER with a single argument, the exception data, and
 return its value.
 ::end:: */
     /* Non-local exits don't bother with jmp_buf's and the like, they just
-       unwind normally through all levels of recursion with a rep_NULL result.
+       unwind normally through all levels of recursion with a 0 result.
        This is slow but it's easy to work with.  */
 {
     rep_GC_root gc_handler;
@@ -1959,11 +1959,11 @@ return its value.
     rep_PUSHGC (gc_handler, handler);
     ret = rep_call_lisp0 (thunk);
     rep_POPGC;
-    if (ret == rep_NULL)
+    if (ret == 0)
     {
 	repv data = rep_throw_value;
-	rep_throw_value = rep_NULL;
-	assert (data != rep_NULL);
+	rep_throw_value = 0;
+	assert (data != 0);
 	ret = rep_call_lisp1 (handler, data);
     }
     return ret;
@@ -1979,9 +1979,9 @@ Raise the exception represented by the cons cell DATA.
 {
     /* Only one thing can use `rep_throw_value' at once.  */
     rep_DECLARE1 (ex, rep_CONSP);
-    if (rep_throw_value == rep_NULL)
+    if (!rep_throw_value)
 	rep_throw_value = ex;
-    return rep_NULL;
+    return 0;
 }
 
 /* XXX compatibility */

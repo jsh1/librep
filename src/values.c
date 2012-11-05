@@ -156,7 +156,7 @@ rep_get_data_type(repv code)
 int
 rep_value_cmp(repv v1, repv v2)
 {
-    if(v1 != rep_NULL && v2 != rep_NULL)
+    if(v1 != 0 && v2 != 0)
     {
 	rep_type *t1 = rep_get_data_type(rep_TYPE(v1));
 	if (t1 != 0)
@@ -170,7 +170,7 @@ rep_value_cmp(repv v1, repv v2)
 void
 rep_princ_val(repv strm, repv val)
 {
-    if(val != rep_NULL)
+    if(val != 0)
     {
 	rep_type *t = rep_get_data_type(rep_TYPE(val));
 	rep_GC_root gc_strm, gc_val;
@@ -184,7 +184,7 @@ rep_princ_val(repv strm, repv val)
 void
 rep_print_val(repv strm, repv val)
 {
-    if(val != rep_NULL)
+    if(val != 0)
     {
 	rep_type *t = rep_get_data_type(rep_TYPE(val));
 	rep_GC_root gc_strm, gc_val;
@@ -269,7 +269,7 @@ rep_make_string(size_t len)
     if(data != NULL)
 	return rep_box_string (data, len - 1);
     else
-	return rep_NULL;
+	return 0;
 }
 
 repv

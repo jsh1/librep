@@ -243,7 +243,7 @@ list_ref (repv list, int elt)
 /* We used to check for both rep_throw_value != 0, and TOP == 0. But since
    rep_throw_value is a (volatile) global, this is slower than just
    checking TOP (by about 1%) */
-#define ERROR_OCCURRED_P (TOP == rep_NULL)
+#define ERROR_OCCURRED_P (TOP == 0)
 
 #ifndef THREADED_VM
 
@@ -867,7 +867,7 @@ again: {
 	    POP2 (tmp, tmp2);
 	    impurity++;
 	    BIND_TOP = rep_bind_special (BIND_TOP, tmp, tmp2);
-	    if (rep_throw_value != rep_NULL)
+	    if (rep_throw_value)
 		HANDLE_ERROR;
 	    NEXT;
 	END_INSN
@@ -1471,7 +1471,7 @@ again: {
 		SAFE_NEXT;
 	    }
 	    tmp = Fzerop (tmp);
-	    if (tmp != rep_NULL)
+	    if (tmp != 0)
 		tmp = (tmp == rep_nil) ? Qt : rep_nil;
 	    TOP = tmp;
 	    NEXT;
@@ -1543,7 +1543,7 @@ again: {
 
 	BEGIN_INSN (OP_THROW)
 	    POP1 (tmp);
-	    if(rep_throw_value == rep_NULL)
+	    if(!rep_throw_value)
 	    {
 		rep_throw_value = Fcons(TOP, tmp);
 		HANDLE_ERROR;
@@ -2058,7 +2058,7 @@ again: {
 	    tmp = rep_nil;
 	    for (i = argc - 1; i >= argptr; i--)
 	    {
-		if (argv[i] != rep_NULL)
+		if (argv[i] != 0)
 		    tmp = Fcons (argv[i], tmp);
 	    }
 	    argptr = argc;
@@ -2074,7 +2074,7 @@ again: {
 		if (argv[i] == tmp)
 		{
 		    PUSH (argv[i+1]);
-		    argv[i] = argv[i+1] = rep_NULL;
+		    argv[i] = argv[i+1] = 0;
 		    SAFE_NEXT;
 		}
 	    }
@@ -2104,7 +2104,7 @@ again: {
 		{
 		    PUSH (argv[i+1]);
 		    PUSH (Qt);
-		    argv[i] = argv[i+1] = rep_NULL;
+		    argv[i] = argv[i+1] = 0;
 		    SAFE_NEXT;
 		}
 	    }
@@ -2223,14 +2223,14 @@ again: {
 		{
 		    rep_GC_root gc_throwval;
 		    repv throwval = rep_throw_value;
-		    rep_throw_value = rep_NULL;
+		    rep_throw_value = 0;
 		    rep_PUSHGC(gc_throwval, throwval);
 		    SYNC_GC;
 		    impurity -= unbind(item);
 		    rep_POPGC;
 		    rep_throw_value = throwval;
 		}
-		else if(rep_throw_value != rep_NULL)
+		else if(rep_throw_value)
 		{
 		    item = rep_CDR(item);
 
@@ -2247,7 +2247,7 @@ again: {
 		    stackp = stack + rep_INT(rep_CDR(item));
 		    RELOAD;
 		    PUSH(rep_throw_value);
-		    rep_throw_value = rep_NULL;
+		    rep_throw_value = 0;
 		    pc = ((unsigned char *) rep_STR(code)
 			  + rep_INT(rep_CAR(item)));
 		    impurity--;
@@ -2260,7 +2260,7 @@ again: {
 		    impurity--;
 		}
 	    }
-	    TOP = rep_NULL;
+	    TOP = 0;
 	    RETURN;
 	}
 #ifdef OPTIMIZE_FOR_SPACE

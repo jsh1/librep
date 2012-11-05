@@ -140,7 +140,7 @@ signalled.
 	if (rep_INTERRUPTP)
 	{
 	    rep_special_bindings = old_bindings;
-	    return rep_NULL;
+	    return 0;
 	}
     }
 

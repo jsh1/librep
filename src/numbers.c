@@ -475,7 +475,7 @@ coerce (repv in, int type)
 	abort ();
     }
     /* not reached. */
-    return rep_NULL;
+    return 0;
 }
 
 static inline void
@@ -499,7 +499,7 @@ promote_dup__ (repv *n1p, repv *n2p)
     repv n2 = *n2p;
     int n1_type = rep_NUMERIC_TYPE (n1);
     int n2_type = rep_NUMERIC_TYPE (n2);
-    repv out = rep_NULL;
+    repv out = 0;
 
     if (n1_type > n2_type)
     {
@@ -1094,7 +1094,7 @@ rep_parse_number (char *buf, size_t len, int radix,
 	return rep_VAL (f);
     }
 error:
-    return rep_NULL;
+    return 0;
 }
 
 char *
@@ -2882,7 +2882,7 @@ number is parsed from that base, otherwise base 10 is assumed.
 
     ret = rep_parse_number (ptr, rep_STRING_LEN (string)
 			    - (ptr - rep_STR (string)), radix, sign, type);
-    if (ret == rep_NULL)
+    if (ret == 0)
 	ret = rep_nil;
     else if (force_exactness > 0)
 	ret = Finexact_to_exact (ret);

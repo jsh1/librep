@@ -237,7 +237,7 @@ top:
 	    {
 		int newlen = actuallen < 16 ? 32 : actuallen * 2;
 		new = rep_make_string (newlen + 1);
-		if (new == rep_NULL)
+		if (new == 0)
 		    break;
 		memcpy (rep_STR (new), rep_STR (args), len);
 		rep_CAR (stream) = new;
@@ -276,7 +276,7 @@ top:
     case rep_Funarg:
     function:
 	res = rep_call_lisp1 (stream, rep_MAKE_INT (c));
-	if(res != rep_NULL)
+	if(res != 0)
 	    rc = 1;
 	break;
 
@@ -355,7 +355,7 @@ top:
 		if (tmp > newlen)
 		    newlen = tmp;
 		new = rep_make_string (newlen + 1);
-		if (new == rep_NULL)
+		if (new == 0)
 		    break;
 		memcpy (rep_STR (new), rep_STR (args), len);
 		rep_CAR (stream) = new;
@@ -396,7 +396,7 @@ top:
 	else
 	    args = rep_string_dupn (buf, bufLen);
 	res = rep_call_lisp1(stream, args);
-	if (res != rep_NULL)
+	if (res != 0)
 	{
 	    /* Output filters don't bother to return anything sane,
 	       so lets just assume they always handle everything..
@@ -574,7 +574,7 @@ a string LENGTH can define how many characters to write.
 	return rep_signal_arg_error (data, 2);
     }
 
-    return !rep_INTERRUPTP ? rep_MAKE_INT (actual) : rep_NULL;
+    return !rep_INTERRUPTP ? rep_MAKE_INT (actual) : 0;
 }
 
 DEFUN("read-char", Fread_char, Sread_char, (repv stream), rep_Subr1) /*
@@ -702,7 +702,7 @@ read. Returns the number of characters copied.
 	    rep_stream_puts (dest, buf, BUFSIZ, false);
 	    rep_TEST_INT;
 	    if (rep_INTERRUPTP)
-		return rep_NULL;
+		return 0;
 	    i = 0;
 	}
 	buf[i++] = c;
@@ -713,7 +713,7 @@ read. Returns the number of characters copied.
 	buf[i] = 0;
 	rep_stream_puts (dest, buf, i, false);
     }
-    return !rep_INTERRUPTP ? rep_MAKE_INT (len) : rep_NULL;
+    return !rep_INTERRUPTP ? rep_MAKE_INT (len) : 0;
 }
 
 DEFUN("read", Fread, Sread, (repv stream), rep_Subr1) /*
@@ -729,7 +729,7 @@ variable `standard-input' if STREAM is unspecified) and return it.
     if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_input, rep_nil)))
     {
 	rep_signal_arg_error (stream, 1);
-	return rep_NULL;
+	return 0;
     }
     c = rep_stream_getc (stream);
     if (c == EOF)
@@ -754,11 +754,11 @@ for `read'.
     if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_output, rep_nil)))
     {
 	rep_signal_arg_error (stream, 1);
-	return rep_NULL;
+	return 0;
     }
     rep_stream_putc (stream, '\n');
     rep_print_val (stream, obj);
-    return !rep_INTERRUPTP ? obj : rep_NULL;
+    return !rep_INTERRUPTP ? obj : 0;
 }
 
 DEFUN("prin1", Fprin1, Sprin1, (repv obj, repv stream), rep_Subr2) /*
@@ -772,10 +772,10 @@ variable `standard-output') in a form suitable for `read'.
     if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_output, rep_nil)))
     {
 	rep_signal_arg_error (stream, 1);
-	return rep_NULL;
+	return 0;
     }
     rep_print_val (stream, obj);
-    return !rep_INTERRUPTP ? obj : rep_NULL;
+    return !rep_INTERRUPTP ? obj : 0;
 }
 
 DEFUN("princ", Fprinc, Sprinc, (repv obj, repv stream), rep_Subr2) /*
@@ -790,10 +790,10 @@ are printed around strings.
     if(stream == rep_nil && !(stream = Fsymbol_value (Qstandard_output, rep_nil)))
     {
 	rep_signal_arg_error (stream, 1);
-	return rep_NULL;
+	return 0;
     }
     rep_princ_val (stream, obj);
-    return !rep_INTERRUPTP ? obj : rep_NULL;
+    return !rep_INTERRUPTP ? obj : 0;
 }
 
 DEFUN("format", Fformat, Sformat, (repv args), rep_SubrN) /*
@@ -845,7 +845,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 {
     char *fmt, *last_fmt;
     bool make_string;
-    repv stream, format, extra_formats = rep_NULL;
+    repv stream, format, extra_formats = 0;
     rep_GC_root gc_stream, gc_format, gc_args, gc_extra_formats;
     char c;
     int this_arg = 0;
@@ -975,7 +975,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		repv val = Fnth (rep_MAKE_INT (this_arg), args);
 		bool free_str = false;
 
-		if (val == rep_NULL)
+		if (val == 0)
 		    goto exit;
 
 		switch (c)
@@ -1060,7 +1060,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 		    break;
 
 		default:
-		    if (extra_formats == rep_NULL)
+		    if (extra_formats == 0)
 		    {
 			extra_formats
 			    = Fsymbol_value (Qformat_hooks_alist, Qt);
@@ -1070,7 +1070,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 			&& rep_CONSP (fun))
 		    {
 			val = rep_call_lisp1 (rep_CDR (fun), val);
-			if (val == rep_NULL)
+			if (val == 0)
 			    goto exit;
 			else
 			{
@@ -1109,7 +1109,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 exit:
     rep_POPGC; rep_POPGC; rep_POPGC; rep_POPGC;
 
-    return !rep_INTERRUPTP ? stream : rep_NULL;
+    return !rep_INTERRUPTP ? stream : 0;
 }
 
 DEFUN("make-string-input-stream", Fmake_string_input_stream, Smake_string_input_stream, (repv string, repv start), rep_Subr2) /*

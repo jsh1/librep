@@ -253,7 +253,7 @@ compare two keys (should return true if the keys are considered equal).
     tab->compare_fun = cmp_fun;
     tab->total_buckets = 0;
     tab->total_nodes = 0;
-    tab->guardian = (is_weak == rep_nil) ? rep_NULL : Fmake_primitive_guardian ();
+    tab->guardian = (is_weak == rep_nil) ? 0 : Fmake_primitive_guardian ();
 
     return rep_VAL(tab);
 }
@@ -496,7 +496,7 @@ each pair, the function is called with arguments `(KEY VALUE)'.
     }
 
     rep_POPGC; rep_POPGC;
-    return rep_throw_value ? rep_NULL : rep_nil;
+    return rep_throw_value ? 0 : rep_nil;
 }
 
 DEFUN ("table-size", Ftable_size, Stable_size,

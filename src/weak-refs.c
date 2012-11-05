@@ -37,7 +37,7 @@ DEFUN ("make-weak-ref", Fmake_weak_ref, Smake_weak_ref, (repv ref), rep_Subr1)
 {
     repv weak_ref;
 
-    weak_ref = rep_make_tuple (weak_ref_type (), rep_NULL, rep_NULL);
+    weak_ref = rep_make_tuple (weak_ref_type (), 0, 0);
     WEAK_REF (weak_ref) = ref;
     WEAK_NEXT (weak_ref) = weak_refs;
     weak_refs = weak_ref;
@@ -62,8 +62,8 @@ void
 rep_scan_weak_refs (void)
 {
     repv ref = weak_refs;
-    weak_refs = rep_NULL;
-    while (ref != rep_NULL)
+    weak_refs = 0;
+    while (ref != 0)
     {
 	repv next = WEAK_NEXT (ref);
 	if (rep_GC_CELL_MARKEDP (ref))

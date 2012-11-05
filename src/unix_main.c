@@ -130,7 +130,7 @@ rep_user_login_name(void)
     {
 	struct passwd *pwd;
 	if(!(pwd = getpwuid(geteuid())))
-	    return rep_NULL;
+	    return 0;
 	tmp = pwd->pw_name;
     }
     user_login_name = rep_string_dup(tmp);
@@ -147,7 +147,7 @@ rep_user_full_name(void)
 	return user_full_name;
 
     if(!(pwd = getpwuid(geteuid())))
-	return rep_NULL;
+	return 0;
 #ifndef FULL_NAME_TERMINATOR
     user_full_name = rep_string_dup(pwd->pw_gecos);
 #else
@@ -225,7 +225,7 @@ rep_system_name(void)
 
 #ifdef HAVE_GETHOSTNAME
     if(gethostname(buf, 256))
-	return rep_NULL;
+	return 0;
 #else
     {
 	struct utsname uts;
@@ -541,7 +541,7 @@ rep_event_loop(void)
 	bool refreshp = false;
 	fd_set copy;
 
-	if (rep_throw_value == rep_NULL)
+	if (!rep_throw_value)
 	{
 	    memcpy(&copy, &input_fdset, sizeof(copy));
 	    ready = wait_for_input(&copy, rep_input_timeout_secs * 1000);
@@ -549,7 +549,7 @@ rep_event_loop(void)
 	}
 
 	/* Check for exceptional conditions. */
-	if(rep_throw_value != rep_NULL)
+	if(rep_throw_value)
 	{
 	    if(rep_handle_input_exception(&result))
 		return result;
@@ -580,14 +580,14 @@ rep_sit_for(int timeout_msecs)
     memcpy(&copy, &input_fdset, sizeof(copy));
     ready = wait_for_input(&copy, timeout_msecs);
     if(rep_INTERRUPTP)
-	return rep_NULL;
+	return 0;
     else
 	return (ready > 0) ? rep_nil : Qt;
 }
 
 /* Wait TIMEOUT_MSECS for input, ignoring any input fds that would
    invoke any callback function except CALLBACKS. Return rep_nil if any
-   input was serviced, Qt if the timeout expired, rep_NULL for an error. */
+   input was serviced, Qt if the timeout expired, 0 for an error. */
 repv
 rep_accept_input_for_callbacks (int timeout_msecs, int ncallbacks,
 				void (**callbacks)(int))
@@ -614,13 +614,13 @@ rep_accept_input_for_callbacks (int timeout_msecs, int ncallbacks,
     if(ready > 0 && !rep_INTERRUPTP)
 	handle_input(&copy, ready);
     if(rep_INTERRUPTP)
-	return rep_NULL;
+	return 0;
     else
 	return ready > 0 ? rep_nil : Qt;
 }
 
 /* Wait TIMEOUT_MSECS for input from the NFDS file descriptors stored in FDS.
-   Return rep_nil if any input was serviced, Qt if the timeout expired, rep_NULL
+   Return rep_nil if any input was serviced, Qt if the timeout expired, 0
    for an error. */
 repv
 rep_accept_input_for_fds (int timeout_msecs, int nfds, int *fds)
@@ -637,7 +637,7 @@ rep_accept_input_for_fds (int timeout_msecs, int nfds, int *fds)
     if(ready > 0 && !rep_INTERRUPTP)
 	handle_input(&copy, ready);
     if(rep_INTERRUPTP)
-	return rep_NULL;
+	return 0;
     else
 	return ready > 0 ? rep_nil : Qt;
 }

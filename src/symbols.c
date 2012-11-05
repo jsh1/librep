@@ -107,7 +107,7 @@ function definition are both void and it has a nil property-list.
 ::end:: */
 {
     rep_DECLARE1(name, rep_STRINGP);
-    return rep_make_tuple (rep_Symbol, rep_NULL, name);
+    return rep_make_tuple (rep_Symbol, 0, name);
 }
 
 static int
@@ -268,15 +268,15 @@ somewhere an error is signalled.
 {
     int vsize, hashid;
     rep_DECLARE1(sym, rep_SYMBOLP);
-    if(rep_SYM(sym)->next != rep_NULL)
+    if(rep_SYM(sym)->next != 0)
     {
 	Fsignal(Qerror, rep_list_2(rep_VAL(&already_interned), sym));
-	return rep_NULL;
+	return 0;
     }
     if(!rep_VECTORP(ob))
 	ob = rep_obarray;
     if((vsize = rep_VECT_LEN(ob)) == 0)
-	return rep_NULL;
+	return 0;
     hashid = hash(rep_STR(rep_SYM(sym)->name)) % vsize;
     rep_SYM(sym)->next = rep_VECT(ob)->array[hashid];
     rep_VECT(ob)->array[hashid] = sym;
@@ -316,7 +316,7 @@ Removes SYMBOL from OBARRAY (or the default). Use this with caution.
     if(!rep_VECTORP(ob))
 	ob = rep_obarray;
     if((vsize = rep_VECT_LEN(ob)) == 0)
-	return rep_NULL;
+	return 0;
     hashid = hash(rep_STR(rep_SYM(sym)->name)) % vsize;
     list = rep_VECT(ob)->array[hashid];
     rep_VECT(ob)->array[hashid] = OB_NIL;
@@ -330,7 +330,7 @@ Removes SYMBOL from OBARRAY (or the default). Use this with caution.
 	}
 	list = nxt;
     }
-    rep_SYM(sym)->next = rep_NULL;
+    rep_SYM(sym)->next = 0;
     return(sym);
 }
 
@@ -552,7 +552,7 @@ search_special_environment (repv sym)
 repv
 rep_call_with_closure (repv closure, repv (*fun)(repv arg), repv arg)
 {
-    repv ret = rep_NULL;
+    repv ret = 0;
     if (rep_FUNARGP (closure))
     {
 	struct rep_Call lc;
@@ -673,7 +673,7 @@ variable will be set (if necessary) not the local value.)
 	bool need_to_eval;
 	repv tmp = Fdefault_boundp(sym);
 	if(!tmp)
-	    return rep_NULL;
+	    return 0;
 
 	if (rep_CONSP(rep_CDR(args)))
 	{
@@ -739,7 +739,7 @@ variable will be set (if necessary) not the local value.)
 		val = Feval (val);
 		rep_POPGC; rep_POPGC;
 		if (!val)
-		    return rep_NULL;
+		    return 0;
 	    }
 	    Fstructure_define (rep_specials_structure, sym, val);
 	}
@@ -784,8 +784,8 @@ variable will be set (if necessary) not the local value.)
 	    repv doc = rep_CAR(args);
 	    if (rep_STRINGP (doc))
 	    {
-		if (Fput(sym, Qdocumentation, doc) == rep_NULL)
-		    return rep_NULL;
+		if (Fput(sym, Qdocumentation, doc) == 0)
+		    return 0;
 	    }
 	}
 	return sym;
@@ -902,7 +902,7 @@ do_set (repv sym, repv val, repv (*setter)(repv st, repv var, repv val))
 	    if(rep_SYM(sym)->car & rep_SF_LOCAL)
 	    {
 		repv tem = (*rep_set_local_symbol_fun)(sym, val);
-		if (tem != rep_NULL)
+		if (tem != 0)
 		    return tem;
 		/* Fall through and set the default value. */
 	    }
@@ -1101,7 +1101,7 @@ evaluated, returns the value of the last evaluation.
 	    goto end;
 	if(!Freal_set(rep_CAR(args), res))
 	{
-	    res = rep_NULL;
+	    res = 0;
 	    goto end;
 	}
 	args = rep_CDR(rep_CDR(args));
@@ -1124,25 +1124,25 @@ be overwritten.
     rep_GC_root gc_var, gc_doc;
 
     if (!rep_assign_args (args, 2, 3, &var, &value, &doc))
-	return rep_NULL;
+	return 0;
 
     rep_PUSHGC (gc_var, var);
     rep_PUSHGC (gc_doc, doc);
     value = Feval (value);
     rep_POPGC; rep_POPGC;
-    if (value == rep_NULL)
-	return rep_NULL;
+    if (value == 0)
+	return 0;
 
     value = Fstructure_define (rep_structure, var, value);
-    if (value != rep_NULL)
+    if (value != 0)
     {
 	if (doc != rep_nil)
 	{
 	    repv prop = rep_documentation_property (rep_structure);
 	    if (prop != rep_nil)
 	    {
-		if (Fput (var, prop, doc) == rep_NULL)
-		    value = rep_NULL;
+		if (Fput (var, prop, doc) == 0)
+		    value = 0;
 	    }
 	}
     }
@@ -1268,7 +1268,7 @@ next:
 	free(prog);
 	return(last);
     }
-    return rep_NULL;
+    return 0;
 }
 
 DEFUN("make-variable-special", Fmake_variable_special,

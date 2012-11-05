@@ -238,8 +238,8 @@ rep_set_string_match(repv obj, repv start, repv end)
     last_matches.obj.endp[0] = end;
     for(i = 1; i < rep_NSUBEXP; i++)
     {
-	last_matches.obj.startp[i] = rep_NULL;
-	last_matches.obj.endp[i] = rep_NULL;
+	last_matches.obj.startp[i] = 0;
+	last_matches.obj.endp[i] = 0;
     }
 }
 
@@ -299,7 +299,7 @@ still case-significant.
 	    res = rep_nil;
 	return(res);
     }
-    return rep_NULL;
+    return 0;
 }
 
 DEFUN("string-looking-at", Fstring_looking_at, Sstring_looking_at, (repv re, repv string, repv start, repv nocasep), rep_Subr4) /*
@@ -331,7 +331,7 @@ Updates the match data.
 	    res = rep_nil;
 	return res;
     }
-    return rep_NULL;
+    return 0;
 }
 
 DEFUN("expand-last-match", Fexpand_last_match, Sexpand_last_match, (repv template), rep_Subr1) /*
@@ -381,7 +381,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 	i = 0;
     if(last_match_type == rep_reg_obj)
     {
-	if(last_matches.obj.startp[i] != rep_NULL)
+	if(last_matches.obj.startp[i] != 0)
 	    return last_matches.obj.startp[i];
 	return rep_nil;
     }
@@ -417,7 +417,7 @@ buffer, or an integer if the last match was in a string (i.e. regexp-match).
 	i = 0;
     if(last_match_type == rep_reg_obj)
     {
-	if(last_matches.obj.endp[i] != rep_NULL)
+	if(last_matches.obj.endp[i] != 0)
 	    return last_matches.obj.endp[i];
 	return rep_nil;
     }
@@ -443,7 +443,7 @@ it is returned as-is (un-copied).
     char *buf, *s;
     int buflen = 128, slen, i = 0;
     bool quoted = false;
-    repv res = rep_NULL;
+    repv res = 0;
     rep_DECLARE1(str, rep_STRINGP);
     s = rep_STR(str);
     slen = rep_STRING_LEN(str);

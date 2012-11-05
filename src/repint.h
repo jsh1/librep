@@ -171,7 +171,7 @@ struct rep_Call {
 
 #define rep_PUSH_CALL(lc)		\
     do {				\
-	(lc).current_form = rep_NULL;	\
+	(lc).current_form = 0;	\
 	(lc).saved_env = rep_env;	\
 	(lc).saved_structure = rep_structure; \
 	(lc).next = rep_call_stack;	\

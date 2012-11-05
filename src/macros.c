@@ -118,10 +118,10 @@ again:
 	    rep_POPGC; rep_POPGC;
 	    rep_POP_CALL (lc);
 
-	    if (car != rep_NULL)
+	    if (car != 0)
 		goto again;
 	    else
-		return rep_NULL;
+		return 0;
 	}
     }
 
@@ -170,13 +170,13 @@ pass the value of the `macro-environment' variable to this parameter.
     while (1)
     {
 	form = Fmacroexpand_1 (pred, env);
-	if (form == rep_NULL || form == pred)
+	if (form == 0 || form == pred)
 	    break;
 	pred = form;
     }
     rep_POPGC; rep_POPGC;
 
-    if (form != rep_NULL)
+    if (form != 0)
     {
 	/* Cache for future use */
 	unsigned int hash = HIST_HASH_FN(input);

@@ -50,6 +50,7 @@ extern repv Fthread_name (repv th);
 extern int rep_max_sleep_for (void);
 
 /* from datums.c */
+extern repv Qnil;
 extern repv Fmake_datum (repv, repv);
 extern repv Fdefine_datum_printer (repv, repv);
 extern repv Fdatum_ref (repv, repv);

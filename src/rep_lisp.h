@@ -80,11 +80,6 @@ typedef uintptr_t repv;
 #define rep_VALUE_INT_SHIFT	2
 #define rep_CELL_ALIGNMENT	sizeof(intptr_t)
 
-/* A ``null pointer'', i.e. an invalid object. This has the important
-   property of being a proper null pointer (i.e. (void *)0) when
-   converted to a pointer, i.e. rep_PTR(rep_NULL) == NULL. */
-#define rep_NULL	(0)
-
 /* Align the variable or struct member D to the necessary cell alignment.
    This is used like: ``rep_ALIGN_CELL(rep_cell foo) = ...'' */
 #ifdef __GNUC__
@@ -304,8 +299,6 @@ extern rep_tuple rep_eol_datum;
 
 #define rep_nil rep_VAL(&rep_eol_datum)
 
-extern repv Qnil;
-
 
 /* Numbers (private defs in numbers.c) */
 
@@ -522,7 +515,7 @@ typedef struct rep_file_struct {
 /* Built-in subroutines */
 
 /* Calling conventions are straightforward, returned value is result
-   of function. But returning rep_NULL signifies some kind of abnormal
+   of function. But returning 0 signifies some kind of abnormal
    exit (i.e. an error or throw, or ..?), should be treated as
    rep_INTERRUPTP defined below is */
 
@@ -751,7 +744,7 @@ typedef struct rep_gc_n_roots {
     extern repv fsym args;						\
     rep_ALIGN_CELL(rep_xsubr ssym) = { type, (repv (*)()) fsym,		\
 				       rep_VAL(&rep_CONCAT(ssym, __name)), \
-				       rep_NULL };			\
+				       0 };			\
     repv fsym args
 
 /* Same as above but with an extra arg -- an interactive-spec string. */
@@ -802,7 +795,7 @@ typedef struct rep_gc_n_roots {
 	if(! (e)) 			\
 	{ 				\
 	    rep_signal_arg_error(x, n); \
-	    return rep_NULL; 		\
+	    return 0; 		\
 	} 				\
     } while(0)
 
@@ -863,8 +856,8 @@ typedef struct rep_gc_n_roots {
 #endif
 
 /* True when an interrupt has occurred; this means that the function
-   should exit as soon as possible, returning rep_NULL. */
-#define rep_INTERRUPTP (rep_throw_value != rep_NULL)
+   should exit as soon as possible, returning 0. */
+#define rep_INTERRUPTP (rep_throw_value != 0)
 
 
 /* Storing timestamps */
