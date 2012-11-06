@@ -1,3 +1,7 @@
+2012-11-05  John Harper  <jsh@unfactored.org>
+
+	* rep/user.jl: avoid creating externally-visible bindings
+
 2012-10-28  John Harper  <jsh@unfactored.org>
 
 	* rep/vm/compiler/rep.jl (trans-defvar): imported fix from
