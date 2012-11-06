@@ -41,9 +41,6 @@ typedef uintptr_t repv;
 /* The number of bits in the lisp value type. */
 #define rep_VALUE_BITS (sizeof(intptr_t) * CHAR_BIT)
 
-/* Get the integer constant X in the lisp value type */
-#define rep_VALUE_CONST(x) ((intptr_t) (x))
-
 
 /* Structure of Lisp objects and the pointers to them. */
 
@@ -103,10 +100,8 @@ typedef uintptr_t repv;
 
 /* Bounds of the integer type */
 #define rep_LISP_INT_BITS	(rep_VALUE_BITS - rep_VALUE_INT_SHIFT)
-#define rep_LISP_MAX_INT	((rep_VALUE_CONST(1) \
-				  << (rep_LISP_INT_BITS - 1)) - 1)
-#define rep_LISP_MIN_INT	(-(rep_VALUE_CONST(1) \
-				   << (rep_LISP_INT_BITS - 1)))
+#define rep_LISP_MAX_INT	((((intptr_t)1) << (rep_LISP_INT_BITS-1)) - 1)
+#define rep_LISP_MIN_INT	(-(((intptr_t)1) << (rep_LISP_INT_BITS-1)))
 
 
 /* Structure of a cell */
@@ -343,7 +338,7 @@ typedef struct rep_string_struct {
 
 #define rep_STRING_LEN_SHIFT	8
 #define rep_MAX_STRING \
-    ((rep_VALUE_CONST(1) << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
+    ((((size_t)1) << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
 
 #define rep_STRINGP(v)		rep_CELL8_TYPEP(v, rep_String)
 #define rep_STRING(v)		((rep_string *) rep_PTR(v))

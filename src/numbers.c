@@ -3010,7 +3010,7 @@ random_new (repv limit_)
 	    }
 	}
 	/* Ensure VAL is positive (assumes twos-complement) */
-	val &= ~(~rep_VALUE_CONST(0) << (rep_LISP_INT_BITS - 1));
+	val &= ~(((intptr_t)-1) << (rep_LISP_INT_BITS-1));
 	val /= divisor;
     } while (val >= limit);
 

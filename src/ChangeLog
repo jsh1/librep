@@ -1,3 +1,8 @@
+2012-11-06  John Harper  <jsh@unfactored.org>
+
+	* rep_lisp.h, numbers.c: removed the rep_VALUE_CONST() macro,
+	it's just a cast to intptr_t
+
 2012-11-05  John Harper  <jsh@unfactored.org>
 
 	* structures.c, repint_subrs.h, rep_subrs.h, lispcmds.c: rename
