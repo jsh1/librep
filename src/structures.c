@@ -133,7 +133,7 @@ repv rep_specials_structure;
 /* the structure namespace */
 static repv rep_structures_structure;
 
-DEFSYM(features, "features");
+DEFSYM(_features, "%features");
 DEFSYM(_structures, "%structures");
 DEFSYM(_meta, "%meta");
 DEFSYM(rep, "rep");
@@ -1389,7 +1389,7 @@ structure.
 {
     repv value;
     rep_DECLARE1 (feature, rep_SYMBOLP);
-    value = F_structure_ref (rep_structure, Qfeatures);
+    value = F_structure_ref (rep_structure, Q_features);
     return rep_VOIDP (value) ? rep_nil : Fmemq (feature, value);
 }
 
@@ -1403,13 +1403,13 @@ structure.
 {
     repv value, tem;
     rep_DECLARE1 (feature, rep_SYMBOLP);
-    value = F_structure_ref (rep_structure, Qfeatures);
+    value = F_structure_ref (rep_structure, Q_features);
     if (rep_VOIDP (value))
 	value = rep_nil;
     tem = Fmemq (feature, value);
     if (tem && tem == rep_nil)
 	value = Fcons (feature, value);
-    Fstructure_define (rep_structure, Qfeatures, value);
+    Fstructure_define (rep_structure, Q_features, value);
     return feature;
 }
 
@@ -1715,7 +1715,7 @@ rep_structures_init (void)
     rep_ADD_SUBR_INT (Srequire);
     rep_pop_structure (tem);
 
-    rep_INTERN (features);
+    rep_INTERN (_features);
     rep_INTERN (_structures);
     rep_INTERN (_meta);
     rep_INTERN (rep);

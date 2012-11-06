@@ -1,3 +1,9 @@
+2012-11-05  John Harper  <jsh@unfactored.org>
+
+	* structures.c, repint_subrs.h, rep_subrs.h, lispcmds.c: rename
+	internal `features' symbol as `%features', it should never be
+	accessed directly but may need to exist in each structure
+
 2012-11-04  John Harper  <jsh@unfactored.org>
 
 	* trying to modernize. Assume we can now use intptr_t to find

@@ -208,7 +208,7 @@ extern bool rep_assign_args (repv list, int required, int total, ...);
 /* from lispcmds.c */
 extern repv Qor, Qand;
 extern repv Qload_path, Qafter_load_alist, Qlisp_lib_directory;
-extern repv Qdl_load_path, Qdl_load_reloc_now, Qprovide, Qfeatures;
+extern repv Qdl_load_path, Qdl_load_reloc_now;
 extern repv Qsite_lisp_directory, Qdocumentation_file, Qdocumentation_files;
 extern repv Fquote(repv, repv);
 extern repv Fcar(repv);

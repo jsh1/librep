@@ -42,7 +42,6 @@ DEFSYM(and, "and");
 DEFSYM(load_path, "load-path");
 DEFSYM(dl_load_path, "dl-load-path");
 DEFSYM(after_load_alist, "after-load-alist");
-DEFSYM(provide, "provide");
 DEFSYM(rep_directory, "rep-directory");
 DEFSYM(lisp_lib_directory, "lisp-lib-directory");
 DEFSYM(site_lisp_directory, "site-lisp-directory");
@@ -2101,8 +2100,6 @@ rep_lispcmds_init(void)
     tem = rep_push_structure ("rep.system");
     rep_ADD_SUBR(Scall_hook);
     rep_pop_structure (tem);
-
-    rep_INTERN(provide);
 
     rep_INTERN_SPECIAL(rep_directory);
     if(getenv("REPDIR") != 0)
