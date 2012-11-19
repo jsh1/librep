@@ -54,7 +54,7 @@ preserve their original position in relation to each other."
 	   tem)
 	;; While both lists have elements compare them
 	(while (and lst mid)
-	  (setq tem (if (funcall pred (car mid) (car lst))
+	  (setq tem (if (pred (car mid) (car lst))
 			(prog1
 			    mid
 			  (setq mid (cdr mid)))

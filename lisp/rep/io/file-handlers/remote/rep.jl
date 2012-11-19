@@ -215,7 +215,7 @@
   (mapc (lambda (a)
 	  (remote-rep-send-string session a)) args)
   (when output-fun
-    (funcall output-fun session))
+    (output-fun session))
   (remote-rep-while session 'busy type)
   (when remote-rep-display-progress
     (format t " %s" (aref session remote-rep-status)))
@@ -259,7 +259,7 @@
 	((print-escape t))
       (format (stderr-file) "rep output: %S\n" output)))
   (if (aref session remote-rep-callback)
-      (funcall (aref session remote-rep-callback) session output 0)
+      ((aref session remote-rep-callback) session output 0)
     (let
 	((point 0))
       (while (< point (length output))
@@ -678,7 +678,7 @@
 							 'file-modes
 							 (list (car args))))
 	(unwind-protect
-	    (funcall (symbol-value op) local-name)
+	    ((symbol-value op) local-name)
 	  (delete-file local-name)))
       t))
    ((memq op '(write-buffer-contents copy-file-from-local-fs))

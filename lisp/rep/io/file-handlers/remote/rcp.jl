@@ -67,7 +67,7 @@
       (remote-rcp-command (remote-rcp-filename split-name) local-name)
       (when (memq op '(read-file-contents insert-file-contents))
 	(unwind-protect
-	    (funcall (symbol-value op) local-name)
+	    ((symbol-value op) local-name)
 	  (delete-file local-name)))
       t))
    ((memq op '(write-buffer-contents copy-from-local-fs))

@@ -443,7 +443,7 @@
 	  (tarfh-copy-out tarfile (aref file tarfh-file-full-name) local-name)
 	  (unless (eq op 'copy-file-to-local-fs)
 	    (unwind-protect
-		(funcall (symbol-value op) local-name)
+		((symbol-value op) local-name)
 	      (delete-file local-name)))
 	  t))
        ((eq op 'open-file)

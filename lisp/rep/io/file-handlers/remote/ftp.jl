@@ -366,8 +366,8 @@ file types.")
 	       (t
 		;; Hmm. something else. If one exists invoke the callback
 		(when (aref session remote-ftp-callback)
-		  (funcall (aref session remote-ftp-callback)
-			   session output point line-end))
+		  ((aref session remote-ftp-callback)
+		   session output point line-end))
 		(setq point line-end))))
 	  ;; A partial line. Store it as pending
 	  (aset session remote-ftp-pending-output (substring output point))
@@ -725,7 +725,7 @@ file types.")
       (remote-ftp-get session (nth 2 split-name) local-name)
       (unless (eq op 'copy-file-to-local-fs)
 	(unwind-protect
-	    (funcall (symbol-value op) local-name)
+	    ((symbol-value op) local-name)
 	  (delete-file local-name)))
       t))
    ((memq op '(write-buffer-contents copy-file-from-local-fs))

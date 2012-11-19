@@ -1,3 +1,12 @@
+2012-11-18  John Harper  <jsh@unfactored.org>
+
+	* rep/data/sort.jl, rep/io/file-handlers/remote.jl,
+	rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/rcp.jl,
+	rep/io/file-handlers/remote/ftp.jl,
+	rep/io/file-handlers/tar.jl: removed calls to funcall, it's a
+	no-op
+
 2012-11-05  John Harper  <jsh@unfactored.org>
 
 	* rep/user.jl: avoid creating externally-visible bindings

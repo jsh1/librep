@@ -50,7 +50,7 @@ accessed on specific hosts.")
 	;; (a vector)
 	(let
 	    ((split (remote-split-filename (file-binding (car args)))))
-	  (funcall (aref (file-handler-data (car args)) 0) split op args)))
+	  ((aref (file-handler-data (car args)) 0) split op args)))
 
        ((eq op 'file-name-absolute-p))	;remote files are absolute?
 
@@ -98,10 +98,10 @@ accessed on specific hosts.")
 					 remote-auto-backend-alist t))
 				   remote-default-backend)
 			       'remote-backend)))
-	      (funcall (if (symbolp backend)
-			   (file-handler-ref backend)
-			 backend)
-		       split op args))))))))
+	      ((if (symbolp backend)
+		   (file-handler-ref backend)
+		 backend)
+	       split op args))))))))
 
   (define-file-handler 'remote-file-handler remote-file-handler)
 
