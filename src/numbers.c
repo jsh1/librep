@@ -98,19 +98,9 @@ typedef struct {
 #ifdef HAVE_GMP
     mpz_t z;
 #else
-    long long z;
+    int64_t z;
 #endif
 } rep_number_z;
-
-#ifndef HAVE_GMP
-# if SIZEOF_LONG_LONG > SIZEOF_LONG
-#  define BIGNUM_MIN LONG_LONG_MIN
-#  define BIGNUM_MAX LONG_LONG_MAX
-# else
-#  define BIGNUM_MIN LONG_MIN
-#  define BIGNUM_MAX LONG_MAX
-# endif
-#endif
 
 typedef struct {
     repv car;
@@ -132,7 +122,7 @@ typedef struct rep_number_block_struct {
 	mpz_t dummy_z;
 	mpq_t dummy_q;
 #else
-	long long dummy_z;
+	int64_t dummy_z;
 #endif
 	double dummy_f;
     } next;
@@ -635,11 +625,12 @@ rep_get_long_int (repv in)
     return 0;
 }
 
-#if SIZEOF_LONG_LONG > SIZEOF_LONG
-
 repv
 rep_make_longlong_int (long long in)
 {
+#if LONG_LONG_MAX == LONG_MAX
+    return rep_make_long_int(in);
+#else
     if (in <= rep_LISP_MAX_INT && in >= rep_LISP_MIN_INT)
 	return rep_MAKE_INT (in);
     else
@@ -647,8 +638,8 @@ rep_make_longlong_int (long long in)
 #ifdef HAVE_GMP
 	int sign = (in < 0) ? -1 : 1;
 	unsigned long long uin = (sign < 0) ? -in : in;
-	unsigned long bottom = (u_long) uin;
-	unsigned long top = (u_long) (uin >> (CHAR_BIT * sizeof (long)));
+	unsigned long bottom = (unsigned long) uin;
+	unsigned long top = (unsigned long) (uin >> (CHAR_BIT * sizeof (long)));
 	rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
 	mpz_init_set_ui (z->z, bottom);
 	if (top != 0)
@@ -667,11 +658,15 @@ rep_make_longlong_int (long long in)
 #endif
 	return rep_VAL (z);
     }
+#endif
 }
 
 long long
 rep_get_longlong_int (repv in)
 {
+#if LONG_LONG_MAX == LONG_MAX
+    return rep_get_long_int (in);
+#else
     if (rep_INTP (in))
 	return rep_INT (in);
     else if (rep_NUMBERP (in))
@@ -717,23 +712,8 @@ rep_get_longlong_int (repv in)
 	return out;
     }
     return 0;
+#endif
 }
-
-#else /* SIZEOF_LONG_LONG > SIZEOF_LONG */
-
-repv
-rep_make_longlong_int (long long in)
-{
-    return rep_make_long_int (in);
-}
-
-long long
-rep_get_longlong_int (repv in)
-{
-    return rep_get_long_int (in);
-}
-
-#endif /* ! SIZEOF_LONG_LONG > SIZEOF_LONG */
 
 repv
 rep_make_float (double in, bool force)
@@ -743,7 +723,7 @@ rep_make_float (double in, bool force)
     {
 	if (in < LONG_MAX && in > LONG_MIN)
 	    return rep_make_long_int ((long) in);
-#if SIZEOF_LONG_LONG > SIZEOF_LONG
+#if LONG_LONG_MAX > LONG_MAX
 	else if (in < LONG_LONG_MAX && in > LONG_LONG_MIN)
 	    return rep_make_longlong_int (in);
 #endif
@@ -1018,7 +998,7 @@ rep_parse_number (char *buf, size_t len, int radix,
 		    double d;
 		    if (parse_integer_to_float (buf, len, radix, sign, &d))
 		    {
-			if (d > BIGNUM_MIN && d < BIGNUM_MAX)
+			if (d > INT64_MIN && d < INT64_MAX)
 			{
 			    z->z = d;
 			    return maybe_demote (rep_VAL (z));
@@ -1141,7 +1121,7 @@ rep_print_number_to_string (repv obj, int radix, int prec)
 	{
 	    static const char *map = "0123456789abcdefghijklmnopqrstuvwxyz";
 	    char *ptr = buf, *optr;
-	    long long value = rep_NUMBER(obj,z);
+	    int64_t value = rep_NUMBER(obj,z);
 	    int sign = (value < 0) ? -1 : +1;
 	    while (value != 0)
 	    {
@@ -1372,7 +1352,7 @@ rep_number_add (repv x, repv y)
 	    mpz_add (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
 #else
 	    double t = (double) rep_NUMBER(x,z) + (double) rep_NUMBER (y,z);
-	    if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+	    if (t > INT64_MIN && t < INT64_MAX)
 		rep_NUMBER(out,z) = rep_NUMBER(x,z) + rep_NUMBER(y,z);
 	    else
 		out = rep_make_float (t, true);
@@ -1412,7 +1392,7 @@ rep_number_neg (repv x)
 	mpz_neg (rep_NUMBER(out,z), rep_NUMBER(x,z));
 #else
 	double t = - (double) rep_NUMBER(x,z);
-	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+	if (t > INT64_MIN && t < INT64_MAX)
 	    rep_NUMBER(out,z) = - rep_NUMBER(x,z);
 	else
 	    out = rep_make_float (t, true);
@@ -1451,7 +1431,7 @@ rep_number_sub (repv x, repv y)
 	mpz_sub (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
 #else
 	double t = (double) rep_NUMBER (x,z) - (double) rep_NUMBER (y,z);
-	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+	if (t > INT64_MIN && t < INT64_MAX)
 	    rep_NUMBER (out,z) = rep_NUMBER (x,z) - rep_NUMBER (y,z);
 	else
 	    out = rep_make_float (t, true);
@@ -1486,8 +1466,33 @@ rep_number_mul (repv x, repv y)
 	long long tot;
 
     case rep_NUMBER_INT:
+#if INTPTR_MAX < LONG_LONG_MAX
 	tot = ((long long) rep_INT (x)) * ((long long) rep_INT (y));
 	out = rep_make_longlong_int (tot);
+#else
+	/* No larger integral type to cast input values to. */
+	{
+	    long long a = rep_INT(x);
+	    long long b = rep_INT(y);
+	    tot = a * b;
+	    if (a <= INT64_MAX / b)
+		out = rep_make_longlong_int(tot);
+	    else
+	    {
+#ifdef HAVE_GMP
+		mpz_t tem;
+		rep_number_z *z = make_number (rep_NUMBER_BIGNUM);
+		mpz_init_set_si(z->z, rep_INT(x));
+		mpz_init_set_si (tem, rep_INT(y));
+		mpz_mul(z->z, z->z, tem);
+		mpz_clear(tem);
+		out = rep_VAL(z);
+#else
+		out = rep_make_float((double)a * (double)b, false);
+#endif
+	    }
+	}
+#endif
 	break;
 
     case rep_NUMBER_BIGNUM: {
@@ -1495,7 +1500,7 @@ rep_number_mul (repv x, repv y)
 	mpz_mul (rep_NUMBER (out,z), rep_NUMBER (x,z), rep_NUMBER (y,z));
 #else
 	double t = (double) rep_NUMBER (x,z) * (double) rep_NUMBER (y,z);
-	if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+	if (t > INT64_MIN && t < INT64_MAX)
 	    rep_NUMBER (out,z) = rep_NUMBER (x,z) * rep_NUMBER (y,z);
 	else
 	    out = rep_make_float (t, true);
@@ -2223,7 +2228,7 @@ Both NUMBER and COUNT must be integers.
 		factor = factor * (1L << this);
 	    }
 	    t = (double) rep_NUMBER (num,z) * factor;
-	    if (t > BIGNUM_MIN && t < BIGNUM_MAX)
+	    if (t > INT64_MIN && t < INT64_MAX)
 		z->z = rep_NUMBER (num,z) << rep_INT (shift);
 	    else
 		return rep_make_float (t, true);

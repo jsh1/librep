@@ -1,3 +1,9 @@
+2013-07-24  John Harper  <jsh@unfactored.org>
+
+	* numbers.c, ffi.c: remove uses of SIZEOF_LONG[_LONG], fixed
+	undetected overflow on 64-bit systems when multiplying two
+	fixnums that overflow the 64-bit result
+
 2012-11-06  John Harper  <jsh@unfactored.org>
 
 	* rep_lisp.h, numbers.c: removed the rep_VALUE_CONST() macro,

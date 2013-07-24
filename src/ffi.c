@@ -76,17 +76,10 @@
 #include <ffi/ffi.h>
 #endif
 
-#if SIZEOF_VOID_P == SIZEOF_LONG
-# define rep_make_pointer(p) rep_make_long_uint ((unsigned long) p)
-# define rep_get_pointer(x)  (void *) rep_get_long_uint (x)
-# define rep_pointerp(x)     rep_INTEGERP (x)
-#elif SIZEOF_VOID_P != SIZEOF_LONG_LONG
-# define rep_make_pointer(p) rep_make_longlong_int ((unsigned long long) p)
-# define rep_get_pointer(x)  (void *) rep_get_longlong_int (x)
-# define rep_pointerp(x)     rep_INTEGERP (x)
-#else
-# error "weird pointer size"
-#endif
+/* long_uint functions take/return uintptr_t. */
+#define rep_make_pointer(p) rep_make_long_uint ((unsigned long) p)
+#define rep_get_pointer(x)  (void *) rep_get_long_uint (x)
+#define rep_pointerp(x)     rep_INTEGERP (x)
 
 #undef ALIGN
 #define ALIGN(v, a)     (((size_t)(v) + (a) - 1) & ~((a) - 1))
@@ -481,7 +474,7 @@ rep_ffi_demarshal (unsigned int type_id, char *ptr, repv *value)
 	    return ptr + sizeof (int64_t);
 
 	case FFI_TYPE_POINTER:
-	    *value = rep_make_pointer (*(void **)ptr);
+	    *value = rep_make_long_uint (*(void **)ptr);
 	    return ptr + sizeof (void *);
 
 	case FFI_TYPE_STRUCT:		/* FIXME: */
