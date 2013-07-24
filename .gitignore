@@ -20,3 +20,4 @@ autom4te.cache
 config.guess
 config.sub
 ltmain.sh
+install-sh
