@@ -443,11 +443,6 @@ AC_ARG_ENABLE(full-name-terminator,
    AC_DEFINE_UNQUOTED(FULL_NAME_TERMINATOR, $enableval)
   fi])
 
-dnl Check for size of some types
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
-AC_CHECK_SIZEOF(void *)
-
 AC_MSG_CHECKING([for stack growth direction])
 AC_ARG_WITH(stack-direction,
  [  --with-stack-direction=DIR Stack growth direction. -1 for downwards,

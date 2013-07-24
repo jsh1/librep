@@ -318,11 +318,6 @@
 /* Define if you have the <libintl.h> header file. */
 #undef HAVE_LIBINTL_H
 
-/* Define the sizes of long, long long and void * */
-#undef SIZEOF_LONG
-#undef SIZEOF_LONG_LONG
-#undef SIZEOF_VOID_P
-
 /* Define this if GMP is to be used. */
 #undef HAVE_GMP
 
