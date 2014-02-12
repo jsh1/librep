@@ -1,3 +1,8 @@
+2014-02-12  John Harper  <jsh@unfactored.org>
+
+	* symbols.c, streams.c, lispcmds.c: fix doc strings (an old
+	global search and replace had mangled "VALUE" -> "repv")
+
 2013-07-24  John Harper  <jsh@unfactored.org>
 
 	* numbers.c, ffi.c: remove uses of SIZEOF_LONG[_LONG], fixed

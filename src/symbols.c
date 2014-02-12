@@ -933,11 +933,11 @@ repv Fset (repv s, repv v) { return do_set (s, v, Fstructure_define); };
 DEFUN_INT("set", Freal_set, Sset, (repv s, repv v), rep_Subr2,
 	  "vVariable:" rep_DS_NL "xNew value of %s:") /*
 ::doc:rep.lang.symbols#set::
-set SYMBOL repv
+set SYMBOL VALUE
 
-Sets the value of SYMBOL to repv. If SYMBOL has a buffer-local binding
+Sets the value of SYMBOL to VALUE. If SYMBOL has a buffer-local binding
 in the current buffer or `make-variable-buffer-local' has been called on
-SYMBOL the buffer-local value in the current buffer is set. Returns repv.
+SYMBOL the buffer-local value in the current buffer is set. Returns VALUE.
 ::end:: */
 {
     return do_set (s, v, Fstructure_set);
@@ -1187,9 +1187,9 @@ Returns the value of SYMBOL's property PROPERTY. See `put'.
 
 DEFUN("put", Fput, Sput, (repv sym, repv prop, repv val), rep_Subr3) /*
 ::doc:rep.lang.symbols#put::
-put SYMBOL PROPERTY repv
+put SYMBOL PROPERTY VALUE
 
-Sets the value of SYMBOL's property PROPERTY to repv, this value can be
+Sets the value of SYMBOL's property PROPERTY to VALUE, this value can be
 retrieved with the `get' function.
 ::end:: */
 {

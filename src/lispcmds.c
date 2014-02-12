@@ -185,10 +185,10 @@ Returns a new list (ARG1 ARG2 ... ARGN-1 . ARGN). That is, the same as from
 
 DEFUN("make-list", Fmake_list, Smake_list, (repv len, repv init), rep_Subr2) /*
 ::doc:rep.data#make-list::
-make-list LENGTH [INITIAL-repv]
+make-list LENGTH [INITIAL-VALUE]
 
 Returns a new list with LENGTH members, each of which is initialised to
-INITIAL-repv, or nil.
+INITIAL-VALUE, or nil.
 ::end:: */
 {
     int i;
@@ -814,9 +814,9 @@ Returns a new vector with ARGS... as its elements.
 
 DEFUN("make-vector", Fmake_vector, Smake_vector, (repv size, repv init), rep_Subr2) /*
 ::doc:rep.data#make-vector::
-make-vector SIZE [INITIAL-repv]
+make-vector SIZE [INITIAL-VALUE]
 
-Creates a new vector of size SIZE. If INITIAL-repv is provided each element
+Creates a new vector of size SIZE. If INITIAL-VALUE is provided each element
 will be set to that value, else they will all be nil.
 ::end:: */
 {
@@ -916,7 +916,7 @@ DEFUN("make-string", Fmake_string, Smake_string, (repv len, repv init), rep_Subr
 make-string LENGTH [INITIAL-VALUE]
 
 Returns a new string of length LENGTH, each character is initialised to
-INITIAL-repv, or to space if INITIAL-VALUE is not given.
+INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
 ::end:: */
 {
     repv res;

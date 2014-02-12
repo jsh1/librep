@@ -70,7 +70,7 @@ char *alloca ();
 DEFSYM(format_hooks_alist, "format-hooks-alist"); /*
 ::doc:format-hooks-alist::
 Alist of (CHAR . FUNCTION) defining extra format conversions for the
-format function. FUNCTION is called as (FUNCTION repv), and should
+format function. FUNCTION is called as (FUNCTION VALUE), and should
 return the string to be inserted.
 ::end:: */
 
