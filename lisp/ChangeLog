@@ -1,5 +1,8 @@
 2014-02-12  John Harper  <jsh@unfactored.org>
 
+	* rep/data/heap.jl, rep/test/autoload.jl: fix heap/remove bug,
+	added a few unit tests
+
 	* rep/data/heap.jl: renamed the functions and added a resizable
 	heap implementation as a separate data type
 

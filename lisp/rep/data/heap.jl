@@ -33,7 +33,8 @@
 	    heap/remove)
 
     (open rep
-	  rep.data.records)
+	  rep.data.records
+	  rep.test.framework)
 
   (defsubst aswap (vec i j)
     (aset vec i (prog1 (aref vec j)
@@ -118,5 +119,25 @@ as the comparison function."
 	  (aset vec 0 (aref vec i))
 	  (aset vec i nil)
 	  (heap/size-set! heap i)
-	  (sift-down (heap/data heap) (heap/less heap) i (heap/less heap))
-	  (heap/resize heap -1))))))
+	  (sift-down (heap/data heap) (heap/less heap) 0 (heap/size heap))
+	  (heap/resize heap -1)))))
+
+;;; tests
+
+  ;;###autoload
+  (define-self-test 'rep.data.heap
+    (lambda ()
+      (let ((heap (make-heap))
+	    (data '(10 3 1 6 9 8 51 4)))
+
+	(test (heap? heap))
+	(test (= (heap/size heap) 0))
+
+	(mapc (lambda (x) (heap/add heap x)) data)
+	(test (= (heap/size heap) (length data)))
+
+	(mapc (lambda (x)
+		(test (= (heap/remove heap) x)))
+	      (sort (copy-sequence data)))
+
+	(test (= (heap/size heap) 0))))))
