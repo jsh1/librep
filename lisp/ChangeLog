@@ -1,3 +1,8 @@
+2014-02-12  John Harper  <jsh@unfactored.org>
+
+	* rep/data/heap.jl: added heapify and heapsort utility
+	functions, as part of rep.data.heap
+
 2012-11-18  John Harper  <jsh@unfactored.org>
 
 	* rep/data/sort.jl, rep/io/file-handlers/remote.jl,
