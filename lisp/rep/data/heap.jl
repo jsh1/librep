@@ -21,21 +21,25 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-;; FIXME: would also add heap-insert and heap-remove functions,
-;; except vectors are not resizable.
-
 (define-structure rep.data.heap
 
-    (export heapify
-	    heapsort)
+    (export vector-heapify
+	    vector-heapsort
+	    make-heap
+	    heap?
+	    heap/size
+	    heap/data
+	    heap/add
+	    heap/remove)
 
-    (open rep)
+    (open rep
+	  rep.data.records)
 
   (defsubst aswap (vec i j)
     (aset vec i (prog1 (aref vec j)
 		  (aset vec j (aref vec i)))))
 
-  (defun sift-down (vec less i size)
+  (define (sift-down vec less i size)
     (let loop-1 ((i i))
       (let ((child (1- (* (1+ i) 2))))
 	(let loop-2 ((ci child)
@@ -47,14 +51,14 @@
 		  (aswap vec i min-i)
 		  (loop-1 min-i)))))))
 
-  (defun sift-up (vec less i)
+  (define (sift-up vec less i)
     (let loop ((i i))
       (let ((pi (1- (quotient (1+ i) 2))))
-	(when (less (aref vec i) (aref vec pi))
+	(when (and (>= pi 0) (less (aref vec i) (aref vec pi)))
 	  (aswap vec i pi)
 	  (loop pi)))))
 
-  (defun heapify (vec #!key (less <))
+  (define (vector-heapify vec #!key (less <))
     "Order the contents of VEC as a binary minimum heap, with (LESS a b)
 defining the comparison function."
     (let loop ((i (1- (quotient (length vec) 2))))
@@ -62,14 +66,57 @@ defining the comparison function."
 	(sift-down vec less i (length vec))
 	(loop (1- i)))))
 
-  (defun heapsort (vec #!key (less <))
+  (define (vector-sort vec #!key (less <))
     "Sort the contents of VEC using the heap-sort algorithm, using (LESS a b)
 as the comparison function."
     (let ((more (lambda (x y)
 		  (not (less x y)))))
-      (heapify vec #:less more)
+      (vector-heapify vec #:less more)
       (let loop ((i (1- (length vec))))
 	(when (> i 0)
 	  (aswap vec 0 i)
 	  (sift-down vec more 0 i)
-	  (loop (1- i)))))))
+	  (loop (1- i))))))
+
+  ;; resizable heap data structure, using the above functions
+
+  (define-record-type :heap
+    (heap size data less)
+    heap?
+    (size heap/size heap/size-set!)
+    (data heap/data heap/data-set!)
+    (less heap/less))
+
+  (define (make-heap #!optional (less <))
+    (heap 0 nil less))
+
+  (define (heap/resize heap delta)
+    (let* ((size (+ (heap/size heap) delta))
+	   (old-vec (heap/data heap))
+	   (old-size (if old-vec (length old-vec) 0)))
+      (when (< old-size size)
+	(let* ((new-size (max (* old-size 2) 16))
+	       (new-vec (make-vector new-size)))
+	  (do ((i 0 (1+ i)))
+	      ((= i old-size))
+	    (aset new-vec i (aref old-vec i)))
+	  (heap/data-set! heap new-vec)))))
+
+  (define (heap/add heap value)
+    (heap/resize heap 1)
+    (let ((i (heap/size heap)))
+      (heap/size-set! heap (1+ (heap/size heap)))
+      (aset (heap/data heap) i value)
+      (sift-up (heap/data heap) (heap/less heap) i)))
+
+  (define (heap/remove heap)
+    (if (= (heap/size heap) 0)
+	nil
+      (let ((vec (heap/data heap))
+	    (i (1- (heap/size heap))))
+	(prog1 (aref vec 0)
+	  (aset vec 0 (aref vec i))
+	  (aset vec i nil)
+	  (heap/size-set! heap i)
+	  (sift-down (heap/data heap) (heap/less heap) i (heap/less heap))
+	  (heap/resize heap -1))))))
