@@ -1,3 +1,7 @@
+2014-05-23  John Harper  <jsh@unfactored.org>
+
+	* tables.c (hash_string): return type should be "repv"
+
 2014-02-12  John Harper  <jsh@unfactored.org>
 
 	* symbols.c, streams.c, lispcmds.c: fix doc strings (an old
