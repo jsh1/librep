@@ -474,7 +474,7 @@ rep_ffi_demarshal (unsigned int type_id, char *ptr, repv *value)
 	    return ptr + sizeof (int64_t);
 
 	case FFI_TYPE_POINTER:
-	    *value = rep_make_long_uint (*(void **)ptr);
+	    *value = rep_make_pointer (*(void **)ptr);
 	    return ptr + sizeof (void *);
 
 	case FFI_TYPE_STRUCT:		/* FIXME: */

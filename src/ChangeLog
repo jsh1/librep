@@ -1,3 +1,7 @@
+2015-01-03  John Harper  <jsh@unfactored.org>
+
+	* ffi.c (rep_ffi_demarshal): fix compiler warning
+
 2014-05-23  John Harper  <jsh@unfactored.org>
 
 	* tables.c (hash_string): return type should be "repv"
