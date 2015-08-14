@@ -23,32 +23,6 @@
 
 #include <stdarg.h>
 
-/* from continuations.c */
-extern int rep_thread_lock;
-extern bool rep_pending_thread_yield;
-extern repv rep_call_with_barrier (repv (*callback)(repv), repv arg,
-				   bool closed, void (*in)(void *),
-				   void (*out)(void *), void *data);
-extern repv Fcall_cc (repv thunk);
-extern repv Fcontinuation_callable_p (repv cont);
-extern repv Fcall_with_object (repv arg, repv thunk);
-extern repv Fcall_with_dynamic_root (repv thunk);
-extern repv Fcall_with_barrier (repv thunk, repv closed, repv in, repv out);
-extern repv Fmake_thread (repv thunk, repv name);
-extern repv Fthread_yield (void);
-extern repv Fthread_delete (repv thread);
-extern repv Fthread_suspend (repv thread, repv msecs);
-extern repv Fthread_wake (repv thread);
-extern repv Ftheadp (repv arg);
-extern repv Fthread_suspended_p (repv thread);
-extern repv Fthread_exited_p (repv thread);
-extern repv Fcurrent_thread (repv depth);
-extern repv Fall_threads (repv depth);
-extern repv Fthread_forbid (void);
-extern repv Fthread_permit (void);
-extern repv Fthread_name (repv th);
-extern int rep_max_sleep_for (void);
-
 /* from datums.c */
 extern repv Qnil;
 extern repv Fmake_datum (repv, repv);
@@ -247,6 +221,7 @@ extern repv Fcopy_sequence(repv);
 extern repv Felt(repv, repv);
 extern repv Fcond(repv, repv);
 extern repv Fapply(repv);
+extern repv Fcall_with_object(repv arg, repv thunk);
 extern repv Fload(repv file, repv noerr_p, repv nopath_p,
 		  repv nosuf_p, repv in_env);
 extern repv Fequal(repv, repv);

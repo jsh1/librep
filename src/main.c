@@ -55,9 +55,6 @@ void (*rep_on_termination_fun)(void);
 /* The event-loop function, may be entered recursively. */
 repv (*rep_event_loop_fun)(void) = rep_event_loop;
 
-/* rep_init () will set this to an early stack pointer */
-char *rep_stack_bottom;
-
 DEFSYM(exit, "exit");
 DEFSYM(quit, "quit");
 DEFSYM(top_level, "top-level");
@@ -209,12 +206,6 @@ rep_init(char *prog_name, int *argc, char ***argv,
 	rep_fluids_init();
 	rep_weak_refs_init ();
 	rep_sys_os_init();
-
-	/* XXX Assumes that argc is on the stack. I can't think of
-	   XXX any other way to reliably find the real base of the
-	   XXX stack.. */
-	rep_stack_bottom = (char *) argc;
-	rep_continuations_init ();
 
 	if (sys_symbols != 0)
 	    (*sys_symbols)();

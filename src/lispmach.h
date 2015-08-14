@@ -389,7 +389,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_CADDDDR), &&TAG(OP_CADDDDDR), &&TAG(OP_CADDDDDDR), &&TAG(OP_CADDDDDDDR), /*A8*/ \
  &&TAG(OP_FLOOR), &&TAG(OP_CEILING), &&TAG(OP_TRUNCATE), &&TAG(OP_ROUND),	\
 										\
- &&TAG(OP_APPLY), &&TAG(OP_FORBID), &&TAG(OP_PERMIT), &&TAG(OP_EXP), /*B0*/	\
+ &&TAG(OP_APPLY), &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG(OP_EXP), /*B0*/	\
  &&TAG(OP_LOG), &&TAG(OP_SIN), &&TAG(OP_COS), &&TAG(OP_TAN),			\
  &&TAG(OP_SQRT), &&TAG(OP_EXPT), &&TAG(OP_SWAP2), &&TAG(OP_MOD), /*B8*/		\
  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0), &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL), \
@@ -1898,18 +1898,6 @@ again: {
 	    NEXT;
 	END_INSN
 
-	BEGIN_INSN (OP_FORBID)
-	    rep_FORBID;
-	    PUSH (rep_PREEMPTABLE_P ? rep_nil : Qt);
-	    SAFE_NEXT;
-	END_INSN
-
-	BEGIN_INSN (OP_PERMIT)
-	    rep_PERMIT;
-	    PUSH (rep_PREEMPTABLE_P ? rep_nil : Qt);
-	    SAFE_NEXT;
-	END_INSN
-
 	BEGIN_INSN (OP_EXP)
 	    CALL_1(Fexp);
 	END_INSN
@@ -2176,9 +2164,6 @@ again: {
 	    if(rep_data_after_gc >= rep_gc_threshold)
 		Fgarbage_collect (rep_nil);
 
-	    /* ...or time to switch threads */
-	    rep_MAY_YIELD;
-
 	    SAFE_NEXT;
 	END_INSN
 
@@ -2264,7 +2249,6 @@ quit:
     /* moved to after the execution, to avoid needing to gc protect argv */
     if(rep_data_after_gc >= rep_gc_threshold)
 	Fgarbage_collect (rep_nil);
-    rep_MAY_YIELD;
 
     rep_lisp_depth--;
 

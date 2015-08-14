@@ -1988,6 +1988,61 @@ repv Fthrow (repv tag, repv value) {
     return Fraise_exception (Fcons (tag, value));
 }
 
+/* Bind one object, returning the handle to later unbind by. */
+static repv
+bind_object(repv obj)
+{
+    rep_type *t = rep_get_data_type(rep_TYPE(obj));
+    if (t->bind != 0)
+	return t->bind(obj);
+    else
+	return rep_nil;
+}
+
+static void
+unbind_object (repv handle)
+{
+    repv obj;
+    rep_type *t;
+    if (handle == rep_nil)
+	return;
+    else if (rep_CONSP (handle))
+	obj = rep_CAR (handle);
+    else
+	obj = handle;
+    t = rep_get_data_type (rep_TYPE (obj));
+    if (t->unbind != 0)
+	t->unbind(handle);
+}
+
+DEFUN("call-with-object", Fcall_with_object,
+      Scall_with_object, (repv arg, repv thunk), rep_Subr2) /*
+::doc:rep.lang.interpreter#call-with-object::
+call-with-object ARG THUNK
+
+Call the zero-parameter function THUNK, with object ARG temporarily
+`bound' (a type-specific operation, usually to make ARG `active' in
+some way). When THUNK returns ARG is unbound. The value returned by
+THUNK is then returned.
+::end:: */
+{
+    repv data[2];			/* { ARG, HANDLE } */
+    data[0] = arg;
+    data[1] = bind_object(data[0]);
+    if (data[1] != 0)
+    {
+	repv ret;
+	rep_GC_n_roots gc_data;
+	rep_PUSHGCN (gc_data, data, 2);
+	ret = rep_call_lisp0(thunk);
+	unbind_object (data[1]);
+	rep_POPGCN;
+	return ret;
+    }
+    else
+	return 0;
+}
+
 DEFSTRING(jl, ".jl");
 DEFSTRING(jlc, ".jlc");
 
@@ -2023,6 +2078,7 @@ rep_lispcmds_init(void)
     rep_ADD_SUBR(Scond);
     rep_ADD_SUBR(Scall_with_exception_handler);
     rep_ADD_SUBR(Sraise_exception);
+    rep_ADD_SUBR(Scall_with_object);
     rep_ADD_SUBR(Sfunctionp);
     rep_ADD_SUBR(Smacrop);
     rep_ADD_SUBR(Sspecial_form_p);

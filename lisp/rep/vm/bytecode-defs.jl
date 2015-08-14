@@ -178,8 +178,6 @@
       (round . #xaf)
 
       (apply . #xb0)
-      (forbid . #xb1)
-      (permit . #xb2)
 
       (exp . #xb3)
       (log . #xb4)

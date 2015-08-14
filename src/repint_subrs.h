@@ -21,9 +21,6 @@
 #ifndef REPINT_SUBRS_H
 #define REPINT_SUBRS_H
 
-/* from continuations.c */
-extern void rep_continuations_init (void);
-
 /* from datums.c */
 extern void rep_pre_datums_init (void);
 extern void rep_datums_init (void);
@@ -79,7 +76,6 @@ extern void rep_lispmach_init(void);
 extern void rep_lispmach_kill(void);
 
 /* from main.c */
-extern char *rep_stack_bottom;
 extern void rep_deprecated (bool *seen, const char *desc);
 
 /* from macros.c */

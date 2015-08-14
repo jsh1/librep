@@ -21,8 +21,6 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(declare (unsafe-for-call/cc))
-
 (define-structure rep.vm.compiler.basic
 
     (export current-file
@@ -224,7 +222,6 @@ their position in that file.")
 			(setq i (1+ i)
 			      form (cdr form)))
 		      (emit-insn `(call ,i))
-		      (note-function-call-made)
 		      (decrement-stack i)))))))))))
        (t
 	;; Not a variable reference or a function call; so what is it?

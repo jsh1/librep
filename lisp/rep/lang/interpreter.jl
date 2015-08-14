@@ -529,26 +529,6 @@ by loading FILE."
 (export-bindings '(make-autoload autoload autoload-macro))
 
 
-;; some scheme compatibility functions
-
-(%define call-with-current-continuation call/cc)
-
-(defun dynamic-wind (before thunk after)
-  "Call THUNK without arguments, returning the result of this call.
-BEFORE and AFTER are also called (without arguments), whenever
-execution respectively enters or leaves the dynamic extent of the call
-to THUNK.
-
-In the simplest case (when call/cc isn't used to pass control in or out
-of THUNK) each function will be called exactly once."
-  (before)
-  (unwind-protect
-      (call-with-barrier thunk nil before after)
-    (after)))
-
-(export-bindings '(call-with-current-continuation dynamic-wind))
-
-
 ;; misc
 
 (defun error (#!rest args)

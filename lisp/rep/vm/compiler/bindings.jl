@@ -21,12 +21,10 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(declare (unsafe-for-call/cc))
-
 (define-structure rep.vm.compiler.bindings
 
     (export lex-bindings spec-bindings
-	    lexically-pure unsafe-for-call/cc
+	    lexically-pure
 	    call-with-frame
 	    spec-bound-p
 	    has-local-binding-p
@@ -39,7 +37,6 @@
 	    binding-enclosed-p
 	    note-binding-referenced
 	    binding-referenced-p
-	    note-function-call-made
 	    binding-tail-call-only-p
 	    note-closure-made
 	    allocate-bindings)
@@ -52,7 +49,6 @@
   (define spec-bindings (make-fluid '()))	;list of bound variables
   (define lex-bindings (make-fluid '()))	;alist of bound variables
   (define lexically-pure (make-fluid t))	;any dynamic state?
-  (define unsafe-for-call/cc (make-fluid nil))
 
   (define (spec-bound-p var)
     (or (memq var (fluid defvars))
@@ -133,9 +129,7 @@
   (define (note-binding-modified var)
     (let ((cell (lexical-binding var)))
       (when cell
-	(tag-cell 'modified cell)
-	(when (cell-tagged-p 'across-funcall cell)
-	  (tag-cell 'exposed cell)))))
+	(tag-cell 'modified cell))))
 
   (define (binding-modified-p var)
     (binding-tagged-p var 'modified))
@@ -150,11 +144,6 @@
 
   (define (binding-referenced-p var)
     (binding-tagged-p var 'referenced))
-
-  ;; if a function call is made, it could be to call/cc
-  (define (note-function-call-made)
-    (mapc (lambda (cell)
-	    (tag-cell 'across-funcall cell)) (fluid lex-bindings)))
 
   (define (binding-tail-call-only-p var)
     (not (binding-tagged-p var 'not-tail-call-only)))
@@ -207,11 +196,7 @@
 ;; allocation of bindings, either on stack or in heap
 
   (define (heap-binding-p cell)
-    (or (cell-tagged-p 'captured cell)
-	(and (not (fluid unsafe-for-call/cc))
-	     (cell-tagged-p 'exposed cell))
-	;; used to tag bindings unconditionally on the heap
-	(cell-tagged-p 'heap-allocated cell)))
+    (cell-tagged-p 'captured cell))
 
   ;; heap addresses count up from the _most_ recent binding
   (define (heap-address var bindings)
@@ -312,22 +297,9 @@
 	(loop (cdr vars)))))
   (put 'special 'compiler-decl-fun declare-special)
 
-  ;; (declare (heap-allocated VARS...))
-
-  (define (declare-heap-allocated form)
-    (let loop ((vars (cdr form)))
-      (when vars
-	(tag-binding (car vars) 'heap-allocated)
-	(loop (cdr vars)))))
-  (put 'heap-allocated 'compiler-decl-fun declare-heap-allocated)
-
   (define (declare-unused form)
     (let loop ((vars (cdr form)))
       (when vars
 	(tag-binding (car vars) 'maybe-unused)
 	(loop (cdr vars)))))
-  (put 'unused 'compiler-decl-fun declare-unused)
-
-  (define (declare-unsafe-for-call/cc)
-    (fluid-set unsafe-for-call/cc t))
-  (put 'unsafe-for-call/cc 'compiler-decl-fun declare-unsafe-for-call/cc))
+  (put 'unused 'compiler-decl-fun declare-unused))

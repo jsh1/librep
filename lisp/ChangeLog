@@ -1,5 +1,34 @@
 2015-08-14  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/rep.jl, rep/vm/compiler/modules.jl,
+	rep/vm/compiler/inline.jl, rep/vm/compiler/bindings.jl,
+	rep/vm/compiler/basic.jl: removed unsafe-for-call/cc and
+	heap-allocated declarations. All uncaptured bindings are now
+	register allocated
+
+	* rep/lang/interpreter.jl: removed call/cc and dynamic-wind
+
+	* rep/vm/bytecode-defs.jl, rep/vm/compiler/rep.jl: removed
+	forbid/permit insns
+
+	* rep/data/sort.jl, rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/rcp.jl,
+	rep/io/file-handlers/remote/ftp.jl,
+	rep/io/file-handlers/tar.jl, rep/lang/doc.jl,
+	rep/lang/define.jl, rep/lang/backquote.jl, rep/util/date.jl,
+	rep/util/base64.jl, rep/vm/compiler.jl,
+	rep/vm/bytecode-defs.jl, rep/vm/compiler/utils.jl,
+	rep/vm/compiler/src.jl, rep/vm/compiler/rep.jl,
+	rep/vm/compiler/modules.jl, rep/vm/compiler/lap.jl,
+	rep/vm/compiler/inline.jl, rep/vm/compiler/bindings.jl,
+	rep/vm/compiler/basic.jl, rep/vm/peephole.jl,
+	rep/vm/disassembler.jl, rep/www/cgi-get.jl: removed (declare
+	(unsafe-for-call/cc))
+
+	* rep/threads/utils.jl, rep/threads/proxy.jl,
+	rep/threads/mutex.jl, rep/threads/message-port.jl,
+	rep/threads/condition-variable.jl: deleted
+
 	* rep/vm/peephole.jl, rep/vm/disassembler.jl,
 	rep/vm/bytecodes.jl, rep/vm/bytecode-defs.jl: removed scm-test,
 	test-scm-f and test-scm instructions. Bumped bytecode major

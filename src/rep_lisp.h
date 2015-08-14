@@ -809,16 +809,6 @@ typedef struct rep_gc_n_roots {
 
 /* Macros for interrupt handling */
 
-#define rep_MAY_YIELD						\
-    do {							\
-	if (rep_pending_thread_yield && rep_thread_lock == 0)	\
-	    Fthread_yield ();					\
-    } while (0)
-
-#define rep_FORBID rep_thread_lock++
-#define rep_PERMIT rep_thread_lock--
-#define rep_PREEMPTABLE_P (rep_thread_lock <= 0)
-
 /* rep_TEST_INT is called before testing rep_INTERRUPTP, if necessary the
    target operating system will define it to be something useful.
    There's also a variant rep_TEST_INT_SLOW that should be used by code that
@@ -830,7 +820,6 @@ typedef struct rep_gc_n_roots {
 	if(++rep_test_int_counter > rep_test_int_period) { 	\
 	    (*rep_test_int_fun)();				\
 	    rep_test_int_counter = 0;				\
-	    rep_pending_thread_yield = true;			\
 	}							\
     } while(0)
 
@@ -838,8 +827,6 @@ typedef struct rep_gc_n_roots {
     do {				\
 	(*rep_test_int_fun)();		\
 	rep_test_int_counter = 0;	\
-	if (!rep_INTERRUPTP)		\
-	    Fthread_yield ();		\
     } while(0)
 
 #else /* !rep_TEST_INT */

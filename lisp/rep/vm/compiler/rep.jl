@@ -21,8 +21,6 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(declare (unsafe-for-call/cc))
-
 (define-structure rep.vm.compiler.rep ()
 
     (open rep
@@ -890,7 +888,6 @@
 		(increment-stack)
 	      (decrement-stack (1- arg-count))))
 	(emit-insn `(call ,arg-count))
-	(note-function-call-made)
 	(decrement-stack arg-count))))
   (put 'funcall 'rep-compile-fun compile-funcall)
 
@@ -1207,10 +1204,6 @@
     (put 'bytecodep 'rep-compile-opcode 'bytecodep)
     (put 'closurep 'rep-compile-fun compile-1-args)
     (put 'closurep 'rep-compile-opcode 'closurep)
-    (put 'thread-forbid 'rep-compile-fun compile-0-args)
-    (put 'thread-forbid 'rep-compile-opcode 'forbid)
-    (put 'thread-permit 'rep-compile-fun compile-0-args)
-    (put 'thread-permit 'rep-compile-opcode 'permit)
     (put 'fluid 'rep-compile-fun compile-1-args)
     (put 'fluid 'rep-compile-opcode 'fluid-ref)
     (put 'fluid-set 'rep-compile-fun compile-2-args)

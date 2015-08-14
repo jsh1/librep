@@ -440,10 +440,9 @@ wait_for_input(fd_set *inputs, int timeout_msecs)
        interrupt between each call to select. */
     do {
 	struct timeval timeout;
-	int max_sleep = rep_max_sleep_for ();
 	int this_timeout_msecs = MIN (timeout_msecs,
 				      rep_input_timeout_secs * 1000);
-	int actual_timeout_msecs = MIN (this_timeout_msecs, max_sleep);
+	int actual_timeout_msecs = this_timeout_msecs;
 
 	timeout.tv_sec = actual_timeout_msecs / 1000;
 	timeout.tv_usec = (actual_timeout_msecs % 1000) * 1000;
@@ -465,12 +464,6 @@ wait_for_input(fd_set *inputs, int timeout_msecs)
 	rep_sig_restart(SIGALRM, true);
 	rep_sig_restart(SIGCHLD, true);
 
-	if (ready == 0 && actual_timeout_msecs < this_timeout_msecs)
-	{
-	    Fthread_suspend (rep_nil, rep_MAKE_INT (this_timeout_msecs
-						 - actual_timeout_msecs));
-	}
-	
 	timeout_msecs -= this_timeout_msecs;
     } while (ready == 0 && timeout_msecs > 0);
 

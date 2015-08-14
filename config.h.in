@@ -324,9 +324,6 @@
 /* The random number functions are only in gmp 3 */
 #undef HAVE_GMP_RANDINIT
 
-/* Define if continuations / threading support should be built */
-#undef WITH_CONTINUATIONS
-
 /* Define if <ffi.h> exists */
 #undef HAVE_FFI_H
 

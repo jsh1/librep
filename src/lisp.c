@@ -1568,8 +1568,6 @@ apply (repv fun, repv arglist, repv tail_posn)
     rep_PUSHGC (gc_args, arglist);
     rep_PUSHGC (gc_closure, closure);
 
-    rep_MAY_YIELD;
-
     lc.fun = fun;
     lc.args = arglist;
     rep_PUSH_CALL (lc);
@@ -1975,9 +1973,7 @@ rep_eval (repv obj, repv tail_posn)
 	    rep_PUSHGC(gc_dbargs, dbargs);
 	    rep_push_regexp_data(&re_data);
 	    rep_single_step_flag = false;
-	    dbres = (rep_call_with_barrier
-		     (Ffuncall, Fcons (Fsymbol_value (Qdebug_entry, Qt),
-				       dbargs), true, 0, 0, 0));
+	    dbres = Ffuncall(Fcons(Fsymbol_value(Qdebug_entry, Qt), dbargs));
 	    rep_pop_regexp_data();
 	    if (dbres != 0 && rep_CONSP(dbres))
 	    {
@@ -2009,9 +2005,7 @@ rep_eval (repv obj, repv tail_posn)
 		{
 		    rep_push_regexp_data(&re_data);
 		    rep_CAR(dbargs) = result;
-		    dbres = (rep_call_with_barrier
-			     (Ffuncall, Fcons (Fsymbol_value (Qdebug_exit, Qt),
-					       dbargs), true, 0, 0, 0));
+		    dbres = Ffuncall(Fcons(Fsymbol_value(Qdebug_exit, Qt), dbargs));
 		    if(!dbres)
 			result = 0;
 		    rep_pop_regexp_data();
@@ -2515,10 +2509,8 @@ handler.
 	Fset(Qdebug_on_error, rep_nil);
 	rep_single_step_flag = false;
 	rep_PUSHGC(gc_on_error, on_error);
-	tmp = (rep_call_with_barrier
-	       (Ffuncall, Fcons (Fsymbol_value (Qdebug_error_entry, Qt),
-				 rep_list_2(errlist, rep_MAKE_INT (current_frame_id ()))),
-		true, 0, 0, 0));
+	tmp = Ffuncall(Fcons (Fsymbol_value (Qdebug_error_entry, Qt),
+			      rep_list_2(errlist, rep_MAKE_INT (current_frame_id ()))));
 	rep_POPGC;
 	Fset(Qdebug_on_error, on_error);
 	if(tmp && (tmp == Qt))

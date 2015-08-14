@@ -1,5 +1,12 @@
 2015-08-14  John Harper  <jsh@unfactored.org>
 
+	* unix_main.c, repint_subrs.h, rep_subrs.h, rep_lisp.h, rep.c,
+	readline.c, main.c, lispmach.h, lispcmds.c, lisp.c,
+	continuations.c, bytecodes.h, Makefile.in: removed support for
+	continuations and cooperative threading, never used and the
+	mear existence of continuations prevents compiler allocating
+	many variables into registers
+
 	* lispmach.h, bytecodes.h: removed scm-test, test-scm and
 	test-scm-f bytecode instructions, incremented major version to
 	12

@@ -20,8 +20,6 @@
 ;; along with Jade; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(declare (unsafe-for-call/cc))
-
 (define-structure rep.vm.disassembler
 
     (export disassemble
@@ -68,7 +66,7 @@
      "cdar" "cddr" "caddr" "cadddr"	; #xa0
      "caddddr" "cadddddr" "caddddddr" "cadddddddr"
      "floor" "ceiling" "truncate" "round"
-     "apply" "forbid" "permit" "exp"
+     "apply" nil nil "exp"
      "log" "sin" "cos" "tan"		; #xb0
      "sqrt" "expt" "swap2" "mod"
      "make-closure" "unbindall-0" "closurep" "pop-all"

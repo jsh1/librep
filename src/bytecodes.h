@@ -224,8 +224,6 @@
 #define OP_ROUND 0xaf
 
 #define OP_APPLY 0xb0
-#define OP_FORBID 0xb1
-#define OP_PERMIT 0xb2
 
 #define OP_EXP 0xb3
 #define OP_LOG 0xb4

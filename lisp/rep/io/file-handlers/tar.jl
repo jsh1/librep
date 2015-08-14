@@ -31,8 +31,6 @@
 ;; file each time. It would be better to untar the entire contents
 ;; somewhere, and then clean up later..)
 
-(declare (unsafe-for-call/cc))
-
 (define-structure rep.io.file-handlers.tar ()
 
     (open rep
