@@ -2,9 +2,8 @@
 
 	* rep/vm/compiler/rep.jl, rep/vm/compiler/modules.jl,
 	rep/vm/compiler/inline.jl, rep/vm/compiler/bindings.jl,
-	rep/vm/compiler/basic.jl: removed unsafe-for-call/cc and
-	heap-allocated declarations. All uncaptured bindings are now
-	register allocated
+	rep/vm/compiler/basic.jl: removed unsafe-for-call/cc
+	declaration. All uncaptured bindings are now register allocated
 
 	* rep/lang/interpreter.jl: removed call/cc and dynamic-wind
 

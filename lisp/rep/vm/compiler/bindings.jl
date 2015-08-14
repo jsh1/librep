@@ -196,7 +196,9 @@
 ;; allocation of bindings, either on stack or in heap
 
   (define (heap-binding-p cell)
-    (cell-tagged-p 'captured cell))
+    (or (cell-tagged-p 'captured cell)
+	;; used to tag bindings unconditionally on the heap
+	(cell-tagged-p 'heap-allocated cell)))
 
   ;; heap addresses count up from the _most_ recent binding
   (define (heap-address var bindings)
@@ -296,6 +298,15 @@
 	(fluid-set spec-bindings (cons (car vars) (fluid spec-bindings)))
 	(loop (cdr vars)))))
   (put 'special 'compiler-decl-fun declare-special)
+
+  ;; (declare (heap-allocated VARS...))
+
+  (define (declare-heap-allocated form)
+    (let loop ((vars (cdr form)))
+      (when vars
+	(tag-binding (car vars) 'heap-allocated)
+	(loop (cdr vars)))))
+  (put 'heap-allocated 'compiler-decl-fun declare-heap-allocated)
 
   (define (declare-unused form)
     (let loop ((vars (cdr form)))
