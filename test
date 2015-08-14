@@ -13,5 +13,5 @@ else
   REP_DL_LOAD_PATH=${top}/src/.libexec \
       REPLISPDIR=${top}/lisp \
       REPDOCFILE=${top}/doc-strings \
-      ${top}/libtool --mode=execute gdb ${top}/src/${name} $*  
+      ${top}/libtool --mode=execute lldb -- ${top}/src/${name} $*  
 fi
