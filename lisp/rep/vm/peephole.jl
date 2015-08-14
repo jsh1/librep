@@ -214,15 +214,6 @@
 	    (del-0)
 	    (setq keep-going t))
 
-	   ;; test-scm; scm-test --> deleted
-	   ;; test-scm-f; scm-test --> deleted
-	   ;; [ these are only possible because scm-test is only used
-	   ;;   for `cond' tests, not for its actual value ]
-	   ((and (memq (car insn0) '(test-scm test-scm-f))
-		 (eq (car insn1) 'scm-test))
-	    (del-0-1)
-	    (setq keep-going t))
-
 	   ;; push 1; sub --> dec
 	   ;; push -1; sub --> inc
 	   ;; push 1; add --> inc

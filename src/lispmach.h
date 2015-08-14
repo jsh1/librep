@@ -364,7 +364,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_SUB), &&TAG(OP_MUL), &&TAG(OP_DIV), &&TAG(OP_REM), /*58*/		\
  &&TAG(OP_LNOT), &&TAG(OP_NOT), &&TAG(OP_LOR), &&TAG(OP_LAND),			\
 										\
- &&TAG(OP_EQUAL), &&TAG(OP_EQ), &&TAG(OP_STRUCT_REF), &&TAG(OP_SCM_TEST), /*60*/ \
+ &&TAG(OP_EQUAL), &&TAG(OP_EQ), &&TAG(OP_STRUCT_REF), &&TAG_DEFAULT, /*60*/ \
  &&TAG(OP_GT), &&TAG(OP_GE), &&TAG(OP_LT), &&TAG(OP_LE),			\
  &&TAG(OP_INC), &&TAG(OP_DEC), &&TAG(OP_ASH), &&TAG(OP_ZEROP), /*68*/		\
  &&TAG(OP_NULL), &&TAG(OP_ATOM), &&TAG(OP_CONSP), &&TAG(OP_LISTP),		\
@@ -395,7 +395,7 @@ list_ref (repv list, int elt)
  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0), &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL), \
 										\
  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL), &&TAG(OP_NUM_EQ), /*C0*/ \
- &&TAG(OP_TEST_SCM), &&TAG(OP_TEST_SCM_F), &&TAG(OP__DEFINE), &&TAG(OP_SPEC_BIND), \
+ &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG(OP__DEFINE), &&TAG(OP_SPEC_BIND), \
  &&TAG(OP_SET), &&TAG(OP_REQUIRED_ARG), &&TAG(OP_OPTIONAL_ARG), &&TAG(OP_REST_ARG), /*C8*/ \
  &&TAG(OP_NOT_ZERO_P), &&TAG(OP_KEYWORD_ARG), &&TAG(OP_OPTIONAL_ARG_), &&TAG(OP_KEYWORD_ARG_),	\
 										\
@@ -1333,11 +1333,6 @@ again: {
 	    CALL_2 (Fexternal_structure_ref);
 	END_INSN
 
-	BEGIN_INSN (OP_SCM_TEST)
-	    TOP = (TOP == rep_scm_f) ? rep_nil : Qt;
-	    SAFE_NEXT;
-	END_INSN
-
 	BEGIN_INSN (OP_GT)
 	    POP1 (tmp);
 	    tmp2 = TOP;
@@ -2015,17 +2010,6 @@ again: {
 		TOP = (rep_value_cmp (tmp2, tmp) == 0) ? Qt : rep_nil;
 		NEXT;
 	    }
-	END_INSN
-
-	BEGIN_INSN (OP_TEST_SCM)
-	    TOP = (TOP == rep_nil) ? rep_scm_f : rep_scm_t;
-	    SAFE_NEXT;
-	END_INSN
-
-	BEGIN_INSN (OP_TEST_SCM_F)
-	    if (TOP == rep_nil)
-		TOP = rep_scm_f;
-	    SAFE_NEXT;
 	END_INSN
 
 	BEGIN_INSN (OP__DEFINE)

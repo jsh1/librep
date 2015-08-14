@@ -59,8 +59,7 @@
     '(dup push cons car cdr eq equal zerop not-zero-p null atom consp
       listp numberp stringp vectorp symbolp sequencep functionp
       special-form-p subrp eql macrop bytecodep caar cadr cdar
-      cadddr caddddr cadddddr caddddddr cadddddddr scm-test
-      test-scm test-scm-f))
+      cadddr caddddr cadddddr caddddddr cadddddddr))
 
 
   ;; list of instructions that can be safely deleted if their result

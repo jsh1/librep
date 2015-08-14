@@ -49,7 +49,7 @@
      "nth" "nthcdr" "aset" "aref"
      "length" "bind" "add" "neg" "sub"	; #x50
      "mul" "div" "rem" "lnot" "not" "lor" "land"
-     "equal" "eq" "structure-ref" "scm-test"
+     "equal" "eq" "structure-ref" nil
      "gt" "ge" "lt" "le"		; #x60
      "inc" "dec" "ash" "zerop" "null" "atom" "consp" "listp"
      "numberp" "stringp" "vectorp" "catch"
@@ -73,7 +73,7 @@
      "sqrt" "expt" "swap2" "mod"
      "make-closure" "unbindall-0" "closurep" "pop-all"
      "fluid-set" "fluid-bind" "memql" "num-eq"
-     "test-scm" "test-scm-f" "%define" "spec-bind"	; #xc0
+     nil nil "%define" "spec-bind"	; #xc0
      "set" "required-arg" "optional-arg" "rest-arg"
      "not-zero-p" "keyword-arg" "optional-arg*" "keyword-arg*"
      nil nil nil nil nil nil nil nil	; #xd0

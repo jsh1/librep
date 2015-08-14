@@ -1,3 +1,17 @@
+2015-08-14  John Harper  <jsh@unfactored.org>
+
+	* rep/vm/peephole.jl, rep/vm/disassembler.jl,
+	rep/vm/bytecodes.jl, rep/vm/bytecode-defs.jl: removed scm-test,
+	test-scm-f and test-scm instructions. Bumped bytecode major
+	version to 12
+
+	* rep/user.jl, rep/vm/compiler/unscheme.jl,
+	rep/vm/compiler/scheme.jl, scheme.jl, scheme/utils.jl,
+	scheme/syntax.jl, scheme/syntax-funs.jl, scheme/misc.jl,
+	scheme/data.jl, unscheme.jl, unscheme/syntax.jl,
+	unscheme/syntax-funs.jl, unscheme/misc.jl, unscheme/data.jl:
+	deleted, never used these modules.
+
 2014-02-12  John Harper  <jsh@unfactored.org>
 
 	* rep/data/heap.jl, rep/test/autoload.jl: fix heap/remove bug,

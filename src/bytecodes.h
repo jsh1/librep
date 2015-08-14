@@ -21,7 +21,7 @@
 #ifndef BYTECODES_H
 #define BYTECODES_H
 
-#define BYTECODE_MAJOR_VERSION 11
+#define BYTECODE_MAJOR_VERSION 12
 #define BYTECODE_MINOR_VERSION 0
 
 /* Number of bits encoded in each extra opcode forming the argument. */
@@ -136,7 +136,6 @@
 #define OP_EQUAL 0x60			/* push (equal pop[1] pop[2]) */
 #define OP_EQ 0x61			/* push (eq pop[1] pop[2]) */
 #define OP_STRUCT_REF 0x62		/* push (structure-ref pop[1] pop[2])*/
-#define OP_SCM_TEST 0x63
 #define OP_GT 0x64			/* push (> pop[1] pop[2]) */
 #define OP_GE 0x65			/* push (>= pop[1] pop[2]) */
 #define OP_LT 0x66			/* push (< pop[1] pop[2]) */
@@ -251,8 +250,6 @@
 
 #define OP_MEMQL 0xc2			/* call-2 memql */
 #define OP_NUM_EQ 0xc3
-#define OP_TEST_SCM 0xc4
-#define OP_TEST_SCM_F 0xc5
 #define OP__DEFINE 0xc6
 #define OP_SPEC_BIND 0xc7
 #define OP_SET 0xc8

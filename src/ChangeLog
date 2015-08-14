@@ -1,3 +1,9 @@
+2015-08-14  John Harper  <jsh@unfactored.org>
+
+	* lispmach.h, bytecodes.h: removed scm-test, test-scm and
+	test-scm-f bytecode instructions, incremented major version to
+	12
+
 2015-01-03  John Harper  <jsh@unfactored.org>
 
 	* ffi.c (rep_ffi_demarshal): fix compiler warning

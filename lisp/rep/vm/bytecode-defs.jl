@@ -35,7 +35,7 @@
     (open rep)
 
   ;; Instruction set version
-  (defconst bytecode-major 11)
+  (defconst bytecode-major 12)
   (defconst bytecode-minor 0)
 
   ;; macro to get a named bytecode
@@ -96,7 +96,6 @@
       (equal . #x60)
       (eq . #x61)
       (structure-ref . #x62)
-      (scm-test . #x63)
       (gt . #x64)
       (ge . #x65)
       (lt . #x66)
@@ -202,8 +201,6 @@
       (memql . #xc2)
       (num-eq . #xc3)
 
-      (test-scm . #xc4)
-      (test-scm-f . #xc5)
       (%define . #xc6)
       (spec-bind . #xc7)
       (set . #xc8)
