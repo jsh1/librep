@@ -1,3 +1,8 @@
+2015-08-20  John Harper  <jsh@unfactored.org>
+
+	* rep/lang/debugger.jl (debug-rep): added `up' and `down' to
+	the commands shown in the help output
+
 2015-08-14  John Harper  <jsh@unfactored.org>
 
 	* rep/vm/compiler/rep.jl, rep/vm/compiler/modules.jl,

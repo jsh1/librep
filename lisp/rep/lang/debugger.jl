@@ -110,8 +110,8 @@
 		   (write standard-error "Nothing to repeat\n")))
 		(t
 		 (write standard-error "\
-commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM',
-          `p[rint] FORM', `b[acktrace]', `f[orm], `l[ocals]''\n")))
+commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
+          `p[rint] FORM', `f[rame], `l[ocals]', `u[p]', `d[own]'.\n")))
 	  (fluid-set last next-last)))))
 
 ;;; local functions
