@@ -1,5 +1,9 @@
 2015-08-20  John Harper  <jsh@unfactored.org>
 
+	* values.c, rep_subrs.h: removed rep_[un]box_pointer()
+	functions, useless as we have bignums (even without GMP, will
+	always have a 64-bit integer type)
+
 	* values.c, repint.h, rep_lisp.h: deleted useless
 	rep_CONS_VAL() macro
 

@@ -476,8 +476,6 @@ extern void rep_mark_tuple (repv t);
 /* from values.c */
 extern repv Qafter_gc_hook;
 extern int rep_guardian_type;
-extern repv rep_box_pointer (void *p);
-void *rep_unbox_pointer (repv v);
 extern void rep_register_type(repv code, char *name,
 			      int (*compare)(repv, repv),
 			      void (*princ)(repv, repv),

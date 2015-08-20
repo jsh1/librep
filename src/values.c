@@ -413,42 +413,6 @@ rep_ptr_cmp(repv v1, repv v2)
 	return 1;
 }
 
-repv
-rep_box_pointer (void *p)
-{
-    uintptr_t low;
-    low = (uintptr_t) p;
-    if (low <= rep_LISP_MAX_INT)
-	return rep_MAKE_INT (low);
-    else
-    {
-	int i;
-	uintptr_t high = (uintptr_t) p;
-	const unsigned int bits = sizeof(uintptr_t) * CHAR_BIT;
-	for (i = bits / 2; i < bits; i++)
-	    low &= ~(1 << i);
-	high = high >> (bits / 2);
-	return Fcons (rep_MAKE_INT(high), rep_MAKE_INT(low));
-    }
-}
-
-void *
-rep_unbox_pointer (repv v)
-{
-    if (rep_INTP(v))
-	return (void *) rep_INT(v);
-    else if (rep_CONSP(v))
-    {
-	const unsigned int bits = sizeof(uintptr_t) * CHAR_BIT;
-	uintptr_t low, high;
-	low = rep_INT(rep_CDR(v));
-	high = rep_INT(rep_CAR(v));
-	return (void *) (low | high << (bits / 2));
-    }
-    else
-	return 0;
-}
-
 
 /* Cons */
 
