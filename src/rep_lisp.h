@@ -174,9 +174,6 @@ typedef struct {
 
 #define rep_CONSP(v)	(rep_CELLP(v) && rep_CELL_CONS_P(v))
 
-/* Build a repv out of a pointer to a rep_cons object */
-#define rep_CONS_VAL(x)	rep_VAL(x)
-
 /* Get a pointer to a cons cell from a repv. */
 #define rep_CONS(v)	((rep_cons *) rep_PTR(v))
 

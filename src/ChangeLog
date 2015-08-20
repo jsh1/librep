@@ -1,3 +1,8 @@
+2015-08-20  John Harper  <jsh@unfactored.org>
+
+	* values.c, repint.h, rep_lisp.h: deleted useless
+	rep_CONS_VAL() macro
+
 2015-08-14  John Harper  <jsh@unfactored.org>
 
 	* unix_main.c, repint_subrs.h, rep_subrs.h, rep_lisp.h, rep.c,

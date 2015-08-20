@@ -232,7 +232,7 @@ inline_Fcons (repv x, repv y)
 
     c->car = (x);
     c->cdr = (y);
-    return rep_CONS_VAL (c);
+    return rep_VAL (c);
 }
 #else
 # define inline_Fcons Fcons

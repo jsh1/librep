@@ -472,7 +472,7 @@ rep_allocate_cons (void)
 	    cb->next.p = rep_cons_block_chain;
 	    rep_cons_block_chain = cb;
 	    for(i = 0; i < (rep_CONSBLK_SIZE - 1); i++)
-		cb->cons[i].cdr = rep_CONS_VAL(&cb->cons[i + 1]);
+		cb->cons[i].cdr = rep_VAL(&cb->cons[i + 1]);
 	    cb->cons[i].cdr = 0;
 	    rep_cons_freelist = cb->cons;
 	}
@@ -499,13 +499,13 @@ Returns a new cons-cell with car CAR and cdr CDR.
 
     c->car = car;
     c->cdr = cdr;
-    return rep_CONS_VAL (c);
+    return rep_VAL (c);
 }
 
 void
 rep_cons_free(repv cn)
 {
-    rep_CDR(cn) = rep_CONS_VAL(rep_cons_freelist);
+    rep_CDR(cn) = rep_VAL(rep_cons_freelist);
     rep_cons_freelist = rep_CONS(cn);
     rep_used_cons--;
 }
@@ -522,14 +522,14 @@ cons_sweep(void)
 	rep_cons *last = cb->cons + rep_CONSBLK_SIZE;
 	while (this < last)
 	{
-	    if (!rep_GC_CONS_MARKEDP (rep_CONS_VAL (this)))
+	    if (!rep_GC_CONS_MARKEDP (rep_VAL (this)))
 	    {
-		this->cdr = rep_CONS_VAL (tem_freelist);
+		this->cdr = rep_VAL (tem_freelist);
 		tem_freelist = rep_CONS (this);
 	    }
 	    else
 	    {
-		rep_GC_CLR_CONS (rep_CONS_VAL (this));
+		rep_GC_CLR_CONS (rep_VAL (this));
 		tem_used++;
 	    }
 	    this++;
