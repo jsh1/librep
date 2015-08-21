@@ -111,7 +111,7 @@ AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
-AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h limits.h argz.h locale.h nl_types.h malloc.h sys/param.h)
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h sys/utsname.h unistd.h siginfo.h memory.h stropts.h termios.h string.h limits.h argz.h locale.h nl_types.h malloc.h sys/param.h xlocale.h)
 AC_LC_MESSAGES
 
 dnl Check for GNU MP library and header files
@@ -313,9 +313,8 @@ AC_TYPE_SIGNAL
 dnl Checks for library functions.
 AC_FUNC_ALLOCA
 AC_FUNC_MMAP
-AC_FUNC_MEMCMP
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror munmap putenv setenv setlocale strchr strcasecmp strncasecmp strdup __argz_count __argz_stringify __argz_next siginterrupt gettimeofday strtoll strtoq)
+AC_CHECK_FUNCS(getcwd gethostname select socket strcspn strerror strstr stpcpy strtol psignal strsignal snprintf grantpt lrand48 getpagesize setitimer dladdr dlerror munmap putenv setenv setlocale strchr strcasecmp strncasecmp strdup __argz_count __argz_stringify __argz_next siginterrupt gettimeofday strtoll strtoq strtod_l snprintf_l)
 AC_REPLACE_FUNCS(realpath)
 
 dnl check for crypt () function
@@ -428,14 +427,6 @@ AC_ARG_ENABLE(dbsyms,
 AC_ARG_ENABLE(gprof,
  [  --enable-gprof	  Build for gprof (needs --enable-static)],
  [CFLAGS="${CFLAGS} -pg"; LDFLAGS="${LDFLAGS} -pg"])
-
-AC_ARG_ENABLE(full-name-terminator,
- [  --enable-full-name-terminator=C Full name in gecos field of passwd
-			   file is terminated by first C character],
- [if test "$enableval" != "no"; then
-   enableval="'$enableval'"
-   AC_DEFINE_UNQUOTED(FULL_NAME_TERMINATOR, $enableval)
-  fi])
 
 AC_MSG_CHECKING([for stack growth direction])
 AC_ARG_WITH(stack-direction,

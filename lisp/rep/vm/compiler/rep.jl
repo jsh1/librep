@@ -42,7 +42,7 @@
       listp numberp integerp stringp vectorp bytecodep functionp macrop
       special-form-p subrp sequencep string-head-eq string-equal
       string-lessp string-match string-looking-at quote-regexp
-      complete-string time-later-p alpha-char-p upper-case-p lower-case-p
+      complete-string alpha-char-p upper-case-p lower-case-p
       digit-char-p alphanumericp space-char-p char-upcase char-downcase
       quotient floor ceiling truncate round exp log sin cos tan asin acos
       atan sqrt expt prin1-to-string read-from-string assoc-regexp

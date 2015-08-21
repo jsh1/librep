@@ -1,3 +1,13 @@
+2015-09-09  John Harper  <jsh@unfactored.org>
+
+	* *.[ch]: starting to reformat and modernize all this ancient
+	code, renamed many files and split them into more logical
+	pieces
+
+2015-08-23  John Harper  <jsh@unfactored.org>
+
+	* librep.sym, Makefile.in: re-enable symbol file when linking
+
 2015-08-20  John Harper  <jsh@unfactored.org>
 
 	* values.c, rep_subrs.h: removed rep_[un]box_pointer()

@@ -7,11 +7,11 @@ if [ "x$1" != "x-g" ]; then
   REP_DL_LOAD_PATH=${top}/src/.libexec \
       REPLISPDIR=${top}/lisp \
       REPDOCFILE=${top}/doc-strings \
-      ${top}/src/${name} $*
+      ${top}/libtool --mode=execute ${top}/src/${name} $*
 else
   shift
   REP_DL_LOAD_PATH=${top}/src/.libexec \
       REPLISPDIR=${top}/lisp \
       REPDOCFILE=${top}/doc-strings \
-      ${top}/libtool --mode=execute lldb -- ${top}/src/${name} $*  
+      ${top}/libtool --mode=execute lldb -- ${top}/src/${name} $*
 fi

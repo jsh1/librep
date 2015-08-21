@@ -1,4 +1,4 @@
-#| environ.jl -- Functions to manipulate the process-environment
+#| environ.jl -- Functions to manipulate the *process-environment*
 
    $Id$
 
@@ -29,9 +29,9 @@
 ;;;###autoload
 (defun getenv (name)
   "Return the value of the environment variable NAME, a string. The variable
-`process-environment' is used to find the value."
-  (let ((regexp (concat (quote-regexp name) ?=)))
-    (let loop ((rest process-environment))
+`*process-environment*' is used to find the value."
+  (let ((regexp (concat (quote-regexp name) #\=)))
+    (let loop ((rest *process-environment*))
       (cond ((null rest) nil)
 	    ((string-looking-at regexp (car rest))
 	     (substring (car rest) (match-end)))
@@ -40,12 +40,12 @@
 ;;;###autoload
 (defun setenv (name value)
   "Set the current value of the environment variable NAME to the string VALUE.
-The `process-environment' variable is destructively modified."
-  (let ((regexp (concat (quote-regexp name) ?=)))
-    (let loop ((rest process-environment))
+The `*process-environment*' variable is destructively modified."
+  (let ((regexp (concat (quote-regexp name) #\=)))
+    (let loop ((rest *process-environment*))
       (cond ((null rest)
-	     (setq process-environment (cons (concat name #\= value)
-					     process-environment)))
+	     (setq *process-environment* (cons (concat name #\= value)
+					       *process-environment*)))
 	    ((string-looking-at regexp (car rest))
 	     (rplaca rest (concat name #\= value)))
 	    (t (loop (cdr rest)))))))
@@ -53,7 +53,7 @@ The `process-environment' variable is destructively modified."
 ;;;###autoload
 (defun unsetenv (name)
   "Delete the environment variable called NAME."
-  (let ((re (concat (quote-regexp name) ?=)))
-    (setq process-environment
+  (let ((re (concat (quote-regexp name) #\=)))
+    (setq *process-environment*
 	  (delete-if (lambda (x)
-		       (string-looking-at re x)) process-environment))))
+		       (string-looking-at re x)) *process-environment*))))

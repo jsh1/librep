@@ -86,4 +86,4 @@
 		 (todo (cdr parts)))
 	(fun current)
 	(when todo
-	  (loop (concat (car todo) ?. current) (cdr todo)))))))
+	  (loop (concat (car todo) #\. current) (cdr todo)))))))

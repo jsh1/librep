@@ -1,21 +1,21 @@
 /* rep_lisp.h -- Data structures/objects for Lisp
-   Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
-   $Id$
 
-   This file is part of Jade.
+   Copyright (C) 1993-2015 John Harper <jsh@unfactored.org>
 
-   Jade is free software; you can redistribute it and/or modify it
+   This file is part of Librep.
+
+   Librep is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2, or (at your option)
    any later version.
 
-   Jade is distributed in the hope that it will be useful, but
+   Librep is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with Jade; see the file COPYING.  If not, write to
+   along with Librep; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* library-private definitions are in repint.h */
@@ -90,6 +90,9 @@ typedef uintptr_t repv;
 
 /* Is repv V a fixnum? */
 #define rep_INTP(v)		(!rep_CELLP(v))
+
+/* Is V a fixnum and not negative? */
+#define rep_NON_NEG_INT_P(v)	(rep_INTP(v) && !(rep_INT(v) < 0))
 
 /* Convert a repv into a signed integer. */
 #define rep_INT(v)		(((intptr_t)(v)) >> rep_VALUE_INT_SHIFT)
@@ -189,47 +192,72 @@ typedef struct {
 /* Type data */
 
 /* Information about each type */
+
 typedef struct rep_type_struct {
-    struct rep_type_struct *next;
-    char *name;
-    repv code;
+  /* Private values. */
 
-    /* Compares two values, rc is similar to strcmp() */
-    int (*compare)(repv val1, repv val2);
+  struct rep_type_struct *next;
+  bool initialized;
 
-    /* Prints a textual representation of the object, not necessarily in 
-       a read'able format */
-    void (*princ)(repv stream, repv obj);
+  /* Value to be put in the car of each object to denote this type. */
 
-    /* Prints a textual representation of the object, if possible in
-       a read'able format */
-    void (*print)(repv stream, repv obj);
+  repv car;
 
-    /* When non-null, a function that should be called during the
-       sweep phase of garbage collection. */
-    void (*sweep)(void);
+  /* Name of the type. */
 
-    /* When non-null, a function to mark OBJ and all objects
-       it references. */
-    void (*mark)(repv obj);
+  char *name;
 
-    /* When called, should mark any objects that must persist across
-       the GC, no matter what. */
-    void (*mark_type)(void);
+  /* Compares two values, rc is similar to strcmp() */
 
-    /* When non-null, functions called for the stream OBJ. */
-    int (*getc)(repv obj);
-    int (*ungetc)(repv obj, int c);
-    int (*putc)(repv obj, int c);
-    intptr_t (*puts)(repv obj, void *data, intptr_t length, bool lisp_obj_p);
+  int (*compare)(repv val1, repv val2);
 
-    /* When non-null, a function to ``bind'' to OBJ temporarily,
-       returning some handle for later unbinding. */
-    repv (*bind)(repv obj);
+  /* Prints a textual representation of the object, not necessarily in
+     a readable format */
 
-    /* When non-null, a function to ``unbind'' OBJ, the result of
-       the earlier bind call. */
-    void (*unbind)(repv obj);
+  void (*princ)(repv stream, repv obj);
+
+  /* Prints a textual representation of the object, if possible in a
+     readable format */
+
+  void (*print)(repv stream, repv obj);
+
+  /* When called, should mark any objects that must persist across the
+     GC, no matter what. */
+
+  void (*mark_type)(void);
+
+  /* When non-null, a function to mark OBJ and all objects it
+     references. */
+
+  void (*mark)(repv obj);
+
+  /* When non-null, a function that should be called during the sweep
+     phase of garbage collection. */
+
+  void (*sweep)(void);
+
+  /* When non-null, called immediately before the after-gc-hook runs. */
+
+  void (*after_gc)(void);
+
+  /* When non-null, functions called for the stream OBJ. */
+
+  int (*getc)(repv obj);
+  int (*ungetc)(repv obj, int c);
+  int (*putc)(repv obj, int c);
+  intptr_t (*puts)(repv obj, const void *data,
+		   intptr_t length, bool lisp_obj_p);
+
+  /* When non-null, a function to ``bind'' to OBJ temporarily,
+     returning some handle for later unbinding. */
+
+  repv (*bind)(repv obj);
+
+  /* When non-null, a function to ``unbind'' OBJ, the result of the
+     earlier bind call. */
+
+  void (*unbind)(repv obj);
+
 } rep_type;
 
 /* Each type of Lisp object has a type code associated with it.
@@ -237,12 +265,12 @@ typedef struct rep_type_struct {
    Note how non-cons cells are given odd values, so that the
    rep_CELL_IS_8 bit doesn't have to be masked out. */
 
-#define rep_Cons	0x00		/* made up */
 #define rep_Symbol	0x01
 #define rep_Int		0x02		/* made up */
 #define rep_Vector	0x03
+#define rep_Cons	0x04		/* made up */
 #define rep_String	0x05
-#define rep_Compiled	0x07
+#define rep_Bytecode	0x07		/* a vector */
 #define rep_Void	0x09
 #define rep_Reserved	0x0b
 #define rep_Number	0x0d
@@ -254,7 +282,7 @@ typedef struct rep_type_struct {
 #define rep_Subr4	0x19
 #define rep_Subr5	0x1b
 #define rep_SubrN	0x1d
-#define rep_Funarg	0x1f
+#define rep_Closure	0x1f
 
 /* Assuming that V is a cell, return the type code */
 #define rep_CELL_TYPE(v) (rep_CONSP(v) ? rep_Cons		\
@@ -278,8 +306,9 @@ typedef struct rep_type_struct {
 /* tuples, cells containing two values */
 
 typedef struct {
-    repv car;
-    repv a, b;
+  repv car;
+  repv a;
+  repv b;
 } rep_tuple;
 
 #define rep_TUPLE(v)		((rep_tuple *) rep_PTR (v))
@@ -313,6 +342,7 @@ typedef rep_cell rep_number;
 #define rep_NUMBER_BIGNUM_P(v)	(rep_NUMBER_TYPE(v) & rep_NUMBER_BIGNUM)
 #define rep_NUMBER_RATIONAL_P(v) (rep_NUMBER_TYPE(v) & rep_NUMBER_RATIONAL)
 #define rep_NUMBER_FLOAT_P(v)	(rep_NUMBER_TYPE(v) & rep_NUMBER_FLOAT)
+#define rep_NUMBER_INEXACT_P(v) (rep_NUMBERP(v) && rep_NUMBER_FLOAT_P(v))
 
 #define rep_NUMERIC_TYPE(v) \
     (rep_INTP(v) ? rep_NUMBER_INT : rep_NUMBER_TYPE(v))
@@ -324,13 +354,16 @@ typedef rep_cell rep_number;
 /* Strings */
 
 typedef struct rep_string_struct {
-    /* Bits 0->7 are standard cell8 defines. Bits 8->31 store the length
-       of the string. This means that strings can't contain more than
-       2^24-1 bytes (thats about 16.7MB) */
-    repv car;
+  /* Bits 0->7 are standard cell8 defines. Bits 8->31 store the length
+     of the string. This means that strings can't contain more than
+     2^24-1 bytes (thats about 16.7MB) */
 
-    /* Pointer to the (zero-terminated) characters */
-    char *data;
+  repv car;
+
+  /* Pointer to the (zero-terminated) characters */
+
+  char *data;
+
 } rep_string;
 
 #define rep_STRING_LEN_SHIFT	8
@@ -350,26 +383,23 @@ typedef struct rep_string_struct {
 
 /* Define a variable V, containing a static string S. This must be cast
    to a repv via the rep_VAL() macro when using. */
-#define DEFSTRING(v, s)					\
-    rep_ALIGN_CELL(static const rep_string v) = {	\
-	((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
-	| rep_CELL_STATIC_BIT | rep_String,		\
-	(char *)s					\
-    }
+#define DEFSTRING(v, s)				\
+  rep_ALIGN_CELL(static const rep_string v) = {	\
+    ((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
+    | rep_CELL_STATIC_BIT | rep_String,		\
+    (char *)s					\
+  }
 
 #define rep_STR(v)	(rep_STRING(v)->data)
-
-/* Use this to get a newline into a DEFSTRING */
-#define rep_DS_NL "\n"
 
 
 /* Symbols */
 
 /* symbol object, actual allocated as a tuple */
 typedef struct {
-    repv car;				/* bits 8->11 are flags */
-    repv next;				/* next symbol in rep_obarray bucket */
-    repv name;
+  repv car;				/* bits 8->11 are flags */
+  repv next;				/* next symbol in rep_obarray bucket */
+  repv name;
 } rep_symbol;
 
 #define rep_SF_KEYWORD	(1 << (rep_CELL8_TYPE_BITS + 0))
@@ -412,15 +442,16 @@ typedef struct {
 #define rep_KEYWORDP(v)		(rep_SYMBOLP(v) \
 				 && (rep_SYM(v)->car & rep_SF_KEYWORD) != 0)
 
+#define rep_SYMBOL_KEYWORD_P(v)	((rep_SYM(v)->car & rep_SF_KEYWORD) != 0)
 #define rep_SYMBOL_LITERAL_P(v)	((rep_SYM(v)->car & rep_SF_LITERAL) != 0)
 
 
 /* Vectors */
 
 typedef struct rep_vector_struct {
-    repv car;				/* size is bits 8->31 */
-    struct rep_vector_struct *next;
-    repv array[1];
+  repv car;				/* size is bits 8->31 */
+  struct rep_vector_struct *next;
+  repv array[1];
 } rep_vector;
 
 /* Bytes to allocate for S objects */
@@ -440,60 +471,61 @@ typedef struct rep_vector_struct {
 /* Compiled Lisp functions; this is a vector. Some of these definitions
    are probably hard coded into lispmach.c */
 
-#define rep_COMPILEDP(v)	rep_CELL8_TYPEP(v, rep_Compiled)
-#define rep_COMPILED(v)		((rep_vector *)rep_PTR(v))
+#define rep_BYTECODEP(v)	rep_CELL8_TYPEP(v, rep_Bytecode)
+#define rep_BYTECODE(v)		((rep_vector *)rep_PTR(v))
 
 /* First elt is byte-code string */
-#define rep_COMPILED_CODE(v)	rep_VECTI(v, 0)
+#define rep_BYTECODE_CODE(v)	rep_VECTI(v, 0)
 
 /* Second is constant vector */
-#define rep_COMPILED_CONSTANTS(v) rep_VECTI(v, 1)
+#define rep_BYTECODE_CONSTANTS(v) rep_VECTI(v, 1)
 
 /* Third is an (opaque) integer: memory requirements */
-#define rep_COMPILED_STACK(v)	rep_VECTI(v, 2)
+#define rep_BYTECODE_STACK(v)	rep_VECTI(v, 2)
 
-#define rep_COMPILED_MIN_SLOTS	3
+#define rep_BYTECODE_MIN_SLOTS	3
 
 /* Optional fifth element is documentation. */
-#define rep_COMPILED_DOC(v)	((rep_VECT_LEN(v) >= 4) \
+#define rep_BYTECODE_DOC(v)	((rep_VECT_LEN(v) >= 4) \
 				 ? rep_VECTI(v, 3) : rep_nil)
 
 /* Optional sixth element is interactive specification. */
-#define rep_COMPILED_INTERACTIVE(v) ((rep_VECT_LEN(v) >= 5) \
+#define rep_BYTECODE_INTERACTIVE(v) ((rep_VECT_LEN(v) >= 5) \
 				     ? rep_VECTI(v, 4) : rep_nil)
 
 
 /* Files */
 
-/* A file object.  */
 typedef struct rep_file_struct {
-    repv car;				/* single flag at bit 16 */
-    struct rep_file_struct *next;
+  repv car;				/* single flag at bit 16 */
+  struct rep_file_struct *next;
 
-    /* Name as user sees it */
-    repv name;
+  /* Name as user sees it */
 
-    /* Function to call to handle file operations,
-       or t for file in local fs */
-    repv handler;
+  repv name;
 
-    /* Data for handler's use; for local files, this is the
-       name of the file opened in the local fs. */
-    repv handler_data;
+  /* Function to call to handle file operations, or t for file in local fs */
 
-    /* For local files, a buffered file handle; for others some sort
-       of stream. */
-    union {
-	FILE *fh;
-	repv stream;
-    } file;
+  repv handler;
 
-    /* For input streams */
-    int line_number;
+  /* Data for handler's use; for local files, this is the name of the
+     file opened in the local fs. */
+
+  repv handler_data;
+
+  /* For local files, a buffered file handle; for others a stream. */
+
+  union {
+    FILE *fh;
+    repv stream;
+  } file;
+
+  /* For input streams */
+
+  int line_number;
+
 } rep_file;
 
-/* When this bit is set in flags, the file handle is never fclose()'d,
-   i.e. this file points to something like stdin. */
 #define rep_LFF_DONT_CLOSE	(1 << (rep_CELL16_TYPE_BITS + 0))
 #define rep_LFF_BOGUS_LINE_NUMBER (1 << (rep_CELL16_TYPE_BITS + 1))
 #define rep_LFF_SILENT_ERRORS	(1 << (rep_CELL16_TYPE_BITS + 2))
@@ -506,36 +538,39 @@ typedef struct rep_file_struct {
 
 /* Built-in subroutines */
 
-/* Calling conventions are straightforward, returned value is result
-   of function. But returning 0 signifies some kind of abnormal
-   exit (i.e. an error or throw, or ..?), should be treated as
-   rep_INTERRUPTP defined below is */
+/* Calling conventions are straightforward, returned value is result of
+   function. But returning 0 signifies some kind of abnormal exit (i.e.
+   an error or throw, or ..?), should be treated as rep_INTERRUPTP
+   defined below is */
 
 /* C subroutine, can take from zero to five arguments.  */
+
 typedef struct {
-    repv car;
-    union {
-	repv (*fun0)(void);
-	repv (*fun1)(repv);
-	repv (*fun2)(repv, repv);
-	repv (*fun3)(repv, repv, repv);
-	repv (*fun4)(repv, repv, repv, repv);
-	repv (*fun5)(repv, repv, repv, repv, repv);
-	repv (*funv)(int, repv *);
-    } fun;
-    repv name;
-    repv int_spec;
+  repv car;
+  union {
+    repv (*fun0)(void);
+    repv (*fun1)(repv);
+    repv (*fun2)(repv, repv);
+    repv (*fun3)(repv, repv, repv);
+    repv (*fun4)(repv, repv, repv, repv);
+    repv (*fun5)(repv, repv, repv, repv, repv);
+    repv (*funv)(int argc, repv *argv);
+    repv (*funsf)(repv args, bool tail_posn);
+  } fun;
+  repv name;
+  repv int_spec;
 } rep_subr;
 
 typedef struct {
-    repv car;
-    repv (*fun)();
-    repv name;
-    repv int_spec;			/* put this in plist? */
+  repv car;
+  repv (*fun)();
+  repv name;
+  repv int_spec;			/* put this in plist? */
 } rep_xsubr;
 
-/* If set in rep_SubrN types, it'll be passed a vector of args,
-   instead of a list */
+/* If set in rep_SubrN types, it'll be passed a vector of args, instead
+   of a list */
+
 #define rep_SUBR_VEC      (1 << (rep_CELL8_TYPE_BITS + 0))
 #define rep_SUBR_VEC_P(v) (rep_SUBR(v)->car & rep_SUBR_VEC)
 #define rep_SubrV         (rep_SubrN | rep_SUBR_VEC)
@@ -550,23 +585,23 @@ typedef struct {
 #define rep_SUBR5FUN(v)	(rep_SUBR(v)->fun.fun5)
 #define rep_SUBRNFUN(v)	(rep_SUBR(v)->fun.fun1)
 #define rep_SUBRVFUN(v)	(rep_SUBR(v)->fun.funv)
-#define rep_SFFUN(v)	(rep_SUBR(v)->fun.fun2)
+#define rep_SFFUN(v)	(rep_SUBR(v)->fun.funsf)
 
 
 /* Closures */
 
-typedef struct rep_funarg_struct {
-    repv car;
-    repv fun;
-    repv name;
-    repv env;
-    repv structure;
-} rep_funarg;
+typedef struct rep_closure_struct {
+  repv car;
+  repv fun;
+  repv name;
+  repv env;
+  repv structure;
+} rep_closure;
 
-#define rep_FUNARG(v) ((rep_funarg *)rep_PTR(v))
-#define rep_FUNARGP(v) (rep_CELL8_TYPEP(v, rep_Funarg))
+#define rep_CLOSURE(v) ((rep_closure *)rep_PTR(v))
+#define rep_CLOSUREP(v) (rep_CELL8_TYPEP(v, rep_Closure))
 
-#define rep_FUNARG_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
+#define rep_CLOSURE_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
 
 /* Guardians */
@@ -587,143 +622,158 @@ typedef struct rep_funarg_struct {
 #define rep_LIST_4(v1,v2,v3,v4)		Fcons(v1, rep_LIST_3(v2, v3, v4))
 #define rep_LIST_5(v1,v2,v3,v4,v5)	Fcons(v1, rep_LIST_4(v2, v3, v4, v5))
 
-#define rep_CAAR(obj)           rep_CAR (rep_CAR (obj))
-#define rep_CDAR(obj)           rep_CDR (rep_CAR (obj))
-#define rep_CADR(obj)           rep_CAR (rep_CDR (obj))
-#define rep_CDDR(obj)           rep_CDR (rep_CDR (obj))
+#define rep_CAAR(obj)           rep_CAR(rep_CAR(obj))
+#define rep_CDAR(obj)           rep_CDR(rep_CAR(obj))
+#define rep_CADR(obj)           rep_CAR(rep_CDR(obj))
+#define rep_CDDR(obj)           rep_CDR(rep_CDR(obj))
 
-#define rep_CAAAR(obj)          rep_CAR (rep_CAR (rep_CAR (obj)))
-#define rep_CDAAR(obj)          rep_CDR (rep_CAR (rep_CAR (obj)))
-#define rep_CADAR(obj)          rep_CAR (rep_CDR (rep_CAR (obj)))
-#define rep_CDDAR(obj)          rep_CDR (rep_CDR (rep_CAR (obj)))
-#define rep_CAADR(obj)          rep_CAR (rep_CAR (rep_CDR (obj)))
-#define rep_CDADR(obj)          rep_CDR (rep_CAR (rep_CDR (obj)))
-#define rep_CADDR(obj)          rep_CAR (rep_CDR (rep_CDR (obj)))
-#define rep_CDDDR(obj)          rep_CDR (rep_CDR (rep_CDR (obj)))
+#define rep_CAAAR(obj)          rep_CAR(rep_CAR(rep_CAR(obj)))
+#define rep_CDAAR(obj)          rep_CDR(rep_CAR(rep_CAR(obj)))
+#define rep_CADAR(obj)          rep_CAR(rep_CDR(rep_CAR(obj)))
+#define rep_CDDAR(obj)          rep_CDR(rep_CDR(rep_CAR(obj)))
+#define rep_CAADR(obj)          rep_CAR(rep_CAR(rep_CDR(obj)))
+#define rep_CDADR(obj)          rep_CDR(rep_CAR(rep_CDR(obj)))
+#define rep_CADDR(obj)          rep_CAR(rep_CDR(rep_CDR(obj)))
+#define rep_CDDDR(obj)          rep_CDR(rep_CDR(rep_CDR(obj)))
 
-#define rep_CAAAAR(obj)         rep_CAR (rep_CAR (rep_CAR (rep_CAR (obj))))
-#define rep_CDAAAR(obj)         rep_CDR (rep_CAR (rep_CAR (rep_CAR (obj))))
-#define rep_CADAAR(obj)         rep_CAR (rep_CDR (rep_CAR (rep_CAR (obj))))
-#define rep_CDDAAR(obj)         rep_CDR (rep_CDR (rep_CAR (rep_CAR (obj))))
-#define rep_CAADAR(obj)         rep_CAR (rep_CAR (rep_CDR (rep_CAR (obj))))
-#define rep_CDADAR(obj)         rep_CDR (rep_CAR (rep_CDR (rep_CAR (obj))))
-#define rep_CADDAR(obj)         rep_CAR (rep_CDR (rep_CDR (rep_CAR (obj))))
-#define rep_CDDDAR(obj)         rep_CDR (rep_CDR (rep_CDR (rep_CAR (obj))))
-#define rep_CAAADR(obj)         rep_CAR (rep_CAR (rep_CAR (rep_CDR (obj))))
-#define rep_CDAADR(obj)         rep_CDR (rep_CAR (rep_CAR (rep_CDR (obj))))
-#define rep_CADADR(obj)         rep_CAR (rep_CDR (rep_CAR (rep_CDR (obj))))
-#define rep_CDDADR(obj)         rep_CDR (rep_CDR (rep_CAR (rep_CDR (obj))))
-#define rep_CAADDR(obj)         rep_CAR (rep_CAR (rep_CDR (rep_CDR (obj))))
-#define rep_CDADDR(obj)         rep_CDR (rep_CAR (rep_CDR (rep_CDR (obj))))
-#define rep_CADDDR(obj)         rep_CAR (rep_CDR (rep_CDR (rep_CDR (obj))))
-#define rep_CDDDDR(obj)         rep_CDR (rep_CDR (rep_CDR (rep_CDR (obj))))
+#define rep_CAAAAR(obj)         rep_CAR(rep_CAR(rep_CAR(rep_CAR(obj))))
+#define rep_CDAAAR(obj)         rep_CDR(rep_CAR(rep_CAR(rep_CAR(obj))))
+#define rep_CADAAR(obj)         rep_CAR(rep_CDR(rep_CAR(rep_CAR(obj))))
+#define rep_CDDAAR(obj)         rep_CDR(rep_CDR(rep_CAR(rep_CAR(obj))))
+#define rep_CAADAR(obj)         rep_CAR(rep_CAR(rep_CDR(rep_CAR(obj))))
+#define rep_CDADAR(obj)         rep_CDR(rep_CAR(rep_CDR(rep_CAR(obj))))
+#define rep_CADDAR(obj)         rep_CAR(rep_CDR(rep_CDR(rep_CAR(obj))))
+#define rep_CDDDAR(obj)         rep_CDR(rep_CDR(rep_CDR(rep_CAR(obj))))
+#define rep_CAAADR(obj)         rep_CAR(rep_CAR(rep_CAR(rep_CDR(obj))))
+#define rep_CDAADR(obj)         rep_CDR(rep_CAR(rep_CAR(rep_CDR(obj))))
+#define rep_CADADR(obj)         rep_CAR(rep_CDR(rep_CAR(rep_CDR(obj))))
+#define rep_CDDADR(obj)         rep_CDR(rep_CDR(rep_CAR(rep_CDR(obj))))
+#define rep_CAADDR(obj)         rep_CAR(rep_CAR(rep_CDR(rep_CDR(obj))))
+#define rep_CDADDR(obj)         rep_CDR(rep_CAR(rep_CDR(rep_CDR(obj))))
+#define rep_CADDDR(obj)         rep_CAR(rep_CDR(rep_CDR(rep_CDR(obj))))
+#define rep_CDDDDR(obj)         rep_CDR(rep_CDR(rep_CDR(rep_CDR(obj))))
 
 
 /* Garbage collection definitions */
 
-/* gc macros for cell8/16 values */
+/* GC macros for cell8/16 values */
+
 #define rep_GC_CELL_MARKEDP(v)	(rep_PTR(v)->car & rep_CELL_MARK_BIT)
 #define rep_GC_SET_CELL(v)	(rep_PTR(v)->car |= rep_CELL_MARK_BIT)
 #define rep_GC_CLR_CELL(v)	(rep_PTR(v)->car &= ~rep_CELL_MARK_BIT)
 
-/* gc macros for cons values */
+/* GC macros for cons values */
+
 #define rep_GC_CONS_MARKEDP(v)	(rep_CDR(v) & rep_VALUE_CONS_MARK_BIT)
 #define rep_GC_SET_CONS(v)	(rep_CDR(v) |= rep_VALUE_CONS_MARK_BIT)
 #define rep_GC_CLR_CONS(v)	(rep_CDR(v) &= ~rep_VALUE_CONS_MARK_BIT)
 
 /* True when cell V has been marked. */
+
 #define rep_GC_MARKEDP(v) \
     (rep_CELL_CONS_P(v) ? rep_GC_CONS_MARKEDP(v) : rep_GC_CELL_MARKEDP(v))
 
 /* Set the mark bit of cell V. */
+
 #define rep_GC_SET(v)		\
-    do {			\
-	if(rep_CELLP(v))	\
-	    rep_GC_SET_CELL(v);	\
-	else			\
-	    rep_GC_SET_CONS(v);	\
-    } while(0)
+  do {				\
+    if (rep_CELLP(v)) {		\
+      rep_GC_SET_CELL(v);	\
+    } else {			\
+      rep_GC_SET_CONS(v);	\
+    }				\
+  } while (0)
 
 /* Clear the mark bit of cell V. */
+
 #define rep_GC_CLR(v)		\
-    do {			\
-	if(rep_CELLP(v))	\
-	    rep_GC_CLR_CELL(v);	\
-	else			\
-	    rep_GC_CLR_CONS(v);	\
-    } while(0)
+  do {				\
+    if(rep_CELLP(v)) {		\
+      rep_GC_CLR_CELL(v);	\
+    } else {			\
+      rep_GC_CLR_CONS(v);	\
+    }				\
+  } while (0)
 
 /* Recursively mark object V. */
-#define rep_MARKVAL(v)						\
-    do {							\
-	if(v != 0 && !rep_INTP(v) && !rep_GC_MARKEDP(v))	\
-	    rep_mark_value(v);					\
-    } while(0)
 
-/* A stack of dynamic GC roots, i.e. objects to start marking from.  */
+#define rep_MARKVAL(v)					\
+  do {							\
+    if(v != 0 && !rep_INTP(v) && !rep_GC_MARKEDP(v)) {	\
+      rep_mark_value(v);				\
+    }							\
+  } while (0)
+
+/* A stack of dynamic GC roots, i.e. objects to start marking from. */
+
 typedef struct rep_gc_root {
-    repv *ptr;
-    struct rep_gc_root *next;
+  repv *ptr;
+  struct rep_gc_root *next;
 } rep_GC_root;
 
 typedef struct rep_gc_n_roots {
-    repv *first;
-    int count;
-    struct rep_gc_n_roots *next;
+  repv *first;
+  int count;
+  struct rep_gc_n_roots *next;
 } rep_GC_n_roots;
 
-/* Push a root to VAL using ROOT as storage (ROOT is rep_GC_root type) */
-#define rep_PUSHGC(root, val)			\
-    do {					\
-	(root).ptr = &(val);			\
-	(root).next = rep_gc_root_stack;	\
-	rep_gc_root_stack = &(root);		\
-    } while(0)
+/* Push a root to VAL using ROOT as storage (ROOT is rep_GC_root type). */
 
-/* Push a root to N values starting at PTR using ROOT as storage
-   (ROOT is rep_GC_n_roots type) */
-#define rep_PUSHGCN(root, ptr, n)		\
-    do {					\
-	(root).first = (ptr);			\
-	(root).count = (n);			\
-	(root).next = rep_gc_n_roots_stack;	\
-	rep_gc_n_roots_stack = &(root);		\
-    } while(0)
+#define rep_PUSHGC(root, val)		\
+  do {					\
+    (root).ptr = &(val);		\
+    (root).next = rep_gc_root_stack;	\
+    rep_gc_root_stack = &(root);	\
+  } while (0)
 
-#if !defined (rep_PARANOID_GC)
+/* Push a root to N values starting at PTR using ROOT as storage (ROOT
+   is rep_GC_n_roots type). */
 
-# define rep_POPGC (rep_gc_root_stack = rep_gc_root_stack->next)
-# define rep_POPGCN (rep_gc_n_roots_stack = rep_gc_n_roots_stack->next)
+#define rep_PUSHGCN(root, ptr, n)	\
+  do {					\
+    (root).first = (ptr);		\
+    (root).count = (n);			\
+    (root).next = rep_gc_n_roots_stack;	\
+    rep_gc_n_roots_stack = &(root);	\
+  } while (0)
 
-#else
+#if !rep_PARANOID_GC
 
-/* Check that gc roots are popped when they should have been;
-   assumes downwards growing stack */
+# define rep_CHECK_GC(root) do {} while (0)
 
-# if defined (__GNUC__) && defined (sparc)
-#  define rep_get_sp(var) asm ("mov %%sp, %0" : "=r" (var))
+#else /* !rep_PARANOID_GC */
+
+/* Check that GC roots are popped when they should have been. */
+
+# if STACK_DIRECTION < 0
+#  define rep_CHECK_GC(root)		\
+  do {					\
+    char x__ = 1;			\
+    assert(&x__ <= (char *)root);	\
+  } while (0)
+# elif STACK_DIRECTION > 0
+#  define rep_CHECK_GC(root)		\
+  do {					\
+    char x__ = 1;			\
+    assert(&x__ >= (char *)root);	\
+  } while (0)
 # else
-#  error "don't know how to get stack ptr on this arch, undef rep_PARANOID_GC"
+#  define rep_CHECK_GC(root) do {} while (0)
 # endif
 
-#define rep_CHECK_GC(root)	\
-    char *sp; rep_get_sp(sp);	\
-    if (sp > (char *) root)	\
-	abort ();
+#endif /* rep_PARANOID_GC */
 
-# define rep_POPGC 					\
-    do {						\
-	rep_CHECK_GC(rep_gc_root_stack)			\
-	rep_gc_root_stack = rep_gc_root_stack->next;	\
-    } while (0)
+#define rep_POPGC 					\
+  do {							\
+    rep_CHECK_GC(rep_gc_root_stack);			\
+    rep_gc_root_stack = rep_gc_root_stack->next;	\
+  } while (0)
 
-# define rep_POPGCN 						\
-    do {							\
-	rep_CHECK_GC(rep_gc_n_roots_stack)			\
-	rep_gc_n_roots_stack = rep_gc_n_roots_stack->next;	\
-    } while (0)
-
-#endif
+#define rep_POPGCN 					\
+  do {							\
+    rep_CHECK_GC(rep_gc_n_roots_stack);			\
+    rep_gc_n_roots_stack = rep_gc_n_roots_stack->next;	\
+  } while (0)
 
 
 /* Macros for declaring functions */
@@ -731,65 +781,74 @@ typedef struct rep_gc_n_roots {
 /* Define a function named NAME (a string), whose function body will
    be called FSYM, whose rep_subr will be called SSYM, with argument
    list ARGS, of type code TYPE. */
+
 #define DEFUN(name,fsym,ssym,args,type)					\
-    DEFSTRING(rep_CONCAT(ssym, __name), name);				\
-    extern repv fsym args;						\
-    rep_ALIGN_CELL(rep_xsubr ssym) = { type, (repv (*)()) fsym,		\
-				       rep_VAL(&rep_CONCAT(ssym, __name)), \
-				       0 };			\
-    repv fsym args
+  DEFSTRING(rep_CONCAT(ssym, __name), name);				\
+  extern repv fsym args;						\
+  rep_ALIGN_CELL(rep_xsubr ssym) = {					\
+    type, (repv (*)()) fsym, rep_VAL(&rep_CONCAT(ssym, __name)), 0	\
+  };									\
+  repv fsym args
 
 /* Same as above but with an extra arg -- an interactive-spec string. */
-#define DEFUN_INT(name,fsym,ssym,args,type,interactive)	\
-    DEFSTRING(rep_CONCAT(ssym, __name), name);				\
-    DEFSTRING(rep_CONCAT(ssym, __int), interactive);			\
-    extern repv fsym args;						\
-    rep_ALIGN_CELL(rep_xsubr ssym) = { type, (repv (*)()) fsym,		\
-				       rep_VAL(&rep_CONCAT(ssym, __name)), \
-				       rep_VAL(&rep_CONCAT(ssym, __int)) };\
-    repv fsym args
 
-/* Add a subroutine */    
+#define DEFUN_INT(name,fsym,ssym,args,type,interactive)			\
+  DEFSTRING(rep_CONCAT(ssym, __name), name);				\
+  DEFSTRING(rep_CONCAT(ssym, __int), interactive);			\
+  extern repv fsym args;						\
+  rep_ALIGN_CELL(rep_xsubr ssym) = {					\
+    type, (repv (*)()) fsym, rep_VAL(&rep_CONCAT(ssym, __name)), 	\
+    rep_VAL(&rep_CONCAT(ssym, __int))					\
+  };									\
+  repv fsym args
+
+/* Add a subroutine. */    
+
 #define rep_ADD_SUBR(subr) rep_add_subr(&subr, true)
 
-/* Add a non-exported subroutine */
+/* Add a non-exported subroutine. */
+
 #define rep_ADD_INTERNAL_SUBR(subr) rep_add_subr(&subr, false)
 
-/* Add an interactive subroutine */    
+/* Add an interactive subroutine. */
+
 #define rep_ADD_SUBR_INT(subr) rep_add_subr(&subr, true)
 
 /* Declare a symbol stored in variable QX. */
+
 #define DEFSYM(x, name) \
-    repv Q ## x; DEFSTRING(str_ ## x, name)
+  repv Q ## x; DEFSTRING(str_ ## x, name)
 
 /* Intern a symbol stored in QX, whose name (a lisp string) is stored
-   in str_X (i.e. declared with DEFSYM) */
+   in str_X (i.e. declared with DEFSYM). */
+
 #define rep_INTERN(x) rep_intern_static(& Q ## x, rep_VAL(& str_ ## x))
 
-/* Same as above, but also marks the variable as dynamically scoped */
-#define rep_INTERN_SPECIAL(x) 					\
-    do {							\
-	rep_intern_static (& Q ## x, rep_VAL(& str_ ## x));	\
-	Fmake_variable_special (Q ## x);			\
-	rep_SYM(Q ## x)->car |= rep_SF_DEFVAR;			\
-    } while (0)
+/* Same as above, but also marks the variable as dynamically scoped. */
 
-/* Add an error string called err_X for symbol stored in QX */
-#define rep_ERROR(x) \
-    Fput(Q ## x, Qerror_message, rep_VAL(& err_ ## x))
+#define rep_INTERN_SPECIAL(x) 				\
+  do {							\
+    rep_INTERN(x);					\
+    Fmake_variable_special (Q ## x);			\
+    rep_SYM(Q ## x)->car |= rep_SF_DEFVAR;		\
+  } while (0)
+
+/* Add an error string called err_X for symbol stored in QX. */
+
+#define rep_DEFINE_ERROR(x) \
+  Fput(Q ## x, Qerror_message, rep_VAL(& err_ ## x))
 
 
 /* Macros for ensuring an object is of a certain type i.e. to ensure
    first arg `foo' is a string, rep_DECLARE1(foo, rep_STRINGP);  */
 
 #define rep_DECLARE(n,x,e)		\
-    do { 				\
-	if(! (e)) 			\
-	{ 				\
-	    rep_signal_arg_error(x, n); \
-	    return 0; 		\
-	} 				\
-    } while(0)
+  do { 					\
+    if(!(e)) { 				\
+      rep_signal_arg_error(x, n);	\
+      return 0; 			\
+    } 					\
+  } while (0)
 
 #define rep_DECLARE1(x,t) rep_DECLARE(1,x,t(x))
 #define rep_DECLARE2(x,t) rep_DECLARE(2,x,t(x))
@@ -806,25 +865,26 @@ typedef struct rep_gc_n_roots {
 
 /* Macros for interrupt handling */
 
-/* rep_TEST_INT is called before testing rep_INTERRUPTP, if necessary the
-   target operating system will define it to be something useful.
-   There's also a variant rep_TEST_INT_SLOW that should be used by code that
-   only checks a few times or less a second */
+/* rep_TEST_INT is called before testing rep_INTERRUPTP, if necessary
+   the target operating system will define it to be something useful.
+   There's also a variant rep_TEST_INT_SLOW that should be used by code
+   that only checks a few times or less a second */
+
 #ifndef rep_TEST_INT
 
 # define rep_TEST_INT						\
-    do {							\
-	if(++rep_test_int_counter > rep_test_int_period) { 	\
-	    (*rep_test_int_fun)();				\
-	    rep_test_int_counter = 0;				\
-	}							\
-    } while(0)
+  do {								\
+    if (++rep_test_int_counter > rep_test_int_period) { 	\
+      (*rep_test_int_fun)();					\
+      rep_test_int_counter = 0;					\
+    }								\
+  } while (0)
 
-# define rep_TEST_INT_SLOW		\
-    do {				\
-	(*rep_test_int_fun)();		\
-	rep_test_int_counter = 0;	\
-    } while(0)
+# define rep_TEST_INT_SLOW	\
+  do {				\
+    (*rep_test_int_fun)();	\
+    rep_test_int_counter = 0;	\
+  } while (0)
 
 #else /* !rep_TEST_INT */
 
@@ -836,17 +896,7 @@ typedef struct rep_gc_n_roots {
 
 /* True when an interrupt has occurred; this means that the function
    should exit as soon as possible, returning 0. */
+
 #define rep_INTERRUPTP (rep_throw_value != 0)
-
-
-/* Storing timestamps */
-
-#define rep_MAKE_TIME(time) \
-    Fcons(rep_MAKE_INT(time / 86400), rep_MAKE_INT(time % 86400))
-
-#define rep_GET_TIME(time) \
-    (rep_INT(rep_CAR(time)) * 86400 + rep_INT(rep_CDR(time)))
-
-#define rep_TIMEP(v) rep_CONSP(v)
 
 #endif /* REP_LISP_H */

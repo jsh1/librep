@@ -31,5 +31,5 @@
 			     (system-name))
     "Mail domainname of the local site.")
 
-  (defvar user-mail-address (concat (user-login-name) ?\@ mail-domain-name)
+  (defvar user-mail-address (concat (user-login-name) #\@ mail-domain-name)
     "Address to put in From: headers of outgoing mail."))

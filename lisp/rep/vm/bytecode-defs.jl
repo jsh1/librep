@@ -47,16 +47,16 @@
 	(error "No such instruction: %s" name)))
 
   (define bytecode-alist
-    '((slot-ref . #x00)
+    '((reg-ref . #x00)
       (call . #x08)			;call (stk[n] stk[n-1] ... stk[0])
 					; pops n values, replacing the
 					; function with the result.
       (push . #x10)			;pushes constant # n
-      (refg . #x18)			;pushes val of symbol n (in c-v)
-      (setg . #x20)			;sets sym n (in c-v) to stk[0]; pop
-      (setn . #x28)
-      (slot-set . #x30)
-      (refn . #x38)
+      (refq . #x18)			;pushes val of symbol n (in c-v)
+      (setq . #x20)			;sets sym n (in c-v) to stk[0]; pop
+      (env-set . #x28)
+      (reg-set . #x30)
+      (env-ref . #x38)
 
       (last-with-args . #x3f)
 

@@ -68,7 +68,7 @@
   (define defvars (make-fluid '()))		;all vars declared at top-level
   (define defines (make-fluid '()))		;all lex. vars. at top-level
 
-  (defvar output-stream (make-fluid))	;stream for compiler output
+  (define output-stream (make-fluid))	;stream for compiler output
 
   ;; also: shadowing
   (defvar *compiler-warnings* '(unused bindings parameters misc deprecated))

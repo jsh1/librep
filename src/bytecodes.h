@@ -1,21 +1,21 @@
 /* bytecodes.h -- Constant definitions of lispmach byte-codes
-   Copyright (C) 1993, 1994 John Harper <john@dcs.warwick.ac.uk>
-   $Id$
 
-   This file is part of Jade.
+   Copyright (C) 1993-2015 John Harper <jsh@unfactored.org>
 
-   Jade is free software; you can redistribute it and/or modify it
+   This file is part of Librep.
+
+   Librep is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2, or (at your option)
    any later version.
 
-   Jade is distributed in the hope that it will be useful, but
+   Librep is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with Jade; see the file COPYING.  If not, write to
+   along with Librep; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #ifndef BYTECODES_H
@@ -44,16 +44,16 @@
 
 /* Opcodes which have an argument encoded in them */
 
-#define OP_SLOT_REF 0x00
+#define OP_REG_REF 0x00
 
-#define OP_SLOT_REF_0 0x00
-#define OP_SLOT_REF_1 0x01
-#define OP_SLOT_REF_2 0x02
-#define OP_SLOT_REF_3 0x03
-#define OP_SLOT_REF_4 0x04
-#define OP_SLOT_REF_5 0x05
-#define OP_SLOT_REF_6 0x06
-#define OP_SLOT_REF_7 0x07
+#define OP_REG_REF_0 0x00
+#define OP_REG_REF_1 0x01
+#define OP_REG_REF_2 0x02
+#define OP_REG_REF_3 0x03
+#define OP_REG_REF_4 0x04
+#define OP_REG_REF_5 0x05
+#define OP_REG_REF_6 0x06
+#define OP_REG_REF_7 0x07
 
 /* Call function on top of stack with following ARG parameters. Leave
    result on stack. */
@@ -63,37 +63,37 @@
 #define OP_PUSH 0x10
 
 /* Push the value of the symbol const[ARG] onto the stack. */
-#define OP_REFG 0x18
+#define OP_REFQ 0x18
 
 /* Set the value of symbol const[ARG] to the value on the
    stack. Pops the value off the stack. */
-#define OP_SETG 0x20
+#define OP_SETQ 0x20
 
 /* Sets the ARG'th value in the lexical environment. Pops value */
-#define OP_SETN 0x28
+#define OP_ENV_SET 0x28
 
-#define OP_SLOT_SET 0x30
+#define OP_REG_SET 0x30
 
-#define OP_SLOT_SET_0 0x30
-#define OP_SLOT_SET_1 0x31
-#define OP_SLOT_SET_2 0x32
-#define OP_SLOT_SET_3 0x33
-#define OP_SLOT_SET_4 0x34
-#define OP_SLOT_SET_5 0x35
-#define OP_SLOT_SET_6 0x36
-#define OP_SLOT_SET_7 0x37
+#define OP_REG_SET_0 0x30
+#define OP_REG_SET_1 0x31
+#define OP_REG_SET_2 0x32
+#define OP_REG_SET_3 0x33
+#define OP_REG_SET_4 0x34
+#define OP_REG_SET_5 0x35
+#define OP_REG_SET_6 0x36
+#define OP_REG_SET_7 0x37
 
 /* Pushes the ARG'th value in the lexical environment */
-#define OP_REFN 0x38
+#define OP_ENV_REF 0x38
 
-#define OP_REFN_0 0x38
-#define OP_REFN_1 0x39
-#define OP_REFN_2 0x3a
-#define OP_REFN_3 0x3b
-#define OP_REFN_4 0x3c
-#define OP_REFN_5 0x3d
-#define OP_REFN_6 0x3e
-#define OP_REFN_7 0x3f
+#define OP_ENV_REF_0 0x38
+#define OP_ENV_REF_1 0x39
+#define OP_ENV_REF_2 0x3a
+#define OP_ENV_REF_3 0x3b
+#define OP_ENV_REF_4 0x3c
+#define OP_ENV_REF_5 0x3d
+#define OP_ENV_REF_6 0x3e
+#define OP_ENV_REF_7 0x3f
 
 #define OP_LAST_WITH_ARGS 0x3f
 

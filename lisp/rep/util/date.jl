@@ -93,7 +93,7 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	 (minute 0)
 	 (second 0)
 	 (timezone 0)
-	 time_t tem)
+	 total-days total-seconds tem)
       (while (< point (length string))
 	(cond
 	 ((string-looking-at "[\t ]*([0-9]+)([\t ]+|$)" string point)
@@ -132,7 +132,7 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	      (setq timezone (cdr tem))
 	    ;; Try +-HHMM
 	    (if (string-looking-at "[+-]([0-9][0-9])([0-9][0-9])" timezone)
-		(setq timezone (* (if (= (aref timezone 0) ?+) 1 -1)
+		(setq timezone (* (if (= (aref timezone 0) #\+) 1 -1)
 				  (+ (* 60 (string->number
 					    (substring timezone
 						       (match-start 1)
@@ -188,8 +188,7 @@ character in the string. This will parse dates in RFC-822 mail messages."
       ;; which was in turn copied from Linux
       (let
 	  ((g-month (- month 2))
-	   (g-year year)
-	   total-seconds total-days)
+	   (g-year year))
 	(when (>= 0 g-month)
 	  ;; Put feb last since it has leap day
 	  (setq g-month (+ g-month 12)
@@ -205,16 +204,21 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	      total-seconds (+ second (* 60 (+ minute
 					       (- timezone)
 					       (* 60 hour)))))
-	(setq time_t (fix-time (cons total-days total-seconds))))
+	(while (< total-seconds 0)
+	  (setq total-seconds (+ total-seconds 86400))
+	  (setq total-days (1- total-days)))
+	(while (> total-seconds 86400)
+	  (setq total-seconds (- total-seconds 86400))
+	  (setq total-days (1+ total-days))))
       
-      (when (and (string= day-abbrev "") time_t)
+      (when (and (string= day-abbrev "") total-days)
 	;; January 1, 1970 was a Thursday
-	(let
-	    ((dow (% (+ (car time_t) 4) 7)))
+	(let ((dow (% (+ total-days 4) 7)))
 	  (when (< dow 0)
 	    (setq dow (+ dow 7)))
 	  (setq day-abbrev
 		(aref ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"] dow))))
       
       (vector day-abbrev day month-abbrev month
-	      year hour minute second timezone time_t))))
+	      year hour minute second timezone
+	      (* (* total-days 86400) total-seconds)))))

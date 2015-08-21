@@ -58,6 +58,5 @@ is true in which case it is added at the end."
 
 (autoload 'pwd-prompt "rep/system/pwd-prompt")
 
-(export-bindings '(getenv setenv unsetenv
-		   operating-system rep-version rep-interface-id
+(export-bindings '(getenv setenv unsetenv rep-version rep-interface-id
 		   rep-build-id pwd-prompt))

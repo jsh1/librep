@@ -25,12 +25,6 @@
 /* librep-specific configuration; these are the things that aren't really
    inferred automatically by configure. */
 
-/* If defined, this is the character which terminates the user's
-    real-name in the pw_gecos field of the passwd structure.  i.e. if
-    pw_gecos has something like "Real Name,SYS-ID" define it to a
-    comma (',') */
-#undef FULL_NAME_TERMINATOR
-
 /* Define this to track unfreed memory allocations */
 #undef DEBUG_SYS_ALLOC
 
@@ -243,6 +237,12 @@
 /* Define if you have the strtoq function. */
 #undef HAVE_STRTOQ
 
+/* Define if you have the strtod_l function. */
+#undef HAVE_STRTOD_L
+
+/* Define if you have the snprintf_l function. */
+#undef HAVE_SNPRINTF_L
+
 /* Define if you have the crypt function. */
 #undef HAVE_CRYPT
 
@@ -299,6 +299,9 @@
 
 /* Define if you have the <sys/param.h> header file.  */
 #undef HAVE_SYS_PARAM_H
+
+/* Define if you have the <xlocale.h> header file.  */
+#undef HAVE_XLOCALE_H
 
 /* Define if you have the <malloc.h> header file.  */
 #undef HAVE_MALLOC_H

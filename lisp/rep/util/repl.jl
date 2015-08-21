@@ -222,7 +222,7 @@
    "STRUCT [FORM ...]")
 
   (define-repl-command
-   'load
+   'intern
    (lambda structs
      (mapc (lambda (struct)
 	     (intern-structure struct)) structs))
@@ -354,7 +354,8 @@
    'compile-file
    (lambda args
      (require 'rep.vm.compiler)
-     (mapc compile-file args))
+     (let ((print-escape nil))
+       (mapc compile-file args)))
    "\"FILENAME\" ...")
 
   (define-repl-command
@@ -416,7 +417,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
    "\"REGEXP\"")
 
   (define-repl-command
-   'locate
+   'find-binding
    (lambda (var)
      (let ((struct (locate-binding* var)))
        (if struct
@@ -425,7 +426,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
    "SYMBOL")
 
   (define-repl-command
-   'whereis
+   'find-export
    (lambda (var)
      (let ((out '()))
        (structure-walk (lambda (k v)

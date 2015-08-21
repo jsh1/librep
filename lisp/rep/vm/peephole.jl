@@ -135,34 +135,34 @@
 		   (rplacd insn0 nil)
 		   (setq keep-going t))))
 
-	   ;; {push,dup}; setn #X; refn #X
-	   ;;    --> {push,dup}; setn #X; {push, dup}
-	   ;; {push,dup}; bind X; refn #0
+	   ;; {push,dup}; env-set #X; env-ref #X
+	   ;;    --> {push,dup}; env-set #X; {push, dup}
+	   ;; {push,dup}; bind X; env-ref #0
 	   ;;    --> {push,dup}; bind X; {push, dup}
-	   ;; {push,dup}; slot-set #X; slot-ref #X
-	   ;;    --> {push,dup}; slot-set #X; {push, dup}
-	   ((and (or (and (eq (car insn1) 'setn) (eq (car insn2) 'refn)
+	   ;; {push,dup}; reg-set #X; reg-ref #X
+	   ;;    --> {push,dup}; reg-set #X; {push, dup}
+	   ((and (or (and (eq (car insn1) 'env-set) (eq (car insn2) 'env-ref)
 			  (eq (cadr insn1) (cadr insn2)))
-		     (and (eq (car insn1) 'bind) (eq (car insn2) 'refn)
+		     (and (eq (car insn1) 'bind) (eq (car insn2) 'env-ref)
 			  (eq (cadr insn2) 0))
-		     (and (eq (car insn1) 'slot-set) (eq (car insn2) 'slot-ref)
+		     (and (eq (car insn1) 'reg-set) (eq (car insn2) 'reg-ref)
 			  (eq (cadr insn1) (cadr insn2))))
 		 (or (eq (car insn0) 'dup) (eq (car insn0) 'push)))
 	    (rplaca insn2 (car insn0))
 	    (rplacd insn2 (cdr insn0))
 	    (setq keep-going t))
 
-	   ;; setn #X; refn #X --> dup; setn #X
-	   ;; bind; refn #0 --> dup; bind
-	   ;; slot-set #X; slot-ref #X --> dup; slot-set #X
-	   ((or (and (eq (car insn0) 'setn)
-		     (eq (car insn1) 'refn)
+	   ;; env-set #X; env-ref #X --> dup; env-set #X
+	   ;; bind; env-ref #0 --> dup; bind
+	   ;; reg-set #X; reg-ref #X --> dup; reg-set #X
+	   ((or (and (eq (car insn0) 'env-set)
+		     (eq (car insn1) 'env-ref)
 		     (eq (cadr insn0) (cadr insn1)))
 		(and (eq (car insn0) 'bind)
-		     (eq (car insn1) 'refn)
+		     (eq (car insn1) 'env-ref)
 		     (eql (cadr insn1) 0))
-		(and (eq (car insn0) 'slot-set)
-		     (eq (car insn1) 'slot-ref)
+		(and (eq (car insn0) 'reg-set)
+		     (eq (car insn1) 'reg-ref)
 		     (eq (cadr insn0) (cadr insn1))))
 	    (rplaca insn1 (car insn0))
 	    (rplacd insn1 (cdr insn0))
@@ -191,14 +191,14 @@
 	    (setq keep-going t))
 
 	   ;; <varref> X; <varset> X --> deleted
-	   ((or (and (eq (car insn0) 'refn)
-		     (eq (car insn1) 'setn)
+	   ((or (and (eq (car insn0) 'env-ref)
+		     (eq (car insn1) 'env-set)
 		     (eql (cadr insn0) (cadr insn1)))
-		(and (eq (car insn0) 'refg)
-		     (eq (car insn1) 'setg)
+		(and (eq (car insn0) 'refq)
+		     (eq (car insn1) 'setq)
 		     (eq (cadr insn0) (cadr insn1)))
-		(and (eq (car insn0) 'slot-ref)
-		     (eq (car insn1) 'slot-set)
+		(and (eq (car insn0) 'reg-ref)
+		     (eq (car insn1) 'reg-set)
 		     (eq (cadr insn0) (cadr insn1))))
 	    (del-0-1)
 	    (setq keep-going t))

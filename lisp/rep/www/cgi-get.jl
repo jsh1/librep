@@ -30,12 +30,12 @@
 
   (define-structure-alias cgi-get rep.www.cgi-get)
 
-  (define unquote-plus-map (let ((map (make-string (1+ ?+)))
+  (define unquote-plus-map (let ((map (make-string (1+ #\+)))
 				 (i 0))
-			     (while (< i ?+)
+			     (while (< i #\+)
 			       (aset map i i)
 			       (setq i (1+ i)))
-			     (aset map ?+ ? )
+			     (aset map #\+ #\space)
 			     map))
 
   (defun cgi-get-params (#!optional query-string)
@@ -58,9 +58,9 @@
       (nreverse params)))
 
   (defsubst hexdigit (char)
-    (if (and (>= char ?0) (<= char ?9))
-	(- char ?0)
-      (+ (- (char-upcase char) ?A) 10)))
+    (if (and (>= char #\0) (<= char #\9))
+	(- char #\0)
+      (+ (- (char-upcase char) #\A) 10)))
 
   (defun unquote (string)
     (let

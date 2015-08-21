@@ -70,16 +70,20 @@
 (define remote-rep-hex-map (let
 			       ((map (make-string 128 0))
 				i)
-			     (setq i ?0)
-			     (while (<= i ?9)
-			       (aset map i (- i ?0))
+			     (setq i #\0)
+			     (while (<= i #\9)
+			       (aset map i (- i #\0))
 			       (setq i (1+ i)))
-			     (setq i ?a)
-			     (while (<= i ?f)
-			       (aset map i (+ (- i ?a) 10))
-			       (aset map (+ i (- ?A ?a)) (aref map i))
+			     (setq i #\a)
+			     (while (<= i #\f)
+			       (aset map i (+ (- i #\a) 10))
+			       (aset map (+ i (- #\A #\a)) (aref map i))
 			       (setq i (1+ i)))
 			     map))
+
+(defconst remote-rep-success #\soh)	;\001
+(defconst remote-rep-failure #\delete)	;\177
+
 
 
 ;; session structure
@@ -280,11 +284,11 @@
 	       (aset session remote-rep-protocol
 		     (string->number (expand-last-match "\\1")))
 	       (setq point (match-end)))
-	      ((= (aref output point) ?\001)
+	      ((= (aref output point) remote-rep-success)
 	       ;; success
 	       (aset session remote-rep-status 'success)
 	       (setq point (1+ point)))
-	      ((= (aref output point) ?\177)
+	      ((= (aref output point) remote-rep-failure)
 	       ;; failure, look for error message
 	       (let
 		   ((msg (remote-rep-read-string output (1+ point))))
@@ -335,7 +339,7 @@
 	    (aset session remote-rep-callback
 		  (lambda (session output point)
 		    (unless remote-rep-len
-		      (cond ((= (aref output point) ?\001)
+		      (cond ((= (aref output point) remote-rep-success)
 			     ;; success
 			     (let
 				 ((len (remote-rep-read-length
@@ -347,7 +351,7 @@
 				 ;; wait for next output
 				 (aset session remote-rep-pending-output
 				       (substring output point)))))
-			    ((= (aref output point) ?\177)
+			    ((= (aref output point) remote-rep-failure)
 			     ;; failure
 			     (let
 				 ((msg (remote-rep-read-string
@@ -370,13 +374,13 @@
 		      (when (zerop remote-rep-len)
 			(aset session remote-rep-status 'success)))))
 	    (unwind-protect
-		(remote-rep-command session ?G nil remote-file)
+		(remote-rep-command session #\G nil remote-file)
 	      (aset session remote-rep-callback nil)))
 	(close-file remote-rep-get-fh)))))
 
 (defun remote-rep-put (session local-file remote-file)
   (unwind-protect
-      (remote-rep-command session ?P
+      (remote-rep-command session #\P
 			  (lambda (session)
 			    (let
 				((len (file-size local-file))
@@ -394,13 +398,13 @@
 
 (defun remote-rep-rm (session remote-file)
   (unwind-protect
-      (remote-rep-command session ?R nil remote-file)
+      (remote-rep-command session #\R nil remote-file)
     (remote-rep-invalidate-directory
      session (file-name-directory remote-file))))
 
 (defun remote-rep-mv (session old-name new-name)
   (unwind-protect
-      (remote-rep-command session ?M nil old-name new-name)
+      (remote-rep-command session #\M nil old-name new-name)
     (remote-rep-invalidate-directory
      session (file-name-directory old-name))
     (remote-rep-invalidate-directory
@@ -408,25 +412,25 @@
 
 (defun remote-rep-rmdir (session remote-dir)
   (unwind-protect
-      (remote-rep-command session ?r nil remote-dir)
+      (remote-rep-command session #\r nil remote-dir)
     (remote-rep-invalidate-directory
      session (file-name-directory remote-dir))))
 
 (defun remote-rep-mkdir (session remote-dir)
   (unwind-protect
-      (remote-rep-command session ?m nil remote-dir)
+      (remote-rep-command session #\m nil remote-dir)
     (remote-rep-invalidate-directory
      session (file-name-directory remote-dir))))
 
 (defun remote-rep-chmod (session mode file)
   (unwind-protect
-      (remote-rep-command session ?c nil file (format nil "%x" mode))
+      (remote-rep-command session #\c nil file (format nil "%x" mode))
     (remote-rep-invalidate-directory
      session (file-name-directory file))))
 
 (defun remote-rep-make-symlink (session file contents)
   (unwind-protect
-      (remote-rep-command session ?L nil contents file)
+      (remote-rep-command session #\L nil contents file)
     (remote-rep-invalidate-directory
      session (file-name-directory file))))
 
@@ -435,7 +439,7 @@
       (remote-rep-link)
     (aset session remote-rep-callback
 	  (lambda (session output point)
-	    (cond ((= (aref output point) ?\001)
+	    (cond ((= (aref output point) remote-rep-success)
 		   ;; success
 		   (setq remote-rep-link
 			 (remote-rep-read-string
@@ -444,7 +448,7 @@
 		       (aset session remote-rep-status 'success)
 		     (aset session remote-rep-pending-output
 			   (substring output point))))
-		  ((= (aref output point) ?\177)
+		  ((= (aref output point) remote-rep-failure)
 		   (let
 		       ((msg (remote-rep-read-string
 			      output (1+ point))))
@@ -455,7 +459,7 @@
 		       (aset session remote-rep-pending-output
 			     (substring output point))))))))
     (unwind-protect
-	(remote-rep-command session ?l nil file)
+	(remote-rep-command session #\l nil file)
       (aset session remote-rep-callback nil))
     remote-rep-link))
 
@@ -503,8 +507,8 @@
 	(setq base ".")))
     (setq dir (directory-file-name dir))
     (setq entry (remote-rep-dir-cached-p session dir))
-    (if (not (and entry (time-later-p (aref entry remote-rep-cache-expiry)
-				      (current-time))))
+    (if (not (and entry (> (aref entry remote-rep-cache-expiry)
+			   (current-time))))
 	(progn
 	  ;; Cache directory DIR
 	  (when entry
@@ -518,11 +522,8 @@
 	    (setcdr (nthcdr (1- (length (aref session remote-rep-dircache)))
 			    (aref session remote-rep-dircache)) nil))
 	  ;; add the new (empty) entry for the directory to be read.
-	  (setq entry
-		(vector dir (fix-time
-			     (cons (car (current-time))
-				   (+ (cdr (current-time))
-				      remote-rep-dircache-expiry-time))) nil))
+	  (setq entry (vector dir (+ (current-time)
+				     remote-rep-dircache-expiry-time) nil))
 	  (aset session remote-rep-dircache
 		(cons entry (aref session remote-rep-dircache)))
 	  ;; construct the callback function to have the new cache entry
@@ -532,7 +533,7 @@
 		  (apply remote-rep-dircache-callback entry args)))
 	  (unwind-protect
 	      (condition-case nil
-		  (remote-rep-command session ?D nil dir)
+		  (remote-rep-command session #\D nil dir)
 		(file-error))
 	    (aset session remote-rep-callback nil)))
       ;; entry is still valid, move it to the front of the list
@@ -576,10 +577,10 @@
 	      (setq point (+ start 8 (length text))))
 	  (throw 'done t)))))
   (when (< point (length output))
-    (cond ((= (aref output point) ?\001)
+    (cond ((= (aref output point) remote-rep-success)
 	   ;; success marker
 	   (aset session remote-rep-status 'success))
-	  ((= (aref output point) ?\177)
+	  ((= (aref output point) remote-rep-failure)
 	   ;; failure
 	   (let
 	       ((msg (remote-rep-read-string output (1+ point))))
@@ -614,17 +615,17 @@
 
 (defun remote-rep-get-passwd (user host)
   (let*
-      ((joined (concat user ?@ host))
+      ((joined (concat user #\@ host))
        (cell (assoc joined remote-rep-passwd-alist)))
     (if cell
 	(cdr cell)
-      (pwd-prompt (concat "Password for " joined ?:)))))
+      (pwd-prompt (concat "Password for " joined #\:)))))
 
 (defun remote-rep-add-passwd (user host passwd)
   "Add the string PASSWD as the password for rep-remote session of USER@HOST."
   (interactive "sUsername:\nsHost:\nPassword for %s@%s:")
   (let
-      ((joined (concat user ?@ host)))
+      ((joined (concat user #\@ host)))
     (catch 'foo
       (mapc (lambda (cell)
 	      (when (string= (car cell) joined)

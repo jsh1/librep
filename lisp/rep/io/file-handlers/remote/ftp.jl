@@ -136,9 +136,10 @@ FTP process should be abandoned, and a new session started.")
 (defvar remote-ftp-ls-l-regexp "([a-zA-Z-]+)\\s+(\\d+)\\s+(\\w+)\\s+(\\w+)\\s+(\\d+)\\s+([a-zA-Z]+\\s+\\d+\\s+[0-9:]+)\\s+([^/ \t\n]+)"
   "Regexp defining `ls -l' output syntax. Hairy.")
 
-(defvar remote-ftp-ls-l-type-alist '((?- . file) (?d . directory)
-				     (?l . symlink) (?p . pipe) (?s . socket)
-				     (?b . device) (?c . device))
+(defvar remote-ftp-ls-l-type-alist '((#\- . file) (#\d . directory)
+				     (#\l . symlink) (#\p . pipe)
+				     (#\s . socket) (#\b . device)
+				     (#\c . device))
   "Alist associating characters in the first column of `ls -l' output with
 file types.")
 
@@ -244,7 +245,7 @@ file types.")
   (when (remote-ftp-status-p session 'dying)
     (error "FTP session is dying"))
   (apply format (aref session remote-ftp-process) fmt arg-list)
-  (write (aref session remote-ftp-process) ?\n)
+  (write (aref session remote-ftp-process) #\newline)
   (aset session remote-ftp-status 'busy))
 
 (defun remote-ftp-while (session status #!optional type)
@@ -541,11 +542,11 @@ file types.")
 	((string (aref file-struct remote-ftp-file-mode-string))
 	 (tuple-function
 	  (lambda (point tuple)
-	    (+ (ash (+ (if (/= (aref string point) ?-) 4 0)
-		       (if (/= (aref string (1+ point)) ?-) 2 0)
+	    (+ (ash (+ (if (/= (aref string point) #\-) 4 0)
+		       (if (/= (aref string (1+ point)) #\-) 2 0)
 		       (if (lower-case-p (aref string (+ point 2))) 1 0))
 		    (* tuple 3))
-	       (if (memq (aref string (+ point 2)) '(?s ?S ?t ?T))
+	       (if (memq (aref string (+ point 2)) '(#\s #\S #\t #\T))
 		   (ash #o1000 tuple)
 		 0)))))
       (aset file-struct remote-ftp-file-modes
@@ -579,8 +580,8 @@ file types.")
 	(setq base ".")))
     (setq dir (directory-file-name dir))
     (setq entry (remote-ftp-dir-cached-p session dir))
-    (if (not (and entry (time-later-p (aref entry remote-ftp-cache-expiry)
-				      (current-time))))
+    (if (not (and entry (> (aref entry remote-ftp-cache-expiry)
+			   (current-time))))
 	(progn
 	  ;; Cache directory DIR
 	  (when entry
@@ -594,11 +595,8 @@ file types.")
 	    (setcdr (nthcdr (1- (length (aref session remote-ftp-dircache)))
 			    (aref session remote-ftp-dircache)) nil))
 	  ;; add the new (empty) entry for the directory to be read.
-	  (setq entry
-		(vector dir (fix-time
-			     (cons (car (current-time))
-				   (+ (cdr (current-time))
-				      remote-ftp-dircache-expiry-time))) nil))
+	  (setq entry (vector dir (+ (current-time)
+				     remote-ftp-dircache-expiry-time) nil))
 	  (aset session remote-ftp-dircache
 		(cons entry (aref session remote-ftp-dircache)))
 	  ;; construct the callback function to have the new cache entry
@@ -663,18 +661,18 @@ file types.")
 
 (defun remote-ftp-get-passwd (user host #!optional retrying)
   (let*
-      ((joined (concat user ?@ host))
+      ((joined (concat user #\@ host))
        (cell (assoc joined remote-ftp-passwd-alist)))
     (if cell
 	(cdr cell)
-      (pwd-prompt (concat (if retrying "Try again; p" ?P)
-			  "assword for " joined ?:)))))
+      (pwd-prompt (concat (if retrying "Try again; p" #\P)
+			  "assword for " joined #\:)))))
 
 (defun remote-ftp-add-passwd (user host passwd)
   "Add the string PASSWD as the password for FTP session of USER@HOST."
   (interactive "sUsername:\nsHost:\nPassword for %s@%s:")
   (let
-      ((joined (concat user ?@ host)))
+      ((joined (concat user #\@ host)))
     (catch 'foo
       (mapc (lambda (cell)
 	      (when (string= (car cell) joined)

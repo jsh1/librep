@@ -65,7 +65,7 @@
   ;; list of instructions that can be safely deleted if their result
   ;; isn't actually required
   (define byte-side-effect-free-insns
-    (append '(refn refg slot-ref ref nth nthcdr aref length add neg
+    (append '(env-ref refq reg-ref ref nth nthcdr aref length add neg
 	      sub mul div rem lnot not lor land gt ge lt le inc dec ash
 	      boundp get reverse assoc assq rassoc rassq last copy-sequence
 	      lxor max min mod make-closure enclose quotient floor ceiling
@@ -79,10 +79,10 @@
   (define byte-jmp-insns (list* 'jmp 'ejmp byte-conditional-jmp-insns))
 
   ;; list of all varref instructions
-  (define byte-varref-insns '(refn refg slot-ref))
+  (define byte-varref-insns '(env-ref refq reg-ref))
 
   ;; list of all varset instructions
-  (define byte-varset-insns '(setn setg slot-set))
+  (define byte-varset-insns '(env-set setq reg-set))
 
   ;; list of all varbind instructions
   (define byte-varbind-insns '(bind))
@@ -105,6 +105,6 @@
     (list (bytecode push)
 	  (bytecode refq)
 	  (bytecode setq)
-	  (bytecode refg)
-	  (bytecode setg)
+	  (bytecode refq)
+	  (bytecode setq)
 	  (bytecode bindspec))))

@@ -74,9 +74,9 @@
 				  "\\s+([^\n]+)"))
 
 ;; Map list file types to symbols
-(defvar tarfh-list-type-alist '((?- . file) (?d . directory)
-				(?l . symlink) (?p . pipe) (?s . socket)
-				(?b . device) (?c . device)))
+(defvar tarfh-list-type-alist '((#\- . file) (#\d . directory)
+				(#\l . symlink) (#\p . pipe) (#\s . socket)
+				(#\b . device) (#\c . device)))
 
 (defvar tarfh-max-cached-dirs 5
   "Total number of tar listings to cache.")
@@ -236,11 +236,11 @@
 	((string (aref file-struct tarfh-file-modes-string))
 	 (tuple-function
 	  (lambda (point tuple)
-	    (+ (ash (+ (if (/= (aref string point) ?-) 4 0)
-		       (if (/= (aref string (1+ point)) ?-) 2 0)
+	    (+ (ash (+ (if (/= (aref string point) #\-) 4 0)
+		       (if (/= (aref string (1+ point)) #\-) 2 0)
 		       (if (lower-case-p (aref string (+ point 2))) 1 0))
 		    (* tuple 3))
-	       (if (memq (aref string (+ point 2)) '(?s ?S ?t ?T))
+	       (if (memq (aref string (+ point 2)) '(#\s #\S #\t #\T))
 		   (ash #o1000 tuple)
 		 0)))))
       (aset file-struct tarfh-file-modes

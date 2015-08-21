@@ -1,3 +1,19 @@
+2015-09-09  John Harper  <jsh@unfactored.org>
+
+	* many changes to track updates to C code
+
+2015-08-23  John Harper  <jsh@unfactored.org>
+
+	* rep/io/file-handlers/remote/utils.jl,
+	rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/rcp.jl,
+	rep/io/file-handlers/remote/ftp.jl,
+	rep/io/file-handlers/tar.jl, rep/mail/addr.jl,
+	rep/net/domain-name.jl, rep/system/environ.jl,
+	rep/util/ispell.jl, rep/util/date.jl, rep/vm/disassembler.jl,
+	rep/vm/compiler.jl, rep/www/cgi-get.jl: use #\ character syntax
+	instead of (now deprecated) ? syntax
+
 2015-08-20  John Harper  <jsh@unfactored.org>
 
 	* rep/lang/debugger.jl (debug-rep): added `up' and `down' to

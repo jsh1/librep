@@ -176,8 +176,10 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
     (let ((frame (stack-frame-ref (fluid frame-id))))
       (when frame
 	(mapc (lambda (cell)
-		(format standard-error "%16s %S\n"
-			(symbol-name (cadr cell)) (cddr cell)))
+		(if (symbolp (car cell))
+		    (format standard-error "%16s %S\n"
+			    (symbol-name (car cell)) (cdr cell))
+		  (format standard-error "%S\n" cell)))
 	      (stack-frame-environment frame)))))
 
   (defun eval-in-frame (form)

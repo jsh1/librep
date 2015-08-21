@@ -40,6 +40,7 @@
 (make-binding-immutable '#T)
 
 (%define #undefined '#undefined)
+(make-binding-immutable '#undefined)
 
 (export-bindings '(nil t #F #T #undefined))
 

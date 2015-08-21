@@ -33,7 +33,7 @@
 
 (defun file-newer-than-file-p (file1 file2)
   "Returns t when FILE1 was modified more recently than FILE2."
-  (time-later-p (file-modtime file1) (file-modtime file2)))
+  (> (file-modtime file1) (file-modtime file2)))
 
 (defun load-all (file #!optional callback)
   "Try to load files called FILE (or FILE.jl, etc) from all directories in the

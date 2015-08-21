@@ -32,17 +32,17 @@
 
   ;; Lookup table of strings naming instructions
   (define disassembler-opcodes
-   [ "slot-ref" nil nil nil nil nil nil nil	; #x00
+   [ "reg-ref" nil nil nil nil nil nil nil	; #x00
      "call" nil nil nil nil nil nil nil
      "push" nil nil nil nil nil nil nil	; #x10
-     "refg" nil nil nil nil nil nil nil
-     "setg" nil nil nil nil nil nil nil	; #x20
-     "setn" nil nil nil nil nil nil nil
-     "slot-set" nil nil nil nil nil nil nil	; #x30
-     "refn" nil nil nil nil nil nil nil
+     "refq" nil nil nil nil nil nil nil
+     "setq" nil nil nil nil nil nil nil	; #x20
+     "env-set" nil nil nil nil nil nil nil
+     "reg-set" nil nil nil nil nil nil nil	; #x30
+     "env-ref" nil nil nil nil nil nil nil
      "ref" "%set" "fluid-ref" "enclose"
      "init-bind" "unbind" "dup" "swap"	; #x40
-     "pop" "push\t()" "push\tt" "cons"
+     "pop" "push ()" "push " "cons"
      "car" "cdr" "rplaca" "rplacd"
      "nth" "nthcdr" "aset" "aref"
      "length" "bind" "add" "neg" "sub"	; #x50
@@ -60,9 +60,9 @@
      "delete-if" "delete-if-not" "copy-sequence" "sequencep"
      "functionp" "special-form-p" "subrp" "eql"
      "lxor" "max" "min" "filter"	; #x90
-     "macrop" "bytecodep" "pushi\t0" "pushi\t1"
-     "pushi\t2" "pushi\t-1" "pushi\t-2" "pushi\t%d"
-     "pushi\t%d" "pushi\t%d" "caar" "cadr"
+     "macrop" "bytecodep" "push 0" "push 1"
+     "push 2" "push -1" "push -2" "push %d"
+     "push %d" "push %d" "caar" "cadr"
      "cdar" "cddr" "caddr" "cadddr"	; #xa0
      "caddddr" "cadddddr" "caddddddr" "cadddddddr"
      "floor" "ceiling" "truncate" "round"
@@ -79,9 +79,14 @@
      nil nil nil nil nil nil nil nil	; #xe0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xf0
-     "ejmp\t%d" "jpn\t%d" "jpt\t%d" "jmp\t%d" "jn\t%d" "jt\t%d" "jnp\t%d" "jtp\t%d" ])
+     "ejmp @%d" "jpn @%d" "jpt @%d" "jmp @%d"
+     "jn @%d" "jt @%d" "jnp @%d" "jtp @%d" ])
 
-  (defun disassemble-1 (code-string consts stream #!optional depth)
+  (define (disassemble-1 code-string consts stream #!optional depth)
+    (define (const-ref i)
+      (if (< i (length consts))
+	  (aref consts i)
+	'*invalid-constant*))
     (unless depth (setq depth 0))
     (let
 	((i 0)
@@ -89,7 +94,7 @@
 	 c arg op)
       (while (< i (length code-string))
 	(setq c (aref code-string i))
-	(format stream "\n%s%d\t\t" indent i)
+	(format stream "\n%s%d\t" indent i)
 	(cond
 	 ((< c (bytecode last-with-args))
 	  (setq op (logand c #xf8))
@@ -105,30 +110,30 @@
 		  i (+ i 2))))
 	  (cond
 	   ((= op (bytecode call))
-	    (format stream "call\t#%d" arg))
+	    (format stream "call #%d" arg))
 	   ((= op (bytecode push))
 	    (let
-		((argobj (aref consts arg)))
+		((argobj (const-ref arg)))
 	      (if (or (and (consp argobj) (eq (car argobj) 'byte-code))
 		      (bytecodep argobj))
 		  (progn
-		    (format stream "push\t[%d] bytecode...\n" arg)
+		    (format stream "push [%d] bytecode...\n" arg)
 		    (disassemble argobj stream (1+ depth)))
-		(format stream "push\t[%d] %S" arg (aref consts arg)))))
+		(format stream "push [%d] %S" arg (const-ref arg)))))
 	   ((= op (bytecode bind))
-	    (format stream "bind\t[%d] %S" arg (aref consts arg)))
-	   ((= op (bytecode refn))
-	    (format stream "refn\t#%d" arg))
-	   ((= op (bytecode setn))
-	    (format stream "setn\t#%d" arg))
-	   ((= op (bytecode slot-ref))
-	    (format stream "slot-ref #%d" arg))
-	   ((= op (bytecode slot-set))
-	    (format stream "slot-set #%d" arg))
-	   ((= op (bytecode refg))
-	    (format stream "refg\t[%d] %S" arg (aref consts arg)))
-	   ((= op (bytecode setg))
-	    (format stream "setg\t[%d] %S" arg (aref consts arg)))))
+	    (format stream "bind [%d] %S" arg (const-ref arg)))
+	   ((= op (bytecode env-ref))
+	    (format stream "env-ref #%d" arg))
+	   ((= op (bytecode env-set))
+	    (format stream "env-set #%d" arg))
+	   ((= op (bytecode reg-ref))
+	    (format stream "reg-ref #%d" arg))
+	   ((= op (bytecode reg-set))
+	    (format stream "reg-set #%d" arg))
+	   ((= op (bytecode refq))
+	    (format stream "refq [%d] %S" arg (const-ref arg)))
+	   ((= op (bytecode setq))
+	    (format stream "setq [%d] %S" arg (const-ref arg)))))
 	 ((> c (bytecode last-before-jmps))
 	  (setq arg (logior (ash (aref code-string (1+ i)) 8)
 			    (aref code-string (+ i 2)))
@@ -154,7 +159,7 @@
 	      (write stream op)
 	    (format stream "<unknown opcode %d>" c))))
 	(setq i (1+ i)))
-      (write stream ?\n)))
+      (write stream #\newline)))
 
   ;;;###autoload
   (defun disassemble (arg #!optional stream depth)
@@ -203,7 +208,7 @@
 	      (format stream "Doc string: %S\n" doc)))
 	  (setq stack (aref arg 2)))))
       (when (zerop depth)
-	(format stream "%d bytes, %d constants, and (%d,%d,%d) stack slots\n"
+	(format stream "%d bytes, %d constants, %d stack slots, %d binding frames and %d registers.\n"
 		(length code-string) (length consts)
 		(logand stack #x3ff) (logand (ash stack -10) #x3ff)
 		(ash stack -20)))

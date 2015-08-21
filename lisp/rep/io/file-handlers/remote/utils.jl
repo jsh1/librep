@@ -64,7 +64,7 @@ explicitly, or by the remote-ftp-host-user-alist variable.")
 
   ;; Create a remote file name. USER may be nil
   (defun remote-join-filename (user host file)
-    (concat ?/ (and user (concat user ?@)) host ?: file))
+    (concat #\/ (and user (concat user #\@)) host #\: file))
 
   (defun remote-register-file-handle (fh)
     (remote-fh-guardian fh))

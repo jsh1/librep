@@ -1,8 +1,4 @@
-jaded
 Makefile
-lib
-jade
-DOC*
 config.status
 config.cache
 config.h
@@ -21,3 +17,4 @@ config.guess
 config.sub
 ltmain.sh
 install-sh
+TAGS

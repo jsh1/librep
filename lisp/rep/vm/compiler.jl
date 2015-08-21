@@ -217,7 +217,7 @@ we would like. This is due to the view of folded functions as
 
 (defun compile-file (file-name)
   "Compiles the file of jade-lisp code FILE-NAME into a new file called
-`(concat FILE-NAME ?c)' (ie, `foo.jl' => `foo.jlc')."
+`(concat FILE-NAME #\c)' (ie, `foo.jl' => `foo.jlc')."
   (interactive "fLisp file to compile:")
   (let ((temp-file (make-temp-name))
 	src-file dst-file body header)
@@ -232,18 +232,18 @@ we would like. This is due to the view of folded functions as
 		     (call-with-lexical-origins
 		      (lambda ()
 			;; First check for `#! .. !#' at start of file
-			(if (and (= (read-char src-file) ?#)
-				 (= (read-char src-file) ?!))
+			(if (and (= (read-char src-file) #\#)
+				 (= (read-char src-file) #\!))
 			    (let ((out (make-string-output-stream))
 				  tem)
 			      (write out "#!")
 			      (catch 'done
 				(while (setq tem (read-char src-file))
 				  (write out tem)
-				  (when (and (= tem ?!)
+				  (when (and (= tem #\!)
 					     (setq tem (read-char src-file)))
 				    (write out tem)
-				    (when (= tem ?#)
+				    (when (= tem #\#)
 				      (throw 'done t)))))
 			      (setq header (get-output-stream-string out)))
 			  (seek-file src-file 0 'start))
@@ -268,7 +268,7 @@ we would like. This is due to the view of folded functions as
 			     (mapc (lambda (form)
 				     (when form
 				       (print form dst-file))) body)
-			     (write dst-file ?\n))
+			     (write dst-file #\newline))
 			 (close-file dst-file))
 		     (error
 		      ;; Be sure to remove any partially written dst-file.
@@ -281,7 +281,7 @@ we would like. This is due to the view of folded functions as
 		   ;; permissions from source file
 		   (let ((real-name (concat file-name (if (string-match
 							   "\\.jl$" file-name)
-							  ?c ".jlc"))))
+							  #\c ".jlc"))))
 		     (copy-file temp-file real-name)
 		     (set-file-modes real-name (file-modes file-name)))
 		   t)))
@@ -303,7 +303,7 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
 	      (cond ((file-directory-p abs-file)
 		     (compile-directory abs-file force-p exclude-re))
 		    ((string-match "\\.jl$" file)
-		     (let* ((c-name (concat abs-file ?c)))
+		     (let* ((c-name (concat abs-file #\c)))
 		       (when (or force-p (not (file-exists-p c-name))
 				 (file-newer-than-file-p abs-file c-name))
 			 (report-progress abs-file)
@@ -344,8 +344,8 @@ that files which shouldn't be compiled aren't."
 	    (let ((file (expand-file-name
 			 (concat (structure-file package) ".jl")
 			 lisp-lib-directory)))
-	      (when (or (not (file-exists-p (concat file ?c)))
-			(file-newer-than-file-p file (concat file ?c)))
+	      (when (or (not (file-exists-p (concat file #\c)))
+			(file-newer-than-file-p file (concat file #\c)))
 		(report-progress file)
 		(compile-file file))))
 	  sources)))

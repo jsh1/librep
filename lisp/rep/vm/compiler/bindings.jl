@@ -175,7 +175,7 @@
 	  (t
 	   ;; No lexical binding, but not special either. Just
 	   ;; update the global value
-	   (emit-insn `(setg ,sym)))))
+	   (emit-insn `(setq ,sym)))))
 
   (define (emit-varref form #!optional in-tail-slot)
     (cond ((spec-bound-p form)
@@ -190,7 +190,7 @@
 	   (note-binding-referenced form in-tail-slot))
 	  (t
 	   ;; It's not bound, so just update the global value
-	   (emit-insn `(refg ,form)))))
+	   (emit-insn `(refq ,form)))))
 
 
 ;; allocation of bindings, either on stack or in heap
@@ -211,10 +211,11 @@
 	    ((eq (caar rest) var) i)
 	    (t (loop (cdr rest) (1+ i))))))
 
-  ;; slot addresses count up from the _least_ recent binding
-  (define (slot-address var bindings base)
+  ;; register addresses count up from the _least_ recent binding
+  (define (register-address var bindings base)
     (let loop ((rest bindings))
-      (cond ((eq rest base) (error "No slot address for %s, %s" var bindings))
+      (cond ((eq rest base)
+	     (error "No register address for %s, %s" var bindings))
 	    ((eq (caar rest) var)
 	     (let loop-2 ((rest (cdr rest))
 			  (i 0))
@@ -238,9 +239,9 @@
 
   ;; Extra pass over the output pseudo-assembly code; converts
   ;; pseudo-instructions accessing lexical bindings into real
-  ;; instructions accessing either the heap or the slot registers
+  ;; instructions accessing either the heap or the registers
   (define (allocate-bindings-1 asm base-env)
-    (let ((max-slot 0))
+    (let ((max-register 0))
       (let loop ((rest (assembly-code asm)))
 	(when rest
 	  (case (caar rest)
@@ -252,16 +253,16 @@
 		   (rplaca rest (case (caar rest)
 				  ((lex-bind) (list 'bind))
 				  ((lex-ref)
-				   (list 'refn (heap-address var bindings)))
+				   (list 'env-ref (heap-address var bindings)))
 				  ((lex-set)
-				   (list 'setn (heap-address var bindings)))))
-		 (let ((slot (slot-address var bindings base-env)))
-		   (setq max-slot (max max-slot (1+ slot)))
+				   (list 'env-set (heap-address var bindings)))))
+		 (let ((register (register-address var bindings base-env)))
+		   (setq max-register (max max-register (1+ register)))
 		   (rplaca rest (case (caar rest)
 				  ((lex-bind lex-set)
-				   (list 'slot-set slot))
+				   (list 'reg-set register))
 				  ((lex-ref)
-				   (list 'slot-ref slot))))))))
+				   (list 'reg-ref register))))))))
 	    ((push-bytecode)
 	     (let ((asm (nth 1 (car rest)))
 		   (env (nth 2 (car rest)))
@@ -271,7 +272,7 @@
 	       (rplaca rest (list 'push (assemble-assembly-to-subr
 					 asm doc interactive))))))
 	  (loop (cdr rest))))
-      (assembly-slots-set asm max-slot)
+      (assembly-registers-set asm max-register)
       asm))
 
   (define (allocate-bindings asm)

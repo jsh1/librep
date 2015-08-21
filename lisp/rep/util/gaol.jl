@@ -62,7 +62,7 @@
       defconst %define define defmacro defsubst defun defvar
       delete delete-if delete-if-not delq digit-char-p do
       elt eq eql equal error eval eval-when-compile
-      expand-last-match featurep filter fix-time
+      expand-last-match featurep filter
       format funcall function functionp garbage-collect gensym get
       get-output-stream-string getenv identity if integerp interactive
       intern lambda last length let let* letrec list list* listp logand logior
@@ -80,7 +80,7 @@
       string-lessp string-looking-at string-match string-split
       string-replace string< string=
       stringp subr-name subrp substring symbol-name symbol-plist
-      symbol-value symbolp system-name throw time-later-p
+      symbol-value symbolp system-name throw
       translate-string unless unwind-protect call-with-unwind-protect
       upper-case-p user-full-name user-login-name vector vectorp when
       while with-internal-definitions with-object write
@@ -102,8 +102,7 @@
       ;; make-table make-weak-table string-hash symbol-hash eq-hash
       ;; equal-hash tablep table-ref table-set table-unset table-walk
 
-      downcase-table flatten-table upcase-table operating-system
-      rep-version))
+      downcase-table flatten-table upcase-table rep-version))
 
   ;; table containing all variables accessible by gaolled code
   (define gaol-structure nil)
@@ -144,7 +143,7 @@
     (declare (bound %open-structures))
     (let ((gaol (make-structure '() (lambda () (%open-structures '(%gaol))))))
       (set-file-handler-environment file-handler-env gaol)
-      (set-special-environment gaol-safe-specials gaol)
+      (set-special-variables gaol-safe-specials gaol)
       (structure-install-vm gaol byte-code-interpreter)
       (call-hook '*make-gaol-hook* (list gaol))
       gaol))

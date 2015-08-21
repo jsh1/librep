@@ -181,7 +181,7 @@
 	      ((null refs) (label-forwards-set label '()))
 	    (emit-byte-at (ash pc -8) (car refs))
 	    (emit-byte-at (logand pc 255) (1+ (car refs))))))
-			  
+
       (let loop ((rest insns))
 	(when rest
 	  (let ((insn (car rest)))
@@ -191,7 +191,7 @@
 
 		  ((eq (car insn) 'push-label) (emit-push-label (cadr insn)))
 
-		  ((memq (car insn) '(refg setg))
+		  ((memq (car insn) '(refq setq))
 		   ;; instruction with constant
 		   (emit-insn (car insn) (get-const-id (cadr insn))))
 

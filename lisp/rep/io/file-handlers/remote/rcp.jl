@@ -49,8 +49,8 @@
 	(error "Couldn't run rcp with args: %s" args))))
 
 (defun remote-rcp-filename (split)
-  (concat (and (car split) (concat (car split) ?@))
-	  (nth 1 split) ?: (nth 2 split)))
+  (concat (and (car split) (concat (car split) #\@))
+	  (nth 1 split) #\: (nth 2 split)))
 
 (defun remote-rcp-handler (split-name op args)
   (cond
@@ -95,7 +95,7 @@
    ((eq op 'file-modes)
     #o644)
    ((eq op 'file-modes-as-string)
-    (make-string 10 ?*))
+    (make-string 10 #\*))
    ((eq op 'file-modtime)
     (cons 0 0))
    ((eq op 'directory-files)

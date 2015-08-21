@@ -112,7 +112,7 @@ results have been received.")
     (when process
       (ispell-save-dictionary)
       (if (eq (process-connection-type process) 'pty)
-	  (write process ?\^D)
+	  (write process #\eot)		;^D
 	;; Not so successful..
 	(interrupt-process process))
       (let ((counter 0))
@@ -162,12 +162,12 @@ results have been received.")
 	  (progn
 	    (format process "%s\n" word)
 	    (setq response (ispell-read-line))
-	    (if (eq (aref response 0) ?\n)
+	    (if (eq (aref response 0) #\newline)
 		;; This shouldn't happen
 		(error "Null output from Ispell")
 	      ;; Gobble following blank line
 	      (setq tem (ispell-read-line))
-	      (unless (eq (aref tem 0) ?\n)
+	      (unless (eq (aref tem 0) #\newline)
 		(error "Non-null trailing line from Ispell"))))
 	(mutex nil))
       response))

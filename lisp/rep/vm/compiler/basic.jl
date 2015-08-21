@@ -35,7 +35,7 @@
 	    current-lambda
 	    call-with-lambda-record
 	    assembly-code assembly-code-set
-	    assembly-slots assembly-slots-set
+	    assembly-registers assembly-registers-set
 	    compile-constant compile-form-1 compile-body
 	    compile-lambda compile-lambda-constant
 	    compile-form
@@ -66,12 +66,12 @@ their position in that file.")
   (define current-form (make-fluid))		;the current cons-like form
 
   (define-record-type :assembly
-    (make-assembly code max-stack max-b-stack slots)
+    (make-assembly code max-stack max-b-stack registers)
     assemblyp
     (code assembly-code assembly-code-set)
     (max-stack assembly-max-stack assembly-max-stack-set)
     (max-b-stack assembly-max-b-stack assembly-max-b-stack-set)
-    (slots assembly-slots assembly-slots-set))
+    (registers assembly-registers assembly-registers-set))
 
   (define-record-type :lambda-record
     (make-lambda-record name args depth sp bp label)
@@ -363,7 +363,7 @@ their position in that file.")
 	    (car object-code) (cdr object-code)
 	    (+ (assembly-max-stack asm)
 	       (ash (assembly-max-b-stack asm) 10)
-	       (ash (assembly-slots asm) 20)))))
+	       (ash (assembly-registers asm) 20)))))
 
   (define (assemble-assembly-to-subr asm #!optional doc interactive)
     (optimize-assembly asm)
@@ -371,7 +371,7 @@ their position in that file.")
       (make-byte-code-subr (car object-code) (cdr object-code)
 			   (+ (assembly-max-stack asm)
 			      (ash (assembly-max-b-stack asm) 10)
-			      (ash (assembly-slots asm) 20))
+			      (ash (assembly-registers asm) 20))
 			   (and (not *compiler-write-docs*) doc)
 			   interactive)))
 
