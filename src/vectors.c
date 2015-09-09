@@ -93,13 +93,16 @@ Returns a new vector with ARGS... as its elements.
 ::end:: */
 {
   repv vec = rep_make_vector(argc);
+
   if (vec) {
     memcpy(rep_VECT(vec)->array, argv, argc * sizeof(repv));
   }
+
   return vec;
 }
 
-DEFUN("make-vector", Fmake_vector, Smake_vector, (repv size, repv init), rep_Subr2) /*
+DEFUN("make-vector", Fmake_vector,
+      Smake_vector, (repv size, repv init), rep_Subr2) /*
 ::doc:rep.data#make-vector::
 make-vector SIZE [INITIAL-VALUE]
 
@@ -110,12 +113,65 @@ will be set to that value, else they will all be nil.
   rep_DECLARE1(size, rep_NON_NEG_INT_P);
 
   repv vec = rep_make_vector(rep_INT(size));
+
   if (vec) {
     for (intptr_t i = 0; i < rep_INT(size); i++) {
       rep_VECTI(vec, i) = init;
     }
   }
+
   return vec;
+}
+
+DEFUN("list->vector", Flist_to_vector,
+      Slist_to_vector, (repv lst), rep_Subr1) /*
+::doc:rep.data#list->vector::
+list->vector LIST
+
+Creates a new vector with elements from LIST.
+::end:: */
+{
+  rep_DECLARE1(lst, rep_LISTP);
+
+  int count = rep_list_length(lst);
+  if (count < 0) {
+    return 0;
+  }
+
+  repv vec = rep_make_vector(count);
+
+  if (vec) {
+    for (int i = 0; i < count; i++) {
+      rep_VECTI(vec, i) = rep_CAR(lst);
+      lst = rep_CDR(lst);
+    }
+  }
+
+  return vec;
+}
+
+DEFUN("vector->list", Fvector_to_list,
+      Svector_to_list, (repv vec), rep_Subr1) /*
+::doc:rep.data#vector->list::
+vector->list VECTOR
+
+Creates a new list with elements from VECTOR.
+::end:: */
+{
+  rep_DECLARE1(vec, rep_VECTORP);
+
+  int count  = rep_VECT_LEN(vec);
+
+  repv ret = rep_nil;
+  repv *tail = &ret;
+
+  for (int i = 0; i < count; i++) {
+    repv cell = Fcons(rep_VECTI(vec, i), rep_nil);
+    *tail = cell;
+    tail = rep_CDRLOC(cell);
+  }
+
+  return ret;
 }
 
 DEFUN("vectorp", Fvectorp, Svectorp, (repv arg), rep_Subr1) /*
@@ -134,6 +190,8 @@ rep_vectors_init(void)
   repv tem = rep_push_structure("rep.data");
   rep_ADD_SUBR(Svector);
   rep_ADD_SUBR(Smake_vector);
+  rep_ADD_SUBR(Slist_to_vector);
+  rep_ADD_SUBR(Svector_to_list);
   rep_ADD_SUBR(Svectorp);
   rep_pop_structure(tem);
 }
