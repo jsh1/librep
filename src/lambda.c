@@ -48,7 +48,10 @@ bind_lambda_list_1(repv lambda_list, repv *args, int nargs)
 
   const size_t lambda_var_elts = sizeof(struct lambda_var) / sizeof(repv);
 
-  size_t lambda_len = rep_list_length(lambda_list);
+  int lambda_len = rep_list_length(lambda_list);
+  if (lambda_len < 0) {
+    return 0;
+  }
 
   struct lambda_var vars[lambda_len + 1];
   intptr_t var_count = 0;
@@ -221,6 +224,9 @@ static repv
 bind_lambda_list(repv lambda_list, repv args)
 {
   int argc = rep_list_length(args);
+  if (argc < 0) {
+    return 0;
+  }
   repv *argv = rep_stack_alloc(repv, argc);
   if (!argv) {
     return rep_mem_error();

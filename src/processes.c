@@ -1109,8 +1109,11 @@ set in the PROCESS prior to calling this function.
   }
 
   int argc = rep_list_length(pr->args) + 1;
-  char **argv = rep_alloc(sizeof(char *) * (argc + 1));
+  if (argc < 0) {
+    return 0;
+  }
 
+  char **argv = rep_alloc(sizeof(char *) * (argc + 1));
   if (!argv) {
     return rep_mem_error();
   }
@@ -1229,8 +1232,11 @@ set in the PROCESS prior to calling this function.
   }
 
   int argc = rep_list_length(pr->args) + 1;
-  char **argv = rep_alloc(sizeof(char *) * (argc + 1));
+  if (argc < 0) {
+    return 0;
+  }
 
+  char **argv = rep_alloc(sizeof(char *) * (argc + 1));
   if (!argv) {
     return rep_mem_error();
   }

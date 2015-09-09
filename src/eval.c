@@ -206,6 +206,9 @@ inner_eval(repv obj, bool tail_posn)
 	  goto out;
 	} else {
 	  int len = rep_list_length(rep_CDR(args));
+	  if (len < 0) {
+	    goto out;
+	  }
 	  repv *vec = rep_stack_alloc(repv, len);
 	  if (!vec) {
 	    rep_mem_error();

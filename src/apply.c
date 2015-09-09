@@ -87,14 +87,18 @@ again:;
       result = rep_SUBRNFUN(fun)(arglist);
     } else {
       int length = rep_list_length(arglist);
+      if (length < 0) {
+	result = 0;
+	break;
+      }
       repv *vec = rep_stack_alloc(repv, length);
       if (!vec) {
 	result = rep_mem_error();
-      } else {
-	copy_to_vector(arglist, length, vec);
-	result = rep_SUBRVFUN(fun) (length, vec);
-	rep_stack_free(repv, length, vec);
+	break;
       }
+      copy_to_vector(arglist, length, vec);
+      result = rep_SUBRVFUN(fun) (length, vec);
+      rep_stack_free(repv, length, vec);
     }
     break;
 
@@ -169,20 +173,24 @@ again:;
 
   case rep_Bytecode: {
     int nargs = rep_list_length(arglist);
+    if (nargs < 0) {
+      result = 0;
+      break;
+    }
     repv *args = rep_stack_alloc(repv, nargs);
     if (!args) {
       result = rep_mem_error();
-    } else {
-      copy_to_vector(arglist, nargs, args);
-      repv (*bc_apply)(repv, int, repv *)
-        = rep_STRUCTURE(rep_structure)->apply_bytecode;
-      if (!bc_apply) {
-	result = rep_apply_bytecode(fun, nargs, args);
-      } else {
-	result = bc_apply(fun, nargs, args);
-      }
-      rep_stack_free(repv, nargs, args);
+      break;
     }
+    copy_to_vector(arglist, nargs, args);
+    repv (*bc_apply)(repv, int, repv *) =
+      rep_STRUCTURE(rep_structure)->apply_bytecode;
+    if (!bc_apply) {
+      result = rep_apply_bytecode(fun, nargs, args);
+    } else {
+      result = bc_apply(fun, nargs, args);
+    }
+    rep_stack_free(repv, nargs, args);
     break; }
 
   default:

@@ -393,7 +393,11 @@ a character or a list or vector of characters.
     if (rep_INTP(elt)) {
       length++;
     } else if (rep_CONSP(elt)) {
-      length += rep_list_length(elt);
+      int len = rep_list_length(elt);
+      if (len < 0) {
+	return 0;
+      }
+      length += len;
     } else {
       switch (rep_CELL8_TYPE(elt)) {
       case rep_String:

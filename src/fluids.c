@@ -98,7 +98,11 @@ signalled.
 {
   rep_DECLARE1(fluids, rep_LISTP);
   rep_DECLARE2(values, rep_LISTP);
-  if (rep_list_length(fluids) != rep_list_length(values)) {
+
+  int fluids_len = rep_list_length(fluids);
+  int values_len = rep_list_length(values);
+
+  if (fluids_len != values_len || values_len < 0) {
     return rep_signal_arg_error(values, 2);
   }
 

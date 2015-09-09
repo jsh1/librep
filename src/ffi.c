@@ -495,7 +495,11 @@ DEFUN("ffi-struct", Fffi_struct, Sffi_struct, (repv fields), rep_Subr1)
   if (rep_VECTORP(fields)) {
     n = rep_VECT_LEN(fields);
   } else if (rep_CONSP(fields)) {
-    n = rep_list_length(fields);
+    int l = rep_list_length(fields);
+    if (l < 0) {
+      return 0;
+    }
+    n = l;
   } else {
     return rep_signal_arg_error(fields, 1);
   }
@@ -584,7 +588,11 @@ DEFUN("ffi-interface", Fffi_interface, Sffi_interface,
   if (rep_VECTORP(args)) {
     n = rep_VECT_LEN(args);
   } else if (rep_LISTP(args)) {
-    n = rep_list_length(args);
+    int l = rep_list_length(args);
+    if (l < 0) {
+      return 0;
+    }
+    n = l;
   } else {
     return rep_signal_arg_error (args, 2);
   }

@@ -155,15 +155,21 @@ rep_list_5(repv v1, repv v2, repv v3, repv v4, repv v5)
   return rep_LIST_5(v1, v2, v3, v4, v5);
 }
 
+/* Returns -1 if an exception occurred (e.g. user interrupt due to
+   infinite list). */
+
 int
 rep_list_length(repv list)
 {
   int i = 0;
 
-  while (rep_CONSP(list) && !rep_INTERRUPTP) {
+  while (rep_CONSP(list)) {
     i++;
     list = rep_CDR(list);
     rep_TEST_INT;
+    if (rep_INTERRUPTP) {
+      return -1;
+    }
   }
 
   return i;
@@ -191,6 +197,9 @@ repv
 rep_concat_lists(repv args)
 {
   int len = rep_list_length(args);
+  if (len < 0) {
+    return 0;
+  }
 
   repv *vec = rep_stack_alloc(repv, len);
   if (!vec) {

@@ -1,4 +1,9 @@
-2015-09-09  John Harper  <jsh@unfactored.org>
+2015-08-25  John Harper  <jsh@unfactored.org>
+
+	* strings.c, sequences.c, processes.c, lists.c, lispmach.h,
+	lambda.c, fluids.c, ffi.c, eval.c, apply.c (rep_list_length):
+	returns -1 on interrupt (e.g. rather than a stupidly large
+	value after getting stuck on an infinite list then interrupted)
 
 	* *.[ch]: starting to reformat and modernize all this ancient
 	code, renamed many files and split them into more logical

@@ -1682,6 +1682,9 @@ again: {
 	rep_USE_CLOSURE(fun);
 	fun = rep_CLOSURE(fun)->fun;
 	int nargs = rep_list_length(args);
+	if (nargs < 0) {
+	  HANDLE_ERROR;
+	}
 	if (nargs <= argv_size) {
 	  argv = argv_base;
 	} else {

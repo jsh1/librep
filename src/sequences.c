@@ -41,9 +41,13 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
     return rep_MAKE_INT(rep_VECT_LEN(sequence));
     break;
 
-  case rep_Cons:
-    return rep_MAKE_INT(rep_list_length(sequence));
-    break;
+  case rep_Cons: {
+    int len = rep_list_length(sequence);
+    if (len < 0) {
+      return 0;
+    }
+    return rep_MAKE_INT(len);
+    break; }
 
   default:
     return rep_signal_arg_error(sequence, 1);
