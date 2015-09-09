@@ -185,7 +185,7 @@
 	       (not (has-local-binding-p (car form))))
       (let* ((def (assq (car form) (fluid macro-env)))
 	     ;; make #<subr macroexpand> pass us any inner expansions
-	     (macro-environment compiler-macroexpand-1))
+	     (*macro-environment* compiler-macroexpand-1))
 	(if def
 	    (setq form (apply (cdr def) (cdr form)))
 	  (setq def (compiler-symbol-value (car form)))
@@ -200,7 +200,7 @@
     (let loop ((in form))
       (let
 	  ((out (compiler-macroexpand-1 in)))
-	;;(format standard-error "in: %S, out: %S\n" in out)
+	;;(format *standard-error* "in: %S, out: %S\n" in out)
 	(if ((or pred eq) in out)
 	    out
 	  (loop out)))))

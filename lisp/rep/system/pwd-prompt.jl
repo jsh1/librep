@@ -32,13 +32,13 @@ contents of the prompt will be masked out whilst being entered."
   (when (zerop (system "stty -echo"))
     (unwind-protect
 	(progn
-	  (write standard-error prompt)
+	  (write *standard-error* prompt)
 	  (unless (string-match "\s$" prompt)
-	    (write standard-error #\space ))
-	  (flush-file standard-error)
-	  (let ((string (read-line standard-input)))
+	    (write *standard-error* #\space ))
+	  (flush-file *standard-error*)
+	  (let ((string (read-line *standard-input*)))
 	    (when (string-match "\n$" string)
 	      (setq string (substring string 0 (match-start))))
-	    (write standard-error #\newline)
+	    (write *standard-error* #\newline)
 	    string))
       (system "stty echo"))))

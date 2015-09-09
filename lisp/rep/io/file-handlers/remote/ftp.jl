@@ -299,7 +299,7 @@ file types.")
 (defun remote-ftp-output-filter (session output)
   (when remote-ftp-echo-output
     (let
-	((print-escape t))
+	((*print-escape* t))
       (format (stderr-file) "FTP output: %S\n" output)))
   (when (aref session remote-ftp-pending-output)
     (setq output (concat (aref session remote-ftp-pending-output) output))
@@ -407,7 +407,7 @@ file types.")
 	      (goto-buffer buffer)
 	      (shrink-view-if-larger-than-buffer)))))
     (when remote-ftp-show-messages
-      (write standard-output (substring string start end)))))
+      (write *standard-output* (substring string start end)))))
 
 
 ;; FTP commands

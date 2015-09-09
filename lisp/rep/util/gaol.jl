@@ -109,7 +109,7 @@
 
   ;; list of accessible special variables
   (define gaol-safe-specials
-    (list 'file-handler-alist 'load-filename 'macro-environment))
+    (list '*file-handler-alist* '*load-filename* '*macro-environment*))
 
   ;; list of file handlers that may be called. These functions shouldn't
   ;; be added to the function environment, since that would allow _any_
@@ -193,7 +193,7 @@
     (let ((file (open-file filename 'read)))
       (unwind-protect
 	  (condition-case nil
-	      (let ((load-filename (canonical-file-name filename)))
+	      (let ((*load-filename* (canonical-file-name filename)))
 		(while t
 		  (eval (read file) struct)))
 	    (end-of-stream))

@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-DEFSYM(after_gc_hook, "after-gc-hook");
+DEFSYM(after_gc_hook, "*after-gc-hook*");
 
 static repv **static_roots;
 static int next_static_root, allocated_static_roots;

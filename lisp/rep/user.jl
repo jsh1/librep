@@ -64,22 +64,22 @@
 	  (lambda ()
 	    (let (arg)
 	      (condition-case error-data
-		  (while (setq arg (car command-line-args))
-		    (setq command-line-args (cdr command-line-args))
+		  (while (setq arg (car *command-line-args*))
+		    (setq *command-line-args* (cdr *command-line-args*))
 		    (cond
 		     ((member arg '("--call" "-f"))
-		      (setq arg (car command-line-args))
-		      (setq command-line-args (cdr command-line-args))
+		      (setq arg (car *command-line-args*))
+		      (setq *command-line-args* (cdr *command-line-args*))
 		      ((symbol-value (read-from-string arg))))
 		     ((member arg '("--load" "-l"))
-		      (setq arg (car command-line-args))
-		      (setq command-line-args (cdr command-line-args))
+		      (setq arg (car *command-line-args*))
+		      (setq *command-line-args* (cdr *command-line-args*))
 		      (do-load arg))
 		     ((string= arg "--check")
 		      (require 'rep.test.framework)
 		      (run-self-tests-and-exit))
 		     ((string= arg "--help")
-		      (format standard-error "\
+		      (format *standard-error* "\
 usage: %s [OPTIONS...]
 
 where OPTIONS are any of:
@@ -106,16 +106,16 @@ where OPTIONS are any of:
     --quit, -q		terminate the interpreter process\n" program-name)
 		      (throw 'quit 0))
 		     ((string= arg "--version")
-		      (format standard-output "rep version %s\n" rep-version)
+		      (format *standard-output* "rep version %s\n" rep-version)
 		      (throw 'quit 0))
 		     ((member arg '("--quit" "-q"))
 		      (throw 'quit 0))
 		     (t
-		      (setq batch-mode t)
+		      (setq *batch-mode* t)
 		      (do-load arg))))
 		(error
-		 (declare (special error-handler-function))
-		 (error-handler-function (car error-data) (cdr error-data))
+		 (declare (special *error-handler-function*))
+		 (*error-handler-function* (car error-data) (cdr error-data))
 		 (throw 'quit 1)))))))
 
     ;; Use all arguments which are left.
@@ -124,8 +124,8 @@ where OPTIONS are any of:
 	  (require 'rep.lang.debugger)
 	  (call-with-lexical-origins
 	   (lambda ()
-	     (setq interpreted-mode t)
-	     (setq debug-on-error
+	     (setq *interpreted-mode* t)
+	     (setq *debug-on-error*
 		   '(bad-arg missing-arg invalid-function void-value
 		     invalid-read-syntax premature-end-of-stream
 		     invalid-lambda-list invalid-macro invalid-autoload
@@ -136,8 +136,8 @@ where OPTIONS are any of:
 	     (parse-options))))
       (parse-options)))
 
-  (unless batch-mode
-    (format standard-output "rep %s, Copyright (C) 1993-2015 John Harper
+  (unless *batch-mode*
+    (format *standard-output* "rep %s, Copyright (C) 1993-2015 John Harper
 rep comes with ABSOLUTELY NO WARRANTY; for details see the file COPYING
 Built %s\n" rep-version rep-build-id)
 

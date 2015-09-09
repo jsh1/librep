@@ -33,7 +33,7 @@
   ;; map error symbols to helper functions
   (define helper-table (make-table eq-hash eq))
 
-  (define output-stream (make-fluid standard-error))
+  (define output-stream (make-fluid *standard-error*))
 
   (define (define-helper name function) (table-set helper-table name function))
   (define (helper-ref name) (table-ref helper-table name))

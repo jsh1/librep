@@ -29,23 +29,23 @@ int rep_recurse_depth = -1;
 
 bool (*rep_on_idle_fun)(int since_last);
 
-DEFSYM(idle_hook, "idle-hook");
+DEFSYM(idle_hook, "*idle-hook*");
 
-/* ::doc:idle-hook::
+/* ::doc:*idle-hook*::
 This hook gets evaluated every second while the editor is idle. Don't depend
 on how regularly this gets called, any events from the window-system will
 delay it. Also, auto-saving files and garbage-collection take precedence
 when there's idle time available. Use this hook sparingly, or for short
 periods only!
 ::end::
-::doc:program-name::
+::doc:rep.system#program-name::
 The name of the program running the rep interpreter.
 ::end::
-::doc:error-mode::
+::doc:*error-mode*::
 When nil, errors are handled at the current event loop, other possible
 values include `exit' and `top-level'.
 ::end::
-::doc:interrupt-mode::
+::doc:*interrupt-mode*::
 When nil, interrupts are handled at the current event loop, other possible
 values include `exit' and `top-level'.
 ::end:: */
@@ -61,13 +61,13 @@ repv (*rep_event_loop_fun)(void) = rep_event_loop;
 DEFSYM(exit, "exit");
 DEFSYM(quit, "quit");
 DEFSYM(top_level, "top-level");
-DEFSYM(command_line_args, "command-line-args");
-DEFSYM(batch_mode, "batch-mode");
-DEFSYM(interpreted_mode, "interpreted-mode");
+DEFSYM(command_line_args, "*command-line-args*");
+DEFSYM(batch_mode, "*batch-mode*");
+DEFSYM(interpreted_mode, "*interpreted-mode*");
 DEFSYM(program_name, "program-name");
-DEFSYM(error_mode, "error-mode");
-DEFSYM(interrupt_mode, "interrupt-mode");
-DEFSYM(before_exit_hook, "before-exit-hook");
+DEFSYM(error_mode, "*error-mode*");
+DEFSYM(interrupt_mode, "*interrupt-mode*");
+DEFSYM(before_exit_hook, "*before-exit-hook*");
 
 static void rep_main_init(void);
 
@@ -126,7 +126,7 @@ get_main_options(char *prog_name, int *argc_p, char ***argv_p)
   char **argv = *argv_p;
 
   /* Any command line args are made into a list of strings in symbol
-     command-line-args.  */
+     *command-line-args*.  */
 
   repv head = rep_nil;
   repv *last = &head;
@@ -222,7 +222,9 @@ rep_init(char *prog_name, int *argc, char ***argv)
   rep_processes_init();
   rep_sockets_init();
 
+  repv tem = rep_push_structure("rep.system");
   Fset(Qprogram_name, rep_string_copy(prog_name));
+  rep_pop_structure(tem);
 
   get_main_options(prog_name, argc, argv);
 }
@@ -520,7 +522,7 @@ rep_main_init(void)
   Fset(Qbatch_mode, rep_nil);
   rep_INTERN_SPECIAL(interpreted_mode);
   Fset(Qinterpreted_mode, rep_nil);
-  rep_INTERN_SPECIAL(program_name);
+  rep_INTERN(program_name);
   rep_INTERN_SPECIAL(error_mode);
   Fset(Qerror_mode, rep_nil);
   rep_INTERN_SPECIAL(interrupt_mode);

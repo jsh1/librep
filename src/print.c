@@ -22,12 +22,12 @@
 
 #include <inttypes.h>
 
-DEFSYM(print_escape, "print-escape");
-DEFSYM(print_length, "print-length");
-DEFSYM(print_level, "print-level");
+DEFSYM(print_escape, "*print-escape*");
+DEFSYM(print_length, "*print-length*");
+DEFSYM(print_level, "*print-level*");
 DEFSYM(newlines, "newlines");
 
-/* ::doc:print-escape::
+/* ::doc:*print-escape*::
 Defines which control characters `print' should quote. Acceptable values
 are:
 	nil		Only escape double-quote and backslash
@@ -37,10 +37,10 @@ are:
 			 value less than 32), and all characters with
 			 a value greater than 126.
 ::end::
-::doc:print-length::
+::doc:*print-length*::
 The maximum number of list elements to print before abbreviating.
 ::end::
-::doc:print-level::
+::doc:*print-level*::
 The number of list levels to descend when printing before abbreviating.
 ::end:: */
 

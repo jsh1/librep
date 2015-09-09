@@ -36,13 +36,13 @@
 
   (define (fetch-url url dest-stream)
     (let ((process (make-process dest-stream)))
-      (set-process-error-stream process standard-error)
+      (set-process-error-stream process *standard-error*)
       (unless (zerop (call-process process nil *wget-program*
 				   "-nv" "-O" "-" url))
 	(signal 'wget (list url)))))
 
   (define (fetch-url-async url dest-stream callback #!optional error-stream)
     (let ((process (make-process dest-stream)))
-      (set-process-error-stream process (or error-stream standard-error))
+      (set-process-error-stream process (or error-stream *standard-error*))
       (set-process-function process callback)
       (start-process process nil *wget-program* "-nv" "-O" "-" url))))

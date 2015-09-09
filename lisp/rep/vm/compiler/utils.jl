@@ -82,7 +82,7 @@
 
   (define (ensure-output-stream)
     (when (null (fluid output-stream))
-      (if (or batch-mode (not (featurep 'jade)))
+      (if (or *batch-mode* (not (featurep 'jade)))
 	  (fluid-set output-stream (stdout-file))
 	(declare (bound open-buffer))
 	(fluid-set output-stream (open-buffer "*compilation-output*"))))
@@ -97,7 +97,7 @@
 
   (define (abbreviate-file file)
     (let ((c-dd (file-name-as-directory
-		 (canonical-file-name default-directory)))
+		 (canonical-file-name *default-directory*)))
 	  (c-file (canonical-file-name file)))
       (if (string-head-eq c-file c-dd)
 	  (substring c-file (length c-dd))

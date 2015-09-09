@@ -1,3 +1,10 @@
+2015-09-09  John Harper  <jsh@unfactored.org>
+
+	* streams.c, rep_lisp.h, rep-xgettext.jl, processes.c, print.c,
+	main.c, macros.c, load.c, gc.c, files.c, eval.c, errors.c,
+	dlopen.c, apply.c: wrapped some special variable names with
+	asterisks, converted others to regular module bindings
+
 2015-08-25  John Harper  <jsh@unfactored.org>
 
 	* strings.c, sequences.c, processes.c, lists.c, lispmach.h,

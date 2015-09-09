@@ -347,14 +347,14 @@ their position in that file.")
 
   (define (optimize-assembly asm)
     (when *compiler-debug*
-      (format standard-error "lap-0 code: %S\n\n" (assembly-code asm)))
+      (format *standard-error* "lap-0 code: %S\n\n" (assembly-code asm)))
     ;; Unless disabled, run the peephole optimiser
     (unless *compiler-no-low-level-optimisations*
       (let ((tem (peephole-optimizer (assembly-code asm))))
 	(assembly-code-set asm (car tem))
 	(assembly-max-stack-set asm (+ (assembly-max-stack asm) (cdr tem)))))
     (when *compiler-debug*
-      (format standard-error "lap-1 code: %S\n\n" (assembly-code asm))))
+      (format *standard-error* "lap-1 code: %S\n\n" (assembly-code asm))))
 
   (define (assemble-assembly-to-form asm)
     (optimize-assembly asm)

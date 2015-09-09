@@ -258,7 +258,7 @@
     (aset session remote-rep-pending-output nil))
   (when remote-rep-echo-output
     (let
-	((print-escape t))
+	((*print-escape* t))
       (format (stderr-file) "rep output: %S\n" output)))
   (if (aref session remote-rep-callback)
       ((aref session remote-rep-callback) session output 0)
@@ -302,7 +302,7 @@
 		   (setq point (length output)))))
 	      (t
 ;	       (unless (string-looking-at "\\s*$" output point)
-;		 (format standard-error "remote-rep: unhandled output %S\n"
+;		 (format *standard-error* "remote-rep: unhandled output %S\n"
 ;			 (substring output point)))
 	       (setq point (length output))))))))
 

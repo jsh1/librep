@@ -323,20 +323,20 @@ that files which shouldn't be compiled aren't."
 
 ;; Call like `rep --batch -l compiler -f compile-lib-batch [--force] DIR'
 (defun compile-lib-batch ()
-  (let ((force (when (equal (car command-line-args) "--force")
-		 (setq command-line-args (cdr command-line-args))
+  (let ((force (when (equal (car *command-line-args*) "--force")
+		 (setq *command-line-args* (cdr *command-line-args*))
 		 t))
-       (dir (car command-line-args)))
-    (setq command-line-args (cdr command-line-args))
+       (dir (car *command-line-args*)))
+    (setq *command-line-args* (cdr *command-line-args*))
     (compile-lisp-lib dir force)))
 
 ;; Call like `rep --batch -l compiler -f compile-batch [--write-docs] FILES...'
 (defun compile-batch ()
   (when (get-command-line-option "--write-docs")
     (setq *compiler-write-docs* t))
-  (while command-line-args
-    (compile-file (car command-line-args))
-    (setq command-line-args (cdr command-line-args))))
+  (while *command-line-args*
+    (compile-file (car *command-line-args*))
+    (setq *command-line-args* (cdr *command-line-args*))))
 
 (defun bootstrap (sources)
   (let ((*compiler-write-docs* t))

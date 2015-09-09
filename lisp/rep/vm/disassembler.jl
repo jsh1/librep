@@ -167,7 +167,7 @@
     (interactive "aFunction to disassemble:")
     (let
 	(code-string consts stack
-	 (print-escape t))
+	 (*print-escape* t))
       (unless stream
 	(if (featurep 'jade)
 	    (progn
@@ -180,7 +180,7 @@
 	      (insert "\n" stream)
 	      (goto (start-of-buffer))
 	      (setq stream (cons stream t)))
-	  (setq stream standard-output)))
+	  (setq stream *standard-output*)))
       (unless depth
 	(setq depth 0))
       (when (zerop depth)

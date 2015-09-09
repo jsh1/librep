@@ -84,27 +84,27 @@ DEFSYM(arith_error, "arith-error");
 DEFSTRING(err_arith_error, "Arithmetic error");
 DEFSYM(term_interrupt, "term-interrupt");
 
-DEFSYM(debug_error_entry, "debug-error-entry");
-DEFSYM(debug_on_error, "debug-on-error");
-DEFSYM(backtrace_on_error, "backtrace-on-error");
-DEFSYM(error_handler_function, "error-handler-function");
+DEFSYM(debug_error_entry, "*debug-error-entry*");
+DEFSYM(debug_on_error, "*debug-on-error*");
+DEFSYM(backtrace_on_error, "*backtrace-on-error*");
+DEFSYM(error_handler_function, "*error-handler-function*");
 
-/* ::doc:debug-on-error::
+/* ::doc:*debug-on-error*::
 When an error is signalled this variable controls whether or not to
 enter the Lisp debugger immediately. If the variable's value is t or a
 list of symbols--one of which is the signalled error symbol--the
 debugger is entered.
 ::end::
-::doc:backtrace-on-error::
+::doc:*backtrace-on-error*::
 When an error is signalled this variable controls whether or not to
 print a backtrace immediately. If the variable's value is t or a list
 of symbols--one of which is the signalled error symbol--the debugger is
 entered.
 ::end::
-::doc:debug-macros::
+::doc:*debug-macros*::
 When nil, the debugger isn't entered while expanding macro definitions.
 ::end::
-::doc:error-handler-function::
+::doc:*error-handler-function*::
 When set to a function value, called with two arguments(error type
 and data) when lisp errors occur.
 ::end:: */

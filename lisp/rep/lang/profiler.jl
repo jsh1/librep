@@ -47,7 +47,7 @@
 			 (fetch-profile))
       (setq profile (sort profile (lambda (x y)
 				    (> (cadr x) (cadr y)))))
-      (format (or stream standard-output)
+      (format (or stream *standard-output*)
 	      "%-32s       %10s       %10s\n\n"
 	      "Function Name" "Self" "Total")
       (for-each (lambda (cell)
@@ -55,7 +55,7 @@
 			(local (cadr cell))
 			(total (cddr cell)))
 		    (when (> local 0)
-		      (format (or stream standard-output)
+		      (format (or stream *standard-output*)
 			      "%-32s %10d (%02.2d%%) %10d (%02.2d%%)\n"
 			      (symbol-name name) local
 			      (round (* (/ local total-samples) 100)) total

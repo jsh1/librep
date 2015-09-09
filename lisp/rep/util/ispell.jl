@@ -76,8 +76,8 @@ results have been received.")
       (setq output (make-string 1 output)))
     (and *ispell-echo-output*
 	 (stringp output)
-	 (let ((print-escape t))
-	   (format standard-error "Ispell: %S\n" output)))
+	 (let ((*print-escape* t))
+	   (format *standard-error* "Ispell: %S\n" output)))
     (setq pending-output (concat pending-output output))
     (while (and (fluid line-callback)
 		pending-output
@@ -135,12 +135,12 @@ results have been received.")
 		    (not (accept-process-output-1 process *ispell-timeout*))))
 	(or out (error "Ispell timed out waiting for output")))))
 
-  ;; put in the before-exit-hook
+  ;; put in the *before-exit-hook*
   (define (before-exit)
     (when process
       (ispell-stop)))
 
-  (add-hook 'before-exit-hook before-exit)
+  (add-hook '*before-exit-hook* before-exit)
 
   ;; Arbitrate access to the Ispell process, the mutex must be obtained
   ;; before sending a command that generates output. An error is signalled

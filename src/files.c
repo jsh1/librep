@@ -85,15 +85,15 @@
    ACCESS-TYPE is one of `read', `write' or `append'.
    WHENCE is one off `nil', `start', `end'. */
 
-DEFSYM(file_handler_alist, "file-handler-alist"); /*
-::doc:file-handler-alist::
+DEFSYM(file_handler_alist, "*file-handler-alist*"); /*
+::doc:*file-handler-alist*::
 a list of `(REGEXP . HANDLER)'. If REGEXP matches the name of a file
 being manipulated the function HANDLER is called as (HANDLER OPERATION
 ARGS...) where ARGS matches how the original function is called.
 ::end:: */
 
-DEFSYM(default_directory, "default-directory"); /*
-::doc:default-directory::
+DEFSYM(default_directory, "*default-directory*"); /*
+::doc:*default-directory*::
 Buffer-local variable absolutely defining the directory to which all files
 accessed in the buffer are resolved from (unless they're absolute.) 
 ::end:: */
@@ -390,7 +390,7 @@ DEFUN("file-name-absolute-p", Ffile_name_absolute_p,
 file-name-absolute-p FILE-NAME
 
 Returns t if FILE-NAME is context-independent, i.e. it does not name a file
-relative to the default-directory.
+relative to the *default-directory*.
 ::end:: */
 {
   rep_DECLARE1(file, rep_STRINGP);
@@ -409,15 +409,15 @@ DEFUN("expand-file-name", Fexpand_file_name, Sexpand_file_name,
 ::doc:rep.io.files#expand-file-name::
 expand-file-name FILE-NAME [BASE-DIR]
 
-Expands FILE-NAME assuming that it specifies a file relative to BASE-DIR.
-If BASE-DIR is undefined it is taken as the current value of the
-`default-directory' variable. While expanding the file name, any obvious
-simplifications will be performed (e.g. on Unix the removal of "." and
-".." where possible).
+Expands FILE-NAME assuming that it specifies a file relative to
+BASE-DIR. If BASE-DIR is undefined it is taken as the current value of
+the `*default-directory*' variable. While expanding the file name, any
+obvious simplifications will be performed (e.g. on Unix the removal of
+"." and ".." where possible).
 
 Note that the returned file name will only be absolute if one of the
 following conditions is met:
-  1. BASE-DIR (or `default-directory') is absolute
+  1. BASE-DIR (or `*default-directory*') is absolute
   2. FILE-NAME is already absolute.
 
 Note for file handler implementors: when a handler is called for the

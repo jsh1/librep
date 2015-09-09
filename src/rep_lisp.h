@@ -236,7 +236,7 @@ typedef struct rep_type_struct {
 
   void (*sweep)(void);
 
-  /* When non-null, called immediately before the after-gc-hook runs. */
+  /* When non-null, called immediately before the *after-gc-hook* runs. */
 
   void (*after_gc)(void);
 

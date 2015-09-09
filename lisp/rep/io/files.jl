@@ -36,10 +36,10 @@
   (> (file-modtime file1) (file-modtime file2)))
 
 (defun load-all (file #!optional callback)
-  "Try to load files called FILE (or FILE.jl, etc) from all directories in the
-LISP load path (except the current directory)."
-  (let loop ((dirs load-path))
-    ;; Normally the last entry in load-path is `.' We don't
+  "Try to load files called FILE (or FILE.jl, etc) from all directories in
+the LISP *load-path* (except the current directory)."
+  (let loop ((dirs *load-path*))
+    ;; Normally the last entry in *load-path* is `.' We don't
     ;; want to use that. But can't just check if each item
     ;; is the current directory since sometimes rep is run
     ;; with REPLISPDIR=.
@@ -59,11 +59,11 @@ LISP load path (except the current directory)."
   "Arrange for THUNK to be called immediately after the library of Lisp code
 LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
 match the FILE argument to `load'."
-  (let ((tem (assoc library after-load-alist)))
+  (let ((tem (assoc library *after-load-alist*)))
     (if tem
 	(rplacd tem (cons thunk (cdr tem)))
-      (setq after-load-alist (cons (cons library (list thunk))
-				   after-load-alist)))))
+      (setq *after-load-alist* (cons (cons library (list thunk))
+				     *after-load-alist*)))))
 
 (defun eval-after-load (library form)
   "Arrange for FORM to be evaluated immediately after the library of Lisp code

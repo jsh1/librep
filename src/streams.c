@@ -47,11 +47,11 @@
 # include <memory.h>
 #endif
 
-DEFSYM(standard_input, "standard-input");
-DEFSYM(standard_output, "standard-output");
-DEFSYM(format_hooks_alist, "format-hooks-alist");
+DEFSYM(standard_input, "*standard-input*");
+DEFSYM(standard_output, "*standard-output*");
+DEFSYM(format_hooks_alist, "*format-hooks-alist*");
 
-/* ::doc:format-hooks-alist::
+/* ::doc:*format-hooks-alist*::
 Alist of (CHAR . FUNCTION) defining extra format conversions for the
 format function. FUNCTION is called as (FUNCTION VALUE), and should
 return the string to be inserted.
@@ -703,7 +703,7 @@ DEFUN("read", Fread, Sread, (repv stream), rep_Subr1) /*
 read [STREAM]
 
 Reads one Lisp expression from the input-stream STREAM (or the value of
-the variable `standard-input' if STREAM is nil) and return it.
+the variable `*standard-input*' if STREAM is nil) and return it.
 ::end:: */
 {
   if (stream == rep_nil) {
@@ -733,7 +733,7 @@ DEFUN("print", Fprint, Sprint, (repv obj, repv stream), rep_Subr2) /*
 print OBJECT [STREAM]
 
 First outputs a newline, then prints a text representation of OBJECT to
-STREAM (or the contents of the variable `standard-output') in a form
+STREAM (or the contents of the variable `*standard-output*') in a form
 suitable for `read'.
 ::end:: */
 {
@@ -755,7 +755,7 @@ DEFUN("prin1", Fprin1, Sprin1, (repv obj, repv stream), rep_Subr2) /*
 prin1 OBJECT [STREAM]
 
 Prints a text representation of OBJECT to STREAM (or the contents of the
-variable `standard-output') in a form suitable for `read'.
+variable `*standard-output*') in a form suitable for `read'.
 ::end:: */
 {
   if (stream == rep_nil) {
@@ -774,7 +774,7 @@ DEFUN("princ", Fprinc, Sprinc, (repv obj, repv stream), rep_Subr2) /*
 princ OBJECT [STREAM]
 
 Prints a text representation of OBJECT to STREAM (or the contents of the
-variable standard-output), no strange characters are quoted and no quotes
+variable *standard-output*), no strange characters are quoted and no quotes
 are printed around strings.
 ::end:: */
 {
@@ -828,9 +828,9 @@ FLAGS is a sequence of zero or more of the following characters,
 		 doesn't start with a plus or minus sign, output a
 		 leading space
 
-The list of CONVERSIONS can be extended through the format-hooks-alist
-variable; the strings created by these extra conversions are formatted
-as if by the `s' conversion. 
+The list of CONVERSIONS can be extended through the
+*format-hooks-alist* variable; the strings created by these extra
+conversions are formatted as if by the `s' conversion. 
 
 Note that the FIELD-WIDTH and all flags currently have no effect on the
 `S' conversion, (or the `s' conversion when the ARG isn't a string).

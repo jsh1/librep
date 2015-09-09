@@ -27,9 +27,9 @@
 		   rep.data
 		   rep.io.files))
 
-;; Setup format-hooks-alist to a few default'ish things
-(defvar format-hooks-alist (list (cons #\D file-name-directory)
-				 (cons #\F file-name-nondirectory)))
+;; Setup *format-hooks-alist* to a few default'ish things
+(defvar *format-hooks-alist* (list (cons #\D file-name-directory)
+				   (cons #\F file-name-nondirectory)))
 
 (defun prin1-to-string (arg)
   "Return a string representing ARG."

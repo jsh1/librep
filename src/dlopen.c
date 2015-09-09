@@ -329,18 +329,12 @@ rep_dl_intern_library(repv file_name)
     return -1;
   }
 
-  bool relocate_now = false;
-  if (Qdl_load_reloc_now && Fsymbol_value(Qdl_load_reloc_now, Qt) != rep_nil) {
-    relocate_now = true;
-  }
-
 #if defined(HAVE_DLOPEN)
-  void *handle = dlopen(dlname, (relocate_now ? RTLD_NOW : RTLD_LAZY)
+  void *handle = dlopen(dlname, RTLD_LAZY
 			| (open_globally ? RTLD_GLOBAL : RTLD_LOCAL));
 #elif defined(HAVE_SHL_LOAD)
   /* XXX how do we open these locally/globally? */
-  void *handle = shl_load(dlname,
-			  (relocate_now ? BIND_IMMEDIATE : BIND_DEFERRED)
+  void *handle = shl_load(dlname, BIND_DEFERRED
 			  | BIND_NONFATAL | DYNAMIC_PATH, 0L);
 #endif
 

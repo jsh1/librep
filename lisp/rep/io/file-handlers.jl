@@ -46,7 +46,7 @@
 ;;; autoloads
 
 ;;; ::autoload-start::
-(setq file-handler-alist (cons '("^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):" . remote-file-handler) file-handler-alist))
+(setq *file-handler-alist* (cons '("^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):" . remote-file-handler) *file-handler-alist*))
 (autoload-file-handler 'remote-file-handler "rep/io/file-handlers/remote")
 (put 'ftp 'remote-backend 'remote-ftp-handler)
 (autoload-file-handler 'remote-ftp-handler "rep/io/file-handlers/remote/ftp")
@@ -54,6 +54,6 @@
 (autoload-file-handler 'remote-rcp-handler "rep/io/file-handlers/remote/rcp")
 (put 'rep 'remote-backend 'remote-rep-handler)
 (autoload-file-handler 'remote-rep-handler "rep/io/file-handlers/remote/rep")
-(setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
+(setq *file-handler-alist* (cons '("#tar\\b" . tar-file-handler) *file-handler-alist*))
 (autoload-file-handler 'tar-file-handler "rep/io/file-handlers/tar")
 ;;; ::autoload-end::

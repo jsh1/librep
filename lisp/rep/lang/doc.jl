@@ -35,7 +35,8 @@
 	    add-documentation-params)
 
     (open rep
-	  rep.structures)
+	  rep.structures
+	  rep.system)
 
   (defun describe-lambda-list (lambda-list)
     (let ((output (make-string-output-stream)))
@@ -54,7 +55,7 @@
       (get-output-stream-string output)))
 
   (defun describe-value (value #!optional name structure)
-    "Print to standard-output a description of the lisp data object VALUE. If
+    "Print to *standard-output* a description of the lisp data object VALUE. If
 NAME is true, then it should be the symbol that is associated with VALUE."
     (let*
 	((type (cond
@@ -81,7 +82,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       (when (and name (special-variable-p name))
 	(setq type (concat "Special " type)))
 		       
-      (format standard-output "%s: " type)
+      (format *standard-output* "%s: " type)
       (let ((arg-doc (cond ((eq (car value) 'lambda)
 			    (describe-lambda-list (cadr value)))
 			   ((symbolp name)
@@ -90,8 +91,8 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 						    name structure)))
 				(doc-file-ref (doc-file-param-key name)))))))
 	(if arg-doc
-	    (format standard-output "\(%s%s\)\n" (or name value) arg-doc)
-	  (format standard-output "%s\n" (or name value))))))
+	    (format *standard-output* "\(%s%s\)\n" (or name value) arg-doc)
+	  (format *standard-output* "%s\n" (or name value))))))
 
 
 ;;; GDBM doc-file access
@@ -120,13 +121,13 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 			    (when value
 			      (throw 'done value)))
 			(gdbm-close db)))))
-		documentation-files)
+		*documentation-files*)
       nil))
 
   (defun doc-file-set (key value)
     (require 'rep.io.db.gdbm)
     ;; XXX I'm not convinced that turning off locking is wise..
-    (let ((db (gdbm-open documentation-file 'append nil '(no-lock))))
+    (let ((db (gdbm-open *documentation-file* 'append nil '(no-lock))))
       (when db
 	(unwind-protect
 	    (gdbm-store db key value 'replace)

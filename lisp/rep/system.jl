@@ -58,5 +58,6 @@ is true in which case it is added at the end."
 
 (autoload 'pwd-prompt "rep/system/pwd-prompt")
 
-(export-bindings '(getenv setenv unsetenv rep-version rep-interface-id
-		   rep-build-id pwd-prompt))
+(export-bindings '(getenv setenv unsetenv rep-build-id rep-version
+		   rep-interface-id pwd-prompt rep-directory program-name
+		   exec-directory lisp-lib-directory site-lisp-directory))

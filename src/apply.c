@@ -406,7 +406,7 @@ DEFUN("backtrace", Fbacktrace, Sbacktrace, (repv strm), rep_Subr1) /*
 backtrace [STREAM]
 
 Prints a backtrace of the current Lisp call stack to STREAM(or to
-`standard-output'). The format is something like:
+`*standard-output*'). The format is something like:
 
   FRAME-ID FUNCTION (ARGLIST) [at FILE:LINE]
 

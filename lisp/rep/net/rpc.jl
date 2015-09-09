@@ -116,8 +116,8 @@
 
   (define (debug fmt . args)
     (when debug-rpc
-      (let ((print-escape t))
-	(apply format standard-error fmt args))))
+      (let ((*print-escape* t))
+	(apply format *standard-error* fmt args))))
 
   (define-record-type :socket-data
     (make-socket-data closable)

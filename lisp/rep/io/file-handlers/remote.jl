@@ -107,7 +107,7 @@ accessed on specific hosts.")
 
 ;;; Initialise handler
 
-;;;###autoload (setq file-handler-alist (cons '("^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):" . remote-file-handler) file-handler-alist))
+;;;###autoload (setq *file-handler-alist* (cons '("^/(([a-zA-Z0-9._-]+)@)?([a-zA-Z0-9._-]+):" . remote-file-handler) *file-handler-alist*))
 
 ;;;###autoload (autoload-file-handler 'remote-file-handler 'rep.io.file-handlers.remote)
 

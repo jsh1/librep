@@ -160,8 +160,8 @@
      (format nil "nice rm -rf '%s' & >/dev/null 2>&1 </dev/null" cached-dir))
     (setq cached-file nil)))
 
-(add-hook 'idle-hook empty-file-cache)
-(add-hook 'before-exit-hook empty-file-cache)
+(add-hook '*idle-hook* empty-file-cache)
+(add-hook '*before-exit-hook* empty-file-cache)
 
 
 ;; directory caching
@@ -355,7 +355,7 @@
       (when (file-binding fh)
 	(close-file fh)))))
 
-(add-hook 'after-gc-hook tarfh-after-gc)
+(add-hook '*after-gc-hook* tarfh-after-gc)
 
 
 ;; file handler
@@ -496,7 +496,7 @@
        (t
 	(error "Unsupported TAR op: %s %s" op args)))))))
 
-;;;###autoload (setq file-handler-alist (cons '("#tar\\b" . tar-file-handler) file-handler-alist))
+;;;###autoload (setq *file-handler-alist* (cons '("#tar\\b" . tar-file-handler) *file-handler-alist*))
 ;;;###autoload (autoload-file-handler 'tar-file-handler 'rep.io.file-handlers.tar)
 
 (define-file-handler 'tar-file-handler tar-file-handler))

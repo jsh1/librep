@@ -167,7 +167,7 @@
 	((defun defsubst)
 	 (let ((tmp (assq (nth 1 form) (fluid macro-env))))
 	   (let-fluids ((current-fun (nth 1 form)))
-	     ;;(format standard-error "[%s]\n" (fluid current-fun))
+	     ;;(format *standard-error* "[%s]\n" (fluid current-fun))
 	     (when tmp
 	       (rplaca tmp nil)
 	       (rplacd tmp nil))
@@ -176,8 +176,11 @@
 				   (nth 1 form))))))
 
 	((defmacro)
-	 (let ((code (compile-lambda (cons 'lambda (nthcdr 2 form))
-				     (nth 1 form)))
+	 (let ((code (call-with-frame
+		      (lambda ()
+			(note-binding '*macro-environment*)
+			(compile-lambda (cons 'lambda (nthcdr 2 form))
+					(nth 1 form)))))
 	       (tmp (assq (nth 1 form) (fluid macro-env))))
 	   (let-fluids ((current-fun (nth 1 form)))
 	     (if tmp

@@ -57,7 +57,7 @@
 ;;; the debugger repl
 
   (defun debug-rep ()
-    (let ((print-escape t))
+    (let ((*print-escape* t))
       (when (fluid obj)
 	(print-form)
 	(print-emacs-form (fluid obj)))
@@ -85,7 +85,7 @@
 		 (do-down))
 		((string-match "^\\s*p\\w*\\s+" input)
 		 (condition-case data
-		     (format standard-error "%S\n"
+		     (format *standard-error* "%S\n"
 			     (eval-in-frame
 			      (read-from-string
 			       (substring input (match-end)))))
@@ -107,9 +107,9 @@
 		     (progn
 		       ((fluid last))
 		       (setq next-last (fluid last)))
-		   (write standard-error "Nothing to repeat\n")))
+		   (write *standard-error* "Nothing to repeat\n")))
 		(t
-		 (write standard-error "\
+		 (write *standard-error* "\
 commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
           `p[rint] FORM', `f[rame], `l[ocals]', `u[p]', `d[own]'.\n")))
 	  (fluid-set last next-last)))))
@@ -119,14 +119,14 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
   (defun print-frame (id)
     (let ((frame (stack-frame-ref id)))
       (if (null frame)
-	  (format standard-error "#%-3d #undefined\n" id)
+	  (format *standard-error* "#%-3d #undefined\n" id)
 	(unless (equal frame last-printed-frame)
 	  (let ((fun (stack-frame-function frame))
 		(args (stack-frame-args frame))
 		(location (lexical-origin (stack-frame-current-form frame))))
 	    (if (null fun)
-		(format standard-error "#%-3d #undefined\n" id)
-	      (format standard-error "#%-3d %s %S%s\n" id
+		(format *standard-error* "#%-3d #undefined\n" id)
+	      (format *standard-error* "#%-3d %s %S%s\n" id
 		      (or (cond ((closurep fun) (closure-name fun))
 				((subrp fun) (subr-name fun))
 				((eq (car fun) 'lambda)
@@ -154,14 +154,14 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 		    (stack-frame-ref (fluid frame-id)))))
 	   (location (lexical-origin form)))
       (if location
-	  (format standard-error "%d:\t%S\n" (cdr location) form)
-	(format standard-error "\t%S\n" form))))
+	  (format *standard-error* "%d:\t%S\n" (cdr location) form)
+	(format *standard-error* "\t%S\n" form))))
 
   (defun print-emacs-form (form)
     (when emit-emacs-tokens
       (let ((location (lexical-origin form)))
 	(when location
-	  (format standard-error "\032\032%s:%d:\n"
+	  (format *standard-error* "\032\032%s:%d:\n"
 		  (local-file-name (car location)) (cdr location))))))
 
   (defun print-emacs-frame (id)
@@ -177,9 +177,9 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
       (when frame
 	(for-each (lambda (cell)
 		    (if (symbolp (car cell))
-			(format standard-error "%16s %S\n"
+			(format *standard-error* "%16s %S\n"
 				(symbol-name (car cell)) (cdr cell))
-		      (format standard-error "%S\n" cell)))
+		      (format *standard-error* "%S\n" cell)))
 		  (stack-frame-environment frame)))))
 
   (defun eval-in-frame (form)
@@ -200,7 +200,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
   (defun exit (debug-val debug-depth debug-frame-id)
     (declare (unused debug-frame-id))
     (unless (eq debug-val #undefined)
-      (format standard-error "%s-> %S\n"
+      (format *standard-error* "%s-> %S\n"
 	      (make-string debug-depth #\-) debug-val)))
 
   (defun error-entry (error-list debug-frame-id)
@@ -239,6 +239,6 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 
 ;;; initialize debug hooks (special variables)
 
-  (setq debug-entry entry)
-  (setq debug-exit exit)
-  (setq debug-error-entry error-entry))
+  (setq *debug-entry* entry)
+  (setq *debug-exit* exit)
+  (setq *debug-error-entry* error-entry))

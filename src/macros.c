@@ -50,7 +50,7 @@ static repv history[HIST_SIZE];
 static int macro_hits, macro_misses;
 
 DEFSYM(macro, "macro");
-DEFSYM(macro_environment, "macro-environment");
+DEFSYM(macro_environment, "*macro-environment*");
 
 static inline repv
 symbol_value_in_structure(repv structure, repv sym)
@@ -71,7 +71,7 @@ If FORM is a macro call, expand it once and return the resulting form.
 
 If ENVIRONMENT is specified it is a function to call to do the actual
 expansion. Any macro expanders recursively calling macroexpand should
-pass the value of the `macro-environment' variable to this parameter.
+pass the value of the `*macro-environment*' variable to this parameter.
 ::end:: */
 {
   if (!rep_CONSP(form)) {
@@ -161,7 +161,7 @@ If FORM is a macro call, expand it until it isn't.
 
 If ENVIRONMENT is specified it is a function to call to do the actual
 expansion. Any macro expanders recursively calling macroexpand should
-pass the value of the `macro-environment' variable to this parameter.
+pass the value of the `*macro-environment*' variable to this parameter.
 ::end:: */
 {
   repv input = form;
@@ -234,7 +234,6 @@ rep_macros_init(void)
   repv tem = rep_push_structure("rep.lang.interpreter");
   rep_ADD_SUBR(Smacroexpand);
   rep_ADD_SUBR(Smacroexpand_1);
-  Fset(Qmacro_environment, rep_nil);
   rep_macros_clear_history();
   rep_pop_structure(tem);
 }

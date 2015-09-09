@@ -132,24 +132,24 @@
        (let ((string (car x))
 	     (files (cdr x)))
 	 (for-each (lambda (f)
-		     (format standard-output "%s %s %s\n"
+		     (format *standard-output* "%s %s %s\n"
 			     (if c-mode "  /*" "#:")
 			     f (if c-mode "*/" ""))) files)
-	 (let* ((print-escape 'newlines)
+	 (let* ((*print-escape* 'newlines)
 		(out (format nil "%S" string))
 		(point 0))
 	   (if c-mode
-	       (format standard-output "  _(%s);\n\n" out)
+	       (format *standard-output* "  _(%s);\n\n" out)
 	     (while (and (< point (length out))
 			 (string-match "\\\\n" out point))
 	       (setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
 				 (substring out (match-end))))
 	       (setq point (+ (match-end) 3)))
-	     (format standard-output "msgid %s\nmsgstr \"\"\n\n" out)))))
+	     (format *standard-output* "msgid %s\nmsgstr \"\"\n\n" out)))))
      (nreverse (fluid found-strings))))
 
   (define (output-c-file)
-    (write standard-output "\
+    (write *standard-output* "\
 /* SOME DESCRIPTIVE TITLE */
 /* This file is intended to be parsed by xgettext.
  * It is not intended to be compiled.
@@ -158,12 +158,12 @@
 #if 0
 void some_function_name() {\n\n")
     (output-strings t)
-    (write standard-output "\
+    (write *standard-output* "\
 }
 #endif\n"))
 
   (define (output-pot-file)
-    (format standard-output "\
+    (format *standard-output* "\
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR Free Software Foundation, Inc.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.

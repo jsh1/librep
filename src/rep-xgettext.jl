@@ -29,7 +29,7 @@ exec rep "$0" "$@"
 ;; entry point
 
 (when (get-command-line-option "--help")
-  (write standard-output "\
+  (write *standard-output* "\
 usage: rep-xgettext [OPTIONS...] FILES...
 
 where OPTIONS are any of:
@@ -50,9 +50,9 @@ where OPTIONS are any of:
   (when included
     (set-included-definers included)))
 
-(while command-line-args
-  (let ((file (car command-line-args)))
-    (setq command-line-args (cdr command-line-args))
+(while *command-line-args*
+  (let ((file (car *command-line-args*)))
+    (setq *command-line-args* (cdr *command-line-args*))
     (scan-file file)))
 
 (if *write-c-file*

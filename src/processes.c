@@ -1003,7 +1003,7 @@ either by the functions provided or by the function called to create
 the actual running process.
 
 If the DIR parameter is nil it will be inherited from the
-`default-directory' variable of the current buffer.
+`*default-directory*' variable of the current buffer.
 ::end:: */
 {
   rep_process *pr = rep_alloc(sizeof(rep_process));
@@ -1711,7 +1711,7 @@ DEFUN("process-error-stream", Fprocess_error_stream,
 ::doc:rep.io.processes#process-error-stream::
 process-error-stream PROCESS
 
-Return the stream to which all standard-error output from PROCESS is
+Return the stream to which all *standard-error* output from PROCESS is
 sent.
 ::end:: */
 {

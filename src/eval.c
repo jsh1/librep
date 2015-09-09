@@ -28,9 +28,9 @@ bool rep_single_step_flag;
 
 int rep_lisp_depth, rep_max_lisp_depth = 1000;
 
-DEFSYM(debug_macros, "debug-macros");
-DEFSYM(debug_entry, "debug-entry");
-DEFSYM(debug_exit, "debug-exit");
+DEFSYM(debug_macros, "*debug-macros*");
+DEFSYM(debug_entry, "*debug-entry*");
+DEFSYM(debug_exit, "*debug-exit*");
 
 DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
 ::doc:rep.lang.interpreter#apply::

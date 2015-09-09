@@ -66,7 +66,7 @@
 		 (and message (list message)))))))
 
   (define (self-test/failed type message)
-    (format standard-error "\n ** %s failed: %s\n\n"
+    (format *standard-error* "\n ** %s failed: %s\n\n"
 	    (capitalize-string (symbol-name type)) message)
     (when (and (eq type 'test) (fluid failed-tests))
       (fluid-set failed-tests (1+ (fluid failed-tests))))
@@ -109,7 +109,7 @@
     (let ((test-case (self-test-ref module)))
       (if (not test-case)
 	  0
-	(format standard-error "%s\n" module)
+	(format *standard-error* "%s\n" module)
 	(let-fluids ((failed-tests 0))
 	  (test-case)
 	  (fluid failed-tests)))))

@@ -71,9 +71,10 @@
     (if (equal new body) body new)))
 
 (defun define-macroexpand-1 (form)
+  (declare (special *macro-environment*))
   (if (memq (car form) (fluid define-bound-vars))
       form
-    (macroexpand-1 form macro-environment)))
+    (macroexpand-1 form *macro-environment*)))
 
 ;; This needs to handle all special forms. It also needs to handle any
 ;; macros that the compiler wants to see without being expanded..

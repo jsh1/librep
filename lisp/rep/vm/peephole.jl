@@ -95,10 +95,10 @@
 
   ;; debugging
   (defmacro before ()
-    `(format standard-error "before: [%S %S %S]\n"
+    `(format *standard-error* "before: [%S %S %S]\n"
 	     (nth 1 point) (nth 2 point) (nth 3 point)))
   (defmacro after ()
-    `(format standard-error "after: [%S %S %S]\n"
+    `(format *standard-error* "after: [%S %S %S]\n"
 	     (nth 1 point) (nth 2 point) (nth 3 point)))
 
   ;; run the optimiser over CODE-STRING, modifying and returning it
@@ -116,7 +116,7 @@
 	(setq point code-string)
 	(refill)
 	(while insn0
-	  ;;(format standard-error "iter: %S\n\n" code-string)
+	  ;;(format *standard-error* "iter: %S\n\n" code-string)
 	  (cond
 	   ;; <side-effect-free w/ stack+1>; pop --> <deleted>
 	   ;; <side-effect-free w/ stack+0>; pop --> pop

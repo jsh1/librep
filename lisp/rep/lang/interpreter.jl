@@ -498,7 +498,7 @@ DATA)' while the handler is evaluated (these are the arguments given to
      (unless (eq (car ex) 'error)
        (raise-exception ex)))))
 
-(defvar error-handler-function default-error-handler)
+(defvar *error-handler-function* default-error-handler)
 
 (export-bindings '(call-with-catch call-with-unwind-protect
 		   call-with-error-handlers catch throw

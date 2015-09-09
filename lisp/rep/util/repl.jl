@@ -63,7 +63,7 @@
     (setq input (concat (repl-pending repl) input))
     (repl-set-pending repl nil)
     (let-fluids ((current-repl repl))
-      (let ((print-escape t))
+      (let ((*print-escape* t))
 	(catch 'return
 	  (condition-case data
 	      (progn
@@ -91,19 +91,19 @@
 					       (not (string= "" input))))))))
 		      (let ((result (repl-eval form)))
 			(unless (eq result #undefined)
-			  (format standard-output "%S\n" result))))))
+			  (format *standard-output* "%S\n" result))))))
 		t)
 	    (error
 	     (default-error-handler (car data) (cdr data))
 	     t))))))
 
   (define (do-readline prompt completer)
-    (if (file-ttyp standard-input)
+    (if (file-ttyp *standard-input*)
 	(progn
 	  (require 'rep.io.readline)
 	  (readline prompt completer))
-      (write standard-output prompt)
-      (read-line standard-input)))
+      (write *standard-output* prompt)
+      (read-line *standard-input*)))
 
   (define (repl #!optional initial-structure)
     ;; returns t if repl should run again
@@ -117,11 +117,11 @@
     (define (interrupt-handler data)
       (if (eq (car data) 'user-interrupt)
 	  (progn
-	    (format standard-output "User interrupt!\n")
+	    (format *standard-output* "User interrupt!\n")
 	    t)
 	(raise-exception data)))
     (let-fluids ((current-repl (make-repl initial-structure)))
-      (write standard-output "\nEnter `,help' to list commands.\n")
+      (write *standard-output* "\nEnter `,help' to list commands.\n")
       (let loop ()
 	(when (call-with-exception-handler run-repl interrupt-handler)
 	  (loop)))))
@@ -134,11 +134,11 @@
 	   (right (nthcdr mid data) (cdr right)))
 	  ((null left))
 	(when (< i mid)
-	  (format standard-output "  %-30s"
+	  (format *standard-output* "  %-30s"
 		  (format nil "%s" (f (car left))))
 	  (when right
-	    (format standard-output " %s" (f (car right))))
-	  (write standard-output #\newline)))))
+	    (format *standard-output* " %s" (f (car right))))
+	  (write *standard-output* #\newline)))))
 
   (define (completion-generator w)
     ;; Either a special command or unquote.
@@ -191,13 +191,13 @@
 	    (cond ((null rest)
 		   (if matched
 		       matched
-		     (format standard-output "unknown command: ,%s\n" name)
+		     (format *standard-output* "unknown command: ,%s\n" name)
 		     nil))
 		  ((string-match re (symbol-name (caar rest)))
 		   (if matched
 		       ;; already saw something, exit
 		       (progn
-			 (format standard-output
+			 (format *standard-output*
 				 "non-unique abbreviation: ,%s\n" name)
 			 nil)
 		     (loop (cdr rest) (car rest))))
@@ -215,7 +215,7 @@
    'in
    (lambda (struct #!optional form)
      (if form
-	 (format standard-output "%S\n"
+	 (format *standard-output* "%S\n"
 		 (eval form (get-structure struct)))
        (repl-set-struct (fluid current-repl) struct)))
    "STRUCT [FORM ...]")
@@ -290,7 +290,7 @@
    'bindings
    (lambda ()
      (structure-walk (lambda (var value)
-		       (format standard-output "  (%s %S)\n" var value))
+		       (format *standard-output* "  (%s %S)\n" var value))
 		     (intern-structure
 		      (repl-struct (fluid current-repl))))))
 
@@ -317,7 +317,7 @@
    'collect
    (lambda ()
      (let ((stats (garbage-collect t)))
-       (format standard-output "Used %d/%d cons, %d/%d tuples, %d strings, %d vector slots, %d/%d closures\n"
+       (format *standard-output* "Used %d/%d cons, %d/%d tuples, %d strings, %d vector slots, %d/%d closures\n"
 	       (car (nth 0 stats)) (+ (car (nth 0 stats)) (cdr (nth 0 stats)))
 	       (car (nth 1 stats)) (+ (car (nth 1 stats)) (cdr (nth 1 stats)))
 	       (car (nth 2 stats))
@@ -353,7 +353,7 @@
    'compile-file
    (lambda args
      (require 'rep.vm.compiler)
-     (let ((print-escape nil))
+     (let ((*print-escape* nil))
        (for-each compile-file args)))
    "\"FILENAME\" ...")
 
@@ -370,19 +370,19 @@
   (define-repl-command
    'expand
    (lambda (form)
-     (format standard-output "%s\n" (repl-eval `(,macroexpand ',form))))
+     (format *standard-output* "%s\n" (repl-eval `(,macroexpand ',form))))
    "FORM")
 
   (define-repl-command
    'step
    (lambda (form)
-     (format standard-output "%s\n" (repl-eval `(,step ',form))))
+     (format *standard-output* "%s\n" (repl-eval `(,step ',form))))
    "FORM")
 
   (define-repl-command
    'help
    (lambda ()
-     (write standard-output "
+     (write *standard-output* "
 Either enter lisp forms to be evaluated, and their result printed, or
 enter a meta-command prefixed by a `,' character. Names of meta-
 commands may be abbreviated to their unique leading characters.\n\n")
@@ -399,11 +399,11 @@ commands may be abbreviated to their unique leading characters.\n\n")
      (let* ((value (repl-eval name))
 	    (struct (locate-binding* name))
 	    (doc (documentation name struct value)))
-       (write standard-output #\newline)
+       (write *standard-output* #\newline)
        (describe-value value name struct)
-       (write standard-output #\newline)
+       (write *standard-output* #\newline)
        (when doc
-	 (format standard-output "%s\n\n" doc))))
+	 (format *standard-output* "%s\n\n" doc))))
    "SYMBOL")
 
   (define-repl-command
@@ -420,8 +420,8 @@ commands may be abbreviated to their unique leading characters.\n\n")
    (lambda (var)
      (let ((struct (locate-binding* var)))
        (if struct
-	   (format standard-output "%s is bound in: %s.\n" var struct)
-	 (format standard-output "%s is unbound.\n" var))))
+	   (format *standard-output* "%s is bound in: %s.\n" var struct)
+	 (format *standard-output* "%s is unbound.\n" var))))
    "SYMBOL")
 
   (define-repl-command
@@ -435,9 +435,9 @@ commands may be abbreviated to their unique leading characters.\n\n")
 			   (setq out (cons (structure-name v) out))))
 		       (get-structure '%structures))
        (if out
-	   (format standard-output "%s is exported by: %s.\n"
+	   (format *standard-output* "%s is exported by: %s.\n"
 		   var (mapconcat symbol-name (sort out) ", "))
-	 (format standard-output "No module exports %s.\n" var))))
+	 (format *standard-output* "No module exports %s.\n" var))))
    "SYMBOL")
 
   (define-repl-command
@@ -447,7 +447,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
        (setq t1 (current-utime))
        (setq ret (repl-eval form))
        (setq t2 (current-utime))
-       (format standard-output
+       (format *standard-output*
 	       "%S\nElapsed: %d seconds\n" ret (/ (- t2 t1) 1e6))))
    "FORM")
 
@@ -455,7 +455,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
    'profile
    (lambda (form)
      (require 'rep.lang.profiler)
-     (format standard-output "%S\n\n" (call-in-profiler
+     (format *standard-output* "%S\n\n" (call-in-profiler
 				       (lambda () (repl-eval form))))
      (print-profile))
    "FORM")

@@ -37,15 +37,15 @@
 		   rep.regexp
 		   rep.system))
 
-;;(setq backtrace-on-error '(void-value invalid-function bad-arg missing-arg))
+;;(setq *backtrace-on-error* '(void-value invalid-function bad-arg missing-arg))
 
-(defvar standard-output (stdout-file)
+(defvar *standard-output* (stdout-file)
   "Stream that `prin?' writes its output to by default.")
 
-(defvar standard-input (stdin-file)
+(defvar *standard-input* (stdin-file)
   "Stream that `read' takes its input from by default.")
 
-(defvar standard-error (stderr-file)
+(defvar *standard-error* (stderr-file)
   "Standard stream for error output.")
 
 ;; null i18n function until gettext is loaded
@@ -70,6 +70,6 @@
 (require 'rep.lang.backquote)
 (require 'rep.io.file-handlers.tilde)
 
-(defvar debug-entry (make-autoload 'debug-entry "rep/lang/debugger"))
-(defvar debug-exit)
-(defvar debug-error-entry (make-autoload 'debug-error-entry "rep/lang/debugger"))
+(defvar *debug-entry* (make-autoload '*debug-entry* "rep/lang/debugger"))
+(defvar *debug-exit*)
+(defvar *debug-error-entry* (make-autoload '*debug-error-entry* "rep/lang/debugger"))

@@ -75,4 +75,4 @@ explicitly, or by the remote-ftp-host-user-alist variable.")
       (when (file-binding fh)
 	(close-file fh))))
 
-  (add-hook 'after-gc-hook remote-after-gc))
+  (add-hook '*after-gc-hook* remote-after-gc))

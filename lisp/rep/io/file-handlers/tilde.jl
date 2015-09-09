@@ -89,12 +89,12 @@
   ;; Runtime initialisation
   (progn
     ;; Install the handler
-    (setq file-handler-alist (cons '("^~" . tilde-file-handler)
-				   file-handler-alist))
-    ;; Fix the initial default-directory; replacing $HOME by ~ if possible
+    (setq *file-handler-alist* (cons '("^~" . tilde-file-handler)
+				   *file-handler-alist*))
+    ;; Fix the initial *default-directory*; replacing $HOME by ~ if possible
     (when (string-looking-at (concat (quote-regexp
 				      (canonical-file-name
 				       (user-home-directory)))
 				     "(/(.+))?$")
-			     (canonical-file-name default-directory))
-      (setq-default default-directory (expand-last-match "~/\\2")))))
+			     (canonical-file-name *default-directory*))
+      (setq-default *default-directory* (expand-last-match "~/\\2")))))

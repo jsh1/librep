@@ -32,55 +32,50 @@ DEFSTRING(dot, ".");
 
 static repv default_suffixes;
 
-DEFSYM(load_path, "load-path");
-DEFSYM(dl_load_path, "dl-load-path");
-DEFSYM(after_load_alist, "after-load-alist");
+DEFSYM(load_path, "*load-path*");
+DEFSYM(dl_load_path, "*dl-load-path*");
+DEFSYM(after_load_alist, "*after-load-alist*");
 DEFSYM(rep_directory, "rep-directory");
 DEFSYM(lisp_lib_directory, "lisp-lib-directory");
 DEFSYM(site_lisp_directory, "site-lisp-directory");
 DEFSYM(exec_directory, "exec-directory");
-DEFSYM(documentation_file, "documentation-file");
-DEFSYM(documentation_files, "documentation-files");
+DEFSYM(documentation_file, "*documentation-file*");
+DEFSYM(documentation_files, "*documentation-files*");
 DEFSYM(_load_suffixes, "%load-suffixes");
-DEFSYM(dl_load_reloc_now, "dl-load-reloc-now");
-DEFSYM(load_filename, "load-filename");
+DEFSYM(load_filename, "*load-filename*");
 
-/* ::doc:load-path::
+/* ::doc:*load-path*::
 A list of directory names. When `load' opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
 is exhausted.
 ::end::
-::doc:dl-load-path::
+::doc:*dl-load-path*::
 List of directories searched for dynamically loaded object files.
 ::end::
-::doc:after-load-alist::
+::doc:*after-load-alist*::
 A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
 of Lisp code LIBRARY, it executes each of FORMS. Note that LIBRARY must
 exactly match the FILE argument given to `load'.
 ::end::
-::doc:rep-directory::
+::doc:rep.system#rep-directory::
 The directory in which all installed data files live.
 ::end::
-::doc:lisp-lib-directory::
+::doc:rep.system#lisp-lib-directory::
 The name of the directory in which the standard lisp files live.
 ::end::
-::doc:site-lisp-directory::
+::doc:rep.system#site-lisp-directory::
 The name of the directory in which site-specific Lisp files are stored.
 ::end::
-::doc:exec-directory::
+::doc:rep.system#exec-directory::
 The name of the directory containing architecture specific files.
 ::end::
-::doc:documentation-file::
+::doc:*documentation-file*::
 The name of the database containing the lisp-library's documentation strings.
 ::end::
-::doc:documentation-files::
+::doc:*documentation-files*::
 A list of database names containing all documentation strings.
 ::end::
-::doc:dl-load-reloc-now::
-When non-nil, dynamically loaded libraries have all symbol relocations
-perfromed at load-time, not as required.
-::end::
-::doc:load-filename::
+::doc:*load-filename*::
 While using the `load' function to load a Lisp library, this variable is
 set to the name of the file being loaded.
 ::end:: */
@@ -202,13 +197,14 @@ load FILE [NO-ERROR] [NO-PATH] [NO-SUFFIX]
 
 Attempt to open and then read-and-eval the file of Lisp code FILE.
 
-For each directory named in the variable `load-path' tries the value of
-FILE with `.jlc' (compiled-lisp) appended to it, then with `.jl'
+For each directory named in the variable `*load-path*' tries the value
+of FILE with `.jlc' (compiled-lisp) appended to it, then with `.jl'
 appended to it, finally tries FILE without modification.
 
 If NO-ERROR is non-nil no error is signalled if FILE can't be found. If
-NO-PATH is non-nil the `load-path' variable is not used, just the value
-of FILE. If NO-SUFFIX is non-nil no suffixes are appended to FILE.
+NO-PATH is non-nil the `*load-path*' variable is not used, just the
+value of FILE. If NO-SUFFIX is non-nil no suffixes are appended to
+FILE.
 
 If the compiled version is older than it's source code, the source code
 is loaded and a warning is displayed.
@@ -370,7 +366,7 @@ path_error:
     return 0;
   }
 
-  /* Loading succeeded. Look for an item in the after-load-alist. */
+  /* Loading succeeded. Look for an item in the *after-load-alist*. */
 
   if (rep_STRUCTUREP(result) && rep_STRUCTURE(result)->name != rep_nil) {
     /* Use the canonical name in case of aliasing.. */
@@ -431,21 +427,23 @@ add_path(const char *env, repv var)
 void
 rep_load_init(void)
 {
-  rep_INTERN_SPECIAL(rep_directory);
+  repv tem = rep_push_structure("rep.system");
+
+  rep_INTERN(rep_directory);
   if (getenv("REPDIR")) {
     Fset(Qrep_directory, rep_string_copy(getenv("REPDIR")));
   } else {
     Fset(Qrep_directory, rep_VAL(&default_rep_directory));
   }
   
-  rep_INTERN_SPECIAL(lisp_lib_directory);
+  rep_INTERN(lisp_lib_directory);
   if (getenv("REPLISPDIR")) {
     Fset(Qlisp_lib_directory, rep_string_copy(getenv("REPLISPDIR")));
   } else {
     Fset(Qlisp_lib_directory, rep_string_copy(REP_LISP_DIRECTORY));
   }
   
-  rep_INTERN_SPECIAL(site_lisp_directory);
+  rep_INTERN(site_lisp_directory);
   if (getenv("REPSITELISPDIR")) {
     Fset(Qsite_lisp_directory, rep_string_copy(getenv("REPSITELISPDIR")));
   } else {
@@ -454,7 +452,7 @@ rep_load_init(void)
 			     "/site-lisp"));
   }
 
-  rep_INTERN_SPECIAL(exec_directory);
+  rep_INTERN(exec_directory);
   if (getenv("REPEXECDIR")) {
     Fset(Qexec_directory, rep_string_copy(getenv("REPEXECDIR")));
   } else {
@@ -489,11 +487,10 @@ rep_load_init(void)
   rep_INTERN_SPECIAL(after_load_alist);
   Fset(Qafter_load_alist, rep_nil);
     
-  rep_INTERN_SPECIAL(dl_load_reloc_now);
-  Fset(Qdl_load_reloc_now, rep_nil);
-    
   rep_INTERN_SPECIAL(load_filename);
     
+  rep_pop_structure(tem);
+
   DEFSTRING(jl, ".jl");
   DEFSTRING(jlc, ".jlc");
 
@@ -501,7 +498,7 @@ rep_load_init(void)
   rep_mark_static(&default_suffixes);
   rep_INTERN(_load_suffixes);
 
-  repv tem = rep_push_structure("rep.io.files");
+  tem = rep_push_structure("rep.io.files");
   rep_ADD_SUBR_INT(Sload);
   rep_pop_structure(tem);
 }
