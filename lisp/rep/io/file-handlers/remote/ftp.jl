@@ -164,14 +164,14 @@ file types.")
   (unless user
     (setq user (remote-get-user host)))
   (catch 'foo
-    (mapc (lambda (s)
-	    (when (and (string= (aref s remote-ftp-host) host)
-		       (string= (aref s remote-ftp-user) user))
-	      ;; Move S to the head of the list
-	      (setq remote-ftp-sessions
-		    (cons s (delq s remote-ftp-sessions)))
-	      (throw 'foo s)))
-	  remote-ftp-sessions)
+    (for-each (lambda (s)
+		(when (and (string= (aref s remote-ftp-host) host)
+			   (string= (aref s remote-ftp-user) user))
+		  ;; Move S to the head of the list
+		  (setq remote-ftp-sessions
+			(cons s (delq s remote-ftp-sessions)))
+		  (throw 'foo s)))
+	      remote-ftp-sessions)
     ;; Create a new session
     (let*
 	((session (make-vector remote-ftp-struct-size)))
@@ -220,23 +220,24 @@ file types.")
   (when (or (null user) (string= user ""))
     (setq user (remote-get-user host)))
   (catch 'foo
-    (mapc (lambda (s)
-	    (when (and (string= (aref s remote-ftp-host) host)
-		       (string= (aref s remote-ftp-user) user))
-	      (remote-ftp-close-session s)
-	      (throw 'foo t)))
-	  remote-ftp-sessions)))
+    (for-each (lambda (s)
+		(when (and (string= (aref s remote-ftp-host) host)
+			   (string= (aref s remote-ftp-user) user))
+		  (remote-ftp-close-session s)
+		  (throw 'foo t)))
+	      remote-ftp-sessions)))
 
 (defun remote-ftp-close-all ()
   "Close all running FTP subprocesses."
   (interactive)
-  (mapc remote-ftp-close-session remote-ftp-sessions))
+  (for-each remote-ftp-close-session remote-ftp-sessions))
 
 (defun remote-ftp-get-session-by-process (process)
   (catch 'return
-    (mapc (lambda (s)
-	    (and (eq (aref s remote-ftp-process) process) (throw 'return s)))
-	  remote-ftp-sessions)))
+    (for-each (lambda (s)
+		(and (eq (aref s remote-ftp-process) process)
+		     (throw 'return s)))
+	      remote-ftp-sessions)))
 
 
 ;; Communicating with ftp sessions
@@ -562,10 +563,10 @@ file types.")
 (defun remote-ftp-dir-cached-p (session dir)
   (setq dir (directory-file-name dir))
   (catch 'exit
-    (mapc (lambda (dir-entry)
-	    (when (string= (aref dir-entry remote-ftp-cache-dir) dir)
-	      (throw 'exit dir-entry)))
-	  (aref session remote-ftp-dircache))))
+    (for-each (lambda (dir-entry)
+		(when (string= (aref dir-entry remote-ftp-cache-dir) dir)
+		  (throw 'exit dir-entry)))
+	      (aref session remote-ftp-dircache))))
 
 (defun remote-ftp-get-file (session filename)
   (let
@@ -625,10 +626,10 @@ file types.")
 	    (cons entry (delq entry (aref session remote-ftp-dircache)))))
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
-      (mapc (lambda (f)
-	      (when (string= (aref f remote-ftp-file-name) base)
-		(throw 'return f)))
-	    (aref entry remote-ftp-cache-entries)))))
+      (for-each (lambda (f)
+		  (when (string= (aref f remote-ftp-file-name) base)
+		    (throw 'return f)))
+		(aref entry remote-ftp-cache-entries)))))
 
 ;; similar to remote-ftp-get-file, but symbolic links are followed
 (defun remote-ftp-lookup-file (session file)
@@ -653,8 +654,8 @@ file types.")
 (defun remote-ftp-empty-cache ()
   "Discard all cached FTP directory entries."
   (interactive)
-  (mapc (lambda (ses)
-	  (aset ses remote-ftp-dircache nil)) remote-ftp-sessions))
+  (for-each (lambda (ses)
+	      (aset ses remote-ftp-dircache nil)) remote-ftp-sessions))
 
 
 ;; Password caching
@@ -674,11 +675,11 @@ file types.")
   (let
       ((joined (concat user #\@ host)))
     (catch 'foo
-      (mapc (lambda (cell)
-	      (when (string= (car cell) joined)
-		(setcdr cell passwd)
-		(throw 'foo)))
-	    remote-ftp-passwd-alist)
+      (for-each (lambda (cell)
+		  (when (string= (car cell) joined)
+		    (setcdr cell passwd)
+		    (throw 'foo)))
+		remote-ftp-passwd-alist)
       (setq remote-ftp-passwd-alist (cons (cons joined passwd)
 					  remote-ftp-passwd-alist)))))
 
@@ -771,10 +772,10 @@ file types.")
 	    ;; XXX this assumes local/remote have same naming structure!
 	    ((dir (file-name-as-directory file-name)))
 	  (remote-ftp-lookup-file session dir)
-	  (mapcar (lambda (f)
-		    (aref f remote-ftp-file-name))
-		  (aref (remote-ftp-dir-cached-p session dir)
-			remote-ftp-cache-entries))))
+	  (map (lambda (f)
+		 (aref f remote-ftp-file-name))
+	       (aref (remote-ftp-dir-cached-p session dir)
+		     remote-ftp-cache-entries))))
        ((eq op 'delete-file)
 	(remote-ftp-rm session file-name))
        ((eq op 'delete-directory)

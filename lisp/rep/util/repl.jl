@@ -126,8 +126,7 @@
 	(when (call-with-exception-handler run-repl interrupt-handler)
 	  (loop)))))
   
-  (define (print-list data #!optional map)
-    (unless map (setq map identity))
+  (define (print-list data #!optional (f identity))
     (let* ((count (length data))
 	   (mid (inexact->exact (ceiling (/ count 2)))))
       (do ((i 0 (1+ i))
@@ -136,17 +135,17 @@
 	  ((null left))
 	(when (< i mid)
 	  (format standard-output "  %-30s"
-		  (format nil "%s" (map (car left))))
+		  (format nil "%s" (f (car left))))
 	  (when right
-	    (format standard-output " %s" (map (car right))))
+	    (format standard-output " %s" (f (car right))))
 	  (write standard-output #\newline)))))
 
   (define (completion-generator w)
     ;; Either a special command or unquote.
     (if (string-head-eq w ",")
-	(mapcar (lambda (x) (concat "," (symbol-name x)))
-		(apropos (concat #\^ (quote-regexp (substring w 1)))
-			 (lambda (x) (assq x repl-commands))))
+	(map (lambda (x) (concat "," (symbol-name x)))
+	     (apropos (concat #\^ (quote-regexp (substring w 1)))
+		      (lambda (x) (assq x repl-commands))))
       (apropos (concat #\^ (quote-regexp w)) repl-boundp)))
 
   (define (repl-completions repl word)
@@ -224,34 +223,34 @@
   (define-repl-command
    'intern
    (lambda structs
-     (mapc (lambda (struct)
-	     (intern-structure struct)) structs))
+     (for-each (lambda (struct)
+		 (intern-structure struct)) structs))
    "STRUCT ...")
 
   (define-repl-command
    'reload
    (lambda structs
-     (mapc (lambda (x)
-	     (let ((struct (get-structure x)))
-	       (when struct
-		 (name-structure struct nil))
-	       (intern-structure x))) structs))
+     (for-each (lambda (x)
+		 (let ((struct (get-structure x)))
+		   (when struct
+		     (name-structure struct nil))
+		   (intern-structure x))) structs))
    "STRUCT ...")
 
   (define-repl-command
    'unload
    (lambda structs
-     (mapc (lambda (x)
-	     (let ((struct (get-structure x)))
-	       (when struct
-		 (name-structure struct nil)))) structs))
+     (for-each (lambda (x)
+		 (let ((struct (get-structure x)))
+		   (when struct
+		     (name-structure struct nil)))) structs))
    "STRUCT ...")
 
   (define-repl-command
    'load-file
    (lambda files
-     (mapc (lambda (f)
-	     (repl-eval `(,load ,f))) files))
+     (for-each (lambda (f)
+		 (repl-eval `(,load ,f))) files))
    "\"FILENAME\" ...")
 
   (define-repl-command
@@ -337,8 +336,8 @@
    'compile-proc
    (lambda args
      (require 'rep.vm.compiler)
-     (mapc (lambda (arg)
-	     (compile-function (repl-eval arg) arg)) args))
+     (for-each (lambda (arg)
+		 (compile-function (repl-eval arg) arg)) args))
    "PROCEDURE ...")
 
   (define-repl-command
@@ -347,7 +346,7 @@
      (require 'rep.vm.compiler)
      (if (null args)
 	 (compile-module (repl-struct (fluid current-repl)))
-       (mapc compile-module args)))
+       (for-each compile-module args)))
    "[STRUCT ...]")
 
   (define-repl-command
@@ -355,7 +354,7 @@
    (lambda args
      (require 'rep.vm.compiler)
      (let ((print-escape nil))
-       (mapc compile-file args)))
+       (for-each compile-file args)))
    "\"FILENAME\" ...")
 
   (define-repl-command
@@ -387,7 +386,7 @@
 Either enter lisp forms to be evaluated, and their result printed, or
 enter a meta-command prefixed by a `,' character. Names of meta-
 commands may be abbreviated to their unique leading characters.\n\n")
-     (print-list (sort (mapcar car repl-commands))
+     (print-list (sort (map car repl-commands))
 		 (lambda (x)
 		   (format nil ",%s %s" x (or (repl-documentation x) ""))))))
 
@@ -412,8 +411,8 @@ commands may be abbreviated to their unique leading characters.\n\n")
    (lambda (re)
      (require 'rep.lang.doc)
      (let ((funs (apropos re repl-boundp)))
-       (mapc (lambda (x)
-	       (describe-value (repl-eval x) x)) funs)))
+       (for-each (lambda (x)
+		   (describe-value (repl-eval x) x)) funs)))
    "\"REGEXP\"")
 
   (define-repl-command

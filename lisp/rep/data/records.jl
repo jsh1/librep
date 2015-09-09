@@ -101,8 +101,8 @@
 ;;; interface implementations
 
   (define (record-constructor rt fields)
-    (let ((indices (mapcar (lambda (field)
-			     (field-index rt field)) fields)))
+    (let ((indices (map (lambda (field)
+			  (field-index rt field)) fields)))
       (lambda args
 	(let ((record (make-record rt)))
 	  (let loop ((rest args)
@@ -157,19 +157,19 @@
       (when (and fields (symbolp (car fields)))
 	(setq predicate-defs `((define ,(car fields) (record-predicate ,rt))))
 	(setq fields (cdr fields)))
-      (setq names (mapcar car fields))
-      (mapc (lambda (field)
-	      (when (cadr field)
-		(setq accessor-defs
-		      (cons `(define ,(cadr field)
-			       (record-accessor ,rt ',(car field)))
-			    accessor-defs)))
-	      (when (caddr field)
-		(setq modifier-defs
-		      (cons `(define ,(caddr field)
-			       (record-modifier ,rt ',(car field)))
-			    modifier-defs))))
-	    fields)
+      (setq names (map car fields))
+      (for-each (lambda (field)
+		  (when (cadr field)
+		    (setq accessor-defs
+			  (cons `(define ,(cadr field)
+				   (record-accessor ,rt ',(car field)))
+				accessor-defs)))
+		  (when (caddr field)
+		    (setq modifier-defs
+			  (cons `(define ,(caddr field)
+				   (record-modifier ,rt ',(car field)))
+				modifier-defs))))
+		fields)
       `(progn
 	 (define ,rt (make-record-type ',rt ',names))
 	 (define ,(car constructor)

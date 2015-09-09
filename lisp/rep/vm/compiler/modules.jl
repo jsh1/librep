@@ -299,15 +299,16 @@
   (defun find-language-module ()
     ;; scan all opened modules for a known language
     (catch 'out
-      (mapc (lambda (struct)
-	      (if (get struct 'compiler-module)
-		  (progn
-		    (or (intern-structure (get struct 'compiler-module))
-			(compiler-error "unable to load module `%s'"
-					(get struct 'compiler-module)))
-		    (fluid-set current-language struct)
-		    (throw 'out))))
-	    (fluid open-modules))
+      (for-each
+       (lambda (struct)
+	 (if (get struct 'compiler-module)
+	     (progn
+	       (or (intern-structure (get struct 'compiler-module))
+		   (compiler-error "unable to load module `%s'"
+				   (get struct 'compiler-module)))
+	       (fluid-set current-language struct)
+	       (throw 'out))))
+       (fluid open-modules))
       (fluid-set current-language 'no-lang)))
 
 
@@ -351,18 +352,18 @@
       (setq body (cdr body))
       (unless (listp (car config))
 	(setq config (list config)))
-      (mapc (lambda (clause)
-	      (case (car clause)
-		((open)
-		 (setq opened (nconc (reverse (cdr clause)) opened))
-		 (setq header (cons clause header)))
+      (for-each (lambda (clause)
+		  (case (car clause)
+		    ((open)
+		     (setq opened (nconc (reverse (cdr clause)) opened))
+		     (setq header (cons clause header)))
 
-		((access)
-		 (setq accessed (nconc (reverse (cdr clause)) accessed))
-		 (setq header (cons clause header)))
+		    ((access)
+		     (setq accessed (nconc (reverse (cdr clause)) accessed))
+		     (setq header (cons clause header)))
 
-		(t (setq header (cons clause header)))))
-	    config)
+		    (t (setq header (cons clause header)))))
+		config)
       (setq header (cons '(open rep.module-system) (nreverse header)))
 
       (let-fluids ((current-structure nil)

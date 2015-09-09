@@ -38,7 +38,7 @@
 	((eq (car sig) 'export)
 	 (cdr sig))
 	((eq (car sig) 'compound-interface)
-	 (apply append (mapcar parse-interface (cdr sig))))
+	 (apply append (map parse-interface (cdr sig))))
 	((eq (car sig) 'structure-interface)
 	 (structure-interface (intern-structure (cadr sig))))
 	((symbolp sig)

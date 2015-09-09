@@ -55,7 +55,7 @@
 	  ((state 'required)
 	   (args-left arg-count)
 	   (bind-stack '()))
-	(mapc tester (get-lambda-vars lambda-list))
+	(for-each tester (get-lambda-vars lambda-list))
 	(while lambda-list
 	  (cond
 	   ((symbolp lambda-list)
@@ -206,10 +206,10 @@
       (call-with-frame
        (lambda ()
 	 (if (catch 'foo
-	       (mapc (lambda (var)
-		       (when (binding-enclosed-p var)
-			 (throw 'foo t)))
-		     (get-lambda-vars (lambda-args lambda-record)))
+	       (for-each (lambda (var)
+			   (when (binding-enclosed-p var)
+			     (throw 'foo t)))
+			 (get-lambda-vars (lambda-args lambda-record)))
 	       nil)
 	     ;; some of the parameter bindings may have been captured,
 	     ;; so rebind all of them

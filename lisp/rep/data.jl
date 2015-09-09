@@ -30,9 +30,9 @@
   "Scan ALIST for an element whose car is a regular expression matching the
 string INPUT."
   (catch 'return
-    (mapc (lambda (cell)
-	    (when (string-match (car cell) input nil fold-case)
-	      (throw 'return cell))) alist)))
+    (for-each (lambda (cell)
+		(when (string-match (car cell) input nil fold-case)
+		  (throw 'return cell))) alist)))
 
 (defun setcar (cell x) (rplaca cell x) x)
 (defun setcdr (cell x) (rplacd cell x) x)

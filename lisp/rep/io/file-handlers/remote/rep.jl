@@ -108,14 +108,14 @@
   (unless user
     (setq user (remote-get-user host)))
   (catch 'foo
-    (mapc (lambda (s)
-	    (when (and (string= (aref s remote-rep-host) host)
-		       (string= (aref s remote-rep-user) user))
-	      ;; Move S to the head of the list
-	      (setq remote-rep-sessions
-		    (cons s (delq s remote-rep-sessions)))
-	      (throw 'foo s)))
-	  remote-rep-sessions)
+    (for-each (lambda (s)
+		(when (and (string= (aref s remote-rep-host) host)
+			   (string= (aref s remote-rep-user) user))
+		  ;; Move S to the head of the list
+		  (setq remote-rep-sessions
+			(cons s (delq s remote-rep-sessions)))
+		  (throw 'foo s)))
+	      remote-rep-sessions)
     ;; Create a new session
     (let*
 	((session (make-vector remote-rep-struct-size)))
@@ -163,24 +163,24 @@
   (when (or (null user) (string= user ""))
     (setq user (remote-get-user host)))
   (catch 'foo
-    (mapc (lambda (s)
-	    (when (and (string= (aref s remote-rep-host) host)
-		       (string= (aref s remote-rep-user) user))
-	      (remote-rep-close-session s)
-	      (throw 'foo t)))
-	  remote-rep-sessions)))
+    (for-each (lambda (s)
+		(when (and (string= (aref s remote-rep-host) host)
+			   (string= (aref s remote-rep-user) user))
+		  (remote-rep-close-session s)
+		  (throw 'foo t)))
+	      remote-rep-sessions)))
 
 (defun remote-rep-close-all ()
   "Close all running rep-remote subprocesses."
   (interactive)
-  (mapc remote-rep-close-session remote-rep-sessions))
+  (for-each remote-rep-close-session remote-rep-sessions))
 
 (defun remote-rep-get-session-by-process (process)
   (catch 'return
-    (mapc (lambda (s)
-	    (and (eq (aref s remote-rep-process) process)
-		 (throw 'return s)))
-	  remote-rep-sessions)))
+    (for-each (lambda (s)
+		(and (eq (aref s remote-rep-process) process)
+		     (throw 'return s)))
+	      remote-rep-sessions)))
 
 
 ;; Communicating with the remote process
@@ -214,8 +214,8 @@
     (message (format nil "rep %c %s: " type args) t))
   (remote-rep-while session 'busy type)
   (remote-rep-write session "%c%c" type (length args))
-  (mapc (lambda (a)
-	  (remote-rep-send-string session a)) args)
+  (for-each (lambda (a)
+	      (remote-rep-send-string session a)) args)
   (when output-fun
     (output-fun session))
   (remote-rep-while session 'busy type)
@@ -489,10 +489,10 @@
 (defun remote-rep-dir-cached-p (session dir)
   (setq dir (directory-file-name dir))
   (catch 'exit
-    (mapc (lambda (dir-entry)
-	    (when (string= (aref dir-entry remote-rep-cache-dir) dir)
-	      (throw 'exit dir-entry)))
-	  (aref session remote-rep-dircache))))
+    (for-each (lambda (dir-entry)
+		(when (string= (aref dir-entry remote-rep-cache-dir) dir)
+		  (throw 'exit dir-entry)))
+	      (aref session remote-rep-dircache))))
 
 (defun remote-rep-get-file (session filename)
   (let
@@ -541,10 +541,10 @@
 	    (cons entry (delq entry (aref session remote-rep-dircache)))))
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
-      (mapc (lambda (f)
-	      (when (string= (aref f remote-rep-file-name) base)
-		(throw 'return f)))
-	    (aref entry remote-rep-cache-entries))
+      (for-each (lambda (f)
+		  (when (string= (aref f remote-rep-file-name) base)
+		    (throw 'return f)))
+		(aref entry remote-rep-cache-entries))
       nil)))
 
 ;; similar to remote-rep-get-file, but symbolic links are followed
@@ -607,8 +607,8 @@
 (defun remote-rep-empty-cache ()
   "Discard all cached rep-remote directory entries."
   (interactive)
-  (mapc (lambda (ses)
-	  (aset ses remote-rep-dircache nil)) remote-rep-sessions))
+  (for-each (lambda (ses)
+	      (aset ses remote-rep-dircache nil)) remote-rep-sessions))
 
 
 ;; Password caching
@@ -627,11 +627,11 @@
   (let
       ((joined (concat user #\@ host)))
     (catch 'foo
-      (mapc (lambda (cell)
-	      (when (string= (car cell) joined)
-		(setcdr cell passwd)
-		(throw 'foo)))
-	    remote-rep-passwd-alist)
+      (for-each (lambda (cell)
+		  (when (string= (car cell) joined)
+		    (setcdr cell passwd)
+		    (throw 'foo)))
+		remote-rep-passwd-alist)
       (setq remote-rep-passwd-alist (cons (cons joined passwd)
 					  remote-rep-passwd-alist)))))
 
@@ -728,10 +728,10 @@
 	    ;; XXX this assumes local/remote have same naming structure!
 	    ((dir (file-name-as-directory file-name)))
 	  (remote-rep-lookup-file session dir)
-	  (mapcar (lambda (f)
-		    (aref f remote-rep-file-name))
-		  (aref (remote-rep-dir-cached-p session dir)
-			remote-rep-cache-entries))))
+	  (map (lambda (f)
+		 (aref f remote-rep-file-name))
+	       (aref (remote-rep-dir-cached-p session dir)
+		     remote-rep-cache-entries))))
        ((eq op 'delete-file)
 	(remote-rep-rm session file-name))
        ((eq op 'delete-directory)

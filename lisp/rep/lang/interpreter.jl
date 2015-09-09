@@ -135,14 +135,9 @@ form. Thus the execution of BODY... may be repeated by invoking VAR."
 	    ;; named let
 	    (setq fun (car args))
 	    (setq args (cdr args))))
-     (setq vars (mapcar (lambda (x)
-			  (if (consp x)
-			      (car x)
-			    x)) (car args)))
-     (setq values (mapcar (lambda (x)
-			    (if (consp x)
-				(cons 'progn (cdr x))
-			      nil)) (car args)))
+     (setq vars (map (lambda (x) (if (consp x) (car x) x)) (car args)))
+     (setq values (map (lambda (x) (if (consp x) (cons 'progn (cdr x)) nil))
+		       (car args)))
      (cond (fun (list 'letrec
 		      (list (list fun (list* 'lambda vars (cdr args))))
 		      (cons fun values)))
@@ -168,12 +163,14 @@ functions."
 
   ((lambda (vars setters)
      (list* 'let vars (nconc setters body)))
-   (mapcar (lambda (x)
-	     (cond ((consp x) (car x))
-		   (t x))) bindings)
-   (mapcar (lambda (x)
-	     (cond ((consp x) (list 'setq (car x) (cons 'progn (cdr x))))
-		   (t (list 'setq x nil)))) bindings)))
+   (map (lambda (x)
+	  (cond ((consp x) (car x))
+		(t x)))
+	bindings)
+   (map (lambda (x)
+	  (cond ((consp x) (list 'setq (car x) (cons 'progn (cdr x))))
+		(t (list 'setq x nil))))
+	bindings)))
 
 (defmacro let-fluids (bindings . body)
   "Similar to `let' except that the BINDINGS must refer to variables
@@ -182,9 +179,9 @@ not the variables containing the fluids."
 
   (let ((fluids nil)
 	(values nil))
-    (mapc (lambda (x)
-	    (setq fluids (cons (car x) fluids))
-	    (setq values (cons (cons 'progn (cdr x)) values))) bindings)
+    (for-each (lambda (x)
+		(setq fluids (cons (car x) fluids))
+		(setq values (cons (cons 'progn (cdr x)) values))) bindings)
     (list 'with-fluids (cons 'list fluids)
 	  (cons 'list values) (list* 'lambda '() body))))
 
@@ -248,7 +245,7 @@ If all of the ARGS have been evaluated and none have a true value
 If there are no ARGS the false value is returned."
   (if (null args)
       'nil
-    (cons 'cond (mapcar list args))))
+    (cons 'cond (map list args))))
 
 (defmacro and args
   "The first of the ARGS is evaluated. If it is false no more of the
@@ -338,15 +335,15 @@ form evaluated.
   (aset vec i i)) => [0 1 2 3 4]"
 
   (let ((tem (gensym)))
-    (list 'let tem (mapcar (lambda (var)
-			     (list (car var) (nth 1 var))) vars)
+    (list 'let tem (map (lambda (var)
+			  (list (car var) (nth 1 var))) vars)
 	  (list* 'if (car test)
 		 (cons 'progn (cdr test))
-		 (append body (list (cons tem (mapcar (lambda (var)
-							(if (cddr var)
-							    (caddr var)
-							  (car var)))
-						      vars))))))))
+		 (append body (list (cons tem (map (lambda (var)
+						     (if (cddr var)
+							 (caddr var)
+						       (car var)))
+						   vars))))))))
 
 (defmacro while (condition . body)
   "while CONDITION BODY...
@@ -476,12 +473,12 @@ DATA)' while the handler is evaluated (these are the arguments given to
 `signal' when the error was raised)."
   (list* 'call-with-error-handlers
 	 (list 'lambda '() form)
-	 (mapcar (lambda (h)
-		   (list 'cons (list 'quote (car h))
-			 (list* 'lambda (and (symbolp var)
-					     (not (eq var 'nil))
-					     (list var)) (cdr h))))
-		 handlers)))
+	 (map (lambda (h)
+		(list 'cons (list 'quote (car h))
+		      (list* 'lambda (and (symbolp var)
+					  (not (eq var 'nil))
+					  (list var)) (cdr h))))
+	      handlers)))
 
 ;; default error handler
 (defun default-error-handler (err data)

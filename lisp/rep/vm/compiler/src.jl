@@ -51,16 +51,16 @@
   (defun fold-constants (form)
     (catch 'exit
       (let
-	  ((args (mapcar (lambda (arg)
-			   (when (consp arg)
-			     (setq arg (compiler-macroexpand arg)))
-			   (when (and (consp arg) (foldablep (car arg)))
-			     (setq arg (fold-constants arg)))
-			   (if (compiler-constant-p arg)
-			       (compiler-constant-value arg)
-			     ;; Not a constant, abort, abort
-			     (throw 'exit form)))
-			 (cdr form))))
+	  ((args (map (lambda (arg)
+			(when (consp arg)
+			  (setq arg (compiler-macroexpand arg)))
+			(when (and (consp arg) (foldablep (car arg)))
+			  (setq arg (fold-constants arg)))
+			(if (compiler-constant-p arg)
+			    (compiler-constant-value arg)
+			  ;; Not a constant, abort, abort
+			  (throw 'exit form)))
+		      (cdr form))))
 	;; Now we have ARGS, the constant [folded] arguments from FORM
 	(quote-constant (apply (compiler-symbol-value (car form)) args)))))
 
@@ -85,7 +85,7 @@
 				(not (compiler-constant-p x))) forms)))
       (if consts
 	  (cons (quote-constant
-		 (apply folder (mapcar compiler-constant-value consts)))
+		 (apply folder (map compiler-constant-value consts)))
 		non-consts)
 	non-consts)))
 

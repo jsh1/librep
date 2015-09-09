@@ -370,20 +370,21 @@
 ;;; declarations
 
 (defun note-declaration (form)
-  (mapc (lambda (clause)
-	  (let ((handler (get (or (car clause) clause) 'compiler-decl-fun)))
-	    (if handler
-		(handler clause)
-	      (compiler-warning 'misc "unknown declaration: `%s'" clause))))
-	form))
+  (for-each
+   (lambda (clause)
+     (let ((handler (get (or (car clause) clause) 'compiler-decl-fun)))
+       (if handler
+	   (handler clause)
+	 (compiler-warning 'misc "unknown declaration: `%s'" clause))))
+   form))
 
 (defun declare-inline (form)
-  (mapc (lambda (name)
-	  (when (symbolp name)
-	    (unless (assq name (fluid inline-env))
-	      (fluid-set inline-env (cons (cons name nil)
-					  (fluid inline-env))))))
-	(cdr form)))
+  (for-each
+   (lambda (name)
+     (when (symbolp name)
+       (unless (assq name (fluid inline-env))
+	 (fluid-set inline-env (cons (cons name nil) (fluid inline-env))))))
+   (cdr form)))
 
 (put 'inline 'compiler-decl-fun declare-inline)
 

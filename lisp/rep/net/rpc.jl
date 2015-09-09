@@ -169,11 +169,11 @@ by knowing its address and port number."
 	    (close-socket socket))
 	  (table-unset socket-data-table socket)
 	  ;; fail-out any pending calls on this socket
-	  (mapc (lambda (id)
-		  (dispatch-pending-call
-		   socket id nil
-		   (list 'rpc-error "Lost connection" server port)))
-		(socket-pending-calls data))))))
+	  (for-each (lambda (id)
+		      (dispatch-pending-call
+		       socket id nil
+		       (list 'rpc-error "Lost connection" server port)))
+		    (socket-pending-calls data))))))
 
   ;; Return the data structure associated with SOCKET
   (define (socket-data socket) (table-ref socket-data-table socket))

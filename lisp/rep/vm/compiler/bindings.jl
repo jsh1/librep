@@ -123,7 +123,7 @@
 )
 
   (defmacro note-bindings (vars)
-    (list 'mapc 'note-binding vars))
+    (list 'for-each 'note-binding vars))
 
   ;; note that the outermost binding of VAR has been modified
   (define (note-binding-modified var)
@@ -150,8 +150,8 @@
 
   ;; note that all current lexical bindings have been enclosed
   (define (note-closure-made)
-    (mapc (lambda (cell)
-	    (tag-cell 'enclosed cell)) (fluid lex-bindings)))
+    (for-each (lambda (cell)
+		(tag-cell 'enclosed cell)) (fluid lex-bindings)))
 
   (define (emit-binding var)
     (if (spec-bound-p var)
@@ -227,15 +227,15 @@
 	    (t (loop (cdr rest))))))
 
   (define (identify-captured-bindings asm lex-env)
-    (mapc (lambda (insn)
-	    (case (car insn)
-	      ((lex-ref lex-set)
-	       (let ((cell (assq (nth 1 insn) lex-env)))
-		 (when cell
-		   (tag-cell 'captured cell))))
-	      ((push-bytecode)
-	       (identify-captured-bindings (nth 1 insn) (nth 2 insn)))))
-	  (assembly-code asm)))
+    (for-each (lambda (insn)
+		(case (car insn)
+		  ((lex-ref lex-set)
+		   (let ((cell (assq (nth 1 insn) lex-env)))
+		     (when cell
+		       (tag-cell 'captured cell))))
+		  ((push-bytecode)
+		   (identify-captured-bindings (nth 1 insn) (nth 2 insn)))))
+	      (assembly-code asm)))
 
   ;; Extra pass over the output pseudo-assembly code; converts
   ;; pseudo-instructions accessing lexical bindings into real

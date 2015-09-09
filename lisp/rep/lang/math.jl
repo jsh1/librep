@@ -64,7 +64,7 @@
   "Return the least common multiple of integers A and B."
   (if (null args)
       1
-    (quotient (apply * (mapcar abs args)) (apply gcd args))))
+    (quotient (apply * (map abs args)) (apply gcd args))))
 
 (%define % remainder)
 (%define modulo mod)

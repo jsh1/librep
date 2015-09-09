@@ -90,7 +90,7 @@
       `(let ((,base ,base-object))
 	 (object-lambda (,op . ,args)
 	   (case ,op
-	     ,@(mapcar
+	     ,@(map
 		(lambda (method)
 		  (cond ((consp (car method))
 			 ;; ((METHOD-NAME . PARAM-LIST) BODY...)

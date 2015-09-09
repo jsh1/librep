@@ -133,11 +133,11 @@ as the comparison function."
 	(test (heap? heap))
 	(test (= (heap/size heap) 0))
 
-	(mapc (lambda (x) (heap/add heap x)) data)
+	(for-each (lambda (x) (heap/add heap x)) data)
 	(test (= (heap/size heap) (length data)))
 
-	(mapc (lambda (x)
-		(test (= (heap/remove heap) x)))
-	      (sort (copy-sequence data)))
+	(for-each (lambda (x)
+		    (test (= (heap/remove heap) x)))
+		  (sort (copy-sequence data)))
 
 	(test (= (heap/size heap) 0))))))

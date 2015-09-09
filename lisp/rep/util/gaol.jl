@@ -63,13 +63,13 @@
       delete delete-if delete-if-not delq digit-char-p do
       elt eq eql equal error eval eval-when-compile
       expand-last-match featurep filter
-      format funcall function functionp garbage-collect gensym get
+      for-each format funcall function functionp garbage-collect gensym get
       get-output-stream-string getenv identity if integerp interactive
       intern lambda last length let let* letrec list list* listp logand logior
       lognot logxor lower-case-p lsh macroexpand macrop
       make-closure make-list make-string make-string-input-stream
       make-string-output-stream make-symbol make-vector
-      makunbound mapc mapcar match-end match-start max member memq memql
+      makunbound map mapc mapcar match-end match-start max member memq memql
       message min mod nconc nop not nreverse nth nthcdr null numberp or
       prin1 prin1-to-string princ print prog1 prog2 progn put quote
       quote-regexp random rassoc rassq read read-char read-chars
@@ -130,11 +130,11 @@
       (setq gaol-structure (make-structure))
       (name-structure gaol-structure '%gaol)
       (structure-exports-all gaol-structure t)
-      (mapc (lambda (var)
-	      (structure-define gaol-structure var
-				(%structure-ref (current-structure) var)))
-	    gaol-safe-functions)
-      (setq file-handler-env (mapcar (lambda (sym)
+      (for-each (lambda (var)
+		  (structure-define gaol-structure var
+				    (%structure-ref (current-structure) var)))
+		gaol-safe-functions)
+      (setq file-handler-env (map (lambda (sym)
 				       (cons sym t))
 				     gaol-safe-file-handlers))))
 

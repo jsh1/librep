@@ -604,77 +604,150 @@ Returns the last element of LIST.
   return rep_CAR(list);
 }
 
+DEFSTRING(map_invalid_lists, "lists are different lengths");
+
+DEFUN("map", Fmap, Smap, (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.data#map::
+map FUNCTION LISTS...
+
+Calls FUNCTION with groups of element from LISTS..., i.e. all the first
+elements then all the second elements and so on, returning a new list
+made from the result of each function call. If more than one list is
+provided, they must all have the same number of elements.
+::end:: */
+{
+  if (argc < 2) {
+    return rep_signal_missing_arg(argc + 1);
+  }
+
+  for (int i = 1; i < argc; i++) {
+    rep_DECLARE(i + 1, argv[i], rep_LISTP(argv[i]));
+  }
+
+  repv ret = rep_nil;
+  repv *tail = &ret;
+
+  rep_GC_root gc_ret;
+  rep_GC_n_roots gc_argv;
+  rep_PUSHGC(gc_ret, ret);
+  rep_PUSHGCN(gc_argv, argv, argc);
+
+  while (1) {
+    repv elts[argc-1];
+    int elts_count = 0;
+    for (int i = 1; i < argc; i++) {
+      if (rep_CONSP(argv[i])) {
+	elts[i-1] = rep_CAR(argv[i]);
+	argv[i] = rep_CDR(argv[i]);
+	elts_count++;
+      }
+    }
+    if (elts_count == 0) {
+      break;
+    } else if (elts_count != argc - 1) {
+      ret = Fsignal(Qerror, rep_LIST_1(rep_VAL(&map_invalid_lists)));
+      break;
+    }
+
+    repv tem = rep_call_lispn(argv[0], argc - 1, elts);
+    if (!tem) {
+      ret = 0;
+      break;
+    }
+
+    repv cell = Fcons(tem, rep_nil);
+    *tail = cell;
+    tail = rep_CDRLOC(cell);
+
+    rep_TEST_INT;
+    if (rep_INTERRUPTP) {
+      ret = 0;
+      break;
+    }
+  }
+
+  rep_POPGCN;
+  rep_POPGC;
+
+  return ret;
+}
+
+DEFUN("for-each", Ffor_each, Sfor_each, (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.data#for-each::
+for-each FUNCTION LISTS...
+
+Calls FUNCTION with groups of element from LISTS..., i.e. all the first
+elements then all the second elements and so on, discarding the
+results. If more than one list is provided, they must all have the same
+number of elements.
+::end:: */
+{
+  if (argc < 2) {
+    return rep_signal_missing_arg(argc + 1);
+  }
+
+  for (int i = 1; i < argc; i++) {
+    rep_DECLARE(i + 1, argv[i], rep_LISTP(argv[i]));
+  }
+
+  repv ret = 0;
+
+  rep_GC_n_roots gc_argv;
+  rep_PUSHGCN(gc_argv, argv, argc);
+
+  while (1) {
+    repv elts[argc-1];
+    int elts_count = 0;
+    for (int i = 1; i < argc; i++) {
+      if (rep_CONSP(argv[i])) {
+	elts[i-1] = rep_CAR(argv[i]);
+	argv[i] = rep_CDR(argv[i]);
+	elts_count++;
+      }
+    }
+    if (elts_count == 0) {
+      ret = rep_undefined_value;
+      break;
+    } else if (elts_count != argc - 1) {
+      ret = Fsignal(Qerror, rep_LIST_1(rep_VAL(&map_invalid_lists)));
+      break;
+    }
+
+    if (!rep_call_lispn(argv[0], argc - 1, elts)) {
+      break;
+    }
+
+    rep_TEST_INT;
+    if (rep_INTERRUPTP) {
+      break;
+    }
+  }
+
+  rep_POPGCN;
+
+  return ret;
+}
+
 DEFUN("mapcar", Fmapcar, Smapcar, (repv fun, repv list), rep_Subr2) /*
 ::doc:rep.data#mapcar::
 mapcar FUNCTION LIST
 
-Calls FUNCTION-NAME with each element of LIST as an argument in turn and
-returns a new list constructed from the results, ie,
-  (mapcar (function (lambda (x) (1+ x))) '(1 2 3))
-   => (2 3 4)
+Equivalent to (map FUNCTION LIST).
 ::end:: */
 {
-  rep_DECLARE2(list, rep_LISTP);
-
-  repv res = rep_nil, *ptr = &res;
-
-  rep_GC_root gc_list, gc_fun, gc_res;
-  rep_PUSHGC(gc_res, res);
-  rep_PUSHGC(gc_fun, fun);
-  rep_PUSHGC(gc_list, list);
-
-  while (rep_CONSP(list)) {
-    rep_TEST_INT;
-    if (rep_INTERRUPTP) {
-      res = 0;
-      break;
-    }
-    repv val = rep_call_lisp1(fun, rep_CAR(list));
-    if (!val) {
-      res = 0;
-      break;
-    }
-    repv cell = Fcons(val, rep_nil);
-    *ptr = cell;
-    ptr = &rep_CDR(cell);
-    list = rep_CDR(list);
-  }
-
-  rep_POPGC; rep_POPGC; rep_POPGC;
-  return res;
+  repv argv[2] = {fun, list};
+  return Fmap(2, argv);
 }
 
 DEFUN("mapc", Fmapc, Smapc, (repv fun, repv list), rep_Subr2) /*
 ::doc:rep.data#mapc::
 mapc FUNCTION LIST
 
-Applies FUNCTION to each element in LIST, discards the results.
+Equivalent to (for-each FUNCTION LIST).
 ::end:: */
 {
-  rep_DECLARE2(list, rep_LISTP);
-
-  repv res = rep_nil;
-
-  rep_GC_root gc_fun, gc_list;
-  rep_PUSHGC(gc_fun, fun);
-  rep_PUSHGC(gc_list, list);
-
-  while (rep_CONSP(list)) {
-    rep_TEST_INT;
-    if (rep_INTERRUPTP) {
-      res = 0;
-      break;
-    }
-    repv val = rep_call_lisp1(fun, rep_CAR(list));
-    if (!val) {
-      res = 0;
-      break;
-    }
-    list = rep_CDR(list);
-  }
-
-  rep_POPGC; rep_POPGC;
-  return res;
+  repv argv[2] = {fun, list};
+  return Ffor_each(2, argv);
 }
 
 DEFUN("filter", Ffilter, Sfilter, (repv pred, repv list), rep_Subr2) /*
@@ -989,6 +1062,8 @@ rep_lists_init(void)
   rep_ADD_SUBR(Snth);
   rep_ADD_SUBR(Snthcdr);
   rep_ADD_SUBR(Slast);
+  rep_ADD_SUBR(Smap);
+  rep_ADD_SUBR(Sfor_each);
   rep_ADD_SUBR(Smapcar);
   rep_ADD_SUBR(Smapc);
   rep_ADD_SUBR(Sfilter);

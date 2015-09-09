@@ -68,7 +68,7 @@
 
   (defun pass-1 (forms) (add-progns (pass-1* forms)))
 
-  (defun pass-1* (forms) (lift-progns (mapcar do-pass-1 forms)))
+  (defun pass-1* (forms) (lift-progns (map do-pass-1 forms)))
 
   ;; flatten progn forms into their container
   (defun lift-progns (forms)
@@ -359,7 +359,7 @@
 	    (emit-insn '(cdr))
 	    (fix-label test-label)
 	    ;; I don't have a jump-if-t-but-never-pop instruction, so
-	    ;; make one out of "jpt TOP; nil". If I ever get a peep hole
+	    ;; make one out of "jpt TOP; nil". If I ever get a peephole
 	    ;; optimiser working, the nil should be fodder for it..
 	    (emit-insn `(jtp ,top-label))
 	    (emit-insn '(push ())))
@@ -369,6 +369,24 @@
 	(emit-insn '(mapc))
 	(decrement-stack))))
   (put 'mapc 'rep-compile-fun compile-mapc)
+
+  ;; Compile single-list map calls to mapcar instruction
+  (defun compile-map (form)
+    (let ((lsts (nthcdr 2 form)))
+      (if (null (cdr lsts))
+	  (compile-2-args form)
+	;; easiest way to fall-back to map function
+	(compile-funcall (cons 'funcall form)))))
+  (put 'map 'rep-compile-fun compile-map)
+  (put 'map 'rep-compile-opcode 'mapcar)
+
+  ;; Compile single-list for-each calls to mapc form
+  (defun compile-for-each (form)
+    (let ((lists (nthcdr 2 form)))
+      (if (null (cdr lists))
+	  (compile-mapc form)
+	(compile-funcall (cons 'funcall form)))))
+  (put 'for-each 'rep-compile-fun compile-for-each)
 
   (defun compile-progn (form #!optional return-follows)
     (compile-body (cdr form) return-follows))
@@ -442,19 +460,19 @@
 	 (increment-b-stack)
 
 	 ;; create the bindings, should really be to void values, but use nil..
-	 (mapc (lambda (cell)
-		 (let ((var (or (car cell) cell)))
-		   (test-variable-bind var)
-		   (compile-constant nil)
-		   (note-binding var)
-		   (emit-binding var)
-		   (decrement-stack))) bindings)
+	 (for-each (lambda (cell)
+		     (let ((var (or (car cell) cell)))
+		       (test-variable-bind var)
+		       (compile-constant nil)
+		       (note-binding var)
+		       (emit-binding var)
+		       (decrement-stack))) bindings)
 	 ;; then set them to their values
-	 (mapc (lambda (cell)
-		 (let ((var (or (car cell) cell)))
-		   (compile-body (cdr cell) nil var)
-		   (emit-varset var)
-		   (decrement-stack))) bindings)
+	 (for-each (lambda (cell)
+		     (let ((var (or (car cell) cell)))
+		       (compile-body (cdr cell) nil var)
+		       (emit-varset var)
+		       (decrement-stack))) bindings)
 
 	 ;; Test if we can inline it away.
 	 ;; Look for forms like (letrec ((foo (lambda (..) body..))) (foo ..))
@@ -504,15 +522,15 @@
        (lambda ()
 	 (fluid-set lexically-pure nil)
 	 ;; compile each fluid, value pair onto the stack
-	 (mapc (lambda (cell)
-		 (compile-form-1 (car cell))
-		 (compile-body (cdr cell))) bindings)
+	 (for-each (lambda (cell)
+		     (compile-form-1 (car cell))
+		     (compile-body (cdr cell))) bindings)
 	 (emit-insn '(init-bind))
 	 (increment-b-stack)
-	 (mapc (lambda (unused)
-		 (declare (unused unused))
-		 (emit-insn '(fluid-bind))
-		 (decrement-stack 2)) bindings)
+	 (for-each (lambda (unused)
+		     (declare (unused unused))
+		     (emit-insn '(fluid-bind))
+		     (decrement-stack 2)) bindings)
 	 (compile-body body)
 	 (emit-insn '(unbind))
 	 (decrement-b-stack)))))

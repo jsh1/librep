@@ -95,18 +95,19 @@
 
 (defun tarfh-check-tar-program ()
   (catch 'out
-    (mapc (lambda (prog)
-	    (let*
-		((output (make-string-output-stream))
-		 (process (make-process output)))
-	      (when (zerop (call-process process nil prog "--version"))
-		(setq output (get-output-stream-string output))
-		(when (string-looking-at
-		       "(tar )?[(]?GNU tar[)]?\\s*(.*?)\\s*\n" output)
-		  (setq tarfh-gnu-tar-program prog)
-		  (setq tarfh-gnu-tar-version (expand-last-match "\\2"))
-		  (throw 'out t)))))
-	  (cons tarfh-gnu-tar-program tarfh-alternative-gnu-tar-programs))
+    (for-each
+     (lambda (prog)
+       (let*
+	   ((output (make-string-output-stream))
+	    (process (make-process output)))
+	 (when (zerop (call-process process nil prog "--version"))
+	   (setq output (get-output-stream-string output))
+	   (when (string-looking-at
+		  "(tar )?[(]?GNU tar[)]?\\s*(.*?)\\s*\n" output)
+	     (setq tarfh-gnu-tar-program prog)
+	     (setq tarfh-gnu-tar-version (expand-last-match "\\2"))
+	     (throw 'out t)))))
+     (cons tarfh-gnu-tar-program tarfh-alternative-gnu-tar-programs))
     (error "Can't find/execute GNU tar")))
 
 (defun tarfh-call-tar (input-file output op tar-file #!rest args)
@@ -257,12 +258,12 @@
       (setq dir (aref entry tarfh-file-name)))
     (setq dir (file-name-as-directory dir))
     (setq re (concat (quote-regexp dir) "([^/]+)"))
-    (mapc (lambda (e)
-	    (when (string-looking-at re (aref e tarfh-file-name))
-	      (setq tem (expand-last-match "\\1"))
-	      (unless (member tem files)
-		(setq files (cons tem files)))))
-	  (aref (car tarfh-dir-cache) tarfh-cache-entries))
+    (for-each (lambda (e)
+		(when (string-looking-at re (aref e tarfh-file-name))
+		  (setq tem (expand-last-match "\\1"))
+		  (unless (member tem files)
+		    (setq files (cons tem files)))))
+	      (aref (car tarfh-dir-cache) tarfh-cache-entries))
     files))
 
 (defun tarfh-directory-exists-p (tarfile name)
@@ -271,10 +272,10 @@
 	((cache (tarfh-tarfile-cached-p tarfile)))
       (setq name (expand-file-name (file-name-as-directory name) ""))
       (when cache
-	(mapc (lambda (entry)
-		(when (string-head-eq (aref entry tarfh-file-name) name)
-		  (throw 'out t)))
-	      (aref cache tarfh-cache-entries))
+	(for-each (lambda (entry)
+		    (when (string-head-eq (aref entry tarfh-file-name) name)
+		      (throw 'out t)))
+		  (aref cache tarfh-cache-entries))
 	nil))))
 
 (defun tarfh-file-owner-p (file)
@@ -284,10 +285,10 @@
 (defun tarfh-tarfile-cached-p (tarfile)
   (setq tarfile (canonical-file-name tarfile))
   (catch 'exit
-    (mapc (lambda (dir-entry)
-	    (when (string= tarfile (aref dir-entry tarfh-cache-tarfile))
-	      (throw 'exit dir-entry)))
-	  tarfh-dir-cache)))
+    (for-each (lambda (dir-entry)
+		(when (string= tarfile (aref dir-entry tarfh-cache-tarfile))
+		  (throw 'exit dir-entry)))
+	      tarfh-dir-cache)))
 
 (defun tarfh-get-file (tarfile filename)
   (let
@@ -318,10 +319,10 @@
       (setq tarfh-dir-cache (cons entry (delq entry tarfh-dir-cache))))
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
-      (mapc (lambda (f)
-	      (when (string= (aref f tarfh-file-name) filename)
-		(throw 'return f)))
-	    (aref entry tarfh-cache-entries)))))
+      (for-each (lambda (f)
+		  (when (string= (aref f tarfh-file-name) filename)
+		    (throw 'return f)))
+		(aref entry tarfh-cache-entries)))))
 
 ;; similar to remote-ftp-get-file, but symbolic links are followed
 (defun tarfh-lookup-file (tarfile file)

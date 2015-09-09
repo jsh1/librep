@@ -265,9 +265,9 @@ we would like. This is due to the view of folded functions as
 			       (write dst-file header))
 			     (format dst-file ";; Source file: %s\n(validate-byte-code %d %d)\n"
 				     file-name bytecode-major bytecode-minor)
-			     (mapc (lambda (form)
-				     (when form
-				       (print form dst-file))) body)
+			     (for-each (lambda (form)
+					 (when form
+					   (print form dst-file))) body)
 			     (write dst-file #\newline))
 			 (close-file dst-file))
 		     (error
@@ -296,19 +296,19 @@ DIR-NAME are recursed into.
 
 EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
   (interactive "DDirectory of Lisp files to compile:\nP")
-  (mapc (lambda (file)
-	  (unless (or (and exclude-re (string-match exclude-re file))
-		      (eq (aref file 0) #\.))
-	    (let ((abs-file (expand-file-name file dir-name)))
-	      (cond ((file-directory-p abs-file)
-		     (compile-directory abs-file force-p exclude-re))
-		    ((string-match "\\.jl$" file)
-		     (let* ((c-name (concat abs-file #\c)))
-		       (when (or force-p (not (file-exists-p c-name))
-				 (file-newer-than-file-p abs-file c-name))
-			 (report-progress abs-file)
-			 (compile-file abs-file))))))))
-	(directory-files dir-name))
+  (for-each (lambda (file)
+	      (unless (or (and exclude-re (string-match exclude-re file))
+			  (eq (aref file 0) #\.))
+		(let ((abs-file (expand-file-name file dir-name)))
+		  (cond ((file-directory-p abs-file)
+			 (compile-directory abs-file force-p exclude-re))
+			((string-match "\\.jl$" file)
+			 (let* ((c-name (concat abs-file #\c)))
+			   (when (or force-p (not (file-exists-p c-name))
+				     (file-newer-than-file-p abs-file c-name))
+			     (report-progress abs-file)
+			     (compile-file abs-file))))))))
+	    (directory-files dir-name))
   t)
 
 (defun compile-lisp-lib (#!optional directory force-p)
@@ -340,16 +340,16 @@ that files which shouldn't be compiled aren't."
 
 (defun bootstrap (sources)
   (let ((*compiler-write-docs* t))
-    (mapc (lambda (package)
-	    (let ((file (expand-file-name
-			 (concat (structure-file package) ".jl")
-			 lisp-lib-directory)))
-	      (when (or (not (file-exists-p (concat file #\c)))
-			(file-newer-than-file-p file (concat file #\c)))
-		(report-progress file)
-		(compile-file file))))
-	  sources)))
-  
+    (for-each (lambda (package)
+		(let ((file (expand-file-name
+			     (concat (structure-file package) ".jl")
+			     lisp-lib-directory)))
+		  (when (or (not (file-exists-p (concat file #\c)))
+			    (file-newer-than-file-p file (concat file #\c)))
+		    (report-progress file)
+		    (compile-file file))))
+	      sources)))
+
 ;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
 ;; it's out of date
 (defun compile-compiler () (bootstrap compiler-sources))

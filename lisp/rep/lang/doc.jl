@@ -109,17 +109,18 @@ NAME is true, then it should be the symbol that is associated with VALUE."
   (defun doc-file-ref (key)
     (require 'rep.io.db.gdbm)
     (catch 'done
-      (mapc (lambda (file)
-	      ;; turn off read-locking -- DOC files are normally
-	      ;; created before being installed, and reportedly
-	      ;; AFS often prevents normal users gaining locks
-	      (let ((db (gdbm-open file 'read nil '(no-lock))))
-		(when db
-		  (unwind-protect
-		      (let ((value (gdbm-fetch db key)))
-			(when value
-			  (throw 'done value)))
-		    (gdbm-close db))))) documentation-files)
+      (for-each (lambda (file)
+		  ;; turn off read-locking -- DOC files are normally
+		  ;; created before being installed, and reportedly
+		  ;; AFS often prevents normal users gaining locks
+		  (let ((db (gdbm-open file 'read nil '(no-lock))))
+		    (when db
+		      (unwind-protect
+			  (let ((value (gdbm-fetch db key)))
+			    (when value
+			      (throw 'done value)))
+			(gdbm-close db)))))
+		documentation-files)
       nil))
 
   (defun doc-file-set (key value)

@@ -58,8 +58,8 @@
       (setq body (cdr body)))
     (if defs
 	(list* 'letrec
-	       (mapcar (lambda (def)
-			 (list (car def) (cadr def))) (nreverse defs))
+	       (map (lambda (def)
+		      (list (car def) (cadr def))) (nreverse defs))
 	       (define-scan-body body))
       (let ((new-body (define-scan-body body)))
 	(if (null (cdr new-body))
@@ -67,7 +67,7 @@
 	  (cons 'progn new-body))))))
 
 (defun define-scan-body (body)
-  (let ((new (mapcar define-scan-form body)))
+  (let ((new (map define-scan-form body)))
     (if (equal new body) body new)))
 
 (defun define-macroexpand-1 (form)
@@ -123,21 +123,23 @@
 
       ((letrec)
        (let-fluids ((define-bound-vars
-		     (nconc (mapcar (lambda (x) (or (car x) x)) (cadr form))
+		     (nconc (map (lambda (x) (or (car x) x)) (cadr form))
 			    (fluid define-bound-vars))))
 	 (list 'letrec
-	       (mapcar (lambda (x)
-			 (if (consp x)
-			     (cons (car x) (define-scan-body (cdr x)))
-			   x)) (cadr form))
+	       (map (lambda (x)
+		      (if (consp x)
+			  (cons (car x) (define-scan-body (cdr x)))
+			x))
+		    (cadr form))
 	       (define-scan-internals (cddr form)))))
 
       ((let-fluids)
        (list 'let-fluids
-	     (mapcar (lambda (x)
-		       (if (consp x)
-			   (cons (car x) (define-scan-body (cdr x)))
-			 x)) (cadr form))
+	     (map (lambda (x)
+		    (if (consp x)
+			(cons (car x) (define-scan-body (cdr x)))
+		      x))
+		  (cadr form))
 	     (define-scan-internals (cddr form))))
 
       ((setq)
@@ -150,15 +152,16 @@
 	   (cons (car form) (apply nconc (nreverse out))))))
 
       ((cond)
-       (cons 'cond (mapcar (lambda (clause)
-			     (define-scan-body clause)) (cdr form))))
+       (cons 'cond (map (lambda (clause)
+			  (define-scan-body clause))
+			(cdr form))))
 
       ((case)
        (list* 'case
 	      (define-scan-form (nth 1 form))
-	      (mapcar (lambda (clause)
-			(cons (car clause) (define-scan-body (cdr clause))))
-		      (nthcdr 2 form))))
+	      (map (lambda (clause)
+		     (cons (car clause) (define-scan-body (cdr clause))))
+		   (nthcdr 2 form))))
 
       ((condition-case)
        (let ((var (if (eq (cadr form) 'nil) nil (cadr form))))

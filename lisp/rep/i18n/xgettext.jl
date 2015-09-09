@@ -86,8 +86,8 @@
 	  ((function) (scan (cdr form)))
 
 	  ((cond)
-	   (mapc (lambda (f)
-		   (scan-list f)) (cdr form)))
+	   (for-each (lambda (f)
+		       (scan-list f)) (cdr form)))
 
 	  ((lambda) (scan-list (cddr form)))
 
@@ -112,7 +112,7 @@
 	       (scan-list form)))))))
 
   (define (scan-list body)
-    (mapc scan body))
+    (for-each scan body))
 
   (define (scan-file filename)
     (let ((file (open-file filename 'read)))
@@ -127,25 +127,26 @@
 	  (close-file file)))))
 
   (defun output-strings (c-mode)
-    (mapc (lambda (x)
-	    (let ((string (car x))
-		  (files (cdr x)))
-	      (mapc (lambda (f)
-		      (format standard-output "%s %s %s\n"
-			      (if c-mode "  /*" "#:")
-			      f (if c-mode "*/" ""))) files)
-	    (let* ((print-escape 'newlines)
-		   (out (format nil "%S" string))
-		   (point 0))
-	      (if c-mode
-		  (format standard-output "  _(%s);\n\n" out)
-		(while (and (< point (length out))
-			    (string-match "\\\\n" out point))
-		  (setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
-				    (substring out (match-end))))
-		  (setq point (+ (match-end) 3)))
-		(format standard-output "msgid %s\nmsgstr \"\"\n\n" out)))))
-	(nreverse (fluid found-strings))))
+    (for-each
+     (lambda (x)
+       (let ((string (car x))
+	     (files (cdr x)))
+	 (for-each (lambda (f)
+		     (format standard-output "%s %s %s\n"
+			     (if c-mode "  /*" "#:")
+			     f (if c-mode "*/" ""))) files)
+	 (let* ((print-escape 'newlines)
+		(out (format nil "%S" string))
+		(point 0))
+	   (if c-mode
+	       (format standard-output "  _(%s);\n\n" out)
+	     (while (and (< point (length out))
+			 (string-match "\\\\n" out point))
+	       (setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
+				 (substring out (match-end))))
+	       (setq point (+ (match-end) 3)))
+	     (format standard-output "msgid %s\nmsgstr \"\"\n\n" out)))))
+     (nreverse (fluid found-strings))))
 
   (define (output-c-file)
     (write standard-output "\

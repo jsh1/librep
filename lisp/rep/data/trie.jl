@@ -94,11 +94,11 @@
 
   (define (trie-foreach tree callback)
     (define (iter tree tokens)
-      (mapc (lambda (x)
-	      (if (eq (car x) word-terminator)
-		  (callback (apply concat (reverse tokens)))
-		(iter (cdr x) (cons (car x) tokens))))
-	    (cdr tree)))
+      (for-each (lambda (x)
+		  (if (eq (car x) word-terminator)
+		      (callback (apply concat (reverse tokens)))
+		    (iter (cdr x) (cons (car x) tokens))))
+		(cdr tree)))
     (iter tree '()))
 
   (define (make-trie-from-file filename #!key callback)

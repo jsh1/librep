@@ -42,10 +42,10 @@
 		    string))
 
   (define (print-params stream params)
-    (mapc (lambda (cell)
-	    (format stream " %s=\"%s\""
-		    (car cell) (substitute-entities (cdr cell))))
-	  params))
+    (for-each (lambda (cell)
+		(format stream " %s=\"%s\""
+			(car cell) (substitute-entities (cdr cell))))
+	      params))
 
   (define (print-xml-item stream item)
     (cond ((stringp item)
@@ -63,8 +63,8 @@
 		  (write stream "/>"))
 		 (t
 		  (write stream #\>)
-		  (mapc (lambda (x)
-			  (print-xml-item stream x)) (nthcdr 2 item))
+		  (for-each (lambda (x)
+			      (print-xml-item stream x)) (nthcdr 2 item))
 		  (format stream "</%s>" (car item)))))
 
 	  (t (error "Unknown item type: %s" item)))))
