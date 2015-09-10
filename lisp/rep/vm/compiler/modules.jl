@@ -25,12 +25,12 @@
 
     (export current-module
 	    macro-env
-	    variable-ref-p
+	    variable-ref?
 	    locate-variable
 	    compiler-symbol-value
-	    compiler-boundp
-	    compiler-binding-from-rep-p
-	    compiler-binding-immutable-p
+	    compiler-bound?
+	    compiler-binding-from-rep?
+	    compiler-binding-immutable?
 	    get-procedure-handler
 	    get-language-property
 	    compiler-macroexpand
@@ -84,114 +84,114 @@
       (file-error nil)))
 
   ;; return t if the module called STRUCT exports a variable called VAR
-  (defun module-exports-p (struct var)
-    (and (symbolp var)
-	 (cond ((symbolp struct)
+  (defun module-exports? (struct var)
+    (and (symbol? var)
+	 (cond ((symbol? struct)
 		(let ((tem (find-structure struct)))
-		  (and tem (structure-exports-p tem var))))
-	       ((structurep struct)
-		(structure-exports-p struct var)))))
+		  (and tem (structure-exports? tem var))))
+	       ((structure? struct)
+		(structure-exports? struct var)))))
 
   ;; return t if ARG is a structure reference form
-  (defun structure-ref-p (arg)
-    (and (eq (car arg) 'structure-ref)
+  (defun structure-ref? (arg)
+    (and (eq? (car arg) 'structure-ref)
 	 (memq (locate-variable 'structure-ref) '(rep rep.module-system))))
 
   ;; return t if ARG refers to a variable
-  (defun variable-ref-p (arg)
-    (or (symbolp arg) (structure-ref-p arg)))
+  (defun variable-ref? (arg)
+    (or (symbol? arg) (structure-ref? arg)))
 
   ;; return the name of the structure exporting VAR to the current
   ;; structure, or nil
   (defun locate-variable (var)
-    (if (structure-ref-p var)
+    (if (structure-ref? var)
 	(nth 1 var)
       (let loop ((rest (fluid open-modules)))
 	(if rest
-	    (if (module-exports-p (car rest) var)
+	    (if (module-exports? (car rest) var)
 		(car rest)
 	      (loop (cdr rest)))
 	  ;; it's not exported by any opened modules, if we have a handle
 	  ;; on the current module (i.e. we're compiling code not in
 	  ;; a module definition) try looking in that
-	  (if (and (symbolp var) (fluid current-structure)
-		   (structure-bound-p (fluid current-structure) var))
+	  (if (and (symbol? var) (fluid current-structure)
+		   (structure-bound? (fluid current-structure) var))
 	      (fluid current-module)
 	    nil)))))
 
   (defun variable-stem (var)
-    (if (consp var)
+    (if (pair? var)
 	(nth 2 var)			;structure-ref
       var))
 
   (defun symbol-value-1 (var)
-    (cond ((and (symbolp var) (special-variable-p var))
+    (cond ((and (symbol? var) (special-variable? var))
 	   (symbol-value var))
-	  ((and (symbolp var) (fluid current-structure)
-		(structure-bound-p (fluid current-structure) var))
+	  ((and (symbol? var) (fluid current-structure)
+		(structure-bound? (fluid current-structure) var))
 	   (%structure-ref (fluid current-structure) var))
-	  ((has-local-binding-p var) nil)
+	  ((has-local-binding? var) nil)
 	  (t
 	   (let* ((struct (locate-variable var))
 		  (module (and struct (find-structure struct))))
 	     (and module
-		  (structure-bound-p module (variable-stem var))
+		  (structure-bound? module (variable-stem var))
 		  (%structure-ref module (variable-stem var)))))))
 
   ;; if possible, return the value of variable VAR, else return nil
   (defun compiler-symbol-value (var)
     (let ((value (symbol-value-1 var)))
       ;; if the value is an autoload, try to load it
-      (if (and (closurep value)
-	       (eq (car (closure-function value)) 'autoload))
+      (if (and (closure? value)
+	       (eq? (car (closure-function value)) 'autoload))
 	  (load-autoload value)
 	value)))
 
-  (defun compiler-boundp (var)
-    (and (symbolp var)
+  (defun compiler-bound? (var)
+    (and (symbol? var)
 	 (or (locate-variable var)
-	     (and (special-variable-p var) (boundp var)))))
+	     (and (special-variable? var) (bound? var)))))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
-  (defun compiler-binding-from-rep-p (var)
-    (if (structure-ref-p var)
-	(eq (nth 1 var) 'rep)
-      (and (not (has-local-binding-p var))
-	   (eq (locate-variable var) 'rep))))
+  (defun compiler-binding-from-rep? (var)
+    (if (structure-ref? var)
+	(eq? (nth 1 var) 'rep)
+      (and (not (has-local-binding? var))
+	   (eq? (locate-variable var) 'rep))))
 
   ;; return t if the binding of VAR is a known constant
   ;; (not including those in comp-constant-env)
-  (defun compiler-binding-immutable-p (var)
-    (and (not (has-local-binding-p var))
+  (defun compiler-binding-immutable? (var)
+    (and (not (has-local-binding? var))
 	 (let ((struct (locate-variable var)))
-	   (and struct (binding-immutable-p (variable-stem var)
+	   (and struct (binding-immutable? (variable-stem var)
 					    (find-structure struct))))))
 
   (defun get-language-property (prop)
     (and (fluid current-language) (get (fluid current-language) prop)))
 
   (defun get-procedure-handler (name prop-name)
-    (unless (has-local-binding-p name)
+    (unless (has-local-binding? name)
       (let*
 	  ((struct (locate-variable name))
 	   (prop (and struct (get struct prop-name))))
-	(if (and prop (symbolp prop))
+	(if (and prop (symbol? prop))
 	    (get (variable-stem name) prop)
 	  prop))))
 
   (defun compiler-macroexpand-1 (form)
-    (when (and (consp form)
-	       (symbolp (car form))
-	       (not (has-local-binding-p (car form))))
+    (when (and (pair? form)
+	       (symbol? (car form))
+	       (not (has-local-binding? (car form))))
       (let* ((def (assq (car form) (fluid macro-env)))
 	     ;; make #<subr macroexpand> pass us any inner expansions
 	     (*macro-environment* compiler-macroexpand-1))
 	(if def
 	    (setq form (apply (cdr def) (cdr form)))
 	  (setq def (compiler-symbol-value (car form)))
-	  (when (and (eq (car def) 'macro) (functionp (cdr def)))
-	    (when (and (closurep (cdr def))
-		       (eq (car (closure-function (cdr def))) 'autoload))
+	  (when (and (eq? (car def) 'macro) (function? (cdr def)))
+	    (when (and (closure? (cdr def))
+		       (eq? (car (closure-function (cdr def))) 'autoload))
 	      (setq def (load-autoload (cdr def))))
 	    (setq form (apply (cdr def) (cdr form)))))))
     form)
@@ -201,7 +201,7 @@
       (let
 	  ((out (compiler-macroexpand-1 in)))
 	;;(format *standard-error* "in: %S, out: %S\n" in out)
-	(if ((or pred eq) in out)
+	(if ((or pred eq?) in out)
 	    out
 	  (loop out)))))
 
@@ -211,10 +211,10 @@
 		 (current-module (fluid current-module))
 		 (current-structure (fluid current-structure))
 		 (current-language (fluid current-language))
-		 (open-modules (if (eq opened t)
+		 (open-modules (if (eq? opened t)
 				   (fluid open-modules)
 				 opened))
-		 (accessed-modules (if (eq accessed t)
+		 (accessed-modules (if (eq? accessed t)
 				       (fluid accessed-modules)
 				     accessed))
 		 (const-env nil)
@@ -252,7 +252,7 @@
   (defun note-require (feature)
     (unless (or (memq feature (fluid open-modules))
 		(and (fluid current-structure)
-		     (eval `(featurep ',feature) (fluid current-structure))))
+		     (eval `(feature? ',feature) (fluid current-structure))))
       ;; XXX this is broken; there's no way to tell if we're trying
       ;; XXX to load a module, or a bare file.
       (cond ((get-structure feature)
@@ -350,7 +350,7 @@
 	 header)
 
       (setq body (cdr body))
-      (unless (listp (car config))
+      (unless (list? (car config))
 	(setq config (list config)))
       (for-each (lambda (clause)
 		  (case (car clause)
@@ -402,7 +402,7 @@
 	  (memq struct (fluid open-modules))
 	  (compiler-error
 	   "referencing non-accessible structure `%s'" struct))
-      (or (module-exports-p struct var)
+      (or (module-exports? struct var)
 	  (compiler-error
 	   "referencing private variable `%s#%s'" struct var))
       (compile-constant struct)
@@ -422,7 +422,7 @@
 		 (current-fun function)
 		 (output-stream nil))
       (let ((body (closure-function function)))
-	(unless (bytecodep body)
+	(unless (bytecode? body)
 	  (call-with-structure
 	   (lambda ()
 	     (set-closure-function function (compile-lambda body name)))
@@ -435,5 +435,5 @@
     (let ((struct (intern-structure struct)))
       (when struct
 	(structure-walk (lambda (var value)
-			  (when (closurep value)
+			  (when (closure? value)
 			    (compile-function value var))) struct)))))

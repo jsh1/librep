@@ -37,12 +37,12 @@
 ;;; Constant folding
 
   (defun foldablep (name)
-    (unless (has-local-binding-p name)
+    (unless (has-local-binding? name)
       (let ((fun (get-procedure-handler name 'compiler-foldablep)))
 	(and fun (fun name)))))
 
   (defun quote-constant (value)
-    (if (or (symbolp value) (consp value))
+    (if (or (symbol? value) (pair? value))
 	(list 'quote value)
       value))
 
@@ -52,11 +52,11 @@
     (catch 'exit
       (let
 	  ((args (map (lambda (arg)
-			(when (consp arg)
+			(when (pair? arg)
 			  (setq arg (compiler-macroexpand arg)))
-			(when (and (consp arg) (foldablep (car arg)))
+			(when (and (pair? arg) (foldablep (car arg)))
 			  (setq arg (fold-constants arg)))
-			(if (compiler-constant-p arg)
+			(if (compiler-constant? arg)
 			    (compiler-constant-value arg)
 			  ;; Not a constant, abort, abort
 			  (throw 'exit form)))
@@ -69,9 +69,9 @@
       (let loop ((result '())
 		 (first (car forms))
 		 (rest (cdr forms)))
-	(cond ((null rest) (nreverse (cons first result)))
-	      ((and (compiler-constant-p first)
-		    rest (compiler-constant-p (car rest)))
+	(cond ((null? rest) (nreverse (cons first result)))
+	      ((and (compiler-constant? first)
+		    rest (compiler-constant? (car rest)))
 	       (loop result
 		     (quote-constant
 		      (folder (compiler-constant-value first)
@@ -80,9 +80,9 @@
 	      (t (loop (cons first result) (car rest) (cdr rest)))))))
 
   (defun mash-constants (folder forms)
-    (let ((consts (filter compiler-constant-p forms))
+    (let ((consts (filter compiler-constant? forms))
 	  (non-consts (filter (lambda (x)
-				(not (compiler-constant-p x))) forms)))
+				(not (compiler-constant? x))) forms)))
       (if consts
 	  (cons (quote-constant
 		 (apply folder (map compiler-constant-value consts)))
@@ -94,11 +94,11 @@
   (defun source-code-transform (form)
     (let (tem)
       ;; first try constant folding
-      (when (and (consp form) (foldablep (car form)))
+      (when (and (pair? form) (foldablep (car form)))
 	(setq form (fold-constants form)))
 
       ;; then look for a specific tranformer
-      (when (and (symbolp (car form))
+      (when (and (symbol? (car form))
 		 (setq tem (get-procedure-handler
 			    (car form) 'compiler-transform-property)))
 	(setq form (tem form)))

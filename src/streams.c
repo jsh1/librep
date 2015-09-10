@@ -1146,10 +1146,10 @@ stream will only return the new characters.
   return string;
 }
 
-DEFUN("input-stream-p", Finput_stream_p,
+DEFUN("input-stream?", Finput_stream_p,
       Sinput_stream_p, (repv arg), rep_Subr1) /*
-::doc:rep.io.streams#input-stream-p::
-input-stream-p ARG
+::doc:rep.io.streams#input-stream?::
+input-stream? ARG
 
 Returns t if ARG is an input stream.
 ::end:: */
@@ -1184,10 +1184,10 @@ Returns t if ARG is an input stream.
   return rep_nil;
 }
 
-DEFUN("output-stream-p", Foutput_stream_p,
+DEFUN("output-stream?", Foutput_stream_p,
       Soutput_stream_p, (repv arg), rep_Subr1) /*
-::doc:rep.io.streams#output-stream-p::
-output-stream-p ARG
+::doc:rep.io.streams#output-stream?::
+output-stream? ARG
 
 Returns t if ARG is an output stream.
 ::end:: */

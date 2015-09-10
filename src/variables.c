@@ -231,7 +231,7 @@ variable will be set (if necessary) not the local value.)
     }
   }
 
-  /* Only set the [default] value if its not boundp or the definition
+  /* Only set the [default] value if its not bound? or the definition
     is weak and we're currently unrestricted */
 
   if (bound == rep_nil
@@ -500,10 +500,10 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
   return val;
 }
 
-DEFUN("default-boundp", Fdefault_boundp,
+DEFUN("default-bound?", Fdefault_boundp,
       Sdefault_boundp, (repv sym), rep_Subr1) /*
-::doc:rep.lang.symbols#default-boundp::
-default-boundp SYMBOL
+::doc:rep.lang.symbols#default-bound?::
+default-bound? SYMBOL
 
 Returns t if SYMBOL has a default value.
 ::end:: */
@@ -518,9 +518,9 @@ Returns t if SYMBOL has a default value.
   }
 }
 
-DEFUN("boundp", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
-::doc:rep.lang.symbols#boundp::
-boundp SYMBOL
+DEFUN("bound?", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
+::doc:rep.lang.symbols#bound?::
+bound? SYMBOL
 
 Returns t if SYMBOL has a value as a variable.
 ::end:: */
@@ -639,10 +639,10 @@ Mark SYMBOL as being a special (dynamically-bound) variable.
   return sym;
 }
 
-DEFUN("special-variable-p", Fspecial_variable_p, Sspecial_variable_p,
+DEFUN("special-variable?", Fspecial_variable_p, Sspecial_variable_p,
       (repv sym), rep_Subr1) /*
-::doc:rep.lang.symbols#special-variable-p::
-special-variable-p SYMBOL
+::doc:rep.lang.symbols#special-variable?::
+special-variable? SYMBOL
 
 Returns t if SYMBOL is a special variable (dynamically scoped).
 ::end:: */

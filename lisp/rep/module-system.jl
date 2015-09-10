@@ -73,7 +73,7 @@ exported definitions into the currently module, while accessing a
 module makes the exported definitions available from the current module
 using the `structure-ref' form."
 
-  (unless (listp (car config))
+  (unless (list? (car config))
     (setq config (list config)))
   (list '%make-structure (list '%parse-interface (list 'quote sig))
 	(list* 'lambda nil (cons '(open rep.module-system) config))
@@ -88,7 +88,7 @@ BODY.
 See the `define-interface' and `structure' macros for descriptions of
 the interface and configuration clause syntaxes respectively."
 
-  (unless (listp (car config))
+  (unless (list? (car config))
     (setq config (list config)))
   (list '%make-structure (list '%parse-interface (list 'quote sig))
 	(list* 'lambda nil (cons '(open rep.module-system) config))
@@ -102,7 +102,7 @@ created, each exporting a particular view of the underlying bindings.
 STRUCTS is a list defining the names and interfaces of the created
 modules, each item has the form `(NAME INTERFACE)'. CONFIG and BODY are
 exactly the same as in the `define-structure' syntax."
-  (unless (listp (car config))
+  (unless (list? (car config))
     (setq config (list config)))
   (require 'rep.lang.backquote)
   (let ((tem (gensym)))

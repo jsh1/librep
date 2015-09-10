@@ -200,7 +200,7 @@ DEFUN("eq-hash", Feq_hash, Seq_hash, (repv value), rep_Subr1) /*
 ::doc:rep.data.tables#eq-hash::
 eq-hash ARG
 
-Return a positive fixnum somehow related to object ARG, such that (eq X
+Return a positive fixnum somehow related to object ARG, such that (eq? X
 Y) implies (= (eq-hash X) (eq-hash Y)).
 ::end:: */
 {
@@ -248,7 +248,7 @@ DEFUN("equal-hash", Fequal_hash, Sequal_hash, (repv x), rep_Subr1) /*
 ::doc:rep.data.tables#equal-hash::
 equal-hash ARG
 
-Return a positive fixnum somehow related to ARG, such that (equal X Y)
+Return a positive fixnum somehow related to ARG, such that (equal? X Y)
 implies (= (equal-hash X) (equal-hash Y)).
 ::end:: */
 {
@@ -311,9 +311,9 @@ it being garbage collected.
   return make_table(hash_fun, cmp_fun, true);
 }
 
-DEFUN("tablep", Ftablep, Stablep, (repv arg), rep_Subr1) /*
-::doc:rep.data.tables#tablep::
-tablep ARG
+DEFUN("table?", Ftablep, Stablep, (repv arg), rep_Subr1) /*
+::doc:rep.data.tables#table?::
+table? ARG
 
 Return true if ARG is a hash table.
 ::end:: */
@@ -391,10 +391,10 @@ Returns false if no such value exists.
   return n ? n->value : rep_nil;
 }
 
-DEFUN("table-bound-p", Ftable_bound_p,
+DEFUN("table-bound?", Ftable_bound_p,
       Stable_bound_p, (repv tab, repv key), rep_Subr2) /*
-::doc:rep.data.tables#table-bound-p::
-table-bound-p TABLE KEY
+::doc:rep.data.tables#table-bound?::
+table-bound? TABLE KEY
 
 Returns true if the hash table TABLE contains a value associated with
 KEY.

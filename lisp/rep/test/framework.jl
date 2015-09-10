@@ -37,7 +37,7 @@
 
 	    ;; private functions used in macros
 	    self-test/failed
-	    self-test/disabledp)
+	    self-test/disabled?)
 
     (open rep
 	  rep.util.autoloader
@@ -68,11 +68,11 @@
   (define (self-test/failed type message)
     (format *standard-error* "\n ** %s failed: %s\n\n"
 	    (capitalize-string (symbol-name type)) message)
-    (when (and (eq type 'test) (fluid failed-tests))
+    (when (and (eq? type 'test) (fluid failed-tests))
       (fluid-set failed-tests (1+ (fluid failed-tests))))
     (abort-if-fatal type message))
 
-  (define (self-test/disabledp type) (memq type disabled))
+  (define (self-test/disabled? type) (memq type disabled))
 
 
 ;;; configuration
@@ -116,21 +116,21 @@
 
   (define (run-self-tests-and-exit)
     (let ((failures (run-all-self-tests)))
-      (throw 'quit (if (zerop failures) 0 1))))
+      (throw 'quit (if (zero? failures) 0 1))))
 
 
 ;;; test macros
 
   (defmacro assert (form)
-    `(or (self-test/disabledp 'assertion)
+    `(or (self-test/disabled? 'assertion)
 	 ,form (self-test/failed 'assertion ,(prin1-to-string form))))
 
   (defmacro check (form)
-    `(or (self-test/disabledp 'check)
+    `(or (self-test/disabled? 'check)
 	 ,form (self-test/failed 'check ,(prin1-to-string form))))
 
   (defmacro test (form)
-    `(or (self-test/disabledp 'test)
+    `(or (self-test/disabled? 'test)
 	 ,form (self-test/failed 'test ,(prin1-to-string form))))
 
 

@@ -49,58 +49,57 @@
   ;; list of all safe functions (only those imported into this
   ;; module may be placed in this list)
   (define gaol-safe-functions
-    '(nil t % * + - / /= 1+ 1- < <= = > >= add-hook alpha-char-p
-      alphanumericp and append apply aref arrayp aset ash assoc
-      assoc-regexp assq atom backquote beep boundp bytecodep call-hook
+    '(nil t % * + - / /= 1+ 1- < <= = > >= add-hook char-alphabetic?
+      char-alphanumeric? and append apply aref array? aset ash assoc
+      assoc-regexp assq atom backquote beep bound? bytecode? call-hook
       car caar cadr caaar cdaar cadar cddar caadr cdadr caddr cdddr
       caaaar cadaar caadar caddar caaadr cadadr caaddr cadddr cdaaar
       cddaar cdadar cdddar cdaadr cddadr cdaddr cddddr case catch
-      call-with-catch cdr cdar cddr char-downcase char-upcase closurep
+      call-with-catch cdr cdar cddr char-downcase char-upcase closure?
       complete-string concat cond condition-case
-      call-with-error-handlers cons consp copy-sequence copy-stream
-      current-time current-time-string default-boundp default-value
+      call-with-error-handlers cons pair? copy-sequence copy-stream
+      current-time current-time-string default-bound? default-value
       defconst %define define defmacro defsubst defun defvar
-      delete delete-if delete-if-not delq digit-char-p do
-      elt eq eql equal error eval eval-when-compile
-      expand-last-match featurep filter
-      for-each format funcall function functionp garbage-collect gensym get
-      get-output-stream-string getenv identity if integerp interactive
-      intern lambda last length let let* letrec list list* listp logand logior
-      lognot logxor lower-case-p lsh macroexpand macrop
+      delete delete-if delete-if-not delq char-numeric? do
+      elt eq? eqv? equal? error eval eval-when-compile
+      expand-last-match feature? filter
+      for-each format funcall function function? garbage-collect gensym get
+      get-output-stream-string getenv identity if integer? interactive
+      intern lambda last length let let* letrec list list* list? logand logior
+      lognot logxor char-lower-case? lsh macroexpand macro?
       make-closure make-list make-string make-string-input-stream
       make-string-output-stream make-symbol make-vector
       makunbound map mapc mapcar match-end match-start max member memq memql
-      message min mod nconc nop not nreverse nth nthcdr null numberp or
+      message min mod nconc nop not nreverse nth nthcdr null? number? or
       prin1 prin1-to-string princ print prog1 prog2 progn put quote
       quote-regexp random rassoc rassq read read-char read-chars
-      read-from-string read-line reverse rplaca rplacd sequencep set
+      read-from-string read-line reverse rplaca rplacd sequence? set
       set-default setcar setcdr setplist setq setq-default
-      signal sit-for sleep-for sort space-char-p special-form-p
-      special-variable-p streamp string-equal string-head-eq
-      string-lessp string-looking-at string-match string-split
-      string-replace string<? string=?
-      stringp subr-name subrp substring symbol-name symbol-plist
-      symbol-value symbolp system-name throw
+      signal sit-for sleep-for sort char-whitespace? special-form?
+      special-variable? stream? string-prefix? string-looking-at
+      string-match string-split string-replace string<? string=?
+      string? subr-name subr? substring symbol-name symbol-plist
+      symbol-value symbol? system-name throw
       translate-string unless unwind-protect call-with-unwind-protect
-      upper-case-p user-full-name user-login-name vector vectorp when
+      char-upper-case? user-full-name user-login-name vector vector? when
       while with-internal-definitions with-object write
 
-      zerop remainder quotient modulo floor ceiling truncate round exp
-      log sin cos tan asin acos atan sqrt expt gcd fixnump rationalp
-      realp exactp inexactp exact->inexact inexact->exact numerator
-      denominator positivep negativep oddp evenp abs lcm
+      zero? remainder quotient modulo floor ceiling truncate round exp
+      log sin cos tan asin acos atan sqrt expt gcd fixnum? rational?
+      real? exact? inexact? exact->inexact inexact->exact numerator
+      denominator positive? negative? odd? even? abs lcm
 
-      make-datum define-datum-printer datum-ref datum-set has-type-p
+      make-datum define-datum-printer datum-ref datum-set datum?
 
       make-fluid fluid fluid-set with-fluids let-fluids
 
-      string->number number->string mapconcat string-upper-case-p
-      string-lower-case-p string-capitalized-p string-upcase string-downcase
+      string->number number->string mapconcat string-upper-case?
+      string-lower-case? string-capitalized? string-upcase string-downcase
       capitalize-string mapconcat
 
       ;; make-timer delete-timer set-timer
       ;; make-table make-weak-table string-hash symbol-hash eq-hash
-      ;; equal-hash tablep table-ref table-set table-unset table-walk
+      ;; equal-hash table? table-ref table-set table-unset table-walk
 
       downcase-table flatten-table upcase-table rep-version))
 

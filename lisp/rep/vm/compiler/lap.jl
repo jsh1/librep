@@ -45,7 +45,7 @@
 
   ;; Output one opcode and its optional argument
   (define (emit-insn insn)
-    (when (consp insn)
+    (when (pair? insn)
       ;; so the peepholer can safely modify code
       (setq insn (copy-sequence insn)))
     (fluid-set intermediate-code (cons insn (fluid intermediate-code))))
@@ -84,18 +84,18 @@
   ;; reload lex-bindings value, preserving eq-ness of cells
   (define (reload-lex-bindings saved)
     (let loop ((rest (fluid lex-bindings)))
-      (if (eq (caar rest) (caar saved))
+      (if (eq? (caar rest) (caar saved))
 	  (progn
 	    (fluid-set lex-bindings rest)
 	    (do ((old rest (cdr old))
 		 (new saved (cdr new)))
-		((null old))
+		((null? old))
 	      (rplacd (car old) (cdr (car new)))))
 	(loop (cdr rest)))))
 
   (define (reload-state)
     (for-each (lambda (cell)
-		(if (eq (car cell) lex-bindings)
+		(if (eq? (car cell) lex-bindings)
 		    (reload-lex-bindings (cdr cell))
 		  (fluid-set (car cell) (cdr cell))))
 	      (car (fluid saved-state)))))

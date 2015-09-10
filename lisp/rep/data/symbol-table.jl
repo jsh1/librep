@@ -24,7 +24,7 @@
 ;; Commentary:
 
 ;; Structures provide the most efficient means of maintaining mappings
-;; from symbols to values (tables using eq hashing would be comparable,
+;; from symbols to values (tables using eq? hashing would be comparable,
 ;; but less efficient since they're more general).
 
 ;; However, I don't want to expose the first-class structure interface
@@ -36,7 +36,7 @@
     (export make-symbol-table
 	    symbol-table-ref
 	    symbol-table-set
-	    symbol-table-boundp
+	    symbol-table-bound?
 	    symbol-table-walk)
 
     (open rep
@@ -48,14 +48,14 @@
     (make-structure))
 
   (define (symbol-table-ref table var)
-    (and (structure-bound-p table var)
+    (and (structure-bound? table var)
 	 (%structure-ref table var)))
 
   (define (symbol-table-set table var value)
     (structure-define table var value))
 
-  (define (symbol-table-boundp table var)
-    (structure-bound-p table var))
+  (define (symbol-table-bound? table var)
+    (structure-bound? table var))
 
   (define (symbol-table-walk fun table)
     (structure-walk fun table)))

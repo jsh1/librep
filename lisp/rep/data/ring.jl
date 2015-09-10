@@ -26,6 +26,7 @@
     (export ring-capacity
 	    ring-size
 	    make-ring
+	    ring?
 	    ring-append
 	    ring-ref
 	    ring-replace
@@ -85,6 +86,10 @@ specified the default capacity `ring-default-size' is used."
       (set-pos ring 0)
       ring))
 
+  (define (ring? arg)
+    "Returns true if ARG is a ring buffer."
+    (datum? arg key))
+
   (define (ring-append ring object)
     "Append OBJECT to the ring buffer RING. This may overwrite a previously
 added object."
@@ -108,7 +113,7 @@ DEPTH nil is returned."
   (define (ring-replace ring object)
     "Replaces the most recently added object in ring buffer RING with OBJECT.
 If RING contains no items, add OBJECT as the first."
-    (if (zerop (ring-size ring))
+    (if (zero? (ring-size ring))
 	(add-to-ring ring object)
       (set-item ring (mod (1- (get-pos ring)) (ring-capacity ring)) object)))
 

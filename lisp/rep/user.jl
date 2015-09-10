@@ -54,7 +54,7 @@
 
   (let* ((do-load
 	  (lambda (name)
-	    (cond ((file-exists-p name)
+	    (cond ((file-exists? name)
 		   (load name nil t t))
 		  ((string-match "\\.jlc?$" name)
 		   (load name))

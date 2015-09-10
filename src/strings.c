@@ -337,9 +337,9 @@ INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
   return s;
 }
 
-DEFUN("stringp", Fstringp, Sstringp, (repv arg), rep_Subr1) /*
-::doc:rep.data#stringp::
-stringp ARG
+DEFUN("string?", Fstringp, Sstringp, (repv arg), rep_Subr1) /*
+::doc:rep.data#string?::
+string? ARG
 
 Returns t is ARG is a string.
 ::end:: */
@@ -463,15 +463,15 @@ a character or a list or vector of characters.
   return string;
 }
 
-DEFUN("string-head-eq", Fstring_head_eq, Sstring_head_eq,
+DEFUN("string-prefix?", Fstring_head_eq, Sstring_head_eq,
       (repv str1, repv str2), rep_Subr2) /*
-::doc:rep.data#string-head-eq::
-string-head-eq STRING1 STRING2
+::doc:rep.data#string-prefix?::
+string-prefix? STRING PREFIX-STRING
 
-Returns t if STRING2 matches the beginning of STRING1, i.e.,
+Returns t if PREFIX-STRING matches the beginning of STRING, i.e.,
 
-  (string-head-eq "foobar" "foo") => t
-  (string-head-eq "foo" "foobar") => nil
+  (string-prefix? "foobar" "foo") => t
+  (string-prefix? "foo" "foobar") => nil
 
 ::end:: */
 {
@@ -545,7 +545,7 @@ string_compare_ci(repv str1, repv str2)
 DEFUN("string=?", Fstring_equal, Sstring_equal,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string=?::
-string-equal STRING1 STRING2
+string=? STRING1 STRING2
 
 Returns t if STRING1 and STRING2 are the same, ignoring case.
 ::end:: */
@@ -560,7 +560,7 @@ Returns t if STRING1 and STRING2 are the same, ignoring case.
 DEFUN("string<?", Fstring_less, Sstring_less,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string<?::
-string-lessp STRING1 STRING2
+string<? STRING1 STRING2
 
 Returns t if STRING1 is less than STRING2, ignoring case.
 ::end:: */
@@ -575,7 +575,7 @@ Returns t if STRING1 is less than STRING2, ignoring case.
 DEFUN("string<=?", Fstring_less_equal, Sstring_less_equal,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string<=?::
-string-lessp STRING1 STRING2
+string<=? STRING1 STRING2
 
 Returns t if STRING1 is less than or equal to STRING2, ignoring case.
 ::end:: */
@@ -590,7 +590,7 @@ Returns t if STRING1 is less than or equal to STRING2, ignoring case.
 DEFUN("string>?", Fstring_greater, Sstring_greater,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string>?::
-string-lessp STRING1 STRING2
+string>? STRING1 STRING2
 
 Returns t if STRING1 is greater than STRING2, ignoring case.
 ::end:: */
@@ -605,7 +605,7 @@ Returns t if STRING1 is greater than STRING2, ignoring case.
 DEFUN("string>=?", Fstring_greater_equal, Sstring_greater_equal,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string>=?::
-string-lessp STRING1 STRING2
+string>=? STRING1 STRING2
 
 Returns t if STRING1 is greater than or equal to STRING2, ignoring
 case.
@@ -621,7 +621,7 @@ case.
 DEFUN("string-ci=?", Fstring_equal_ci, Sstring_equal_ci,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string-ci=?::
-string-equal STRING1 STRING2
+string-ci=? STRING1 STRING2
 
 Returns t if STRING1 and STRING2 are the same, ignoring case.
 ::end:: */
@@ -636,7 +636,7 @@ Returns t if STRING1 and STRING2 are the same, ignoring case.
 DEFUN("string-ci<?", Fstring_less_ci, Sstring_less_ci,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string-ci<?::
-string-lessp STRING1 STRING2
+string-ci<? STRING1 STRING2
 
 Returns t if STRING1 is less than STRING2, ignoring case.
 ::end:: */
@@ -651,7 +651,7 @@ Returns t if STRING1 is less than STRING2, ignoring case.
 DEFUN("string-ci<=?", Fstring_less_equal_ci, Sstring_less_equal_ci,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string-ci<=?::
-string-lessp STRING1 STRING2
+string-ci<=? STRING1 STRING2
 
 Returns t if STRING1 is less than or equal to STRING2, ignoring case.
 ::end:: */
@@ -666,7 +666,7 @@ Returns t if STRING1 is less than or equal to STRING2, ignoring case.
 DEFUN("string-ci>?", Fstring_greater_ci, Sstring_greater_ci,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string-ci>?::
-string-lessp STRING1 STRING2
+string-ci>? STRING1 STRING2
 
 Returns t if STRING1 is greater than STRING2, ignoring case.
 ::end:: */
@@ -681,7 +681,7 @@ Returns t if STRING1 is greater than STRING2, ignoring case.
 DEFUN("string-ci>=?", Fstring_greater_equal_ci, Sstring_greater_equal_ci,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string-ci>=?::
-string-lessp STRING1 STRING2
+string-ci>=? STRING1 STRING2
 
 Returns t if STRING1 is greater than or equal to STRING2, ignoring
 case.

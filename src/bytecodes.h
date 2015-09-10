@@ -133,8 +133,8 @@
 #define OP_NOT 0x5d			/* push (not pop[1]) */
 #define OP_LOR 0x5e			/* push (logior pop[1] pop[2]) */
 #define OP_LAND 0x5f			/* push (logand pop[1] pop[2]) */
-#define OP_EQUAL 0x60			/* push (equal pop[1] pop[2]) */
-#define OP_EQ 0x61			/* push (eq pop[1] pop[2]) */
+#define OP_EQUAL 0x60			/* push (equal? pop[1] pop[2]) */
+#define OP_EQ 0x61			/* push (eq? pop[1] pop[2]) */
 #define OP_STRUCT_REF 0x62		/* push (structure-ref pop[1] pop[2])*/
 #define OP_GT 0x64			/* push (> pop[1] pop[2]) */
 #define OP_GE 0x65			/* push (>= pop[1] pop[2]) */
@@ -143,14 +143,14 @@
 #define OP_INC 0x68			/* push (1+ pop[1]) */
 #define OP_DEC 0x69			/* push (1- pop[1]) */
 #define OP_ASH 0x6a			/* push (ash pop[1] pop[2]) */
-#define OP_ZEROP 0x6b			/* push (zerop pop[1]) */
-#define OP_NULL 0x6c			/* push (null pop[1]) */
+#define OP_ZEROP 0x6b			/* push (zero? pop[1]) */
+#define OP_NULL 0x6c			/* push (null? pop[1]) */
 #define OP_ATOM 0x6d			/* push (atom pop[1]) */
-#define OP_CONSP 0x6e			/* push (consp pop[1]) */
-#define OP_LISTP 0x6f			/* push (listp pop[1]) */
-#define OP_NUMBERP 0x70			/* push (numberp pop[1]) */
-#define OP_STRINGP 0x71			/* push (stringp pop[1]) */
-#define OP_VECTORP 0x72			/* push (vectorp pop[1]) */
+#define OP_CONSP 0x6e			/* push (pair? pop[1]) */
+#define OP_LISTP 0x6f			/* push (list? pop[1]) */
+#define OP_NUMBERP 0x70			/* push (number? pop[1]) */
+#define OP_STRINGP 0x71			/* push (string? pop[1]) */
+#define OP_VECTORP 0x72			/* push (vector? pop[1]) */
 #define OP_CATCH 0x73			/* if stk[0] == (car stk[1])
 					    then stk[0] := nil,
 					         stk[1] = (cdr stk[1]) */
@@ -159,8 +159,8 @@
 #define OP_BINDERR 0x75			/* bind (cons pop[1] SP) */
 #define OP_RETURN 0x76
 #define OP_UNBINDALL 0x77
-#define OP_BOUNDP 0x78			/* call-1 boundp */
-#define OP_SYMBOLP 0x79			/* push (symbolp pop[1]) */
+#define OP_BOUNDP 0x78			/* call-1 bound? */
+#define OP_SYMBOLP 0x79			/* push (symbol? pop[1]) */
 #define OP_GET 0x7a			/* call-2 get */
 #define OP_PUT 0x7b			/* call-3 put */
 #define OP_ERRORPRO 0x7c		/* cond = pop[1];
@@ -185,17 +185,17 @@
 #define OP_DELETE_IF 0x8c		/* call-2 delete-if */
 #define OP_DELETE_IF_NOT 0x8d		/* call-2 delete-if-not */
 #define OP_COPY_SEQUENCE 0x8e		/* call-1 copy-sequence */
-#define OP_SEQUENCEP 0x8f		/* call-1 sequencep */
-#define OP_FUNCTIONP 0x90		/* call-1 functionp */
-#define OP_SPECIAL_FORM_P 0x91		/* call-1 special-form-p */
-#define OP_SUBRP 0x92			/* call-1 subrp */
-#define OP_EQL 0x93			/* push (eql pop[1] pop[2]) */
+#define OP_SEQUENCEP 0x8f		/* call-1 sequence? */
+#define OP_FUNCTIONP 0x90		/* call-1 function? */
+#define OP_SPECIAL_FORM_P 0x91		/* call-1 special-form? */
+#define OP_SUBRP 0x92			/* call-1 subr? */
+#define OP_EQL 0x93			/* push (eqv? pop[1] pop[2]) */
 #define OP_LXOR 0x94			/* push (logxor pop[1] pop[2] */
 #define OP_MAX 0x95			/* push (max pop[1] pop[2]) */
 #define OP_MIN 0x96			/* push (min pop[1] pop[2]) */
 #define OP_FILTER 0x97			/* call-2 filter */
-#define OP_MACROP 0x98			/* call-1 macrop */
-#define OP_BYTECODEP 0x99		/* call-1 bytecodep */
+#define OP_MACROP 0x98			/* call-1 macro? */
+#define OP_BYTECODEP 0x99		/* call-1 bytecode? */
 
 #define OP_PUSHI0 0x9a			/* push #0 */
 #define OP_PUSHI1 0x9b			/* push #1 */
@@ -240,7 +240,7 @@
 
 #define OP_MAKE_CLOSURE 0xbc		/* push (make-closure pop[1] pop[2]) */
 #define OP_UNBINDALL_0 0xbd
-#define OP_CLOSUREP 0xbe		/* push (closurep pop[1]) */
+#define OP_CLOSUREP 0xbe		/* push (closure? pop[1]) */
 #define OP_POP_ALL 0xbf
 
 #define OP_FLUID_SET 0xc0

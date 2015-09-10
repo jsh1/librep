@@ -224,9 +224,9 @@ sdbm-error DBM
   return sdbm_error(rep_DBM(dbm)->dbm) ? Qt : rep_nil;
 }
 
-DEFUN("sdbmp", Fsdbmp, Ssdbmp, (repv arg), rep_Subr1) /*
-::doc:rep.io.db.sdbm#sdbmp::
-sdbmp ARG
+DEFUN("sdbm?", Fsdbmp, Ssdbmp, (repv arg), rep_Subr1) /*
+::doc:rep.io.db.sdbm#sdbm?::
+sdbm? ARG
 
 Returns t if ARG is an sdbm object (created by `sdbm-open').
 ::end:: */

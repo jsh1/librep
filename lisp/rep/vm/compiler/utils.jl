@@ -43,9 +43,9 @@
 	    increment-b-stack
 	    decrement-b-stack
 	    get-lambda-vars
-	    compiler-constant-p
+	    compiler-constant?
 	    compiler-constant-value
-	    constant-function-p
+	    constant-function?
 	    constant-function-value
 	    note-declaration)
 
@@ -81,17 +81,17 @@
   (define last-current-fun t)
 
   (define (ensure-output-stream)
-    (when (null (fluid output-stream))
-      (if (or *batch-mode* (not (featurep 'jade)))
+    (when (null? (fluid output-stream))
+      (if (or *batch-mode* (not (feature? 'jade)))
 	  (fluid-set output-stream (stdout-file))
 	(declare (bound open-buffer))
 	(fluid-set output-stream (open-buffer "*compilation-output*"))))
-    (when (and (featurep 'jade)
+    (when (and (feature? 'jade)
 	       (progn
 		 (declare (bound bufferp goto-buffer goto
 				 end-of-buffer current-buffer))
 		 (and (bufferp (fluid output-stream))
-		      (not (eq (current-buffer) (fluid output-stream))))))
+		      (not (eq? (current-buffer) (fluid output-stream))))))
       (goto-buffer (fluid output-stream))
       (goto (end-of-buffer))))
 
@@ -99,7 +99,7 @@
     (let ((c-dd (file-name-as-directory
 		 (canonical-file-name *default-directory*)))
 	  (c-file (canonical-file-name file)))
-      (if (string-head-eq c-file c-dd)
+      (if (string-prefix? c-file c-dd)
 	  (substring c-file (length c-dd))
 	file)))
 
@@ -117,8 +117,8 @@
   (defun compiler-message (fmt #!key form #!rest args)
     (unless (fluid silence-compiler)
       (ensure-output-stream)
-      (unless (and (eq last-current-fun (fluid current-fun))
-		   (eq last-current-file (fluid current-file)))
+      (unless (and (eq? last-current-fun (fluid current-fun))
+		   (eq? last-current-file (fluid current-file)))
 	(if (fluid current-fun)
 	    (format (fluid output-stream) "%sIn function `%s':\n"
 		    (file-prefix form) (fluid current-fun))
@@ -166,7 +166,7 @@
 	;; Scan the lambda-list for the number of required and optional
 	;; arguments, and whether there's a #!rest clause
 	(while args
-	  (if (symbolp args)
+	  (if (symbol? args)
 	      ;; (foo . bar)
 	      (aset count 2 t)
 	    (if (memq (car args) '(&optional &rest #!optional #!key #!rest))
@@ -179,7 +179,7 @@
 		  ((&rest #!rest)
 		   (setq args nil)
 		   (aset count 2 t)))
-	      (if (numberp state)
+	      (if (number? state)
 		  (aset count state (1+ (aref count state)))
 		(setq keys (cons (or (caar args) (car args)) keys)))))
 	  (setq args (cdr args)))
@@ -212,13 +212,13 @@
 
   ;; Test that a reference to variable NAME appears valid
   (defun test-variable-ref (name)
-    (when (and (symbolp name)
-	       (not (keywordp name))
-	       (null (memq name (fluid defvars)))
-	       (null (memq name (fluid defines)))
-	       (not (has-local-binding-p name))
-	       (null (assq name (fluid defuns)))
-	       (not (compiler-boundp name)))
+    (when (and (symbol? name)
+	       (not (keyword? name))
+	       (null? (memq name (fluid defvars)))
+	       (null? (memq name (fluid defines)))
+	       (not (has-local-binding? name))
+	       (null? (assq name (fluid defuns)))
+	       (not (compiler-bound? name)))
       (compiler-warning
        'bindings "referencing undeclared free variable `%s'" name)))
 
@@ -227,11 +227,11 @@
     (cond ((assq name (fluid defuns))
 	   (compiler-warning
 	    'shadowing "binding to `%s' shadows function" name))
-	  ((has-local-binding-p name)
+	  ((has-local-binding? name)
 	   (compiler-warning
 	    'shadowing "binding to `%s' shadows earlier binding" name))
-	  ((and (compiler-boundp name)
-		(functionp (compiler-symbol-value name)))
+	  ((and (compiler-bound? name)
+		(function? (compiler-symbol-value name)))
 	   (compiler-warning
 	    'shadowing "binding to `%s' shadows pre-defined value" name))))
 
@@ -239,27 +239,27 @@
   ;; XXX functions in comp-fun-bindings aren't type-checked
   ;; XXX this doesn't handle #!key params
   (defun test-function-call (name nargs)
-    (when (symbolp name)
+    (when (symbol? name)
       (catch 'return
 	(let
 	    ((decl (assq name (fluid defuns))))
-	  (when (and (null decl) (or (assq name (fluid inline-env))
-				     (compiler-boundp name)))
+	  (when (and (null? decl) (or (assq name (fluid inline-env))
+				     (compiler-bound? name)))
 	    (setq decl (or (cdr (assq name (fluid inline-env)))
 			   (compiler-symbol-value name)))
-	    (when (or (subrp decl)
-		      (and (closurep decl)
-			   (eq (car (closure-function decl)) 'autoload)))
+	    (when (or (subr? decl)
+		      (and (closure? decl)
+			   (eq? (car (closure-function decl)) 'autoload)))
 	      (throw 'return))
-	    (when (eq (car decl) 'macro)
+	    (when (eq? (car decl) 'macro)
 	      (setq decl (cdr decl)))
-	    (when (closurep decl)
+	    (when (closure? decl)
 	      (setq decl (closure-function decl)))
-	    (unless (bytecodep decl)
+	    (unless (bytecode? decl)
 	      (remember-function name (nth 1 decl)))
 	    (setq decl (assq name (fluid defuns))))
-	  (if (null decl)
-	      (unless (or (has-local-binding-p name)
+	  (if (null? decl)
+	      (unless (or (has-local-binding? name)
 			  (memq name (fluid defvars))
 			  (memq name (fluid defines))
 			  (locate-variable name))
@@ -275,7 +275,7 @@
 		   'parameters "%d %s required by `%s'; %d supplied"
 		   required (if (= required 1) "argument" "arguments")
 		   name nargs)
-		(when (and (null rest) (null keys)
+		(when (and (null? rest) (null? keys)
 			   (> nargs (+ required (or optional 0))))
 		  (compiler-warning
 		   'parameters "too many arguments to `%s' (%d given, %d used)"
@@ -317,7 +317,7 @@
     (let
 	(vars)
       (while args
-	(if (symbolp args)
+	(if (symbol? args)
 	    (setq vars (cons args vars))
 	  (unless (memq (car args) '(#!optional #!key #!rest &optional &rest))
 	    (setq vars (cons (or (caar args) (car args)) vars))))
@@ -328,42 +328,42 @@
 ;;; constant forms
 
 ;; Return t if FORM is a constant
-(defun compiler-constant-p (form)
+(defun compiler-constant? (form)
   (cond
-   ((consp form)
+   ((pair? form)
     ;; XXX this is wrong, but easy..!
-    (eq (car form) 'quote))
-   ((symbolp form)
-    (or (keywordp form)
+    (eq? (car form) 'quote))
+   ((symbol? form)
+    (or (keyword? form)
 	(assq form (fluid const-env))
-	(compiler-binding-immutable-p form)))
+	(compiler-binding-immutable? form)))
    ;; Assume self-evaluating
    (t t)))
 
 ;; If FORM is a constant, return its value
 (defun compiler-constant-value (form)
   (cond
-   ((consp form)
+   ((pair? form)
     ;; only quote
     (nth 1 form))
-   ((symbolp form)
-    (cond ((keywordp form) form)
-	  ((compiler-binding-immutable-p form)
+   ((symbol? form)
+    (cond ((keyword? form) form)
+	  ((compiler-binding-immutable? form)
 	   (compiler-symbol-value form))
 	  (t (cdr (assq form (fluid const-env))))))
    (t form)))
 
-(defun constant-function-p (form)
+(defun constant-function? (form)
   (setq form (compiler-macroexpand form))
   (and (memq (car form) '(lambda function))
        ;; XXX this is broken
-       (compiler-binding-from-rep-p (car form))))
+       (compiler-binding-from-rep? (car form))))
 
 (defun constant-function-value (form)
   (setq form (compiler-macroexpand form))
-  (cond ((eq (car form) 'lambda)
+  (cond ((eq? (car form) 'lambda)
 	 form)
-	((eq (car form) 'function)
+	((eq? (car form) 'function)
 	 (nth 1 form))))
 
 
@@ -381,7 +381,7 @@
 (defun declare-inline (form)
   (for-each
    (lambda (name)
-     (when (symbolp name)
+     (when (symbol? name)
        (unless (assq name (fluid inline-env))
 	 (fluid-set inline-env (cons (cons name nil) (fluid inline-env))))))
    (cdr form)))

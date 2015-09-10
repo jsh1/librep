@@ -1,5 +1,14 @@
 2015-09-10  John Harper  <jsh@unfactored.org>
 
+	* vectors.c, variables.c, tables.c, symbols.c, structures.c,
+	strings.c, streams.c, sockets.c, sequences.c, rep-sdbm.c,
+	rep-gdbm.c, readline.c, processes.c, numbers.c, lists.c,
+	lispmach.c, files.c, eval.c, datums.c, compare.c, closures.c,
+	characters.c, bytecodes.h, arrays.c, apply.c: renamed
+	predicates as `foo?` rather than `foop`. Also changed `consp`
+	to `pair?` and `null` to `nullp`, and some other functions to
+	either be compatible with scheme or just better
+
 	* strings.c: replaced string-equal and string-lessp by a full
 	set of scheme string comparators
 

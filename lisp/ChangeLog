@@ -1,5 +1,8 @@
 2015-09-10  John Harper  <jsh@unfactored.org>
 
+	* rep/*.jl: updated for renamed predicates. And added
+	`complex?` (always false)
+
 	* rep/data.jl, rep/io/file-handlers/remote.jl,
 	rep/io/file-handlers/remote/rep.jl,
 	rep/io/file-handlers/remote/ftp.jl,

@@ -121,11 +121,11 @@ character in the string. This will parse dates in RFC-822 mail messages."
 						(match-end 1)))
 		minute (string->number (substring string (match-start 2)
 						  (match-end 2)))
-		second (if (equal (match-start 3) (match-end 3))
+		second (if (equal? (match-start 3) (match-end 3))
 			   0
 			 (string->number (substring string (1+ (match-start 3))
 						    (match-end 3))))
-		timezone (if (equal (match-start 4) (match-end 4))
+		timezone (if (equal? (match-start 4) (match-end 4))
 			     "UT"
 			   (substring string (match-start 4) (match-end 4))))
 	  (if (setq tem (assoc timezone date-timezone-alist))

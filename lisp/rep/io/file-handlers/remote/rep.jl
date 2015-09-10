@@ -101,7 +101,7 @@
 (defconst remote-rep-struct-size 10)
 
 (defmacro remote-rep-status-p (session stat)
-  `(eq (aref ,session remote-rep-status) ,stat))
+  `(eq? (aref ,session remote-rep-status) ,stat))
 
 ;; Return an rep structure for HOST and USER, with a running rep session
 (defun remote-rep-open-host (host #!optional user)
@@ -151,7 +151,7 @@
 
 (defun remote-rep-close-session (session)
   (when (and (aref session remote-rep-process)
-	     (process-in-use-p (aref session remote-rep-process)))
+	     (process-in-use? (aref session remote-rep-process)))
     (aset session remote-rep-status 'dying)
     (set-process-output-stream (aref session remote-rep-process) nil)
     (set-process-error-stream (aref session remote-rep-process) nil)
@@ -160,7 +160,7 @@
 (defun remote-rep-close-host (host #!optional user)
   "Close the rep-remote subprocess connected to `USER@HOST'."
   (interactive "sHost:\nsUser:")
-  (when (or (null user) (string=? user ""))
+  (when (or (null? user) (string=? user ""))
     (setq user (remote-get-user host)))
   (catch 'foo
     (for-each (lambda (s)
@@ -178,7 +178,7 @@
 (defun remote-rep-get-session-by-process (process)
   (catch 'return
     (for-each (lambda (s)
-		(and (eq (aref s remote-rep-process) process)
+		(and (eq? (aref s remote-rep-process) process)
 		     (throw 'return s)))
 	      remote-rep-sessions)))
 
@@ -199,11 +199,11 @@
   (remote-rep-write session "%s" string))
 
 (defun remote-rep-while (session status #!optional type)
-  (when (and (not (eq status 'dying))
+  (when (and (not (eq? status 'dying))
 	     (remote-rep-status-p session 'dying))
     (error "rep-remote session is dying"))
   (while (remote-rep-status-p session status)
-    (when (and (process-running-p (aref session remote-rep-process))
+    (when (and (process-running? (aref session remote-rep-process))
 	       (accept-process-output-1 (aref session remote-rep-process)
 					remote-rep-timeout))
       (aset session remote-rep-status 'timed-out)
@@ -225,7 +225,7 @@
 
 ;; Return t if successful, else signal a file-error
 (defun remote-rep-error-if-unsuccessful (session #!optional type args)
-  (or (eq (aref session remote-rep-status) 'success)
+  (or (eq? (aref session remote-rep-status) 'success)
       (signal 'file-error
 	      (list (aref session remote-rep-error)
 		    type
@@ -265,7 +265,7 @@
     (let
 	((point 0))
       (while (< point (length output))
-	(cond ((and (null (aref session remote-rep-protocol))
+	(cond ((and (null? (aref session remote-rep-protocol))
 		    (string-match remote-rep-passwd-msgs output point))
 	       ;; Send password
 	       (remote-rep-write
@@ -309,7 +309,7 @@
 (defun remote-rep-sentinel (process)
   (let
       ((session (remote-rep-get-session-by-process process)))
-    (unless (process-in-use-p process)
+    (unless (process-in-use? process)
       (aset session remote-rep-process nil)
       (aset session remote-rep-dircache nil)
       (aset session remote-rep-status nil)
@@ -371,7 +371,7 @@
 			       (substring output point (+ point this)))
 			(setq remote-rep-len (- remote-rep-len this))
 			(setq point (+ point this)))
-		      (when (zerop remote-rep-len)
+		      (when (zero? remote-rep-len)
 			(aset session remote-rep-status 'success)))))
 	    (unwind-protect
 		(remote-rep-command session #\G nil remote-file)
@@ -552,7 +552,7 @@
   (let
       ((file-struct (remote-rep-get-file session file)))
     (while (and file-struct
-		(eq (aref file-struct remote-rep-file-type) 'symlink))
+		(eq? (aref file-struct remote-rep-file-type) 'symlink))
       (let
 	  ((link (remote-rep-read-symlink session file)))
 	(setq file (expand-file-name link (file-name-directory file)))
@@ -569,7 +569,7 @@
 	(if text
 	    (progn
 	      (setq file-struct (read-from-string text))
-	      (unless (vectorp file-struct)
+	      (unless (vector? file-struct)
 		(error "file-struct isn't a vector!: %S" file-struct))
 	      (aset cache-entry remote-rep-cache-entries
 		    (cons file-struct
@@ -640,17 +640,17 @@
 
 (defun remote-rep-handler (split-name op args)
   (cond
-   ((eq op 'canonical-file-name)
+   ((eq? op 'canonical-file-name)
     ;; XXX implement this by resolving symlinks
     (car args))
-   ((filep (car args))
+   ((file? (car args))
     ;; Operations on file handles
     (cond
      ((memq op '(seek-file flush-file write-buffer-contents
 		 read-file-contents insert-file-contents))
       ;; Just pass these through to the underlying file
       (apply (symbol-value op) (file-bound-stream (car args)) (cdr args)))
-     ((eq op 'close-file)
+     ((eq? op 'close-file)
       ;; Close the file, synchronise with the remote file if required
       (let*
 	  ((file (car args))
@@ -667,12 +667,12 @@
    ((memq op '(read-file-contents insert-file-contents copy-file-to-local-fs))
     ;; Need to get the file to the local fs
     (let
-	((local-name (if (eq op 'copy-file-to-local-fs)
+	((local-name (if (eq? op 'copy-file-to-local-fs)
 			 (nth 1 args)
 		       (make-temp-name)))
 	 (session (remote-rep-open-host (nth 1 split-name) (car split-name))))
       (remote-rep-get session (nth 2 split-name) local-name)
-      (if (eq op 'copy-file-to-local-fs)
+      (if (eq? op 'copy-file-to-local-fs)
 	  (set-file-modes local-name (remote-rep-handler split-name
 							 'file-modes
 							 (list (car args))))
@@ -683,20 +683,20 @@
    ((memq op '(write-buffer-contents copy-file-from-local-fs))
     ;; Need to get the file off the local fs
     (let
-	((local-name (if (eq op 'copy-file-from-local-fs)
+	((local-name (if (eq? op 'copy-file-from-local-fs)
 			 (car args)
 		       (make-temp-name)))
 	 (session (remote-rep-open-host (nth 1 split-name) (car split-name))))
-      (unless (eq op 'copy-file-from-local-fs)
+      (unless (eq? op 'copy-file-from-local-fs)
 	(apply (symbol-value op) local-name (cdr args)))
       (unwind-protect
 	  (remote-rep-put session local-name (nth 2 split-name))
-	(if (eq op 'copy-file-from-local-fs)
+	(if (eq? op 'copy-file-from-local-fs)
 	    (remote-rep-chmod
 	     session (file-modes local-name) (nth 2 split-name))
 	  (delete-file local-name)))
       t))
-   ((eq op 'copy-file)
+   ((eq? op 'copy-file)
     ;; Copying on the remote fs.
     ;; XXX For intra-session remote copies use the rep-remote copy command
     (let
@@ -707,9 +707,9 @@
 				   (list (car args) local-file))
 	       (remote-rep-handler dest-split 'copy-file-from-local-fs
 				   (list local-file (nth 1 args))))
-	(and (file-exists-p local-file)
+	(and (file-exists? local-file)
 	     (delete-file local-file)))))
-   ((eq op 'rename-file)
+   ((eq? op 'rename-file)
     (let
 	((session (remote-rep-open-host (nth 1 split-name) (car split-name)))
 	 (dest-split (remote-split-filename (nth 1 args))))
@@ -723,7 +723,7 @@
 	((session (remote-rep-open-host (nth 1 split-name) (car split-name)))
 	 (file-name (nth 2 split-name)))
       (cond
-       ((eq op 'directory-files)
+       ((eq? op 'directory-files)
 	(let
 	    ;; XXX this assumes local/remote have same naming structure!
 	    ((dir (file-name-as-directory file-name)))
@@ -732,19 +732,19 @@
 		 (aref f remote-rep-file-name))
 	       (aref (remote-rep-dir-cached-p session dir)
 		     remote-rep-cache-entries))))
-       ((eq op 'delete-file)
+       ((eq? op 'delete-file)
 	(remote-rep-rm session file-name))
-       ((eq op 'delete-directory)
+       ((eq? op 'delete-directory)
 	(remote-rep-rmdir session file-name))
-       ((eq op 'make-directory)
+       ((eq? op 'make-directory)
 	(remote-rep-mkdir session file-name))
-       ((eq op 'set-file-modes)
+       ((eq? op 'set-file-modes)
 	(remote-rep-chmod session (nth 1 args) file-name))
-       ((eq op 'make-symlink)
+       ((eq? op 'make-symlink)
 	(remote-rep-make-symlink session file-name (nth 1 args)))
-       ((eq op 'read-symlink)
+       ((eq? op 'read-symlink)
 	(remote-rep-read-symlink session file-name))
-       ((eq op 'open-file)
+       ((eq? op 'open-file)
 	(let
 	    ((type (nth 1 args))
 	     (local-file (make-temp-name))
@@ -765,35 +765,35 @@
 	  local-fh))
        (t
 	(let
-	    ((file (if (eq op 'file-symlink-p)
+	    ((file (if (eq? op 'file-symlink?)
 		       (remote-rep-get-file session file-name)
 		     (remote-rep-lookup-file session file-name))))
 	  (cond
-	   ((eq op 'file-exists-p)
+	   ((eq? op 'file-exists?)
 	    file)
-	   ((eq op 'file-regular-p)
-	    (and file (eq (aref file remote-rep-file-type) 'file)))
-	   ((eq op 'file-directory-p)
-	    (and file (eq (aref file remote-rep-file-type) 'directory)))
-	   ((eq op 'file-symlink-p)
-	    (and file (eq (aref file remote-rep-file-type) 'symlink)))
-	   ((eq op 'file-size)
+	   ((eq? op 'file-regular?)
+	    (and file (eq? (aref file remote-rep-file-type) 'file)))
+	   ((eq? op 'file-directory?)
+	    (and file (eq? (aref file remote-rep-file-type) 'directory)))
+	   ((eq? op 'file-symlink?)
+	    (and file (eq? (aref file remote-rep-file-type) 'symlink)))
+	   ((eq? op 'file-size)
 	    (and file (aref file remote-rep-file-size)))
-	   ((eq op 'file-modes)
+	   ((eq? op 'file-modes)
 	    (and file (aref file remote-rep-file-modes)))
-	   ((eq op 'file-modes-as-string)
+	   ((eq? op 'file-modes-as-string)
 	    (and file (aref file remote-rep-file-mode-string)))
-	   ((eq op 'file-nlinks)
+	   ((eq? op 'file-nlinks)
 	    (and file (aref file remote-rep-file-nlinks)))
-	   ((eq op 'file-modtime)
+	   ((eq? op 'file-modtime)
 	    (if file (aref file remote-rep-file-modtime) (cons 0 0)))
-	   ((eq op 'file-owner-p)
+	   ((eq? op 'file-owner?)
 	    (and file (remote-rep-file-owner-p session file)))
-	   ((eq op 'file-readable-p)
+	   ((eq? op 'file-readable?)
 	    (and file (/= (logand (aref file remote-rep-file-modes)
 				  (if (remote-rep-file-owner-p session file)
 				      #o400 #o004)) 0)))
-	   ((eq op 'file-writable-p)
+	   ((eq? op 'file-writable?)
 	    (and file (/= (logand (aref file remote-rep-file-modes)
 				  (if (remote-rep-file-owner-p session file)
 				      #o200 #o002)) 0)))

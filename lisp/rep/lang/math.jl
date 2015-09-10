@@ -28,33 +28,33 @@
 
 ;; numeric functions
 
-(defun realp (x)
+(defun real? (x)
   "Return t if X is a real number."
-  (numberp x))
+  (number? x))
 
-(defun rationalp (x)
+(defun rational? (x)
   "Return t if X is a (possibly inexact) rational number."
-  (numberp x))
+  (number? x))
 
-(defun inexactp (x)
-  "Return t if X is an inexact number."
-  (and (numberp x) (not (exactp x))))
-
-(defun positivep (x)
+(defun positive? (x)
   "Return t if X is greater than zero."
   (> x 0))
 
-(defun negativep (x)
+(defun negative? (x)
   "Return t if X is less than zero."
   (< x 0))
 
-(defun oddp (x)
+(defun odd? (x)
   "Return t if X is odd, i.e. (/= (mod X 2) 0)."
-  (not (zerop (mod x 2))))
+  (not (zero? (mod x 2))))
 
-(defun evenp (x)
+(defun even? (x)
   "Return t if X is odd, i.e. (= (mod X 2) 0)."
-  (zerop (mod x 2)))
+  (zero? (mod x 2)))
+
+(defun complex? (x)
+  (declare (unused x))
+  nil)
 
 (defun abs (x)
   "Return the absolute value of X, i.e. (max X (- X))."
@@ -62,7 +62,7 @@
 
 (defun lcm args
   "Return the least common multiple of integers A and B."
-  (if (null args)
+  (if (null? args)
       1
     (quotient (apply * (map abs args)) (apply gcd args))))
 
@@ -72,5 +72,5 @@
 
 ;; exports
 
-(export-bindings '(realp rationalp inexactp positivep negativep
-		   oddp evenp abs lcm % modulo lsh))
+(export-bindings '(real? rational? positive? negative?
+		   odd? even? complex? abs lcm % modulo lsh))

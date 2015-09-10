@@ -24,6 +24,7 @@
 (define-structure rep.data.trie
 
     (export make-trie
+	    trie?
 	    trie-insert-string!
 	    trie-string-ref
 	    trie-contains-string?
@@ -56,9 +57,12 @@
 
   (define make-trie make-node)
 
+  (define (trie? arg)
+    (and (list? arg) (eq? (car arg) 'node)))
+
   ;; returns the sub-tree of the last key, or false
   (define (trie-ref tree keys)
-    (if (null keys)
+    (if (null? keys)
 	tree
       (let ((sub-tree (node-ref tree (car keys))))
 	(and sub-tree (trie-ref sub-tree (cdr keys))))))
@@ -95,7 +99,7 @@
   (define (trie-foreach tree callback)
     (define (iter tree tokens)
       (for-each (lambda (x)
-		  (if (eq (car x) word-terminator)
+		  (if (eq? (car x) word-terminator)
 		      (callback (apply concat (reverse tokens)))
 		    (iter (cdr x) (cons (car x) tokens))))
 		(cdr tree)))

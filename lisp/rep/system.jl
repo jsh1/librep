@@ -33,7 +33,7 @@
   "Arrange it so that FUNCTION-NAME is added to the hook-list stored in
 symbol, HOOK-SYMBOL. It will added at the head of the list unless AT-END
 is true in which case it is added at the end."
-  (unless (boundp hook-symbol)
+  (unless (bound? hook-symbol)
     (make-variable-special hook-symbol)
     (set hook-symbol nil))
   (if at-end
@@ -46,7 +46,7 @@ is true in which case it is added at the end."
 
 (defun in-hook-p (hook-symbol fun)
   "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."
-  (and (boundp hook-symbol) (memq fun (symbol-value hook-symbol))))
+  (and (bound? hook-symbol) (memq fun (symbol-value hook-symbol))))
 
 (export-bindings '(add-hook remove-hook in-hook-p))
 

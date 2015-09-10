@@ -1577,10 +1577,10 @@ If PROCESS is nil, return the process id of the Lisp interpreter.
   return rep_nil;
 }
 
-DEFUN("process-running-p", Fprocess_running_p,
+DEFUN("process-running?", Fprocess_running_p,
       Sprocess_running_p, (repv proc), rep_Subr1) /*
-::doc:rep.io.processes#process-running-p::
-process-running-p PROCESS
+::doc:rep.io.processes#process-running?::
+process-running? PROCESS
 
 Return t if PROCESS is running.
 ::end:: */
@@ -1590,9 +1590,9 @@ Return t if PROCESS is running.
   return PR_RUNNING_P(PROC(proc)) ? Qt : rep_nil;
 }
 
-DEFUN("process-stopped-p", Fprocess_stopped_p, Sprocess_stopped_p, (repv proc), rep_Subr1) /*
-::doc:rep.io.processes#process-stopped-p::
-process-stopped-p PROCESS
+DEFUN("process-stopped?", Fprocess_stopped_p, Sprocess_stopped_p, (repv proc), rep_Subr1) /*
+::doc:rep.io.processes#process-stopped?::
+process-stopped? PROCESS
 
 Return t if PROCESS has been stopped.
 ::end:: */
@@ -1602,11 +1602,11 @@ Return t if PROCESS has been stopped.
   return PR_STOPPED_P(PROC(proc)) ? Qt : rep_nil;
 }
 
-DEFUN("process-in-use-p", Fprocess_in_use_p, Sprocess_in_use_p, (repv proc), rep_Subr1) /*
-::doc:rep.io.processes#process-in-use-p::
-process-in-use-p PROCESS
+DEFUN("process-in-use?", Fprocess_in_use_p, Sprocess_in_use_p, (repv proc), rep_Subr1) /*
+::doc:rep.io.processes#process-in-use?::
+process-in-use? PROCESS
 
-Similar to `process-running-p' except that this returns t even when the
+Similar to `process-running?' except that this returns t even when the
 process has stopped.
 ::end:: */
 {
@@ -1615,9 +1615,9 @@ process has stopped.
   return PR_ACTIVE_P(PROC(proc)) ? Qt : rep_nil;
 }
 
-DEFUN("processp", Fprocessp, Sprocessp, (repv arg), rep_Subr1) /*
-::doc:rep.io.processes#process-p::
-processp ARG
+DEFUN("process?", Fprocessp, Sprocessp, (repv arg), rep_Subr1) /*
+::doc:rep.io.processes#process?::
+process? ARG
 
 Return t is ARG is a process-object.
 ::end:: */

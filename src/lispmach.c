@@ -168,9 +168,9 @@ Return an object that can be used as the function value of a symbol.
   return vec;
 }
 
-DEFUN("bytecodep", Fbytecodep, Sbytecodep, (repv arg), rep_Subr1) /*
-::doc:rep.vm.interpreter#bytecodep::
-bytecodep ARG
+DEFUN("bytecode?", Fbytecodep, Sbytecodep, (repv arg), rep_Subr1) /*
+::doc:rep.vm.interpreter#bytecode?::
+bytecode? ARG
 
 Returns t if ARG is a byte code subroutine(i.e. compiled Lisp code).
 ::end:: */

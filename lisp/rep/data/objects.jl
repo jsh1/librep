@@ -25,7 +25,7 @@
 
     (export object
 	    object-lambda
-	    objectp)
+	    object?)
 
     (open rep)
 
@@ -68,7 +68,7 @@
     (let loop ((rest spec)
 	       (i 0)
 	       (out '()))
-      (cond ((null rest) (nreverse out))
+      (cond ((null? rest) (nreverse out))
 	    ((atom rest)
 	     (loop '() (1+ i) (cons `(,rest (nthcdr ,i ,args-var)) out)))
 	    ((memq (car rest) '(#!optional #!rest #!key &optional &rest))
@@ -92,13 +92,13 @@
 	   (case ,op
 	     ,@(map
 		(lambda (method)
-		  (cond ((consp (car method))
+		  (cond ((pair? (car method))
 			 ;; ((METHOD-NAME . PARAM-LIST) BODY...)
 			 `((,(caar method))
 			   (let ,(make-let-bindings
 				  (cdar method) args)
 			     ,@(cdr method))))
-			((symbolp (car method))
+			((symbol? (car method))
 			 ;; (METHOD-NAME FUNCTION)
 			 `((,(car method))
 			   (apply ,(cadr method) ,args)))))
@@ -107,6 +107,6 @@
 		    (apply ,base ,op #:self self ,args)
 		  (signal 'unknown-method (list ,op)))))))))
 
-  (define objectp closurep)
+  (define object? closure?)
 
   (put 'unknown-method 'error-message "Unknown method call"))

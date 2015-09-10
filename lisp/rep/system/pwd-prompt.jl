@@ -29,7 +29,7 @@
 (defun pwd-prompt (prompt)
   "Prompt for a confidential string, with PROMPT as the title string. The
 contents of the prompt will be masked out whilst being entered."
-  (when (zerop (system "stty -echo"))
+  (when (zero? (system "stty -echo"))
     (unwind-protect
 	(progn
 	  (write *standard-error* prompt)

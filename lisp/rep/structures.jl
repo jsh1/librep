@@ -34,16 +34,16 @@
 
 (defun parse-interface (sig)
   "Return the list of symbols described by the module interface SIG."
-  (cond ((null sig) '())
-	((eq (car sig) 'export)
+  (cond ((null? sig) '())
+	((eq? (car sig) 'export)
 	 (cdr sig))
-	((eq (car sig) 'compound-interface)
+	((eq? (car sig) 'compound-interface)
 	 (apply append (map parse-interface (cdr sig))))
-	((eq (car sig) 'structure-interface)
+	((eq? (car sig) 'structure-interface)
 	 (structure-interface (intern-structure (cadr sig))))
-	((symbolp sig)
+	((symbol? sig)
 	 (let ((interfaces (get-structure '%interfaces)))
-	   (or (structure-bound-p interfaces sig)
+	   (or (structure-bound? interfaces sig)
 	       (error "No such interface: %s" sig))
 	   (%structure-ref interfaces sig)))))
 
@@ -55,10 +55,10 @@
   "Return the name of the structure binding VAR, using the list of module
 names IMPORTED as the search start points."
   (when imported
-    (let ((tem (structure-exports-p (get-structure (car imported)) var)))
-      (cond ((null tem)
+    (let ((tem (structure-exports? (get-structure (car imported)) var)))
+      (cond ((null? tem)
 	     (locate-binding var (cdr imported)))
-	    ((eq tem 'external)
+	    ((eq? tem 'external)
 	     ;; this module exports it, but it doesn't define
 	     ;; it, so search its imports
 	     (locate-binding var (structure-imports

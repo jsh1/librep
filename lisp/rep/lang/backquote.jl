@@ -67,26 +67,26 @@ Vectors work just like lists.  Nested backquotes are permitted."
 
 (defun backquote-process (s)
   (cond
-   ((vectorp s)
+   ((vector? s)
     (let ((n (backquote-process (append s ()))))
       (if (= (car n) 0)
 	  (cons 0 s)
 	(cons 1 (cond
-		 ((eq (nth 1 n) 'list)
+		 ((eq? (nth 1 n) 'list)
 		  (cons 'vector (nthcdr 2 n)))
-		 ((eq (nth 1 n) 'append)
+		 ((eq? (nth 1 n) 'append)
 		  (cons 'vconcat (nthcdr 2 n)))
 		 (t
 		  (list 'apply '(function vector) (cdr n))))))))
    ((atom s)
-    (cons 0 (if (not (symbolp s))
+    (cons 0 (if (not (symbol? s))
 		s
 	      (list 'quote s))))
-   ((eq (car s) 'backquote-unquote)
+   ((eq? (car s) 'backquote-unquote)
     (cons 1 (nth 1 s)))
-   ((eq (car s) 'backquote-splice)
+   ((eq? (car s) 'backquote-splice)
     (cons 2 (nth 1 s)))
-   ((eq (car s) 'backquote)
+   ((eq? (car s) 'backquote)
     (backquote-process (cdr (backquote-process (nth 1 s)))))
    (t
     (let ((rest s)
@@ -99,16 +99,16 @@ Vectors work just like lists.  Nested backquotes are permitted."
       ;; at the beginning, put them in FIRSTLIST,
       ;; as a list of tagged values (TAG . FORM).
       ;; If there are any at the end, they go in LIST, likewise.
-      (while (consp rest)
+      (while (pair? rest)
 	;; Turn . (, foo) into (,@ foo).
-	(if (eq (car rest) 'backquote-unquote)
+	(if (eq? (car rest) 'backquote-unquote)
 	    (setq rest (list (list 'backquote-splice (nth 1 rest)))))
 	(setq item (backquote-process (car rest)))
 	(cond
 	 ((= (car item) 2)
 	  ;; Put the nonspliced items before the first spliced item
 	  ;; into FIRSTLIST.
-	  (if (null lists)
+	  (if (null? lists)
 	      (setq firstlist lst
 		    lst nil))
 	  ;; Otherwise, put any preceding nonspliced items into LISTS.
@@ -127,13 +127,13 @@ Vectors work just like lists.  Nested backquotes are permitted."
       ;; Turn LISTS into a form that produces the combined list. 
       (setq expression
 	    (if (or (cdr lists)
-		    (eq (car (car lists)) 'backquote-splice))
+		    (eq? (car (car lists)) 'backquote-splice))
 		(cons 'append (nreverse lists))
 	      (car lists)))
       ;; Tack on any initial elements.
       (if firstlist
 	  (setq expression (backquote-listify firstlist (cons 1 expression))))
-      (if (eq (car expression) 'quote)
+      (if (eq? (car expression) 'quote)
 	  (cons 0 (list 'quote s))
 	(cons 1 expression))))))
 
@@ -143,7 +143,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
 
 ;; this is just used to unwrap possibly quoted constants
 (defun backquote-eval (form)
-  (if (eq (car form) 'quote)
+  (if (eq? (car form) 'quote)
       (cadr form)
     form))
 
@@ -152,7 +152,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
     (if (= (car old-tail) 0)
 	(setq tail (backquote-eval tail)
 	      old-tail nil))
-    (while (consp list-tail)
+    (while (pair? list-tail)
       (setq item (car list-tail))
       (setq list-tail (cdr list-tail))
       (if (or heads old-tail (/= (car item) 0))
@@ -160,12 +160,12 @@ Vectors work just like lists.  Nested backquotes are permitted."
 	(setq tail (cons (backquote-eval (cdr item)) tail))))
     (cond
      (tail
-      (if (null old-tail)
+      (if (null? old-tail)
 	  (setq tail (list 'quote tail)))
       (if heads
 	  (let ((use-list* (or (cdr heads)
-			       (and (consp (car heads))
-				    (eq (car (car heads))
+			       (and (pair? (car heads))
+				    (eq? (car (car heads))
 					'backquote-splice)))))
 	    (cons (if use-list* 'list* 'cons)
 		  (append heads (list tail))))

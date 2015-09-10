@@ -214,9 +214,9 @@ gdbm-walk FUN DBM
   return ret;
 }
 
-DEFUN("gdbmp", Fgdbmp, Sgdbmp, (repv arg), rep_Subr1) /*
-::doc:rep.io.db.gdbm#gdbmp::
-gdbmp ARG
+DEFUN("gdbm?", Fgdbmp, Sgdbmp, (repv arg), rep_Subr1) /*
+::doc:rep.io.db.gdbm#gdbm?::
+gdbm? ARG
 
 Returns t if ARG is an gdbm object (created by `gdbm-open').
 ::end:: */

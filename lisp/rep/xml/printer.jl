@@ -48,18 +48,18 @@
 	      params))
 
   (define (print-xml-item stream item)
-    (cond ((stringp item)
+    (cond ((string? item)
 	   (write stream (substitute-entities item)))
 
-	  ((eq (car item) '!)
+	  ((eq? (car item) '!)
 	   (format stream "<!%s>" (nth 1 stream)))
 
-	  ((symbolp (car item))
+	  ((symbol? (car item))
 	   (format stream "<%s" (car item))
 	   (print-params stream (nth 1 item))
 	   (cond ((string-match "^\\?" (symbol-name (car item)))
 		  (write stream "?>"))
-		 ((null (nthcdr 2 item))
+		 ((null? (nthcdr 2 item))
 		  (write stream "/>"))
 		 (t
 		  (write stream #\>)

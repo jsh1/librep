@@ -114,8 +114,8 @@
 	   ((= op (bytecode push))
 	    (let
 		((argobj (const-ref arg)))
-	      (if (or (and (consp argobj) (eq (car argobj) 'byte-code))
-		      (bytecodep argobj))
+	      (if (or (and (pair? argobj) (eq? (car argobj) 'byte-code))
+		      (bytecode? argobj))
 		  (progn
 		    (format stream "push [%d] bytecode...\n" arg)
 		    (disassemble argobj stream (1+ depth)))
@@ -169,7 +169,7 @@
 	(code-string consts stack
 	 (*print-escape* t))
       (unless stream
-	(if (featurep 'jade)
+	(if (feature? 'jade)
 	    (progn
 	      (declare (bound open-buffer clear-buffer goto-other-view
 			      goto-buffer insert start-of-buffer goto))
@@ -183,23 +183,23 @@
 	  (setq stream *standard-output*)))
       (unless depth
 	(setq depth 0))
-      (when (zerop depth)
-	(if (symbolp arg)
+      (when (zero? depth)
+	(if (symbol? arg)
 	    (progn
 	      (format stream "Disassembly of function %s:\n\n" arg)
 	      (setq arg (symbol-value arg)))
 	  (format stream "Disassembly of %S:\n\n" arg)))
-      (when (closurep arg)
+      (when (closure? arg)
 	(setq arg (closure-function arg)))
       (cond
-       ((and (consp arg) (eq (car arg) 'run-byte-code))
+       ((and (pair? arg) (eq? (car arg) 'run-byte-code))
 	(setq code-string (nth 1 arg)
 	      consts (nth 2 arg)
 	      stack (nth 3 arg)))
        (t
 	(setq code-string (aref arg 0)
 	      consts (aref arg 1))
-	(when (zerop depth)
+	(when (zero? depth)
 	  (let ((spec (and (> (length arg) 4) (aref arg 4)))
 		(doc (and (> (length arg) 3) (aref arg 3))))
 	    (when spec
@@ -207,7 +207,7 @@
 	    (when doc
 	      (format stream "Doc string: %S\n" doc)))
 	  (setq stack (aref arg 2)))))
-      (when (zerop depth)
+      (when (zero? depth)
 	(format stream "%d bytes, %d constants, %d stack slots, %d binding frames and %d registers.\n"
 		(length code-string) (length consts)
 		(logand stack #x3ff) (logand (ash stack -10) #x3ff)

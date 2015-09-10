@@ -43,9 +43,10 @@ lower-case equivalent.
 Translation table to convert newline characters to spaces.
 ::end:: */
 
-DEFUN("alpha-char-p", Falpha_char_p, Salpha_char_p, (repv ch), rep_Subr1) /*
-::doc:rep.data#alpha-char-p::
-alpha-char-p CHAR
+DEFUN("char-alphabetic?", Falpha_char_p,
+      Salpha_char_p, (repv ch), rep_Subr1) /*
+::doc:rep.data#char-alphabetic?::
+char-alphabetic? CHAR
 
 Returns t if CHAR is an alphabetic character.
 ::end:: */
@@ -53,9 +54,10 @@ Returns t if CHAR is an alphabetic character.
   return rep_INTP(ch) && rep_isalpha(rep_INT(ch)) ? Qt : rep_nil;
 }
 
-DEFUN("upper-case-p", Fupper_case_p, Supper_case_p, (repv ch), rep_Subr1) /*
-::doc:rep.data#upper-case-p::
-upper-case-p CHAR
+DEFUN("char-upper-case?", Fupper_case_p,
+      Supper_case_p, (repv ch), rep_Subr1) /*
+::doc:rep.data#char-upper-case?::
+char-upper-case? CHAR
 
 Returns t if CHAR is upper case.
 ::end:: */
@@ -63,9 +65,10 @@ Returns t if CHAR is upper case.
   return rep_INTP(ch) && rep_isupper(rep_INT(ch)) ? Qt : rep_nil;
 }
 
-DEFUN("lower-case-p", Flower_case_p, Slower_case_p, (repv ch), rep_Subr1) /*
-::doc:rep.data#lower-case-p::
-lower-case-p CHAR
+DEFUN("char-lower-case?", Flower_case_p,
+      Slower_case_p, (repv ch), rep_Subr1) /*
+::doc:rep.data#char-lower-case?::
+char-lower-case? CHAR
 
 Returns t if CHAR is lower case.
 ::end:: */
@@ -73,9 +76,9 @@ Returns t if CHAR is lower case.
   return rep_INTP(ch) && rep_islower(rep_INT(ch)) ? Qt : rep_nil;
 }
 
-DEFUN("digit-char-p", Fdigit_char_p, Sdigit_char_p, (repv ch), rep_Subr1) /*
-::doc:rep.data#digit-char-p::
-digit-char-p CHAR
+DEFUN("char-numeric?", Fdigit_char_p, Sdigit_char_p, (repv ch), rep_Subr1) /*
+::doc:rep.data#char-numeric?::
+char-numeric? CHAR
 
 Returns t if CHAR is a digit.
 ::end:: */
@@ -83,9 +86,10 @@ Returns t if CHAR is a digit.
   return rep_INTP(ch) && rep_isdigit(rep_INT(ch)) ? Qt : rep_nil;
 }
 
-DEFUN("alphanumericp", Falphanumericp, Salphanumericp, (repv ch), rep_Subr1) /*
-::doc:rep.data#alphanumericp::
-alphanumericp CHAR
+DEFUN("char-alphanumeric?", Falphanumericp,
+      Salphanumericp, (repv ch), rep_Subr1) /*
+::doc:rep.data#char-alphanumeric?::
+char-alphanumeric? CHAR
 
 Returns t if CHAR is alpha-numeric.
 ::end:: */
@@ -93,9 +97,10 @@ Returns t if CHAR is alpha-numeric.
   return rep_INTP(ch) && rep_isalnum (rep_INT(ch)) ? Qt : rep_nil;
 }
 
-DEFUN("space-char-p", Fspace_char_p, Sspace_char_p, (repv ch), rep_Subr1) /*
-::doc:rep.data#space-char-p::
-space-char-p CHAR
+DEFUN("char-whitespace?", Fspace_char_p,
+      Sspace_char_p, (repv ch), rep_Subr1) /*
+::doc:rep.data#char-whitespace?::
+char-whitespace? CHAR
 
 Returns t if CHAR is whitespace.
 ::end:: */

@@ -135,10 +135,10 @@ VALUE, else signal an error.
   return value;
 }
 
-DEFUN("has-type-p", Fhas_type_p,
+DEFUN("datum?", Fhas_type_p,
       Shas_type_p, (repv arg, repv id), rep_Subr2) /*
-::doc:rep.data.datums#has-type-p::
-has-type-p ARG ID
+::doc:rep.data.datums#datum?::
+datum? ARG ID
 
 Return `t' if object ARG has data type ID (and thus was initially
 created using the `make-datum' function).

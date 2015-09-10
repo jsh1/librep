@@ -72,10 +72,10 @@ results have been received.")
 
   ;; Function to buffer output from Ispell
   (define (output-filter output)
-    (when (integerp output)
+    (when (integer? output)
       (setq output (make-string 1 output)))
     (and *ispell-echo-output*
-	 (stringp output)
+	 (string? output)
 	 (let ((*print-escape* t))
 	   (format *standard-error* "Ispell: %S\n" output)))
     (setq pending-output (concat pending-output output))
@@ -111,7 +111,7 @@ results have been received.")
     (accept-process-output-1 process 0)	;in case the process already died
     (when process
       (ispell-save-dictionary)
-      (if (eq (process-connection-type process) 'pty)
+      (if (eq? (process-connection-type process) 'pty)
 	  (write process #\eot)		;^D
 	;; Not so successful..
 	(interrupt-process process))
@@ -162,12 +162,12 @@ results have been received.")
 	  (progn
 	    (format process "%s\n" word)
 	    (setq response (ispell-read-line))
-	    (if (eq (aref response 0) #\newline)
+	    (if (eq? (aref response 0) #\newline)
 		;; This shouldn't happen
 		(error "Null output from Ispell")
 	      ;; Gobble following blank line
 	      (setq tem (ispell-read-line))
-	      (unless (eq (aref tem 0) #\newline)
+	      (unless (eq? (aref tem 0) #\newline)
 		(error "Non-null trailing line from Ispell"))))
 	(mutex nil))
       response))

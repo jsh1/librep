@@ -88,8 +88,8 @@
   (define (field-index rt field)
     (do ((i 0 (1+ i))
 	 (fields (record-type-fields rt) (cdr fields)))
-	((eq (car fields) field) i)
-      (and (null fields) (error "No such field: %s, %s"
+	((eq? (car fields) field) i)
+      (and (null? fields) (error "No such field: %s, %s"
 				(record-type-name rt) field))))
   
   (define (field-ref rt record index)
@@ -116,12 +116,12 @@
   (define (make-record-constructor rt args field-names)
     (define (has-field-p field)
       (let loop ((rest args))
-	(cond ((null rest) nil)
-	      ((eq (or (caar rest) (car rest) rest) field) t)
+	(cond ((null? rest) nil)
+	      ((eq? (or (caar rest) (car rest) rest) field) t)
 	      (t (loop (cdr rest))))))
     (let loop ((rest field-names)
 	       (out '()))
-      (if (null rest)
+      (if (null? rest)
 	  `(lambda ,args
 	     (make-record-datum (vector ,@(nreverse out)) ,rt))
 	(loop (cdr rest)
@@ -139,13 +139,13 @@
 
   (define (record-predicate rt)
     (lambda (arg)
-      (has-type-p arg rt)))
+      (datum? arg rt)))
 
   (define (record-printer rt)
     (lambda (record stream)
       (if (record-type-discloser rt)
 	  (let ((out ((record-type-discloser rt) record)))
-	    (if (stringp out)
+	    (if (string? out)
 		(write stream out)
 	      (prin1 out stream)))
 	(format stream "#<%s>" (record-type-name rt)))))
@@ -154,7 +154,7 @@
 
   (defmacro define-record-type (rt constructor . fields)
     (let (names predicate-defs accessor-defs modifier-defs)
-      (when (and fields (symbolp (car fields)))
+      (when (and fields (symbol? (car fields)))
 	(setq predicate-defs `((define ,(car fields) (record-predicate ,rt))))
 	(setq fields (cdr fields)))
       (setq names (map car fields))

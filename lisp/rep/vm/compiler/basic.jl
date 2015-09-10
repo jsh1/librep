@@ -67,7 +67,7 @@ their position in that file.")
 
   (define-record-type :assembly
     (make-assembly code max-stack max-b-stack registers)
-    assemblyp
+    assembly?
     (code assembly-code assembly-code-set)
     (max-stack assembly-max-stack assembly-max-stack-set)
     (max-b-stack assembly-max-b-stack assembly-max-b-stack-set)
@@ -75,7 +75,7 @@ their position in that file.")
 
   (define-record-type :lambda-record
     (make-lambda-record name args depth sp bp label)
-    lambda-record-p
+    lambda-record?
     (name lambda-name)			;name of the lambda exp or ()
     (args lambda-args)			;arg spec of the lambda
     (depth lambda-depth)		;depth of physical bytecode
@@ -93,8 +93,8 @@ their position in that file.")
 
   (define (find-lambda name)
     (let loop ((rest (fluid lambda-stack)))
-      (cond ((null rest) nil)
-	    ((eq (lambda-name (car rest)) name) (car rest))
+      (cond ((null? rest) nil)
+	    ((eq? (lambda-name (car rest)) name) (car rest))
 	    (t (loop (cdr rest))))))
 
   (define (call-with-lambda-record name args depth-delta thunk)
@@ -116,8 +116,8 @@ their position in that file.")
 
   ;; stop macroexpanding if we come across a function with a special handler
   (defun macroexpand-pred (in out)
-    (or (eq in out)
-	(and (variable-ref-p (car out))
+    (or (eq? in out)
+	(and (variable-ref? (car out))
 	     (get-procedure-handler
 	      (car out) 'compiler-handler-property))))
 
@@ -125,37 +125,37 @@ their position in that file.")
     (emit-insn `(push ,value))
     (increment-stack))
 
-  (define (inlinable-call-p fun return-follows)
+  (define (inlinable-call? fun return-follows)
     (let ((tem (find-lambda fun)))
       (and tem
 	   (or (lambda-inlined tem)
 	       (and (fluid lexically-pure)
 		    return-follows
-		    (not (binding-modified-p fun))))
+		    (not (binding-modified? fun))))
 	   (= (lambda-depth tem) (lambda-depth (current-lambda)))
 	   (lambda-label tem))))
 
   ;; Compile one form so that its value ends up on the stack when interpreted
   (defun compile-form-1 (form #!key return-follows in-tail-slot)
     (cond
-     ((eq form '())
+     ((eq? form '())
       (emit-insn '(push ()))
       (increment-stack))
-     ((eq form t)
+     ((eq? form t)
       (emit-insn '(push t))
       (increment-stack))
 
-     ((symbolp form)
+     ((symbol? form)
       ;; A variable reference
       (let (val)
 	(test-variable-ref form)
 	(cond
-	 ((keywordp form)
+	 ((keyword? form)
 	  (compile-constant form))
 	 ((setq val (assq form (fluid const-env)))
 	  ;; A constant from this file
 	  (compile-constant (cdr val)))
-	 ((compiler-binding-immutable-p form)
+	 ((compiler-binding-immutable? form)
 	  ;; A known constant
 	  (compile-constant (compiler-symbol-value form)))
 	 (t
@@ -163,19 +163,19 @@ their position in that file.")
 	  (emit-varref form in-tail-slot)
 	  (increment-stack)))))
 
-       ((consp form)
+       ((pair? form)
 	(let-fluids ((current-form form))
 	  (let ((new (source-code-transform form)))
-	    (if (consp new)
+	    (if (pair? new)
 		(setq form new)
 	      (compile-form-1 new)
 	      (setq form nil)))
-	  (unless (null form)
+	  (unless (null? form)
 	    ;; A subroutine application of some sort
 	    (let (fun)
 	      (cond
 	       ;; Check if there's a special handler for this function
-	       ((and (variable-ref-p (car form))
+	       ((and (variable-ref? (car form))
 		     (setq fun (get-procedure-handler
 				(car form) 'compiler-handler-property)))
 		(fun form return-follows))
@@ -183,7 +183,7 @@ their position in that file.")
 	       (t
 		;; Expand macros
 		(test-function-call (car form) (length (cdr form)))
-		(if (not (eq (setq fun (compiler-macroexpand
+		(if (not (eq? (setq fun (compiler-macroexpand
 					form macroexpand-pred)) form))
 		    ;; The macro did something, so start again
 		    (compile-form-1 fun #:return-follows return-follows)
@@ -191,14 +191,14 @@ their position in that file.")
 		  (setq fun (car form))
 		  (cond
 		   ;; XXX assumes usual rep binding of `lambda'
-		   ((and (consp fun) (eq (car fun) 'lambda))
+		   ((and (pair? fun) (eq? (car fun) 'lambda))
 		    ;; An inline lambda expression
 		    (compile-lambda-inline (car form) (cdr form)
 					   nil return-follows))
 
 		   ;; Assume a normal function call
 
-		   ((inlinable-call-p fun return-follows)
+		   ((inlinable-call? fun return-follows)
 		    ;; an inlinable tail call
 		    (note-binding-referenced fun t)
 		    (compile-tail-call (find-lambda fun) (cdr form))
@@ -206,7 +206,7 @@ their position in that file.")
 		    ;; return value
 		    (increment-stack))
 
-		   ((and (symbolp fun)
+		   ((and (symbol? fun)
 			 (cdr (assq fun (fluid inline-env)))
 			 (not (find-lambda fun)))
 		    ;; A call to a function that should be open-coded
@@ -214,10 +214,10 @@ their position in that file.")
 					   (cdr form) nil return-follows fun))
 		   (t
 		    (compile-form-1
-		     fun #:in-tail-slot (inlinable-call-p fun return-follows))
+		     fun #:in-tail-slot (inlinable-call? fun return-follows))
 		    (setq form (cdr form))
 		    (let ((i 0))
-		      (while (consp form)
+		      (while (pair? form)
 			(compile-form-1 (car form))
 			(setq i (1+ i)
 			      form (cdr form)))
@@ -230,12 +230,12 @@ their position in that file.")
   ;; Compile a list of forms, the last form's evaluated value is left on
   ;; the stack. If the list is empty nil is pushed.
   (defun compile-body (body #!optional return-follows name)
-    (if (null body)
+    (if (null? body)
 	(progn
 	  (emit-insn '(push ()))
 	  (increment-stack))
-      (while (consp body)
-	(if (and (null (cdr body)) (constant-function-p (car body)) name)
+      (while (pair? body)
+	(if (and (null? (cdr body)) (constant-function? (car body)) name)
 	    ;; handle named lambdas specially so we track name of current fun
 	    (compile-lambda-constant (constant-function-value (car body)) name)
 	  (compile-form-1
@@ -279,14 +279,14 @@ their position in that file.")
     (let loop ((rest in)
 	       (state 'required)
 	       (vars '()))
-      (cond ((null rest)
+      (cond ((null? rest)
 	     ;; emit the bindings now
 	     (do ((rest vars (cdr rest)))
-		 ((null rest))
+		 ((null? rest))
 	       (note-binding (car rest))
 	       (emit-binding (car rest))
 	       (decrement-stack)))
-	    ((symbolp rest)
+	    ((symbol? rest)
 	     (test-variable-bind rest)
 	     (emit-insn '(rest-arg))
 	     (increment-stack)
@@ -305,7 +305,7 @@ their position in that file.")
 			  (default (cdar rest))
 			  (pushed 0))
 		      (test-variable-bind var)
-		      (when (eq state 'key)
+		      (when (eq? state 'key)
 			(compile-constant (make-keyword var))
 			(setq pushed (1+ pushed)))
 		      (emit-insn (case state
@@ -391,16 +391,16 @@ their position in that file.")
     (let ((args (nth 1 lst))
 	  (body (nthcdr 2 lst))
 	  doc interactive)
-      (when (stringp (car body))
+      (when (string? (car body))
 	(setq doc (car body))
 	(setq body (cdr body)))
-      (when (eq (car (car body)) 'interactive)
+      (when (eq? (car (car body)) 'interactive)
 	;; If we have (interactive), set the interactive spec to t
 	;; so that it's not ignored
 	(setq interactive (or (car (cdr (car body))) t)
 	      body (cdr body))
 	;; See if it might be a good idea to compile the interactive decl
-	(when (consp interactive)
+	(when (pair? interactive)
 	  (setq interactive (compile-form interactive))))
       (when (and *compiler-write-docs* doc name)
 	(add-documentation name (fluid current-module) doc)
@@ -414,16 +414,16 @@ their position in that file.")
     (let ((args (nth 1 lst))
 	  (body (nthcdr 2 lst))
 	  doc interactive)
-      (when (stringp (car body))
+      (when (string? (car body))
 	(setq doc (car body))
 	(setq body (cdr body)))
-      (when (eq (car (car body)) 'interactive)
+      (when (eq? (car (car body)) 'interactive)
 	;; If we have (interactive), set the interactive spec to t
 	;; so that it's not ignored
 	(setq interactive (or (car (cdr (car body))) t)
 	      body (cdr body))
 	;; See if it might be a good idea to compile the interactive decl
-	(when (consp interactive)
+	(when (pair? interactive)
 	  (setq interactive (compile-form interactive))))
       (when (and *compiler-write-docs* doc name)
 	(add-documentation name (fluid current-module) doc)

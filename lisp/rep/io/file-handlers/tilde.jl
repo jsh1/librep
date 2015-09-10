@@ -44,8 +44,8 @@
 
   (defun tilde-file-handler (op #!rest args)
     (cond
-     ((eq op 'file-name-absolute-p))	;~FOO always absolute
-     ((eq op 'expand-file-name)
+     ((eq? op 'file-name-absolute?))	;~FOO always absolute
+     ((eq? op 'expand-file-name)
       ;; Slightly tricky. It's necessary to remove the tilde, call
       ;; expand-file-name, then reapply the tilde. This is to ensure
       ;; that things like "~/foo/../bar" expand to "~/bar"
@@ -63,21 +63,21 @@
       (apply (symbol-value op) args))
      ((memq op '(local-file-name canonical-file-name open-file
 		 write-buffer-contents read-file-contents insert-file-contents
-		 delete-file delete-directory make-directory file-exists-p
-		 file-regular-p file-readable-p
-		 file-writable-p file-directory-p file-symlink-p file-owner-p
+		 delete-file delete-directory make-directory file-exists?
+		 file-regular? file-readable?
+		 file-writable? file-directory? file-symlink? file-owner?
 		 file-nlinks file-size file-modes file-modes-as-string
 		 set-file-modes file-modtime directory-files
 		 read-symlink make-symlink))
       ;; All functions which only have a single file name (their first
       ;; argument). Expand the tilde expression then re-call OP.
       (apply (symbol-value op) (tilde-expand (car args)) (cdr args)))
-     ((eq op 'copy-file-to-local-fs)
+     ((eq? op 'copy-file-to-local-fs)
       (apply copy-file (tilde-expand (car args)) (cdr args)))
-     ((eq op 'copy-file-from-local-fs)
+     ((eq? op 'copy-file-from-local-fs)
       ;; file to expand is second argument
       (copy-file (car args) (tilde-expand (cadr args))))
-     ((eq op 'copy-file)
+     ((eq? op 'copy-file)
       ;; both names need expanding
       (copy-file (tilde-expand (car args)) (tilde-expand (cadr args))))
     (t

@@ -41,7 +41,7 @@
   (defun describe-lambda-list (lambda-list)
     (let ((output (make-string-output-stream)))
       ;; Print the arg list (one at a time)
-      (while (consp lambda-list)
+      (while (pair? lambda-list)
 	(let ((arg-name (symbol-name (or (caar lambda-list)
 					 (car lambda-list)))))
 	  ;; Unless the it's a lambda-list keyword, print in capitals
@@ -50,7 +50,7 @@
 	    (setq arg-name (string-upcase arg-name)))
 	  (format output " %s" arg-name))
 	(setq lambda-list (cdr lambda-list)))
-      (when (and lambda-list (symbolp lambda-list))
+      (when (and lambda-list (symbol? lambda-list))
 	(format output " . %s" (string-upcase (symbol-name lambda-list))))
       (get-output-stream-string output)))
 
@@ -59,33 +59,33 @@
 NAME is true, then it should be the symbol that is associated with VALUE."
     (let*
 	((type (cond
-		((special-form-p value) "Special Form")
-		((macrop value)
+		((special-form? value) "Special Form")
+		((macro? value)
 		 ;; macros are stored as `(macro . FUNCTION)'
 		 (setq value (cdr value))
 		 "Macro")
-		((subrp value) "Native Function")
-		((closurep value) "Function")
+		((subr? value) "Native Function")
+		((closure? value) "Function")
 		(t "Variable"))))
-      (when (closurep value)
+      (when (closure? value)
 	(unless structure
 	  (let ((tem (closure-structure value)))
 	    (when (structure-name tem)
 	      (setq structure (structure-name tem)))))
 	(setq value (closure-function value)))
       ;; Check if it's been compiled.
-      (when (bytecodep value)
+      (when (bytecode? value)
 	(setq type (concat "Compiled " type)))
-      (when (and name structure (not (special-variable-p name))
-		 (binding-immutable-p name (get-structure structure)))
+      (when (and name structure (not (special-variable? name))
+		 (binding-immutable? name (get-structure structure)))
 	(setq type (concat "Constant " type)))
-      (when (and name (special-variable-p name))
+      (when (and name (special-variable? name))
 	(setq type (concat "Special " type)))
 		       
       (format *standard-output* "%s: " type)
-      (let ((arg-doc (cond ((eq (car value) 'lambda)
+      (let ((arg-doc (cond ((eq? (car value) 'lambda)
 			    (describe-lambda-list (cadr value)))
-			   ((symbolp name)
+			   ((symbol? name)
 			    (or (and structure
 				     (doc-file-ref (doc-file-param-key
 						    name structure)))
@@ -144,7 +144,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
   (defun documentation (symbol #!optional structure value)
     "Returns the documentation-string for SYMBOL."
     (catch 'exit
-      (when (and (not structure) (closurep value))
+      (when (and (not structure) (closure? value))
 	(let ((tem (closure-structure value)))
 	  (when (structure-name tem)
 	    (setq structure (structure-name tem)))))
@@ -152,12 +152,12 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       ;; First check for in-core documentation
       (when value
 	(let ((tem value))
-	  (when (eq 'macro (car tem))
+	  (when (eq? 'macro (car tem))
 	    (setq tem (cdr tem)))
-	  (when (and (closurep tem)
-		     (eq (car (closure-function tem)) 'lambda))
+	  (when (and (closure? tem)
+		     (eq? (car (closure-function tem)) 'lambda))
 	    (setq tem (nth 2 (closure-function tem)))
-	    (when (stringp tem)
+	    (when (string? tem)
 	      (throw 'exit tem)))))
 
       (let ((doc (or (and structure (get symbol

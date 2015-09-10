@@ -41,7 +41,7 @@
 	((arg-count 0))
       (if (not pushed-args-already)
 	  ;; First of all, evaluate each argument onto the stack
-	  (while (consp args)
+	  (while (pair? args)
 	    (compile-form-1 (car args))
 	    (setq args (cdr args)
 		  arg-count (1+ arg-count)))
@@ -58,10 +58,10 @@
 	(for-each tester (get-lambda-vars lambda-list))
 	(while lambda-list
 	  (cond
-	   ((symbolp lambda-list)
+	   ((symbol? lambda-list)
 	    (setq bind-stack (cons (cons lambda-list args-left) bind-stack))
 	    (setq args-left 0))
-	   ((consp lambda-list)
+	   ((pair? lambda-list)
 	    (case (car lambda-list)
 	      ((#!optional &optional) (setq state 'optional))
 	      ((#!rest &rest) (setq state 'rest))
@@ -69,13 +69,13 @@
 	      ((#!key) (compiler-error "can't inline `#!key' parameters"))
 	      (t (case state
 		   ((required)
-		    (if (zerop args-left)
+		    (if (zero? args-left)
 			(compiler-error "required arg `%s' missing"
 					(car lambda-list))
 		      (setq bind-stack (cons (car lambda-list) bind-stack)
 			    args-left (1- args-left))))
 		   ((optional)
-		    (if (zerop args-left)
+		    (if (zero? args-left)
 			(let ((def (cdar lambda-list)))
 			  (if def
 			      (compile-form-1 (car def))
@@ -99,10 +99,10 @@
   (defun pop-inline-args (bind-stack args-left setter)
     ;; Bind all variables
     (while bind-stack
-      (if (consp (car bind-stack))
+      (if (pair? (car bind-stack))
 	  (progn
 	    (compile-constant '())
-	    (unless (null (cdr (car bind-stack)))
+	    (unless (null? (cdr (car bind-stack)))
 	      (do ((i 0 (1+ i)))
 		  ((= i (cdr (car bind-stack))))
 		(emit-insn '(cons))
@@ -142,10 +142,10 @@
        (lambda ()
 	 ;; Set up the body for compiling, skip any interactive form or
 	 ;; doc string
-	 (while (and (consp body)
-		     (or (stringp (car body))
-			 (and (consp (car body))
-			      (eq (car (car body)) 'interactive))))
+	 (while (and (pair? body)
+		     (or (string? (car body))
+			 (and (pair? (car body))
+			      (eq? (car (car body)) 'interactive))))
 	   (setq body (cdr body)))
     
 	 ;; Now we have a list of things to bind to, in the same order
@@ -207,7 +207,7 @@
        (lambda ()
 	 (if (catch 'foo
 	       (for-each (lambda (var)
-			   (when (binding-enclosed-p var)
+			   (when (binding-enclosed? var)
 			     (throw 'foo t)))
 			 (get-lambda-vars (lambda-args lambda-record)))
 	       nil)

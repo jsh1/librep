@@ -147,9 +147,9 @@ DEFUN("set-closure-name", Fset_closure_name,
   return rep_nil;
 }
 
-DEFUN("closurep", Fclosurep, Sclosurep, (repv arg), rep_Subr1) /*
-::doc:rep.lang.interpreter#closurep::
-closurep ARG
+DEFUN("closure?", Fclosurep, Sclosurep, (repv arg), rep_Subr1) /*
+::doc:rep.lang.interpreter#closure?::
+closure? ARG
 
 Returns t if ARG is a closure
 ::end:: */

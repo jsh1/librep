@@ -24,7 +24,7 @@
 (open-structures '(rep.lang.math))
 
 ;;;###autoload
-(defun string-upper-case-p (x)
+(defun string-upper-case? (x)
   "Return t if string X is upper case (contains no lower case characters and
 at least one upper-case character)."
   (let iter ((point 0)
@@ -32,12 +32,12 @@ at least one upper-case character)."
     (if (>= point (length x))
 	seen-upper
       (let ((char (aref x point)))
-	(if (lower-case-p char)
+	(if (char-lower-case? char)
 	    nil
-	  (iter (1+ point) (or seen-upper (upper-case-p char))))))))
+	  (iter (1+ point) (or seen-upper (char-upper-case? char))))))))
 
 ;;;###autoload
-(defun string-lower-case-p (x)
+(defun string-lower-case? (x)
   "Return t if string X is lower case (contains no upper case characters and
 at least one lower-case character)."
   (let iter ((point 0)
@@ -45,14 +45,14 @@ at least one lower-case character)."
     (if (>= point (length x))
 	seen-lower
       (let ((char (aref x point)))
-	(if (upper-case-p char)
+	(if (char-upper-case? char)
 	    nil
-	  (iter (1+ point) (or seen-lower (lower-case-p char))))))))
+	  (iter (1+ point) (or seen-lower (char-lower-case? char))))))))
 
 ;;;###autoload
-(defun string-capitalized-p (x)
+(defun string-capitalized? (x)
   "Returns t if string X is capitalized (first character is upper case)."
-  (and (> (length x) 0) (upper-case-p (aref x 0))))
+  (and (> (length x) 0) (char-upper-case? (aref x 0))))
 
 ;;;###autoload
 (defun string-upcase (x)
@@ -67,7 +67,7 @@ at least one lower-case character)."
 ;;;###autoload
 (defun capitalize-string (x)
   "Return a new string, a copy of X with its first character in upper case."
-  (if (zerop (length x))
+  (if (zero? (length x))
       x
     (let ((new (copy-sequence x)))
       (aset new 0 (char-upcase (aref new 0)))
@@ -77,12 +77,12 @@ at least one lower-case character)."
 (defun mapconcat (fun sequence separator)
   "Call FUN for each member of SEQUENCE, concatenating the results. Between
 each pair of results, insert SEPARATOR. Return the resulting string."
-  (cond ((null sequence) "")
-	((consp sequence)
+  (cond ((null? sequence) "")
+	((pair? sequence)
 	 ;; avoid O(n) operations on lists
 	 (let loop ((rest (cdr sequence))
 		    (frags (list (fun (car sequence)))))
-	   (if (null rest)
+	   (if (null? rest)
 	       (apply concat (nreverse frags))
 	     (loop (cdr rest)
 		   (cons (fun (car rest)) (cons separator frags))))))

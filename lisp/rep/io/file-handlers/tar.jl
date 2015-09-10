@@ -100,7 +100,7 @@
        (let*
 	   ((output (make-string-output-stream))
 	    (process (make-process output)))
-	 (when (zerop (call-process process nil prog "--version"))
+	 (when (zero? (call-process process nil prog "--version"))
 	   (setq output (get-output-stream-string output))
 	   (when (string-looking-at
 		  "(tar )?[(]?GNU tar[)]?\\s*(.*?)\\s*\n" output)
@@ -113,7 +113,7 @@
 (defun tarfh-call-tar (input-file output op tar-file #!rest args)
   ;; XXX handle non-local files by copying
   ;; XXX but then again, that's a bad idea in gaolled code..
-  (when (file-exists-p tar-file)
+  (when (file-exists? tar-file)
     (setq tar-file (local-file-name tar-file))
     (unless tarfh-gnu-tar-version
       (tarfh-check-tar-program))
@@ -121,7 +121,7 @@
 	   (mode (cdr (assoc-regexp tar-file tarfh-compression-modes)))
 	   (all-args `(,op ,@(and mode (list mode))
 		       "--file" ,tar-file ,@args)))
-      (zerop (apply call-process process input-file
+      (zero? (apply call-process process input-file
 		    tarfh-gnu-tar-program all-args)))))
 
 
@@ -222,7 +222,7 @@
 	      nil mode-string user group symlink))))
 
 (defun tarfh-file-get-modtime (file-struct)
-  (when (stringp (aref file-struct tarfh-file-modtime))
+  (when (string? (aref file-struct tarfh-file-modtime))
     (require 'date)
     (let
 	((date (parse-date (aref file-struct tarfh-file-modtime))))
@@ -239,7 +239,7 @@
 	  (lambda (point tuple)
 	    (+ (ash (+ (if (/= (aref string point) #\-) 4 0)
 		       (if (/= (aref string (1+ point)) #\-) 2 0)
-		       (if (lower-case-p (aref string (+ point 2))) 1 0))
+		       (if (char-lower-case? (aref string (+ point 2))) 1 0))
 		    (* tuple 3))
 	       (if (memq (aref string (+ point 2)) '(#\s #\S #\t #\T))
 		   (ash #o1000 tuple)
@@ -273,7 +273,7 @@
       (setq name (expand-file-name (file-name-as-directory name) ""))
       (when cache
 	(for-each (lambda (entry)
-		    (when (string-head-eq (aref entry tarfh-file-name) name)
+		    (when (string-prefix? (aref entry tarfh-file-name) name)
 		      (throw 'out t)))
 		  (aref cache tarfh-cache-entries))
 	nil))))
@@ -296,7 +296,7 @@
     (setq tarfile (canonical-file-name tarfile))
     (setq filename (expand-file-name filename ""))
     (setq entry (tarfh-tarfile-cached-p tarfile))
-    (if (not (and entry (equal (aref entry tarfh-cache-modtime)
+    (if (not (and entry (equal? (aref entry tarfh-cache-modtime)
 			       (file-modtime tarfile))))
 	(progn
 	  ;; Cache TARFILE
@@ -329,7 +329,7 @@
   (let
       ((file-struct (tarfh-get-file tarfile file)))
     (while (and file-struct
-		(eq (aref file-struct tarfh-file-type) 'symlink))
+		(eq? (aref file-struct tarfh-file-type) 'symlink))
       (let
 	  ((link (aref file-struct tarfh-file-symlink)))
 	(setq file (expand-file-name link (file-name-directory file)))
@@ -367,16 +367,16 @@
 
 
 (defun tar-file-handler (op #!rest args)
-  (cond ((filep (car args))
+  (cond ((file? (car args))
 	 ;; an open file handle
 	 (let
 	     ((split (tarfh-split-filename (file-binding (car args)))))
 	   (tarfh-handler (car split) (cdr split) op args)))
-	((eq op 'file-name-absolute-p)
-	 (file-name-absolute-p (car args)))
-	((eq op 'local-file-name)
+	((eq? op 'file-name-absolute?)
+	 (file-name-absolute? (car args)))
+	((eq? op 'local-file-name)
 	 nil)
-	((eq op 'expand-file-name)
+	((eq? op 'expand-file-name)
 	 (expand-file-name (car args) ""))
 	((memq op '(file-name-nondirectory file-name-directory
 		    file-name-as-directory directory-file-name))
@@ -387,9 +387,9 @@
 	 (signal 'file-error (list "TAR files are read-only" op args)))
 	((memq op '(canonical-file-name open-file read-file-contents
 		    copy-file-to-local-fs insert-file-contents
-		    file-exists-p file-regular-p file-readable-p
-		    file-writable-p file-directory-p file-symlink-p
-		    file-owner-p file-nlinks file-size file-modes
+		    file-exists? file-regular? file-readable?
+		    file-writable? file-directory? file-symlink?
+		    file-owner? file-nlinks file-size file-modes
 		    file-modes-as-string file-modtime directory-files
 		    read-symlink))
 	 (let
@@ -400,17 +400,17 @@
 	
 (defun tarfh-handler (tarfile rel-file op args)
   (cond
-   ((eq op 'canonical-file-name)
+   ((eq? op 'canonical-file-name)
     ;; XXX implement this by resolving symlinks
     (car args))
-   ((filep (car args))
+   ((file? (car args))
     ;; Operations on file handles
     (cond
      ((memq op '(seek-file flush-file write-buffer-contents
 		 read-file-contents insert-file-contents))
       ;; Just pass these through to the underlying file
       (apply (symbol-value op) (file-bound-stream (car args)) (cdr args)))
-     ((eq op 'close-file)
+     ((eq? op 'close-file)
       (let*
 	  ((file (car args))
 	   (local-file (file-handler-data file)))
@@ -422,12 +422,12 @@
 	      rename-file delete-file delete-directory make-directory
 	      set-file-modes))
     (signal 'file-error (list "TAR fh is read-only" op args)))
-   ((eq op 'directory-files)
+   ((eq? op 'directory-files)
     (tarfh-directory-files tarfile rel-file))
    (t
     ;; All functions taking a single argument
     (let
-	((file (if (eq op 'file-symlink-p)
+	((file (if (eq? op 'file-symlink?)
 		   (tarfh-get-file tarfile rel-file)
 		 (tarfh-lookup-file tarfile rel-file))))
       (cond
@@ -435,17 +435,17 @@
 		   copy-file-to-local-fs))
 	;; Need to get the file to the local fs
 	(let
-	    ((local-name (if (eq op 'copy-file-to-local-fs)
+	    ((local-name (if (eq? op 'copy-file-to-local-fs)
 			     (nth 1 args)
 			   (make-temp-name))))
 	  (or file (signal 'file-error (list "Unknown file:" (car args))))
 	  (tarfh-copy-out tarfile (aref file tarfh-file-full-name) local-name)
-	  (unless (eq op 'copy-file-to-local-fs)
+	  (unless (eq? op 'copy-file-to-local-fs)
 	    (unwind-protect
 		((symbol-value op) local-name)
 	      (delete-file local-name)))
 	  t))
-       ((eq op 'open-file)
+       ((eq? op 'open-file)
 	(let
 	    ((type (nth 1 args))
 	     (local-file (make-temp-name))
@@ -461,35 +461,35 @@
 	  (set-file-handler-data local-fh local-file)
 	  (tarfh-fh-guardian local-fh)
 	  local-fh))
-       ((eq op 'file-exists-p)
+       ((eq? op 'file-exists?)
 	(or file (tarfh-directory-exists-p tarfile rel-file)))
-       ((eq op 'file-regular-p)
-	(and file (eq (aref file tarfh-file-type) 'file)))
-       ((eq op 'file-directory-p)
+       ((eq? op 'file-regular?)
+	(and file (eq? (aref file tarfh-file-type) 'file)))
+       ((eq? op 'file-directory?)
 	(if file
-	    (eq (aref file tarfh-file-type) 'directory)
+	    (eq? (aref file tarfh-file-type) 'directory)
 	  (tarfh-directory-exists-p tarfile rel-file)))
-       ((eq op 'file-symlink-p)
-	(and file (eq (aref file tarfh-file-type) 'symlink)))
-       ((eq op 'file-size)
+       ((eq? op 'file-symlink?)
+	(and file (eq? (aref file tarfh-file-type) 'symlink)))
+       ((eq? op 'file-size)
 	(and file (aref file tarfh-file-size)))
-       ((eq op 'file-modes)
+       ((eq? op 'file-modes)
 	(and file (tarfh-file-get-modes file)))
-       ((eq op 'file-modes-as-string)
+       ((eq? op 'file-modes-as-string)
 	(and file (aref file tarfh-file-modes-string)))
-       ((eq op 'file-nlinks)
+       ((eq? op 'file-nlinks)
 	1)
-       ((eq op 'file-modtime)
+       ((eq? op 'file-modtime)
 	(if file (tarfh-file-get-modtime file) (cons 0 0)))
-       ((eq op 'file-owner-p)
+       ((eq? op 'file-owner?)
 	(and file (tarfh-file-owner-p file)))
-       ((eq op 'file-readable-p)
+       ((eq? op 'file-readable?)
 	(and file (/= (logand (tarfh-file-get-modes file)
 			      (if (tarfh-file-owner-p file)
 				  #o400 #o004)) 0)))
-       ((eq op 'file-writable-p)
+       ((eq? op 'file-writable?)
 	nil)
-       ((eq op 'read-symlink)
+       ((eq? op 'read-symlink)
 	(and file (or (aref file tarfh-file-symlink)
 		      (signal 'file-error
 			      (list "File isn't a symlink:" (car args))))))

@@ -174,9 +174,9 @@ Creates a new list with elements from VECTOR.
   return ret;
 }
 
-DEFUN("vectorp", Fvectorp, Svectorp, (repv arg), rep_Subr1) /*
-::doc:rep.data#vectorp::
-vectorp ARG
+DEFUN("vector?", Fvectorp, Svectorp, (repv arg), rep_Subr1) /*
+::doc:rep.data#vector?::
+vector? ARG
 
 Returns t if ARG is a vector.
 ::end:: */

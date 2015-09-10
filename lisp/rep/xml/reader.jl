@@ -68,7 +68,7 @@
   (define (read-string-item stream endings)
     (let loop ((this (current stream))
 	       (chars '()))
-      (if (or (null this) (memq this endings))
+      (if (or (null? this) (memq this endings))
 	  (apply concat (nreverse chars))
 	(loop (next stream) (cons this chars)))))
 
@@ -91,7 +91,7 @@
     (substitute-entities (read-string-item stream '(#\<))))
 
   (define (read-quoted-token stream)
-    (cond ((space-char-p (current stream)) "")
+    (cond ((char-whitespace? (current stream)) "")
 	  ((not (memq (current stream) '(#\" #\')))
 	   (read-string-item stream token-endings))
 	  (t (let ((delim (list (current stream))))
@@ -152,7 +152,7 @@
 
   (define (read-xml-item stream #!optional catcher)
     (cond
-     ((null (current stream)) nil)
+     ((null? (current stream)) nil)
 
      ((= (current stream) #\<)
       (case (next stream)

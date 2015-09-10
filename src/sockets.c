@@ -608,9 +608,9 @@ returns false.
     + (rep_INTP(msecs) ? rep_INT(msecs) : 0), 1, &SOCKET(sock)->sock);
 }
 
-DEFUN("socketp", Fsocketp, Ssocketp, (repv arg), rep_Subr1) /*
-::doc:rep.io.sockets#socketp::
-socketp ARG
+DEFUN("socket?", Fsocketp, Ssocketp, (repv arg), rep_Subr1) /*
+::doc:rep.io.sockets#socket?::
+socket? ARG
 
 Return true if ARG is an unclosed socket object.
 ::end:: */

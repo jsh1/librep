@@ -123,7 +123,7 @@
     (make-socket-data closable)
     ;; no predicate
     (pending-data socket-pending-data socket-pending-data-set!)
-    (closable socket-closable-p)
+    (closable socket-closable?)
     (pending-calls socket-pending-calls socket-pending-calls-set!))
 
   ;; The socket used to listen for connections to this server (or false)
@@ -136,10 +136,10 @@
 ;;; connection cache
 
   ;; maps from (SERVER-NAME . PORT-NUMBER) -> SOCKET
-  (define socket-cache (make-table equal-hash equal))
+  (define socket-cache (make-table equal-hash equal?))
 
   ;; maps from SOCKET -> SOCKET-DATA
-  (define socket-data-table (make-weak-table eq-hash eq))
+  (define socket-data-table (make-weak-table eq-hash eq?))
 
   ;; Return the socket associated with SERVER:PORT. If there isn't one,
   ;; try to connect to the server. Signals an error on failure
@@ -160,12 +160,12 @@ by knowing its address and port number."
     "Remove SOCKET from the table of rpc connections."
     (let ((server (socket-peer-address socket))
 	  (port (socket-peer-port socket)))
-      (when (eq (table-ref socket-cache (cons server port)) socket)
+      (when (eq? (table-ref socket-cache (cons server port)) socket)
 	(table-unset socket-cache (cons server port)))
       (let ((data (socket-data socket)))
 	(if (not data)
 	    (close-socket socket)
-	  (when (socket-closable-p data)
+	  (when (socket-closable? data)
 	    (close-socket socket))
 	  (table-unset socket-data-table socket)
 	  ;; fail-out any pending calls on this socket
@@ -181,7 +181,7 @@ by knowing its address and port number."
 ;;; socket I/O
 
   ;; maps from ID -> (CALLBACK ERROR? VALUE)
-  (define pending-calls (make-table eq-hash eq))
+  (define pending-calls (make-table eq-hash eq?))
 
   ;; XXX make this unspoofable
   (define make-call-id
@@ -327,7 +327,7 @@ server sockets."
 ;;; servants
 
   ;; map from ID->RPC-IMPL
-  (define servant-table (make-table eq-hash eq))
+  (define servant-table (make-table eq-hash eq?))
 
   ;; Create a new (unique) servant id
   (define (make-servant-id)
@@ -370,7 +370,7 @@ becomes invalid."
 
       (define (proxy)
 	(lambda args
-	  (if (eq (car args) proxy-token)
+	  (if (eq? (car args) proxy-token)
 	      ;; when called like this, do special things
 	      (case (cadr args)
 		((global-id) global-id)

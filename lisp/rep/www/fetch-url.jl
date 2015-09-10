@@ -37,7 +37,7 @@
   (define (fetch-url url dest-stream)
     (let ((process (make-process dest-stream)))
       (set-process-error-stream process *standard-error*)
-      (unless (zerop (call-process process nil *wget-program*
+      (unless (zero? (call-process process nil *wget-program*
 				   "-nv" "-O" "-" url))
 	(signal 'wget (list url)))))
 

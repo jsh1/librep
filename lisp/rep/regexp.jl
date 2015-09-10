@@ -39,11 +39,11 @@ TEMPLATE is called."
 	     (out '()))
     (if (string-match regexp string point)
 	(loop (match-end)
-	      (cons (if (stringp template)
+	      (cons (if (string? template)
 			(expand-last-match template)
 		      (template string))
 		    (cons (substring string point (match-start)) out)))
-      (if (null out)
+      (if (null? out)
 	  string
 	(apply concat (nreverse (cons (substring string point) out)))))))
 

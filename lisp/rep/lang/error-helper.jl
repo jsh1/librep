@@ -31,7 +31,7 @@
 	  rep.structures)
 
   ;; map error symbols to helper functions
-  (define helper-table (make-table eq-hash eq))
+  (define helper-table (make-table eq-hash eq?))
 
   (define output-stream (make-fluid *standard-error*))
 
@@ -42,7 +42,7 @@
     (fun 'rep (get-structure 'rep))
     (structure-walk (lambda (name struct)
 		      (unless (or (not struct)
-				  (eq name 'rep)
+				  (eq? name 'rep)
 				  (string-match "^%" (symbol-name name)))
 			(fun name struct)))
 		    (get-structure '%structures)))
@@ -67,12 +67,12 @@ in the wrong position."))
       (t (let ((structs '()))
 	   (for-each-structure
 	    (lambda (name struct)
-	      (when (structure-exports-p struct symbol)
+	      (when (structure-exports? struct symbol)
 		(setq structs (cons name structs)))))
-	   (cond ((null structs)
+	   (cond ((null? structs)
 		  (output "You're accessing an undefined variable or function `%s'"
 			  symbol))
-		 ((null (cdr structs))
+		 ((null? (cdr structs))
 		  (output
 		   "You probably need to open the module `%s'" (car structs)))
 		 (t (output "You probably need to open one of the modules %s"

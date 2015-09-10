@@ -51,7 +51,7 @@
   (define (repl-eval form)
     (eval form (intern-structure (repl-struct (fluid current-repl)))))
 
-  (define (repl-boundp x)
+  (define (repl-bound? x)
     (condition-case nil
 	(progn
 	  (repl-eval x)
@@ -90,7 +90,7 @@
 					  (and input
 					       (not (string=? "" input))))))))
 		      (let ((result (repl-eval form)))
-			(unless (eq result #undefined)
+			(unless (eq? result #undefined)
 			  (format *standard-output* "%S\n" result))))))
 		t)
 	    (error
@@ -98,7 +98,7 @@
 	     t))))))
 
   (define (do-readline prompt completer)
-    (if (file-ttyp *standard-input*)
+    (if (file-tty? *standard-input*)
 	(progn
 	  (require 'rep.io.readline)
 	  (readline prompt completer))
@@ -115,7 +115,7 @@
 		    completion-generator)))
 	(and input (repl-iterate (fluid current-repl) input))))
     (define (interrupt-handler data)
-      (if (eq (car data) 'user-interrupt)
+      (if (eq? (car data) 'user-interrupt)
 	  (progn
 	    (format *standard-output* "User interrupt!\n")
 	    t)
@@ -132,7 +132,7 @@
       (do ((i 0 (1+ i))
 	   (left data (cdr left))
 	   (right (nthcdr mid data) (cdr right)))
-	  ((null left))
+	  ((null? left))
 	(when (< i mid)
 	  (format *standard-output* "  %-30s"
 		  (format nil "%s" (f (car left))))
@@ -142,11 +142,11 @@
 
   (define (completion-generator w)
     ;; Either a special command or unquote.
-    (if (string-head-eq w ",")
+    (if (string-prefix? w ",")
 	(map (lambda (x) (concat "," (symbol-name x)))
 	     (apropos (concat #\^ (quote-regexp (substring w 1)))
 		      (lambda (x) (assq x repl-commands))))
-      (apropos (concat #\^ (quote-regexp w)) repl-boundp)))
+      (apropos (concat #\^ (quote-regexp w)) repl-bound?)))
 
   (define (repl-completions repl word)
     (let-fluids ((current-repl repl))
@@ -155,8 +155,8 @@
 
 ;;; module utils
 
-  (define (module-exports-p name var)
-    (structure-exports-p (get-structure name) var))
+  (define (module-exports? name var)
+    (structure-exports? (get-structure name) var))
 
   (define (module-imports name)
      (structure-imports (get-structure name)))
@@ -165,7 +165,7 @@
     (or (locate-binding name (append (list (repl-struct (fluid current-repl)))
 				     (module-imports
 				      (repl-struct (fluid current-repl)))))
-	(and (structure-bound-p
+	(and (structure-bound?
 	      (get-structure (repl-struct (fluid current-repl))) name)
 	     (repl-struct (fluid current-repl)))))
 
@@ -188,7 +188,7 @@
 	(let ((re (concat "^" (quote-regexp (symbol-name name)))))
 	  (let loop ((rest repl-commands)
 		     (matched nil))
-	    (cond ((null rest)
+	    (cond ((null? rest)
 		   (if matched
 		       matched
 		     (format *standard-output* "unknown command: ,%s\n" name)
@@ -344,7 +344,7 @@
    'compile
    (lambda args
      (require 'rep.vm.compiler)
-     (if (null args)
+     (if (null? args)
 	 (compile-module (repl-struct (fluid current-repl)))
        (for-each compile-module args)))
    "[STRUCT ...]")
@@ -410,7 +410,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
    'apropos
    (lambda (re)
      (require 'rep.lang.doc)
-     (let ((funs (apropos re repl-boundp)))
+     (let ((funs (apropos re repl-bound?)))
        (for-each (lambda (x)
 		   (describe-value (repl-eval x) x)) funs)))
    "\"REGEXP\"")
@@ -431,7 +431,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
        (structure-walk (lambda (k v)
 			 (declare (unused k))
 			 (when (and v (structure-name v)
-				    (structure-exports-p v var))
+				    (structure-exports? v var))
 			   (setq out (cons (structure-name v) out))))
 		       (get-structure '%structures))
        (if out
@@ -464,7 +464,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
    'check
    (lambda (#!optional module)
      (require 'rep.test.framework)
-     (if (null module)
+     (if (null? module)
 	 (run-all-self-tests)
        (run-module-self-tests module)))
    "[STRUCT]"))

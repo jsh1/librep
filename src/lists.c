@@ -443,7 +443,7 @@ DEFUN("assoc", Fassoc, Sassoc, (repv elt, repv list), rep_Subr2) /*
 assoc ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a list whose first element is ELT. `assoc' uses
-`equal' to compare elements. Returns the sub-list starting from the first 
+`equal?' to compare elements. Returns the sub-list starting from the first 
 matching association.
 For example,
     (assoc 'three '((one . 1) (two . 2) (three . 3) (four . 4)))
@@ -471,7 +471,7 @@ DEFUN("assq", Fassq, Sassq, (repv elt, repv list), rep_Subr2) /*
 ::doc:rep.data#assq::
 assq ELT ASSOC-LIST
 
-Searches ASSOC-LIST for a list whose first element is ELT. `assq' uses `eq'
+Searches ASSOC-LIST for a list whose first element is ELT. `assq' uses `eq?'
 to compare elements. Returns the sub-list starting from the first matching
 association.
 ::end:: */
@@ -497,7 +497,7 @@ DEFUN("rassoc", Frassoc, Srassoc, (repv elt, repv list), rep_Subr2) /*
 ::doc:rep.data#rassoc::
 rassoc ELT ASSOC-LIST
 
-Searches ASSOC-LIST for a cons-cell whose cdr element is `equal' to ELT. 
+Searches ASSOC-LIST for a cons-cell whose cdr element is `equal?' to ELT. 
 Returns the first cons-cell which matches, or nil.
 For example,
     (rassoc 3 '((one . 1) (two . 2) (three . 3) (four . 4)))
@@ -525,7 +525,7 @@ DEFUN("rassq", Frassq, Srassq, (repv elt, repv list), rep_Subr2) /*
 ::doc:rep.data#rassq::
 rassq ELT ASSOC-LIST
 
-Searches ASSOC-LIST for a cons-cell whose cdr is `eq' to ELT.
+Searches ASSOC-LIST for a cons-cell whose cdr is `eq?' to ELT.
 Returns the first matching cons-cell, else nil.
 ::end:: */
 {
@@ -808,7 +808,7 @@ If ELT is a member of list LIST then return the tail of the list starting
 from the matched ELT, ie,
   (member 1 '(2 1 3))
    => (1 3)
-`member' uses `equal' to compare atoms.
+`member' uses `equal?' to compare atoms.
 ::end:: */
 {
   rep_DECLARE2(list, rep_LISTP);
@@ -835,7 +835,7 @@ If ELT is a member of list LIST then return the tail of the list starting
 from the matched ELT, ie,
   (memq 1 '(2 1 3))
    => (1 3)
-`memq' uses `eq' to compare atoms.
+`memq' uses `eq?' to compare atoms.
 ::end:: */
 {
   rep_DECLARE2(list, rep_LISTP);
@@ -859,7 +859,7 @@ DEFUN("memql", Fmemql, Smemql, (repv elt, repv list), rep_Subr2) /*
 memql ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
-from the matched ELT. `memql' uses `eql' to compare list items.
+from the matched ELT. `memql' uses `eqv?' to compare list items.
 ::end:: */
 {
   rep_DECLARE2(list, rep_LISTP);
@@ -886,7 +886,7 @@ DEFUN("delete", Fdelete, Sdelete, (repv elt, repv list), rep_Subr2) /*
 ::doc:rep.data#delete::
 delete ELT LIST
 
-Returns LIST with any members `equal' to ELT destructively removed.
+Returns LIST with any members `equal?' to ELT destructively removed.
 ::end:: */
 {
   rep_DECLARE2(list, rep_LISTP);
@@ -912,7 +912,7 @@ DEFUN("delq", Fdelq, Sdelq, (repv elt, repv list), rep_Subr2) /*
 ::doc:rep.data#delq::
 delq ELT LIST
 
-Returns LIST with any members `eq' to ELT destructively removed.
+Returns LIST with any members `eq?' to ELT destructively removed.
 ::end:: */
 {
   rep_DECLARE2(list, rep_LISTP);
@@ -1008,9 +1008,9 @@ applied to that element, ie,
   return list;
 }
 
-DEFUN("null", Fnull, Snull, (repv arg), rep_Subr1) /*
-::doc:rep.data#null::
-null ARG
+DEFUN("null?", Fnull, Snull, (repv arg), rep_Subr1) /*
+::doc:rep.data#null?::
+null? ARG
 
 Returns t if ARG is nil.
 ::end:: */
@@ -1028,9 +1028,9 @@ Returns t if ARG is not a cons-cell.
   return rep_CONSP(arg) ? rep_nil : Qt;
 }
 
-DEFUN("consp", Fconsp, Sconsp, (repv arg), rep_Subr1) /*
-::doc:rep.data#consp::
-consp ARG
+DEFUN("pair?", Fconsp, Sconsp, (repv arg), rep_Subr1) /*
+::doc:rep.data#pair?::
+pair? ARG
 
 Returns t if ARG is a cons-cell.
 ::end:: */
@@ -1038,9 +1038,9 @@ Returns t if ARG is a cons-cell.
   return rep_CONSP(arg) ? Qt : rep_nil;
 }
 
-DEFUN("listp", Flistp, Slistp, (repv arg), rep_Subr1) /*
-::doc:rep.data#listp::
-listp ARG
+DEFUN("list?", Flistp, Slistp, (repv arg), rep_Subr1) /*
+::doc:rep.data#list?::
+list? ARG
 
 Returns t if ARG is a list, (either a cons-cell or nil).
 ::end:: */

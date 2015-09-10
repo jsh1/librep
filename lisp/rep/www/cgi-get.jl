@@ -72,7 +72,7 @@
 	(setq point (match-end))
 	(setq frags (cons (+ (* (hexdigit (aref string (- point 2))) 16)
 			     (hexdigit (aref string (1- point)))) frags)))
-      (if (zerop point)
+      (if (zero? point)
 	  string
 	(setq frags (cons (substring string point) frags))
 	(apply concat (nreverse frags)))))
@@ -81,17 +81,17 @@
 ;; Tests
 
   (define (self-test)
-    (test (equal (cgi-get-params "")
+    (test (equal? (cgi-get-params "")
 		 '()))
-    (test (equal (cgi-get-params "foo=bar")
+    (test (equal? (cgi-get-params "foo=bar")
 		 '((foo . "bar"))))
-    (test (equal (cgi-get-params "foo=bar&baz=quux")
+    (test (equal? (cgi-get-params "foo=bar&baz=quux")
 		 '((foo . "bar") (baz . "quux"))))
-    (test (equal (cgi-get-params "foo=&baz=quux")
+    (test (equal? (cgi-get-params "foo=&baz=quux")
 		 '((foo . ()) (baz . "quux"))))
-    (test (equal (cgi-get-params "foo=%3A%2F%3D")
+    (test (equal? (cgi-get-params "foo=%3A%2F%3D")
 		 '((foo . ":/="))))
-    (test (equal (cgi-get-params "foo=+bar+")
+    (test (equal? (cgi-get-params "foo=+bar+")
 		 '((foo . " bar ")))))
 
   ;;###autoload

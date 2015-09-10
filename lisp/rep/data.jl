@@ -41,7 +41,7 @@ string INPUT."
   "Similar to the `member' function, except that the function FUN is
 called to test the elements for matches. If `(FUN ELT)' returns true,
 then the sublist starting with ELT is returned."
-  (cond ((null lst) '())
+  (cond ((null? lst) '())
 	((fun (car lst)) lst)
 	(t (member-if fun (cdr lst)))))
 
@@ -50,7 +50,7 @@ then the sublist starting with ELT is returned."
 returns true."
   (let loop ((rest lst)
 	     (out '()))
-    (cond ((null rest) (nreverse out))
+    (cond ((null? rest) (nreverse out))
 	  ((pred (car rest)) (loop (cdr rest) out))
 	  (t (loop (cdr rest) (cons (car rest) out))))))
 
@@ -60,12 +60,12 @@ returns false."
   (remove-if (lambda (x) (not (fun x))) lst))
 
 (defun remove (elt lst)
-  "Returns a new copy of LST with all elements `equal' to ELT discarded."
-  (remove-if (lambda (x) (equal x elt)) lst))
+  "Returns a new copy of LST with all elements `equal?' to ELT discarded."
+  (remove-if (lambda (x) (equal? x elt)) lst))
 
 (defun remq (elt lst)
-  "Returns a new copy of LST with all elements `eq' to ELT discarded."
-  (remove-if (lambda (x) (eq x elt)) lst))
+  "Returns a new copy of LST with all elements `eq?' to ELT discarded."
+  (remove-if (lambda (x) (eq? x elt)) lst))
 
 (export-bindings '(assoc-regexp setcar setcdr member-if remove-if
 		   remove-if-not remove remq))
@@ -133,15 +133,15 @@ exist that have not already been returned."
 
 ;; autoloads
 
-(autoload 'string-upper-case-p "rep/data/string-util")
-(autoload 'string-lower-case-p "rep/data/string-util")
-(autoload 'string-capitalized-p "rep/data/string-util")
+(autoload 'string-upper-case? "rep/data/string-util")
+(autoload 'string-lower-case? "rep/data/string-util")
+(autoload 'string-capitalized? "rep/data/string-util")
 (autoload 'string-upcase "rep/data/string-util")
 (autoload 'string-downcase "rep/data/string-util")
 (autoload 'capitalize-string "rep/data/string-util")
 (autoload 'mapconcat "rep/data/string-util")
 (autoload 'sort "rep/data/sort")
 
-(export-bindings '(string-upper-case-p string-lower-case-p string-capitalized-p
+(export-bindings '(string-upper-case? string-lower-case? string-capitalized?
 		   string-upcase string-downcase capitalize-string
 		   mapconcat sort upcase-table downcase-table flatten-table))

@@ -157,7 +157,7 @@ file types.")
 (defconst remote-ftp-struct-size 8)
 
 (defmacro remote-ftp-status-p (session stat)
-  `(eq (aref ,session remote-ftp-status) ,stat))
+  `(eq? (aref ,session remote-ftp-status) ,stat))
 
 ;; Return an ftp structure for HOST and USER, with a running ftp session
 (defun remote-ftp-open-host (host #!optional user)
@@ -208,7 +208,7 @@ file types.")
 
 (defun remote-ftp-close-session (session)
   (when (and (aref session remote-ftp-process)
-	     (process-in-use-p (aref session remote-ftp-process)))
+	     (process-in-use? (aref session remote-ftp-process)))
     (aset session remote-ftp-status 'dying)
     (set-process-output-stream (aref session remote-ftp-process) nil)
     (set-process-error-stream (aref session remote-ftp-process) nil)
@@ -217,7 +217,7 @@ file types.")
 (defun remote-ftp-close-host (host #!optional user)
   "Close the FTP subprocess connect to `USER@HOST'."
   (interactive "sHost:\nsUser:")
-  (when (or (null user) (string=? user ""))
+  (when (or (null? user) (string=? user ""))
     (setq user (remote-get-user host)))
   (catch 'foo
     (for-each (lambda (s)
@@ -235,7 +235,7 @@ file types.")
 (defun remote-ftp-get-session-by-process (process)
   (catch 'return
     (for-each (lambda (s)
-		(and (eq (aref s remote-ftp-process) process)
+		(and (eq? (aref s remote-ftp-process) process)
 		     (throw 'return s)))
 	      remote-ftp-sessions)))
 
@@ -250,11 +250,11 @@ file types.")
   (aset session remote-ftp-status 'busy))
 
 (defun remote-ftp-while (session status #!optional type)
-  (when (and (not (eq status 'dying))
+  (when (and (not (eq? status 'dying))
 	     (remote-ftp-status-p session 'dying))
     (error "FTP session is dying"))
   (while (remote-ftp-status-p session status)
-    (when (and (process-running-p (aref session remote-ftp-process))
+    (when (and (process-running? (aref session remote-ftp-process))
 	       (accept-process-output remote-ftp-timeout))
       (aset session remote-ftp-status 'timed-out)
       (error "FTP process timed out (%s)" (or type "unknown")))))
@@ -274,9 +274,9 @@ file types.")
 	    (when remote-ftp-display-progress
 	      (format t " %s" (aref session remote-ftp-status))))
 	(error
-	 (when (and (stringp (nth 1 data))
+	 (when (and (string? (nth 1 data))
 		    (string-match "transient error" (nth 1 data))
-		    (not (eq type 'login)))
+		    (not (eq? type 'login)))
 	   ;; The session has been killed. Wait for it to die
 	   ;; totally then try to reconnect
 	   (message (format nil "FTP: reconnecting to `%s'...\n"
@@ -288,7 +288,7 @@ file types.")
 
 ;; Return t if successful, else signal a file-error
 (defun remote-ftp-error-if-unsuccessful (session #!optional fmt args)
-  (or (eq (aref session remote-ftp-status) 'success)
+  (or (eq? (aref session remote-ftp-status) 'success)
       (signal 'file-error
 	      (list 'ftp
 		    (format nil "%s@%s"
@@ -316,7 +316,7 @@ file types.")
 	(setq point (match-end))
 	(when remote-ftp-display-progress
 	  (write t (substring output (match-start) (match-end)))
-	  (when (featurep 'jade)
+	  (when (feature? 'jade)
 	    (declare (bound redisplay))
 	    (redisplay))))
       (if (string-looking-at remote-ftp-passwd-msgs output point)
@@ -376,7 +376,7 @@ file types.")
 (defun remote-ftp-sentinel (process)
   (let
       ((session (remote-ftp-get-session-by-process process)))
-    (unless (process-in-use-p process)
+    (unless (process-in-use? process)
       (aset session remote-ftp-process nil)
       (aset session remote-ftp-dircache nil)
       (aset session remote-ftp-status nil)
@@ -385,7 +385,7 @@ file types.")
       (setq remote-ftp-sessions (delq session remote-ftp-sessions)))))
 
 (defun remote-ftp-show-multi (string start end)
-  (if (featurep 'jade)
+  (if (feature? 'jade)
       (progn
 	(declare (bound open-buffer goto end-of-buffer insert
 			pos-line delete-area start-of-buffer
@@ -423,7 +423,7 @@ file types.")
 (defun remote-ftp-login (session)
   (and (remote-ftp-command session 'login "user %s"
 			   (aref session remote-ftp-user))
-       (when (stringp (aref session remote-ftp-login-data))
+       (when (string? (aref session remote-ftp-login-data))
 	 ;; The password for this session. It seemed successful
 	 ;; so store for later use
 	 (remote-ftp-add-passwd (aref session remote-ftp-user)
@@ -529,7 +529,7 @@ file types.")
 	      nil mode-string nlinks user group symlink))))
 
 (defun remote-ftp-file-get-modtime (file-struct)
-  (when (stringp (aref file-struct remote-ftp-file-modtime))
+  (when (string? (aref file-struct remote-ftp-file-modtime))
     (let
 	((date (parse-date (aref file-struct remote-ftp-file-modtime))))
       (when date
@@ -545,7 +545,7 @@ file types.")
 	  (lambda (point tuple)
 	    (+ (ash (+ (if (/= (aref string point) #\-) 4 0)
 		       (if (/= (aref string (1+ point)) #\-) 2 0)
-		       (if (lower-case-p (aref string (+ point 2))) 1 0))
+		       (if (char-lower-case? (aref string (+ point 2))) 1 0))
 		    (* tuple 3))
 	       (if (memq (aref string (+ point 2)) '(#\s #\S #\t #\T))
 		   (ash #o1000 tuple)
@@ -636,7 +636,7 @@ file types.")
   (let
       ((file-struct (remote-ftp-get-file session file)))
     (while (and file-struct
-		(eq (aref file-struct remote-ftp-file-type) 'symlink))
+		(eq? (aref file-struct remote-ftp-file-type) 'symlink))
       (let
 	  ((link (aref file-struct remote-ftp-file-symlink)))
 	(setq file (expand-file-name link (file-name-directory file)))
@@ -688,17 +688,17 @@ file types.")
 
 (defun remote-ftp-handler (split-name op args)
   (cond
-   ((eq op 'canonical-file-name)
+   ((eq? op 'canonical-file-name)
     ;; XXX implement this by resolving symlinks
     (car args))
-   ((filep (car args))
+   ((file? (car args))
     ;; Operations on file handles
     (cond
      ((memq op '(seek-file flush-file write-buffer-contents
 		 read-file-contents insert-file-contents))
       ;; Just pass these through to the underlying file
       (apply (symbol-value op) (file-bound-stream (car args)) (cdr args)))
-     ((eq op 'close-file)
+     ((eq? op 'close-file)
       ;; Close the file, synchronise with the remote file if required
       (let*
 	  ((file (car args))
@@ -715,12 +715,12 @@ file types.")
    ((memq op '(read-file-contents insert-file-contents copy-file-to-local-fs))
     ;; Need to get the file to the local fs
     (let
-	((local-name (if (eq op 'copy-file-to-local-fs)
+	((local-name (if (eq? op 'copy-file-to-local-fs)
 			 (nth 1 args)
 		       (make-temp-name)))
 	 (session (remote-ftp-open-host (nth 1 split-name) (car split-name))))
       (remote-ftp-get session (nth 2 split-name) local-name)
-      (unless (eq op 'copy-file-to-local-fs)
+      (unless (eq? op 'copy-file-to-local-fs)
 	(unwind-protect
 	    ((symbol-value op) local-name)
 	  (delete-file local-name)))
@@ -728,18 +728,18 @@ file types.")
    ((memq op '(write-buffer-contents copy-file-from-local-fs))
     ;; Need to get the file off the local fs
     (let
-	((local-name (if (eq op 'copy-file-from-local-fs)
+	((local-name (if (eq? op 'copy-file-from-local-fs)
 			 (car args)
 		       (make-temp-name)))
 	 (session (remote-ftp-open-host (nth 1 split-name) (car split-name))))
-      (unless (eq op 'copy-file-from-local-fs)
+      (unless (eq? op 'copy-file-from-local-fs)
 	(apply (symbol-value op) local-name (cdr args)))
       (unwind-protect
 	  (remote-ftp-put session local-name (nth 2 split-name))
-	(unless (eq op 'copy-file-from-local-fs)
+	(unless (eq? op 'copy-file-from-local-fs)
 	  (delete-file local-name)))
       t))
-   ((eq op 'copy-file)
+   ((eq? op 'copy-file)
     ;; Copying on the remote fs.
     ;; XXX Is there a way to avoid the double transfer?
     ;; XXX Not for inter-session copies, anyway.
@@ -751,9 +751,9 @@ file types.")
 				   (list (car args) local-file))
 	       (remote-ftp-handler dest-split 'copy-file-from-local-fs
 				   (list local-file (nth 1 args))))
-	(and (file-exists-p local-file)
+	(and (file-exists? local-file)
 	     (delete-file local-file)))))
-   ((eq op 'rename-file)
+   ((eq? op 'rename-file)
     (let
 	((session (remote-ftp-open-host (nth 1 split-name) (car split-name)))
 	 (dest-split (remote-split-filename (nth 1 args))))
@@ -767,7 +767,7 @@ file types.")
 	((session (remote-ftp-open-host (nth 1 split-name) (car split-name)))
 	 (file-name (nth 2 split-name)))
       (cond
-       ((eq op 'directory-files)
+       ((eq? op 'directory-files)
 	(let
 	    ;; XXX this assumes local/remote have same naming structure!
 	    ((dir (file-name-as-directory file-name)))
@@ -776,15 +776,15 @@ file types.")
 		 (aref f remote-ftp-file-name))
 	       (aref (remote-ftp-dir-cached-p session dir)
 		     remote-ftp-cache-entries))))
-       ((eq op 'delete-file)
+       ((eq? op 'delete-file)
 	(remote-ftp-rm session file-name))
-       ((eq op 'delete-directory)
+       ((eq? op 'delete-directory)
 	(remote-ftp-rmdir session file-name))
-       ((eq op 'make-directory)
+       ((eq? op 'make-directory)
 	(remote-ftp-mkdir session file-name))
-       ((eq op 'set-file-modes)
+       ((eq? op 'set-file-modes)
 	(remote-ftp-chmod session (nth 1 args) file-name))
-       ((eq op 'open-file)
+       ((eq? op 'open-file)
 	(let
 	    ((type (nth 1 args))
 	     (local-file (make-temp-name))
@@ -805,39 +805,39 @@ file types.")
 	  local-fh))
        (t
 	(let
-	    ((file (if (eq op 'file-symlink-p)
+	    ((file (if (eq? op 'file-symlink?)
 		       (remote-ftp-get-file session file-name)
 		     (remote-ftp-lookup-file session file-name))))
 	  (cond
-	   ((eq op 'file-exists-p)
+	   ((eq? op 'file-exists?)
 	    file)
-	   ((eq op 'file-regular-p)
-	    (and file (eq (aref file remote-ftp-file-type) 'file)))
-	   ((eq op 'file-directory-p)
-	    (and file (eq (aref file remote-ftp-file-type) 'directory)))
-	   ((eq op 'file-symlink-p)
-	    (and file (eq (aref file remote-ftp-file-type) 'symlink)))
-	   ((eq op 'file-size)
+	   ((eq? op 'file-regular?)
+	    (and file (eq? (aref file remote-ftp-file-type) 'file)))
+	   ((eq? op 'file-directory?)
+	    (and file (eq? (aref file remote-ftp-file-type) 'directory)))
+	   ((eq? op 'file-symlink?)
+	    (and file (eq? (aref file remote-ftp-file-type) 'symlink)))
+	   ((eq? op 'file-size)
 	    (and file (aref file remote-ftp-file-size)))
-	   ((eq op 'file-modes)
+	   ((eq? op 'file-modes)
 	    (and file (remote-ftp-file-get-modes file)))
-	   ((eq op 'file-modes-as-string)
+	   ((eq? op 'file-modes-as-string)
 	    (and file (aref file remote-ftp-file-mode-string)))
-	   ((eq op 'file-nlinks)
+	   ((eq? op 'file-nlinks)
 	    (and file (aref file remote-ftp-file-nlinks)))
-	   ((eq op 'file-modtime)
+	   ((eq? op 'file-modtime)
 	    (if file (remote-ftp-file-get-modtime file) (cons 0 0)))
-	   ((eq op 'file-owner-p)
+	   ((eq? op 'file-owner?)
 	    (and file (remote-ftp-file-owner-p session file)))
-	   ((eq op 'file-readable-p)
+	   ((eq? op 'file-readable?)
 	    (and file (/= (logand (remote-ftp-file-get-modes file)
 				  (if (remote-ftp-file-owner-p session file)
 				      #o400 #o004)) 0)))
-	   ((eq op 'file-writable-p)
+	   ((eq? op 'file-writable?)
 	    (and file (/= (logand (remote-ftp-file-get-modes file)
 				  (if (remote-ftp-file-owner-p session file)
 				      #o200 #o002)) 0)))
-	   ((eq op 'read-symlink)
+	   ((eq? op 'read-symlink)
 	    (and file (or (aref file remote-ftp-file-symlink)
 			  (signal 'file-error
 				  (list "File isn't a symlink:" split-name)))))

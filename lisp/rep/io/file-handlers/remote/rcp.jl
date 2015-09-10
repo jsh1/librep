@@ -45,7 +45,7 @@
   (let
       ((status (apply call-process nil nil rcp-program args)))
     (write t "done")
-    (or (zerop status)
+    (or (zero? status)
 	(error "Couldn't run rcp with args: %s" args))))
 
 (defun remote-rcp-filename (split)
@@ -54,12 +54,12 @@
 
 (defun remote-rcp-handler (split-name op args)
   (cond
-   ((eq op 'canonical-file-name)
+   ((eq? op 'canonical-file-name)
     (car args))
    ((memq op '(read-file-contents insert-file-contents copy-to-local-fs))
     ;; Need to get the file to the local fs
     (let
-	((local-name (if (eq op 'copy-to-local-fs)
+	((local-name (if (eq? op 'copy-to-local-fs)
 			 (car args)
 		       (make-temp-name))))
       (remote-rcp-command (remote-rcp-filename split-name) local-name)
@@ -71,34 +71,34 @@
    ((memq op '(write-buffer-contents copy-from-local-fs))
     ;; Need to get the file off the local fs
     (let
-	((local-name (if (eq op 'copy-from-local-fs)
+	((local-name (if (eq? op 'copy-from-local-fs)
 			 (car args)
 		       (make-temp-name))))
-      (when (eq op 'write-buffer-contents)
+      (when (eq? op 'write-buffer-contents)
 	(apply (symbol-value op) local-name (cdr args)))
       (unwind-protect
 	  (remote-rcp-command local-name (remote-rcp-filename split-name))
-	(when (eq op 'write-buffer-contents)
+	(when (eq? op 'write-buffer-contents)
 	  (delete-file local-name)))
       t))
    ;; This is where the laziness sets in...
-   ((memq op '(file-exists-p file-regular-p file-readable-p
-	       file-writable-p owner-p))
+   ((memq op '(file-exists? file-regular? file-readable?
+	       file-writable? owner-p))
     t)
-   ((memq op '(file-directory-p file-symlink-p set-file-modes delete-file
+   ((memq op '(file-directory? file-symlink? set-file-modes delete-file
 	       rename-file copy-file))
     nil)
-   ((eq op 'file-nlinks)
+   ((eq? op 'file-nlinks)
     1)
-   ((eq op 'file-size)
+   ((eq? op 'file-size)
     0)
-   ((eq op 'file-modes)
+   ((eq? op 'file-modes)
     #o644)
-   ((eq op 'file-modes-as-string)
+   ((eq? op 'file-modes-as-string)
     (make-string 10 #\*))
-   ((eq op 'file-modtime)
+   ((eq? op 'file-modtime)
     (cons 0 0))
-   ((eq op 'directory-files)
+   ((eq? op 'directory-files)
     nil)
    (t
     (error "Unsupported remote-rcp op: %s %s" op args))))

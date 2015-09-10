@@ -51,7 +51,7 @@
   (define (autoloader-ref getter)
     (lambda (symbol)
       (let ((value (getter symbol)))
-	(if (eq (car value) autoload-tag)
+	(if (eq? (car value) autoload-tag)
 	    (progn
 	      (intern-structure (cdr value))
 	      (getter symbol))

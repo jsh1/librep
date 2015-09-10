@@ -25,9 +25,9 @@
 
     (export domain-parts
 	    domain-above
-	    domain-above-p
-	    domain-below-p
-	    domain-equal-p
+	    domain-above?
+	    domain-below?
+	    domain-equal?
 	    map-domains
 	    map-domains-downwards)
 
@@ -59,17 +59,17 @@
 	       nil))
 	    (t ret))))
 
-  (define (domain-above-p d1 d2)
+  (define (domain-above? d1 d2)
     "Return true if domain name D1 is `above' domain name D2."
     (let ((value (compare-domains d1 d2)))
       (and value (< value 0))))
 
-  (define (domain-below-p d1 d2)
+  (define (domain-below? d1 d2)
     "Return true if domain name D1 is `below' domain name D2."
     (let ((value (compare-domains d1 d2)))
       (and value (> value 0))))
 
-  (define (domain-equal-p d1 d2)
+  (define (domain-equal? d1 d2)
     "Return true if the domain names D1 and D2 are the same"
     (string=? d1 d2))
 

@@ -37,7 +37,7 @@
 /* List of operations. If there's a file handler defined for the file
    being manipulated it will be called to execute the operation.
 
-   (file-name-absolute-p NAME)
+   (file-name-absolute? NAME)
    (expand-file-name NAME)
    (local-file-name NAME)
    (canonical-file-name NAME)
@@ -65,13 +65,13 @@
    (make-directory NAME)
    (delete-directory NAME)
 
-   (file-exists-p NAME)
-   (file-regular-p NAME)
-   (file-readable-p NAME)
-   (file-writable-p NAME)
-   (file-directory-p NAME)
-   (file-symlink-p NAME)
-   (file-owner-p NAME)
+   (file-exists? NAME)
+   (file-regular? NAME)
+   (file-readable? NAME)
+   (file-writable? NAME)
+   (file-directory? NAME)
+   (file-symlink? NAME)
+   (file-owner? NAME)
    (file-nlinks NAME)
    (file-size NAME)
    (file-modes NAME)
@@ -103,7 +103,7 @@ static rep_file *file_list;
 
 int rep_file_type;
 
-DEFSYM(file_name_absolute_p, "file-name-absolute-p");
+DEFSYM(file_name_absolute_p, "file-name-absolute?");
 DEFSYM(expand_file_name, "expand-file-name");
 DEFSYM(local_file_name, "local-file-name");
 DEFSYM(canonical_file_name, "canonical-file-name");
@@ -122,13 +122,13 @@ DEFSYM(delete_directory, "delete-directory");
 DEFSYM(copy_file, "copy-file");
 DEFSYM(copy_file_to_local_fs, "copy-file-to-local-fs");
 DEFSYM(copy_file_from_local_fs, "copy-file-from-local-fs");
-DEFSYM(file_readable_p, "file-readable-p");
-DEFSYM(file_writable_p, "file-writable-p");
-DEFSYM(file_exists_p, "file-exists-p");
-DEFSYM(file_regular_p, "file-regular-p");
-DEFSYM(file_directory_p, "file-directory-p");
-DEFSYM(file_symlink_p, "file-symlink-p");
-DEFSYM(file_owner_p, "file-owner-p");
+DEFSYM(file_readable_p, "file-readable?");
+DEFSYM(file_writable_p, "file-writable?");
+DEFSYM(file_exists_p, "file-exists?");
+DEFSYM(file_regular_p, "file-regular?");
+DEFSYM(file_directory_p, "file-directory?");
+DEFSYM(file_symlink_p, "file-symlink?");
+DEFSYM(file_owner_p, "file-owner?");
 DEFSYM(file_nlinks, "file-nlinks");
 DEFSYM(file_size, "file-size");
 DEFSYM(file_modes, "file-modes");
@@ -384,10 +384,10 @@ rep_localise_and_get_handler(repv *file_namep, int op)
 
 /* File name handling */
 
-DEFUN("file-name-absolute-p", Ffile_name_absolute_p,
+DEFUN("file-name-absolute?", Ffile_name_absolute_p,
       Sfile_name_absolute_p, (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-name-absolute-p::
-file-name-absolute-p FILE-NAME
+::doc:rep.io.files#file-name-absolute?::
+file-name-absolute? FILE-NAME
 
 Returns t if FILE-NAME is context-independent, i.e. it does not name a file
 relative to the *default-directory*.
@@ -732,9 +732,9 @@ file_mark(repv val)
   }
 }
 
-DEFUN("filep", Ffilep, Sfilep, (repv arg), rep_Subr1) /*
-::doc:rep.io.files#filep::
-filep ARG
+DEFUN("file?", Ffilep, Sfilep, (repv arg), rep_Subr1) /*
+::doc:rep.io.files#file?::
+file? ARG
 
 Returns t if ARG is a file object.
 ::end:: */
@@ -756,9 +756,9 @@ if it has been closed, but is still to be garbage collected.
   return rep_FILE(file)->name;
 }
 
-DEFUN("file-ttyp", Ffile_ttyp, Sfile_ttyp, (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-ttyp::
-file-ttyp FILE
+DEFUN("file-tty?", Ffile_ttyp, Sfile_ttyp, (repv file), rep_Subr1) /*
+::doc:rep.io.files#file-tty?::
+file-tty? FILE
 
 Returns true if FILE is linked to a tty.
 ::end:: */
@@ -1192,10 +1192,10 @@ Create a new copy of the file called SOURCE, as the file called DESTINATION.
 
 /* File attribute operations */
 
-DEFUN("file-readable-p", Ffile_readable_p, Sfile_readable_p,
+DEFUN("file-readable?", Ffile_readable_p, Sfile_readable_p,
       (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-readable-p::
-file-readable-p FILE-NAME
+::doc:rep.io.files#file-readable?::
+file-readable? FILE-NAME
 
 Returns t if the file called FILE-NAME is available for reading from.
 ::end:: */
@@ -1213,10 +1213,10 @@ Returns t if the file called FILE-NAME is available for reading from.
   return rep_file_readable_p(file);
 }
 
-DEFUN("file-writable-p", Ffile_writable_p, Sfile_writable_p,
+DEFUN("file-writable?", Ffile_writable_p, Sfile_writable_p,
       (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-writeable-p::
-file-writable-p FILE-NAME
+::doc:rep.io.files#file-writable?::
+file-writable? FILE-NAME
 
 Returns t if the file called FILE-NAME is available for writing to.
 ::end:: */
@@ -1234,10 +1234,10 @@ Returns t if the file called FILE-NAME is available for writing to.
   return rep_file_writable_p(file);
 }
 
-DEFUN("file-exists-p", Ffile_exists_p, Sfile_exists_p,
+DEFUN("file-exists?", Ffile_exists_p, Sfile_exists_p,
       (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-exists-p::
-file-exists-p FILE-NAME
+::doc:rep.io.files#file-exists?::
+file-exists? FILE-NAME
 
 Returns t if the file called FILE-NAME exists.
 ::end:: */
@@ -1255,10 +1255,10 @@ Returns t if the file called FILE-NAME exists.
   return rep_file_exists_p(file);
 }
 
-DEFUN("file-regular-p", Ffile_regular_p, Sfile_regular_p,
+DEFUN("file-regular?", Ffile_regular_p, Sfile_regular_p,
       (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-regular-p::
-file-regular-p FILE-NAME
+::doc:rep.io.files#file-regular?::
+file-regular? FILE-NAME
 
 Returns t if the file called FILE-NAME is a normal file, ie, not a
 directory, device, symbolic link, etc...
@@ -1277,10 +1277,10 @@ directory, device, symbolic link, etc...
   return rep_file_regular_p(file);
 }
 
-DEFUN("file-directory-p", Ffile_directory_p, Sfile_directory_p,
+DEFUN("file-directory?", Ffile_directory_p, Sfile_directory_p,
       (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-directory-p::
-file-directory-p FILE-NAME
+::doc:rep.io.files#file-directory?::
+file-directory? FILE-NAME
 
 Returns t if the file called FILE-NAME is a directory.
 ::end:: */
@@ -1298,10 +1298,10 @@ Returns t if the file called FILE-NAME is a directory.
   return rep_file_directory_p(file);
 }
 
-DEFUN("file-symlink-p", Ffile_symlink_p, Sfile_symlink_p,
+DEFUN("file-symlink?", Ffile_symlink_p, Sfile_symlink_p,
       (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-symlink-p::
-file-symlink-p FILE-NAME
+::doc:rep.io.files#file-symlink?::
+file-symlink? FILE-NAME
 
 Returns t if the file called FILE-NAME is a symbolic link to another file.
 ::end:: */
@@ -1319,10 +1319,10 @@ Returns t if the file called FILE-NAME is a symbolic link to another file.
   return rep_file_symlink_p(file);
 }
 
-DEFUN("file-owner-p", Ffile_owner_p, Sfile_owner_p,
+DEFUN("file-owner?", Ffile_owner_p, Sfile_owner_p,
       (repv file), rep_Subr1) /*
-::doc:rep.io.files#file-owner-p::
-file-owner-p FILE-NAME
+::doc:rep.io.files#file-owner?::
+file-owner? FILE-NAME
 
 Returns t if the ownership (uid & gid) of the file called FILE-NAME is the
 same as that of any files written by the editor.

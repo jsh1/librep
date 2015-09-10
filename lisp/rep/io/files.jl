@@ -31,7 +31,7 @@
   "Returns t when NAME1 and NAME2 both name the same file."
   (string=? (canonical-file-name name1) (canonical-file-name name2)))
 
-(defun file-newer-than-file-p (file1 file2)
+(defun file-newer-than-file? (file1 file2)
   "Returns t when FILE1 was modified more recently than FILE2."
   (> (file-modtime file1) (file-modtime file2)))
 
@@ -47,9 +47,9 @@ the LISP *load-path* (except the current directory)."
       (when (or (cdr dirs) (not (member (car dirs) '("." ""))))
 	(let
 	    ((full-name (expand-file-name file (car dirs))))
-	  (when (or (file-exists-p full-name)
-		    (file-exists-p (concat full-name ".jl"))
-		    (file-exists-p (concat full-name ".jlc")))
+	  (when (or (file-exists? full-name)
+		    (file-exists? (concat full-name ".jl"))
+		    (file-exists? (concat full-name ".jlc")))
 	    (if callback
 		(callback full-name)
 	      (load full-name nil t)))))
@@ -72,5 +72,5 @@ match the FILE argument to `load'."
   (call-after-load library (lambda ()
 			     (eval form (get-structure *user-structure*)))))
 
-(export-bindings '(file-name= file-newer-than-file-p
+(export-bindings '(file-name= file-newer-than-file?
 		   load-all call-after-load eval-after-load))

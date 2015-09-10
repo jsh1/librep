@@ -32,10 +32,10 @@
     "Create and return a caching version of the function F. F may not be
 an autoload definition."
 
-    (unless (functionp f)
+    (unless (function? f)
       (error "can only memoize functions: %s" f))
 
-    (let ((cache (make-table equal-hash equal)))
+    (let ((cache (make-table equal-hash equal?)))
 
       (lambda args
 	(or (table-ref cache args)

@@ -37,19 +37,19 @@
   ;; same value when given the same inputs. Used when constant folding.
   (define constant-functions
     '(+ - * / % mod max min 1+ 1- car cdr assoc assq rassoc rassq nth nthcdr
-      last member memq arrayp aref substring concat length elt lognot not
-      logior logxor logand equal = /= > < >= <= ash zerop null atom consp
-      listp numberp integerp stringp vectorp bytecodep functionp macrop
+      last member memq array? aref substring concat length elt lognot not
+      logior logxor logand equal? = /= > < >= <= ash zero? null? atom pair?
+      list? number? integer? string? vector? bytecode? function? macro?
       string<=? string>? string>=? string-ci=? string-ci<? string-ci<=?
-      string-ci>? string-ci>=? special-form-p subrp sequencep
-      string-head-eq string-match string-looking-at quote-regexp
-      complete-string alpha-char-p upper-case-p lower-case-p
-      digit-char-p alphanumericp space-char-p char-upcase char-downcase
+      string-ci>? string-ci>=? special-form? subr? sequence?
+      string-prefix? string-match string-looking-at quote-regexp
+      complete-string char-alphabetic? char-upper-case? char-lower-case?
+      char-numeric? char-alphanumeric? char-whitespace? char-upcase char-downcase
       quotient floor ceiling truncate round exp log sin cos tan asin acos
       atan sqrt expt prin1-to-string read-from-string assoc-regexp
       nop identity caar cdar cadr cddr caaar cdaar cadar cddar caadr
-      cdadr caddr cdddr positivep negativep oddp evenp abs lcm % modulo
-      lsh string-upper-case-p string-lower-case-p string-capitalized-p))
+      cdadr caddr cdddr positive? negative? odd? even? abs lcm % modulo
+      lsh string-upper-case? string-lower-case? string-capitalized?))
 
   ;; List of symbols, when the name of the function called by a top-level
   ;; form is one of these that form is compiled.
@@ -74,8 +74,8 @@
   (defun lift-progns (forms)
     (let loop ((rest (reverse forms))
 	       (out '()))
-      (cond ((null rest) out)
-	    ((eq (caar rest) 'progn)
+      (cond ((null? rest) out)
+	    ((eq? (caar rest) 'progn)
 	     (loop (cdr rest) (append (cdar rest) out)))
 	    (t (loop (cdr rest) (cons (car rest) out))))))
 
@@ -83,9 +83,9 @@
   ;; get compiled into single run-byte-code forms
   (defun add-progns (forms)
     (let loop ((rest forms))
-      (cond ((null rest) forms)
+      (cond ((null? rest) forms)
 	    ((memq (caar rest) top-level-unexpanded) (loop (cdr rest)))
-	    (t (unless (eq (caar rest) 'progn)
+	    (t (unless (eq? (caar rest) 'progn)
 		 (rplaca rest (list 'progn (car rest))))
 	       (if (and (cadr rest)
 			(not (memq (caadr rest) top-level-unexpanded)))
@@ -101,7 +101,7 @@
 		  (memq (car form) top-level-compiled))
 	(setq form (compiler-macroexpand
 		    form (lambda (in out)
-			   (or (eq in out)
+			   (or (eq? in out)
 			       (memq (car out) top-level-unexpanded)
 			       (memq (car out) top-level-compiled))))))
       (case (car form)
@@ -128,7 +128,7 @@
 	((%define) (remember-lexical-variable (nth 1 form)))
 
 	((require)
-	 (if (compiler-constant-p (cadr form))
+	 (if (compiler-constant? (cadr form))
 	     (note-require (compiler-constant-value (cadr form)))
 	   ;; hmm..
 	   (eval form)))
@@ -137,8 +137,8 @@
 	 (note-declaration (cdr form)))
 
 	((eval-when-compile)
-	 (if (and (eq (car (nth 1 form)) 'require)
-		  (compiler-constant-p (cadr (nth 1 form))))
+	 (if (and (eq? (car (nth 1 form)) 'require)
+		  (compiler-constant? (cadr (nth 1 form))))
 	     (note-require (compiler-constant-value (cadr (nth 1 form))))
 	   (eval (nth 1 form))))
 
@@ -157,7 +157,7 @@
   (defun pass-2 (forms)
     (let loop ((rest forms)
 	       (out '()))
-      (if (null rest)
+      (if (null? rest)
 	  (nreverse out)
 	(loop (cdr rest) (cons (do-pass-2 (car rest)) out)))))
 
@@ -191,7 +191,7 @@
 
 	((defconst)
 	 (let ((doc (nth 3 form)))
-	   (when (and *compiler-write-docs* (stringp doc))
+	   (when (and *compiler-write-docs* (string? doc))
 	     (add-documentation (nth 1 form) (fluid current-module) doc)
 	     (setq form (delq doc form)))
 	   (unless (memq (nth 1 form) (fluid defvars))
@@ -204,11 +204,11 @@
 	((defvar)
 	 (let ((value (nth 2 form))
 	       (doc (nth 3 form)))
-	   (when (and (listp value)
-		      (not (compiler-constant-p value)))
+	   (when (and (list? value)
+		      (not (compiler-constant? value)))
 	     ;; Compile the definition. A good idea?
 	     (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
-	   (when (and *compiler-write-docs* (stringp doc))
+	   (when (and *compiler-write-docs* (string? doc))
 	     (add-documentation (nth 1 form) nil doc)
 	     (setq form (delq (nth 3 form) form)))
 	   (unless (memq (nth 1 form) (fluid defvars))
@@ -221,10 +221,10 @@
 	       (doc (nth 3 form)))
 	   (unless (memq sym (fluid defines))
 	     (remember-lexical-variable (compiler-constant-value sym)))
-	   (when (and *compiler-write-docs* (stringp doc))
+	   (when (and *compiler-write-docs* (string? doc))
 	     (add-documentation sym (fluid current-module) doc)
 	     (setq form (delq doc form)))
-	   (when (and (listp value) (not (compiler-constant-p value)))
+	   (when (and (list? value) (not (compiler-constant? value)))
 	     ;; Compile the definition. A good idea?
 	     (rplaca (nthcdr 2 form) (compile-form (nth 2 form))))
 	   form))
@@ -254,7 +254,7 @@
 	(lst)
       (setq form (cdr form))
       (while form
-	(unless (consp (cdr form))
+	(unless (pair? (cdr form))
 	  (compiler-error "odd number of args to setq"))
 	(setq lst (cons `(set ',(car form) ,(nth 1 form)) lst))
 	(setq form (nthcdr 2 form)))
@@ -267,22 +267,22 @@
 	 (value (nth 2 form))
 	 (doc (nth 3 form)))
       (remember-variable name)
-      (when (and (compiler-constant-p doc)
-		 (stringp (compiler-constant-value doc))
+      (when (and (compiler-constant? doc)
+		 (string? (compiler-constant-value doc))
 		 *compiler-write-docs*)
 	(add-documentation name nil (compiler-constant-value doc))
 	(setq doc nil))
       `(progn
 	 ,@(and doc (list `(put ',name 'documentation ,doc)))
 	 (make-variable-special ',name)
-	 (unless (boundp ',name)
+	 (unless (bound? ',name)
 	   (setq ,name ,value)))))
   (put 'defvar 'rep-compile-transform trans-defvar)
 
   (defun trans-require (form)
     (let
 	((feature (nth 1 form)))
-      (when (compiler-constant-p feature)
+      (when (compiler-constant? feature)
 	(note-require (compiler-constant-value feature)))
       ;; Must transform to something other than (require FEATURE) to
       ;; prevent infinite regress
@@ -344,7 +344,7 @@
     (let
 	((fun (nth 1 form))
 	 (lst (nth 2 form)))
-      (if (constant-function-p fun)
+      (if (constant-function? fun)
 	  ;; We can open code the function
 	  (let
 	      ((top-label (make-label))
@@ -376,7 +376,7 @@
   ;; Compile single-list map calls to mapcar instruction
   (defun compile-map (form)
     (let ((lsts (nthcdr 2 form)))
-      (if (null (cdr lsts))
+      (if (null? (cdr lsts))
 	  (compile-2-args form)
 	;; easiest way to fall-back to map function
 	(compile-funcall (cons 'funcall form)))))
@@ -386,7 +386,7 @@
   ;; Compile single-list for-each calls to mapc form
   (defun compile-for-each (form)
     (let ((lists (nthcdr 2 form)))
-      (if (null (cdr lists))
+      (if (null? (cdr lists))
 	  (compile-mapc form)
 	(compile-funcall (cons 'funcall form)))))
   (put 'for-each 'rep-compile-fun compile-for-each)
@@ -405,11 +405,11 @@
   (defun compile-set (form)
     (let ((sym (nth 1 form))
 	  (val (nth 2 form)))
-      (if (compiler-constant-p sym)
+      (if (compiler-constant? sym)
 	  ;; use setq
 	  (progn
 	    (setq sym (compiler-constant-value sym))
-	    (unless (symbolp sym)
+	    (unless (symbol? sym)
 	      (compiler-error "trying to set value of a non-symbol: %s" sym))
 	    (compile-form-1 val)
 	    (emit-insn '(dup))
@@ -432,8 +432,8 @@
        (lambda ()
 	 (emit-insn '(init-bind))
 	 (increment-b-stack)
-	 (while (consp lst)
-	   (cond ((consp (car lst))
+	 (while (pair? lst)
+	   (cond ((pair? (car lst))
 		  (let ((tmp (car lst)))
 		    (compile-body (cdr tmp))
 		    (test-variable-bind (car tmp))
@@ -485,20 +485,20 @@
 		   (throw 'no t))
 		 (let ((var (or (caar bindings) (car bindings)))
 		       (value (cdar bindings)))
-		   (unless (and (binding-tail-call-only-p var)
+		   (unless (and (binding-tail-call-only? var)
 				value (not (cdr value))
-				(eq (caar value) 'lambda))
+				(eq? (caar value) 'lambda))
 		     (throw 'no t))
 		   (setq value (car value))
 		   (let ((body (nthcdr 2 form)))
 		     (unless (= (length body) 1)
 		       (throw 'no t))
 		     (setq body (car body))
-		     (when (and (eq (car body) (get-language-property
+		     (when (and (eq? (car body) (get-language-property
 						'compiler-sequencer))
 				(= (length body) 2))
 		       (setq body (cadr body)))
-		     (unless (eq (car body) var)
+		     (unless (eq? (car body) var)
 		       (throw 'no t))
 
 		     ;; okay, let's go
@@ -562,33 +562,33 @@
 	((end-label (make-label))
 	 (need-trailing-nil t))
       (setq form (cdr form))
-      (while (consp form)
+      (while (pair? form)
 	(let*
 	    ((subl (car form))
 	     (condition (car subl))
 	     (next-label (make-label)))
 	  ;; See if we can squash a constant condition to t or nil
-	  (when (compiler-constant-p condition)
+	  (when (compiler-constant? condition)
 	    (setq condition (not (not (compiler-constant-value condition)))))
 	  (cond
-	   ((eq condition t)
+	   ((eq? condition t)
 	    ;; condition t -- always taken
-	    (if (consp (cdr subl))
+	    (if (pair? (cdr subl))
 		;; There's something besides the condition
 		(progn
 		  (compile-body (cdr subl) return-follows)
 		  (decrement-stack))
-	      (if (eq condition (car subl))
+	      (if (eq? condition (car subl))
 		  (emit-insn '(push t))
 		(compile-form-1 (car subl) #:return-follows return-follows)
 		(decrement-stack)))
-	    (when (consp (cdr form))
+	    (when (pair? (cdr form))
 	      ;;(compiler-warning
 	      ;; 'misc "unreachable conditions after t in cond statement")
 	      ;; Ignore the rest of the statement
 	      (setq form nil))
 	    (setq need-trailing-nil nil))
-	   ((eq condition nil)
+	   ((eq? condition nil)
 	    ;; condition nil -- never taken
 	    (when (cdr subl)
 	      ;;(compiler-warning
@@ -598,10 +598,10 @@
 	    ;; non t-or-nil condition
 	    (compile-form-1 (car subl)
 			    #:return-follows (and return-follows
-						  (null (cdr subl))
-						  (null (cdr form))))
+						  (null? (cdr subl))
+						  (null? (cdr form))))
 	    (decrement-stack)
-	    (if (consp (cdr subl))
+	    (if (pair? (cdr subl))
 		;; Something besides the condition
 		(if (cdr form)
 		    ;; This isn't the last condition list
@@ -643,17 +643,17 @@
       ;; XXX if key is constant optimise case away..
       (compile-form-1 (car form))
       (setq form (cdr form))
-      (while (consp form)
-	(unless (consp form)
+      (while (pair? form)
+	(unless (pair? form)
 	  (compiler-error "badly formed clause in case statement"))
 	(let
 	    ((cases (caar form))
 	     (forms (cdar form))
 	     (next-label (make-label)))
-	  (cond ((consp cases)
+	  (cond ((pair? cases)
 		 (emit-insn '(dup))
 		 (increment-stack)
-		 (if (consp (cdr cases))
+		 (if (pair? (cdr cases))
 		     ;; >1 possible case
 		     (progn
 		       (compile-constant cases)
@@ -664,7 +664,7 @@
 		 (decrement-stack)
 		 (emit-insn `(jn ,next-label))
 		 (decrement-stack))
-		((eq cases t) (setq had-default t))
+		((eq? cases t) (setq had-default t))
 		(t (compiler-error
 		    "badly formed clause in case statement" #:form cases)))
 	  (compile-body forms return-follows)
@@ -778,12 +778,12 @@
       (fix-label cleanup-label)
 
       (increment-stack)		;reach here with one item on stack
-      (if (consp handlers)
+      (if (pair? handlers)
 	  (call-with-frame
 	   (lambda ()
-	     (if (and (nth 1 form) (not (eq (nth 1 form) 'nil)))
+	     (if (and (nth 1 form) (not (eq? (nth 1 form) 'nil)))
 		 (let ((var (nth 1 form)))
-		   (when (spec-bound-p var)
+		   (when (spec-bound? var)
 		     (compiler-error
 		      "condition-case can't bind to special variable `%s'" var))
 		   (test-variable-bind var)
@@ -797,8 +797,8 @@
 		 ;; avoid `unused variable' warnings
 		 (note-binding-referenced tem)))
 	     ;; Loop over all but the last handler
-	     (while (consp (cdr handlers))
-	       (if (consp (car handlers))
+	     (while (pair? (cdr handlers))
+	       (if (pair? (car handlers))
 		   (let
 		       ((next-label (make-label)))
 		     ;;		push CONDITIONS
@@ -820,7 +820,7 @@
 		  (car handlers) #:form handlers))
 	       (setq handlers (cdr handlers)))
 	     ;; The last handler
-	     (if (consp (car handlers))
+	     (if (pair? (car handlers))
 		 (let
 		     ((pc-label (make-label)))
 		   ;;		push CONDITIONS
@@ -863,7 +863,7 @@
   (defun compile-list (form)
     (do ((args (cdr form) (cdr args))
 	 (count 0 (1+ count)))
-	((null args)
+	((null? args)
 	 ;; merge the arguments into a single list
 	 (compile-constant '())
 	 (do ((i 0 (1+ i)))
@@ -876,7 +876,7 @@
   (defun compile-list* (form)
     (do ((args (cdr form) (cdr args))
 	 (count 0 (1+ count)))
-	((null args)
+	((null? args)
 	 ;; merge the arguments into a single list
 	 (do ((i 0 (1+ i)))
 	     ((>= i (1- count)))
@@ -893,7 +893,7 @@
 	((fun (nth 1 form))
 	 (args (nthcdr 2 form))
 	 (arg-count 0)
-	 (open-code (constant-function-p fun)))
+	 (open-code (constant-function? fun)))
       (unless open-code
 	(compile-form-1 fun))
       (while args
@@ -905,7 +905,7 @@
 	    (compile-lambda-inline
 	     (constant-function-value fun) nil arg-count return-follows)
 	    ;; We push one less value than when using 'call
-	    (if (zerop arg-count)
+	    (if (zero? arg-count)
 		(increment-stack)
 	      (decrement-stack (1- arg-count))))
 	(emit-insn `(call ,arg-count))
@@ -916,7 +916,7 @@
     (compile-form-1 (nth 1 form))
     (do ((args (nthcdr 2 form) (cdr args))
 	 (count 0 (1+ count)))
-	((null args)
+	((null? args)
 	 ;; merge the arguments into a single list
 	 (do ((i 0 (1+ i)))
 	     ((>= i (1- count)))
@@ -990,9 +990,9 @@
   (put 'log 'rep-compile-fun compile-log)
 
   (defun get-form-opcode (form)
-    (cond ((symbolp form) (get form 'rep-compile-opcode))
+    (cond ((symbol? form) (get form 'rep-compile-opcode))
 	  ;; must be a structure-ref
-	  ((eq (car form) 'structure-ref)
+	  ((eq? (car form) 'structure-ref)
 	   (get (caddr form) 'rep-compile-opcode))
 	  (t (compiler-error "don't know opcode for `%s'" form))))
 
@@ -1046,7 +1046,7 @@
 	 "too few arguments to binary operator `%s'" (car form)))
       (compile-form-1 (car form))
       (setq form (cdr form))
-      (while (consp form)
+      (while (pair? form)
 	(compile-form-1 (car form))
 	(emit-insn (list opcode))
 	(decrement-stack)
@@ -1125,10 +1125,10 @@
     (put 'logand 'rep-compile-opcode 'land)
     (put 'ash 'rep-compile-fun compile-2-args)
     (put 'ash 'rep-compile-opcode 'ash)
-    (put 'equal 'rep-compile-fun compile-2-args)
-    (put 'equal 'rep-compile-opcode 'equal)
-    (put 'eq 'rep-compile-fun compile-2-args)
-    (put 'eq 'rep-compile-opcode 'eq)
+    (put 'equal? 'rep-compile-fun compile-2-args)
+    (put 'equal? 'rep-compile-opcode 'equal)
+    (put 'eq? 'rep-compile-fun compile-2-args)
+    (put 'eq? 'rep-compile-opcode 'eq)
     (put '= 'rep-compile-fun compile-transitive-relation)
     (put '= 'rep-compile-opcode 'num-eq)
     (put '> 'rep-compile-fun compile-transitive-relation)
@@ -1143,28 +1143,28 @@
     (put '1+ 'rep-compile-opcode 'inc)
     (put '1- 'rep-compile-fun compile-1-args)
     (put '1- 'rep-compile-opcode 'dec)
-    (put 'zerop 'rep-compile-fun compile-1-args)
-    (put 'zerop 'rep-compile-opcode 'zerop)
-    (put 'null 'rep-compile-fun compile-1-args)
-    (put 'null 'rep-compile-opcode 'not)
+    (put 'zero? 'rep-compile-fun compile-1-args)
+    (put 'zero? 'rep-compile-opcode 'zerop)
+    (put 'null? 'rep-compile-fun compile-1-args)
+    (put 'null? 'rep-compile-opcode 'not)
     (put 'atom 'rep-compile-fun compile-1-args)
     (put 'atom 'rep-compile-opcode 'atom)
-    (put 'consp 'rep-compile-fun compile-1-args)
-    (put 'consp 'rep-compile-opcode 'consp)
-    (put 'listp 'rep-compile-fun compile-1-args)
-    (put 'listp 'rep-compile-opcode 'listp)
-    (put 'numberp 'rep-compile-fun compile-1-args)
-    (put 'numberp 'rep-compile-opcode 'numberp)
-    (put 'stringp 'rep-compile-fun compile-1-args)
-    (put 'stringp 'rep-compile-opcode 'stringp)
-    (put 'vectorp 'rep-compile-fun compile-1-args)
-    (put 'vectorp 'rep-compile-opcode 'vectorp)
+    (put 'pair? 'rep-compile-fun compile-1-args)
+    (put 'pair? 'rep-compile-opcode 'consp)
+    (put 'list? 'rep-compile-fun compile-1-args)
+    (put 'list? 'rep-compile-opcode 'listp)
+    (put 'number? 'rep-compile-fun compile-1-args)
+    (put 'number? 'rep-compile-opcode 'numberp)
+    (put 'string? 'rep-compile-fun compile-1-args)
+    (put 'string? 'rep-compile-opcode 'stringp)
+    (put 'vector? 'rep-compile-fun compile-1-args)
+    (put 'vector? 'rep-compile-opcode 'vectorp)
     (put 'throw 'rep-compile-fun compile-2-args)
     (put 'throw 'rep-compile-opcode 'throw)
-    (put 'boundp 'rep-compile-fun compile-1-args)
-    (put 'boundp 'rep-compile-opcode 'boundp)
-    (put 'symbolp 'rep-compile-fun compile-1-args)
-    (put 'symbolp 'rep-compile-opcode 'symbolp)
+    (put 'bound? 'rep-compile-fun compile-1-args)
+    (put 'bound? 'rep-compile-opcode 'boundp)
+    (put 'symbol? 'rep-compile-fun compile-1-args)
+    (put 'symbol? 'rep-compile-opcode 'symbolp)
     (put 'get 'rep-compile-fun compile-2-args)
     (put 'get 'rep-compile-opcode 'get)
     (put 'put 'rep-compile-fun compile-3-args)
@@ -1203,28 +1203,28 @@
     (put 'delete-if-not 'rep-compile-opcode 'delete-if-not)
     (put 'copy-sequence 'rep-compile-fun compile-1-args)
     (put 'copy-sequence 'rep-compile-opcode 'copy-sequence)
-    (put 'sequencep 'rep-compile-fun compile-1-args)
-    (put 'sequencep 'rep-compile-opcode 'sequencep)
-    (put 'functionp 'rep-compile-fun compile-1-args)
-    (put 'functionp 'rep-compile-opcode 'functionp)
-    (put 'special-form-p 'rep-compile-fun compile-1-args)
-    (put 'special-form-p 'rep-compile-opcode 'special-form-p)
-    (put 'subrp 'rep-compile-fun compile-1-args)
-    (put 'subrp 'rep-compile-opcode 'subrp)
-    (put 'eql 'rep-compile-fun compile-2-args)
-    (put 'eql 'rep-compile-opcode 'eql)
+    (put 'sequence? 'rep-compile-fun compile-1-args)
+    (put 'sequence? 'rep-compile-opcode 'sequencep)
+    (put 'function? 'rep-compile-fun compile-1-args)
+    (put 'function? 'rep-compile-opcode 'functionp)
+    (put 'special-form? 'rep-compile-fun compile-1-args)
+    (put 'special-form? 'rep-compile-opcode 'special-form-p)
+    (put 'subr? 'rep-compile-fun compile-1-args)
+    (put 'subr? 'rep-compile-opcode 'subrp)
+    (put 'eqv? 'rep-compile-fun compile-2-args)
+    (put 'eqv? 'rep-compile-opcode 'eql)
     (put 'max 'rep-compile-fun compile-binary-op)
     (put 'max 'rep-compile-opcode 'max)
     (put 'min 'rep-compile-fun compile-binary-op)
     (put 'min 'rep-compile-opcode 'min)
     (put 'filter 'rep-compile-fun compile-2-args)
     (put 'filter 'rep-compile-opcode 'filter)
-    (put 'macrop 'rep-compile-fun compile-1-args)
-    (put 'macrop 'rep-compile-opcode 'macrop)
-    (put 'bytecodep 'rep-compile-fun compile-1-args)
-    (put 'bytecodep 'rep-compile-opcode 'bytecodep)
-    (put 'closurep 'rep-compile-fun compile-1-args)
-    (put 'closurep 'rep-compile-opcode 'closurep)
+    (put 'macro? 'rep-compile-fun compile-1-args)
+    (put 'macro? 'rep-compile-opcode 'macrop)
+    (put 'bytecode? 'rep-compile-fun compile-1-args)
+    (put 'bytecode? 'rep-compile-opcode 'bytecodep)
+    (put 'closure? 'rep-compile-fun compile-1-args)
+    (put 'closure? 'rep-compile-opcode 'closurep)
     (put 'fluid 'rep-compile-fun compile-1-args)
     (put 'fluid 'rep-compile-opcode 'fluid-ref)
     (put 'fluid-set 'rep-compile-fun compile-2-args)

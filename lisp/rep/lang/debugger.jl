@@ -118,21 +118,21 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 
   (defun print-frame (id)
     (let ((frame (stack-frame-ref id)))
-      (if (null frame)
+      (if (null? frame)
 	  (format *standard-error* "#%-3d #undefined\n" id)
-	(unless (equal frame last-printed-frame)
+	(unless (equal? frame last-printed-frame)
 	  (let ((fun (stack-frame-function frame))
 		(args (stack-frame-args frame))
 		(location (lexical-origin (stack-frame-current-form frame))))
-	    (if (null fun)
+	    (if (null? fun)
 		(format *standard-error* "#%-3d #undefined\n" id)
 	      (format *standard-error* "#%-3d %s %S%s\n" id
-		      (or (cond ((closurep fun) (closure-name fun))
-				((subrp fun) (subr-name fun))
-				((eq (car fun) 'lambda)
+		      (or (cond ((closure? fun) (closure-name fun))
+				((subr? fun) (subr-name fun))
+				((eq? (car fun) 'lambda)
 				 (list 'lambda (cadr fun) '...))) fun)
-		      (if (or (eq fun run-byte-code)
-			      (eq args #undefined))
+		      (if (or (eq? fun run-byte-code)
+			      (eq? args #undefined))
 			  '...
 			args)
 		      (if location
@@ -176,7 +176,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
     (let ((frame (stack-frame-ref (fluid frame-id))))
       (when frame
 	(for-each (lambda (cell)
-		    (if (symbolp (car cell))
+		    (if (symbol? (car cell))
 			(format *standard-error* "%16s %S\n"
 				(symbol-name (car cell)) (cdr cell))
 		      (format *standard-error* "%S\n" cell)))
@@ -199,7 +199,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 
   (defun exit (debug-val debug-depth debug-frame-id)
     (declare (unused debug-frame-id))
-    (unless (eq debug-val #undefined)
+    (unless (eq? debug-val #undefined)
       (format *standard-error* "%s-> %S\n"
 	      (make-string debug-depth #\-) debug-val)))
 

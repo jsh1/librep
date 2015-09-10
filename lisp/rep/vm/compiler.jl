@@ -132,7 +132,7 @@ In general, any symbols declared as constants (by defconst) have their
 values set in stone. These values are hard-coded into the compiled
 byte-code.
 
-Also, the value of a constant-symbol is *not* likely to be eq to
+Also, the value of a constant-symbol is *not* likely to be eq? to
 itself!
 
 Use constants as you would use macros in C, i.e. to define values which
@@ -170,7 +170,7 @@ Currently warnings are generated for the following situations:
 	* Functions or special variables are multiply defined
 	* Undefined variables are referenced or set ("undefined" means
 	  not defined by defvar, not currently (lexically) bound, and
-	  not boundp at compile-time)
+	  not bound? at compile-time)
 	* Undefined functions are referenced, that is, not defun'd and
 	  not fboundp at compile-time
 	* Functions are called with an incorrect number of arguments,
@@ -285,7 +285,7 @@ we would like. This is due to the view of folded functions as
 		     (copy-file temp-file real-name)
 		     (set-file-modes real-name (file-modes file-name)))
 		   t)))
-	   (when (file-exists-p temp-file)
+	   (when (file-exists? temp-file)
 	     (delete-file temp-file))))))))
 
 (defun compile-directory (dir-name #!optional force-p exclude-re)
@@ -298,14 +298,14 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
   (interactive "DDirectory of Lisp files to compile:\nP")
   (for-each (lambda (file)
 	      (unless (or (and exclude-re (string-match exclude-re file))
-			  (eq (aref file 0) #\.))
+			  (eq? (aref file 0) #\.))
 		(let ((abs-file (expand-file-name file dir-name)))
-		  (cond ((file-directory-p abs-file)
+		  (cond ((file-directory? abs-file)
 			 (compile-directory abs-file force-p exclude-re))
 			((string-match "\\.jl$" file)
 			 (let* ((c-name (concat abs-file #\c)))
-			   (when (or force-p (not (file-exists-p c-name))
-				     (file-newer-than-file-p abs-file c-name))
+			   (when (or force-p (not (file-exists? c-name))
+				     (file-newer-than-file? abs-file c-name))
 			     (report-progress abs-file)
 			     (compile-file abs-file))))))))
 	    (directory-files dir-name))
@@ -323,7 +323,7 @@ that files which shouldn't be compiled aren't."
 
 ;; Call like `rep --batch -l compiler -f compile-lib-batch [--force] DIR'
 (defun compile-lib-batch ()
-  (let ((force (when (equal (car *command-line-args*) "--force")
+  (let ((force (when (equal? (car *command-line-args*) "--force")
 		 (setq *command-line-args* (cdr *command-line-args*))
 		 t))
        (dir (car *command-line-args*)))
@@ -344,8 +344,8 @@ that files which shouldn't be compiled aren't."
 		(let ((file (expand-file-name
 			     (concat (structure-file package) ".jl")
 			     lisp-lib-directory)))
-		  (when (or (not (file-exists-p (concat file #\c)))
-			    (file-newer-than-file-p file (concat file #\c)))
+		  (when (or (not (file-exists? (concat file #\c)))
+			    (file-newer-than-file? file (concat file #\c)))
 		    (report-progress file)
 		    (compile-file file))))
 	      sources)))

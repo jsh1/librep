@@ -826,10 +826,10 @@ Returns a void value if no such binding.
   return n ? n->binding : rep_void_value;
 }
 
-DEFUN("structure-bound-p", Fstructure_bound_p,
+DEFUN("structure-bound?", Fstructure_bound_p,
        Sstructure_bound_p, (repv structure, repv var), rep_Subr2) /*
-::doc:rep.structures#structure-bound-p::
-structure-bound-p STRUCTURE VAR
+::doc:rep.structures#structure-bound?::
+structure-bound? STRUCTURE VAR
 
 Return `t' if symbol VAR has a non-void binding in STRUCTURE.
 ::end:: */
@@ -983,10 +983,10 @@ Returns the interface of structure object STRUCTURE.
   return list;
 }
 
-DEFUN("structure-exports-p", Fstructure_exports_p,
+DEFUN("structure-exports?", Fstructure_exports_p,
        Sstructure_exports_p, (repv structure, repv var), rep_Subr2) /*
-::doc:rep.structures#structure-exports-p::
-structure-exports-p STRUCTURE VAR
+::doc:rep.structures#structure-exports?::
+structure-exports? STRUCTURE VAR
 
 Returns true if structure object STRUCTURE exports a binding of symbol
 VAR.
@@ -1247,9 +1247,9 @@ Return the current structure object.
   return rep_structure;
 }
 
-DEFUN("structurep", Fstructurep, Sstructurep, (repv arg), rep_Subr1) /*
-::doc:rep.structures#structurep::
-structurep ARG
+DEFUN("structure?", Fstructurep, Sstructurep, (repv arg), rep_Subr1) /*
+::doc:rep.structures#structure?::
+structure? ARG
 
 Return `t' if ARG is a structure object.
 ::end:: */
@@ -1381,10 +1381,10 @@ changed.
   return var;
 }
 
-DEFUN("binding-immutable-p", Fbinding_immutable_p,
+DEFUN("binding-immutable?", Fbinding_immutable_p,
        Sbinding_immutable_p, (repv var, repv structure), rep_Subr2) /*
-::doc:rep.structures#binding-immutable-p::
-binding-immutable-p VAR [STRUCTURE]
+::doc:rep.structures#binding-immutable?::
+binding-immutable? VAR [STRUCTURE]
 
 Return `t' if the binding of symbol VAR in the STRUCTURE has been made
 constant.
@@ -1450,9 +1450,9 @@ DEFUN("export-bindings", Fexport_bindings,
 
 /* Features. */
 
-DEFUN("featurep", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
-::doc:rep.structures#featurep::
-featurep FEATURE
+DEFUN("feature?", Ffeaturep, Sfeaturep, (repv feature), rep_Subr1) /*
+::doc:rep.structures#feature?::
+feature? FEATURE
 
 Return non-nil if feature FEATURE has already been loaded by the current
 structure.

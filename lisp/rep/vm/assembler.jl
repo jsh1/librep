@@ -57,7 +57,7 @@
   (define (assemble insns #!optional start)
     (let ((code '())
 	  (pc (or start 0))
-	  (labels (make-table symbol-hash eq))
+	  (labels (make-table symbol-hash eq?))
 	  (constants '())
 	  (next-const-id 0))
 
@@ -137,8 +137,8 @@
 	(emit-label-addr (get-label dest)))
 
       (define (emit-push arg)
-	(cond ((and (fixnump arg) (<= arg 65535) (>= arg -65535))
-	       (cond ((zerop arg)
+	(cond ((and (fixnum? arg) (<= arg 65535) (>= arg -65535))
+	       (cond ((zero? arg)
 		      (emit-insn 'pushi-0))
 
 		     ((= arg 1)
@@ -161,8 +161,8 @@
 
 		     (t (emit-insn 'pushi-pair-pos arg))))
 
-	      ((eq arg '()) (emit-insn 'nil))
-	      ((eq arg 't) (emit-insn 't))
+	      ((eq? arg '()) (emit-insn 'nil))
+	      ((eq? arg 't) (emit-insn 't))
 
 	      (t (emit-insn 'push (get-const-id arg)))))
 
@@ -178,18 +178,18 @@
 	  (label-address-set label pc)
 	  ;; backpatch forward references
 	  (do ((refs (label-forwards label) (cdr refs)))
-	      ((null refs) (label-forwards-set label '()))
+	      ((null? refs) (label-forwards-set label '()))
 	    (emit-byte-at (ash pc -8) (car refs))
 	    (emit-byte-at (logand pc 255) (1+ (car refs))))))
 
       (let loop ((rest insns))
 	(when rest
 	  (let ((insn (car rest)))
-	    (cond ((symbolp insn) (emit-label insn))
+	    (cond ((symbol? insn) (emit-label insn))
 
-		  ((eq (car insn) 'push) (emit-push (cadr insn)))
+		  ((eq? (car insn) 'push) (emit-push (cadr insn)))
 
-		  ((eq (car insn) 'push-label) (emit-push-label (cadr insn)))
+		  ((eq? (car insn) 'push-label) (emit-push-label (cadr insn)))
 
 		  ((memq (car insn) '(refq setq))
 		   ;; instruction with constant
@@ -204,10 +204,10 @@
       (let ((byte-vec (make-string pc))
 	    (const-vec (make-vector next-const-id)))
 	(do ((rest code (cdr rest)))
-	    ((null rest))
+	    ((null? rest))
 	  (aset byte-vec (cdar rest) (caar rest)))
 	(do ((rest constants (cdr rest)))
-	    ((null rest))
+	    ((null? rest))
 	  (aset const-vec (cdar rest) (caar rest)))
 
 	(cons byte-vec const-vec)))))

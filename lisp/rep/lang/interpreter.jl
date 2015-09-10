@@ -50,7 +50,7 @@
 (%define defmacro
       (cons 'macro
 	    (lambda (symbol . body)
-	      (cond ((bytecodep (car body))
+	      (cond ((bytecode? (car body))
 		     (setq body (car body)))
 		    (t (setq body (list 'quote (cons 'lambda body)))))
 	      (list '%define symbol
@@ -76,7 +76,7 @@ defun NAME BYTECODE-OBJECT
 Defines a function called NAME with argument specification LAMBDA-LIST,
 documentation DOC-STRING (optional) and body BODY."
 
-  (cond ((bytecodep (car body))
+  (cond ((bytecode? (car body))
 	 (setq body (car body)))
 	(t (setq body (list 'quote (cons 'lambda body)))))
   (list '%define symbol (list 'make-closure body (symbol-name symbol))))
@@ -105,7 +105,7 @@ call it. Otherwise exactly the same as defun."
 
 Return the closure from ARG, either a lambda-expression, or a symbol.
 When applied to a symbol, the symbol's value is returned."
-  (if (symbolp arg)
+  (if (symbol? arg)
       arg
     (list 'make-closure (list 'quote arg))))
 
@@ -131,12 +131,12 @@ formal parameters are the same as the variables bound by the `let'
 form. Thus the execution of BODY... may be repeated by invoking VAR."
 
   ((lambda (fun vars values)
-     (cond ((symbolp (car args))
+     (cond ((symbol? (car args))
 	    ;; named let
 	    (setq fun (car args))
 	    (setq args (cdr args))))
-     (setq vars (map (lambda (x) (if (consp x) (car x) x)) (car args)))
-     (setq values (map (lambda (x) (if (consp x) (cons 'progn (cdr x)) nil))
+     (setq vars (map (lambda (x) (if (pair? x) (car x) x)) (car args)))
+     (setq values (map (lambda (x) (if (pair? x) (cons 'progn (cdr x)) nil))
 		       (car args)))
      (cond (fun (list 'letrec
 		      (list (list fun (list* 'lambda vars (cdr args))))
@@ -152,7 +152,7 @@ are computed, in the order they are written."
 
   (let loop ((rest (reverse (car args)))
 	     (body (cons 'progn (cdr args))))
-    (cond ((null rest) body)
+    (cond ((null? rest) body)
 	  (t (loop (cdr rest) (list 'let (list (car rest)) body))))))
 
 (defmacro letrec (bindings . body)
@@ -164,11 +164,11 @@ functions."
   ((lambda (vars setters)
      (list* 'let vars (nconc setters body)))
    (map (lambda (x)
-	  (cond ((consp x) (car x))
+	  (cond ((pair? x) (car x))
 		(t x)))
 	bindings)
    (map (lambda (x)
-	  (cond ((consp x) (list 'setq (car x) (cons 'progn (cdr x))))
+	  (cond ((pair? x) (list 'setq (car x) (cons 'progn (cdr x))))
 		(t (list 'setq x nil))))
 	bindings)))
 
@@ -200,7 +200,7 @@ forms the false value is returned."
 
 (defmacro case (key . clauses)
   "Each CLAUSE is `((ITEMS... ) FORMS...)'. Find the first CLAUSE with an
-ITEM matching (using `eql') the result of evaluating KEY (only
+ITEM matching (using `eqv?') the result of evaluating KEY (only
 evaluated once), then evaluate the associated FORMS in a `progn'. The
 final clause may have the form `(t FORMS...)', which always matches KEY
 if no other CLAUSE has already. Returns false if no clause matches.
@@ -213,11 +213,11 @@ undefined."
       (if rest
 	  (let ((this (car rest)))
 	    (loop (cons (cond
-			 ((eq (car this) t) (cons 't (cdr this)))
+			 ((eq? (car this) t) (cons 't (cdr this)))
 			 ((cdar this)
 			  (cons (list 'memql tem (list 'quote (car this)))
 				(cdr this)))
-			 (t (cons (list 'eql tem (list 'quote (caar this)))
+			 (t (cons (list 'eqv? tem (list 'quote (caar this)))
 				  (cdr this))))
 			body)
 		  (cdr rest)))
@@ -243,7 +243,7 @@ If all of the ARGS have been evaluated and none have a true value
 `()' is the value of the `or' form.
 
 If there are no ARGS the false value is returned."
-  (if (null args)
+  (if (null? args)
       'nil
     (cons 'cond (map list args))))
 
@@ -254,11 +254,11 @@ ARGS are evaluated and the `and' statement evaluates to false.
 Otherwise the next member of ARGS is evaluated and its value tested. If
 none of the ARGS are false the computed value of the last member of ARGS
 is returned from the `and' form."
-  (if (null args)
+  (if (null? args)
       't
     (let loop ((rest (nreverse args))
 	       (body nil))
-      (cond ((null rest) body)
+      (cond ((null? rest) body)
 	    (t (loop (cdr rest) (if body 
 				    (list 'cond (list (car rest) body))
 				  (list 'cond (list (car rest))))))))))
@@ -277,7 +277,7 @@ See also `setq'. Returns the value of the last FORM."
 
   (let loop ((rest args)
 	     (body nil))
-    (if (null rest)
+    (if (null? rest)
 	(cons 'progn (nreverse body))
       (loop (cddr rest)
 	    (cons (list 'set-default
@@ -403,7 +403,7 @@ of the possible declaration types.")
   (call-with-exception-handler
    thunk
    (lambda (data)
-     (if (eq (car data) tag)
+     (if (eq? (car data) tag)
 	 (cdr data)
        (raise-exception data)))))
 
@@ -425,15 +425,15 @@ of the possible declaration types.")
   (call-with-exception-handler
    thunk
    (lambda (data)
-     (if (not (eq (car data) 'error))
+     (if (not (eq? (car data) 'error))
 	 (raise-exception data)
        (let ((type (nth 1 data)))
 	 (let loop ((rest handlers))
-	   (if (null rest)
+	   (if (null? rest)
 	       (raise-exception data)
 	     (let ((h-type (caar rest)))
-	       (if (or (and (listp h-type) (memq type h-type))
-		       (eq h-type 'error) (eq h-type type))
+	       (if (or (and (list? h-type) (memq type h-type))
+		       (eq? h-type 'error) (eq? h-type type))
 		   ((cdar rest) (cdr data))
 		 (loop (cdr rest)))))))))))
 
@@ -475,8 +475,8 @@ DATA)' while the handler is evaluated (these are the arguments given to
 	 (list 'lambda '() form)
 	 (map (lambda (h)
 		(list 'cons (list 'quote (car h))
-		      (list* 'lambda (and (symbolp var)
-					  (not (eq var 'nil))
+		      (list* 'lambda (and (symbol? var)
+					  (not (eq? var 'nil))
 					  (list var)) (cdr h))))
 	      handlers)))
 
@@ -495,7 +495,7 @@ DATA)' while the handler is evaluated (these are the arguments given to
      (error-helper err data))
    (lambda (ex)
      ;; really don't want to have errors happening in here..
-     (unless (eq (car ex) 'error)
+     (unless (eq? (car ex) 'error)
        (raise-exception ex)))))
 
 (defvar *error-handler-function* default-error-handler)

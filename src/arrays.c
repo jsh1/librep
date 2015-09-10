@@ -20,9 +20,9 @@
 
 #include "repint.h"
 
-DEFUN("arrayp", Farrayp, Sarrayp, (repv arg), rep_Subr1) /*
-::doc:rep.data#arrayp::
-arrayp ARG
+DEFUN("array?", Farrayp, Sarrayp, (repv arg), rep_Subr1) /*
+::doc:rep.data#array?::
+array? ARG
 
 Returns t when ARG is an array.
 ::end:: */

@@ -59,7 +59,7 @@ DEFUN("copy-sequence", Fcopy_sequence,
 ::doc:rep.data#copy-sequence::
 copy-sequence SEQUENCE
 
-Returns a new sequence whose elements are eq to those in SEQUENCE.
+Returns a new sequence whose elements are eq? to those in SEQUENCE.
 ::end:: */
 {
   if (seq == rep_nil) {
@@ -120,9 +120,9 @@ Return the element of SEQUENCE at position INDEX (counting from zero).
   }
 }
 
-DEFUN("sequencep", Fsequencep, Ssequencep, (repv arg), rep_Subr1) /*
-::doc:rep.data#sequencep::
-sequencep ARG
+DEFUN("sequence?", Fsequencep, Ssequencep, (repv arg), rep_Subr1) /*
+::doc:rep.data#sequence?::
+sequence? ARG
 
 Returns t is ARG is a sequence (a list, vector or string).
 ::end:: */

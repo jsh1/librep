@@ -121,7 +121,7 @@
 	   ;; <side-effect-free w/ stack+1>; pop --> <deleted>
 	   ;; <side-effect-free w/ stack+0>; pop --> pop
 	   ;; <side-effect-free w/ stack-1>; pop --> pop; pop
-	   ((and (eq (car insn1) 'pop)
+	   ((and (eq? (car insn1) 'pop)
 		 (memq (car insn0) byte-side-effect-free-insns))
 	    (setq tem (aref byte-insn-stack-delta (bytecode-ref (car insn0))))
 	    (cond ((= tem 1)
@@ -141,13 +141,13 @@
 	   ;;    --> {push,dup}; bind X; {push, dup}
 	   ;; {push,dup}; reg-set #X; reg-ref #X
 	   ;;    --> {push,dup}; reg-set #X; {push, dup}
-	   ((and (or (and (eq (car insn1) 'env-set) (eq (car insn2) 'env-ref)
-			  (eq (cadr insn1) (cadr insn2)))
-		     (and (eq (car insn1) 'bind) (eq (car insn2) 'env-ref)
-			  (eq (cadr insn2) 0))
-		     (and (eq (car insn1) 'reg-set) (eq (car insn2) 'reg-ref)
-			  (eq (cadr insn1) (cadr insn2))))
-		 (or (eq (car insn0) 'dup) (eq (car insn0) 'push)))
+	   ((and (or (and (eq? (car insn1) 'env-set) (eq? (car insn2) 'env-ref)
+			  (eq? (cadr insn1) (cadr insn2)))
+		     (and (eq? (car insn1) 'bind) (eq? (car insn2) 'env-ref)
+			  (eq? (cadr insn2) 0))
+		     (and (eq? (car insn1) 'reg-set) (eq? (car insn2) 'reg-ref)
+			  (eq? (cadr insn1) (cadr insn2))))
+		 (or (eq? (car insn0) 'dup) (eq? (car insn0) 'push)))
 	    (rplaca insn2 (car insn0))
 	    (rplacd insn2 (cdr insn0))
 	    (setq keep-going t))
@@ -155,15 +155,15 @@
 	   ;; env-set #X; env-ref #X --> dup; env-set #X
 	   ;; bind; env-ref #0 --> dup; bind
 	   ;; reg-set #X; reg-ref #X --> dup; reg-set #X
-	   ((or (and (eq (car insn0) 'env-set)
-		     (eq (car insn1) 'env-ref)
-		     (eq (cadr insn0) (cadr insn1)))
-		(and (eq (car insn0) 'bind)
-		     (eq (car insn1) 'env-ref)
-		     (eql (cadr insn1) 0))
-		(and (eq (car insn0) 'reg-set)
-		     (eq (car insn1) 'reg-ref)
-		     (eq (cadr insn0) (cadr insn1))))
+	   ((or (and (eq? (car insn0) 'env-set)
+		     (eq? (car insn1) 'env-ref)
+		     (eq? (cadr insn0) (cadr insn1)))
+		(and (eq? (car insn0) 'bind)
+		     (eq? (car insn1) 'env-ref)
+		     (eqv? (cadr insn1) 0))
+		(and (eq? (car insn0) 'reg-set)
+		     (eq? (car insn1) 'reg-ref)
+		     (eq? (cadr insn0) (cadr insn1))))
 	    (rplaca insn1 (car insn0))
 	    (rplacd insn1 (cdr insn0))
 	    (rplaca insn0 'dup)
@@ -173,10 +173,10 @@
 	    (setq keep-going t))
 
 	   ;; dup; {<varset>,<varbind>} X; pop --> {<varset>,<varbind>} X
-	   ((and (eq (car insn0) 'dup)
+	   ((and (eq? (car insn0) 'dup)
 		 (or (memq (car insn1) byte-varset-insns)
 		     (memq (car insn1) byte-varbind-insns))
-		 (eq (car insn2) 'pop))
+		 (eq? (car insn2) 'pop))
 	    (rplaca insn2 (car insn1))
 	    (rplacd insn2 (cdr insn1))
 	    (del-0-1)
@@ -184,31 +184,31 @@
 
 	   ;; <varref> X; <varref> X --> <varref> X; dup
 	   ((and (memq (car insn0) byte-varref-insns)
-		 (eq (car insn1) (car insn0))
-		 (eq (cadr insn0) (cadr insn1)))
+		 (eq? (car insn1) (car insn0))
+		 (eq? (cadr insn0) (cadr insn1)))
 	    (rplaca insn1 'dup)
 	    (rplacd insn1 nil)
 	    (setq keep-going t))
 
 	   ;; <varref> X; <varset> X --> deleted
-	   ((or (and (eq (car insn0) 'env-ref)
-		     (eq (car insn1) 'env-set)
-		     (eql (cadr insn0) (cadr insn1)))
-		(and (eq (car insn0) 'refq)
-		     (eq (car insn1) 'setq)
-		     (eq (cadr insn0) (cadr insn1)))
-		(and (eq (car insn0) 'reg-ref)
-		     (eq (car insn1) 'reg-set)
-		     (eq (cadr insn0) (cadr insn1))))
+	   ((or (and (eq? (car insn0) 'env-ref)
+		     (eq? (car insn1) 'env-set)
+		     (eqv? (cadr insn0) (cadr insn1)))
+		(and (eq? (car insn0) 'refq)
+		     (eq? (car insn1) 'setq)
+		     (eq? (cadr insn0) (cadr insn1)))
+		(and (eq? (car insn0) 'reg-ref)
+		     (eq? (car insn1) 'reg-set)
+		     (eq? (cadr insn0) (cadr insn1))))
 	    (del-0-1)
 	    (setq keep-going t))
 
 	   ;; c?r; c?r --> c??r
 	   ((and (memq (car insn0) '(car cdr))
 		 (memq (car insn1) '(car cdr)))
-	    (rplaca insn1 (if (eq (car insn0) 'car)
-			      (if (eq (car insn1) 'car) 'caar 'cdar)
-			    (if (eq (car insn1) 'car) 'cadr 'cddr)))
+	    (rplaca insn1 (if (eq? (car insn0) 'car)
+			      (if (eq? (car insn1) 'car) 'caar 'cdar)
+			    (if (eq? (car insn1) 'car) 'cadr 'cddr)))
 	    (del-0)
 	    (setq keep-going t))
 
@@ -217,104 +217,104 @@
 	   ;; push 1; add --> inc
 	   ;; push -1; add --> dec
 	   ;; [ XXX these and more should be handled at a higher level ]
-	   ((and (eq (car insn0) 'push)
+	   ((and (eq? (car insn0) 'push)
 		 (memq (car insn1) '(sub add))
 		 (memql (cadr insn0) '(1 -1)))
-	    (let ((new (if (eql (cadr insn0) 1)
-			   (if (eq (car insn1) 'sub) 'dec 'inc)
-			 (if (eq (car insn1) 'sub) 'inc 'dec))))
+	    (let ((new (if (eqv? (cadr insn0) 1)
+			   (if (eq? (car insn1) 'sub) 'dec 'inc)
+			 (if (eq? (car insn1) 'sub) 'inc 'dec))))
 	      (rplaca insn1 new)
 	      (del-0)
 	      (setq keep-going t)))
 
 	   ;; push 0; {add,sub} --> <deleted>
-	   ((and (equal insn0 '(push 0)) (memq (car insn1) '(add sub)))
+	   ((and (equal? insn0 '(push 0)) (memq (car insn1) '(add sub)))
 	    (del-0-1)
 	    (setq keep-going t))
 
 	   ;; push 0; num-eq --> zerop
-	   ((and (equal insn0 '(push 0)) (eq (car insn1) 'num-eq))
+	   ((and (equal? insn0 '(push 0)) (eq? (car insn1) 'num-eq))
 	    (rplaca insn1 'zerop)
 	    (del-0)
 	    (setq keep-going t))
 
 	   ;; zerop; not --> not-zero-p
-	   ((and (eq (car insn0) 'zerop) (eq (car insn1) 'not))
+	   ((and (eq? (car insn0) 'zerop) (eq? (car insn1) 'not))
 	    (rplaca insn1 'not-zero-p)
 	    (del-0)
 	    (setq keep-going t))
 
 	   ;; jmp X; X: --> X:
-	   ((and (eq (car insn0) 'jmp) (eq (cadr insn0) insn1))
+	   ((and (eq? (car insn0) 'jmp) (eq? (cadr insn0) insn1))
 	    (del-0)
 	    (setq keep-going t))
 
 	   ;; {jn,jt} X; X: --> pop; X:
-	   ((and (memq (car insn0) '(jn jt)) (eq (cadr insn0) insn1))
+	   ((and (memq (car insn0) '(jn jt)) (eq? (cadr insn0) insn1))
 	    (rplaca insn0 'pop)
 	    (rplacd insn0 nil)
 	    (setq keep-going t))
 
 	   ;; {jpt,jpn} X; pop --> {jt,jn} X
-	   ((and (memq (car insn0) '(jpt jpn)) (eq (car insn1) 'pop))
-	    (rplaca insn0 (if (eq (car insn0) 'jpt) 'jt 'jn))
+	   ((and (memq (car insn0) '(jpt jpn)) (eq? (car insn1) 'pop))
+	    (rplaca insn0 (if (eq? (car insn0) 'jpt) 'jt 'jn))
 	    (del-1)
 	    (setq keep-going t))
 
 	   ;; not; {jn,jt} X --> {jt,jn} X
-	   ((and (eq (car insn0) 'not)
+	   ((and (eq? (car insn0) 'not)
 		 (memq (car insn1) '(jn jt)))
-	    (rplaca insn1 (if (eq (car insn1) 'jn) 'jt 'jn))
+	    (rplaca insn1 (if (eq? (car insn1) 'jn) 'jt 'jn))
 	    (del-0)
 	    (setq keep-going t))
 
 	   ;; jt X; (push ()) --> jpt X
-	   ((and (eq (car insn0) 'jt) (equal insn1 '(push ())))
+	   ((and (eq? (car insn0) 'jt) (equal? insn1 '(push ())))
 	    (rplaca insn0 'jpt)
 	    (del-1)
 	    (setq keep-going t))
 
 	   ;; {jn,jt} X; jmp Y; X: --> {jt,jn} Y; X:
 	   ((and (memq (car insn0) '(jn jt))
-		 (eq (car insn1) 'jmp)
-		 (eq (cadr insn0) insn2))
-	    (rplaca insn1 (if (eq (car insn0) 'jn) 'jt 'jn))
+		 (eq? (car insn1) 'jmp)
+		 (eq? (cadr insn0) insn2))
+	    (rplaca insn1 (if (eq? (car insn0) 'jn) 'jt 'jn))
 	    (del-0)
 	    (setq keep-going t))
 
 	   ;; (push X); <cond. jump> X; --> whatever
-	   ((and (eq (car insn0) 'push)
+	   ((and (eq? (car insn0) 'push)
 		 (memq (car insn1) byte-conditional-jmp-insns))
 	    (let*
 		;; only way to get a nil constant is through `(push ())'
-		((is-nil (equal insn0 '(push ())))
+		((is-nil (equal? insn0 '(push ())))
 		 (is-t (not is-nil)))
-	      (cond ((or (and is-nil (eq (car insn1) 'jn))
-			 (and is-t (eq (car insn1) 'jt))
-			 (and is-nil (eq (car insn1) 'jpn))
-			 (and is-t (eq (car insn1) 'jpt)))
+	      (cond ((or (and is-nil (eq? (car insn1) 'jn))
+			 (and is-t (eq? (car insn1) 'jt))
+			 (and is-nil (eq? (car insn1) 'jpn))
+			 (and is-t (eq? (car insn1) 'jpt)))
 		     ;; nil; jn X --> jmp X
 		     ;; t; jt X --> jmp X
 		     ;; nil; jpn X --> jmp X
 		     ;; t; jpt X --> jmp X
 		     (rplaca insn1 'jmp)
 		     (del-0))
-		    ((or (and is-nil (eq (car insn1) 'jt))
-			 (and is-t (eq (car insn1) 'jn))
-			 (and is-t (eq (car insn1) 'jnp))
-			 (and is-nil (eq (car insn1) 'jtp)))
+		    ((or (and is-nil (eq? (car insn1) 'jt))
+			 (and is-t (eq? (car insn1) 'jn))
+			 (and is-t (eq? (car insn1) 'jnp))
+			 (and is-nil (eq? (car insn1) 'jtp)))
 		     ;; nil; jt X --> <deleted>
 		     ;; t; jn X --> <deleted>
 		     ;; t; jnp X --> <deleted>
 		     ;; nil; jtp X --> <deleted>
 		     (del-0-1))
-		    ((or (and is-nil (eq (car insn1) 'jnp))
-			 (and is-t (eq (car insn1) 'jtp)))
+		    ((or (and is-nil (eq? (car insn1) 'jnp))
+			 (and is-t (eq? (car insn1) 'jtp)))
 		     ;; nil; jnp X --> nil; jmp X
 		     ;; t; jtp X --> t; jmp X
 		     (rplaca insn1 'jmp))
-		    ((or (and is-t (eq (car insn1) 'jpn))
-			 (and is-nil (eq (car insn1) 'jpt)))
+		    ((or (and is-t (eq? (car insn1) 'jpn))
+			 (and is-nil (eq? (car insn1) 'jpt)))
 		     ;; t; jpn X --> t
 		     ;; nil; jpt X --> nil
 		     (del-1))
@@ -322,7 +322,7 @@
 	      (setq keep-going t)))
 
 	   ;; <varref-and-error-free-op>; unbind ---> unbind; op
-	   ((and (eq (car insn1) 'unbind)
+	   ((and (eq? (car insn1) 'unbind)
 		 (memq (car insn0) byte-varref-free-insns))
 	    (let
 		((op (car insn0))
@@ -335,58 +335,58 @@
 
 	   ;; <varbind> X; unbind --> pop; unbind
 	   ((and (memq (car insn0) byte-varbind-insns)
-		 (eq (car insn1) 'unbind))
+		 (eq? (car insn1) 'unbind))
 	    (rplaca insn0 'pop)
 	    (rplacd insn0 nil)
 	    (setq keep-going t))
 
 	   ;; init-bind; unbind --> deleted
-	   ((and (eq (car insn0) 'init-bind) (eq (car insn1) 'unbind))
+	   ((and (eq? (car insn0) 'init-bind) (eq? (car insn1) 'unbind))
 	    (del-0-1)
 	    (setq keep-going t))
 
 	   ;; init-bind; {return,unbindall} --> {return,unbindall}
-	   ((and (eq (car insn0) 'init-bind)
+	   ((and (eq? (car insn0) 'init-bind)
 		 (memq (car insn1) '(return unbindall)))
 	    (del-0)
 	    (setq keep-going t))
 
 	   ;; unbind; return --> return
-	   ((and (eq (car insn0) 'unbind) (eq (car insn1) 'return))
+	   ((and (eq? (car insn0) 'unbind) (eq? (car insn1) 'return))
 	    (del-0)
 	    (setq keep-going t))
 
 	   ;; <varref> X; dup... ; <varref> X --> <varref> X; dup...; dup
 	   ((and (memq (car insn0) byte-varref-insns)
-		 (eq (car insn1) 'dup))
+		 (eq? (car insn1) 'dup))
 	    (let
 		((tem (nthcdr 2 point)))
-	      (while (eq (car (car tem)) 'dup)
+	      (while (eq? (car (car tem)) 'dup)
 		(setq tem (cdr tem)))
-	      (when (equal (car tem) insn0)
+	      (when (equal? (car tem) insn0)
 		(rplaca (car tem) 'dup)
 		(rplacd (car tem) nil)
 		(setq keep-going t))))
 
 	   ;; X: Y: --> X:  [s/X/Y/]
-	   ((and (symbolp insn0) (symbolp insn1))
+	   ((and (symbol? insn0) (symbol? insn1))
 	    (let loop ((rest (cdr code-string)))
 	      (when rest
-		(when (and (eq (cadar rest) insn1)
+		(when (and (eq? (cadar rest) insn1)
 			   (or (memq (caar rest) byte-jmp-insns)
-			       (eq (caar rest) 'push-label)))
+			       (eq? (caar rest) 'push-label)))
 		  (rplaca (cdar rest) insn0))
 		(loop (cdr rest))))
 	    (del-1)
 	    (setq keep-going t))
 
 	   ;; [unused] X: --> deleted
-	   ((and (symbolp insn0)
+	   ((and (symbol? insn0)
 		 (let loop ((rest (cdr code-string)))
-		   (cond ((null rest) t)
-			 ((and (eq (cadar rest) insn0)
+		   (cond ((null? rest) t)
+			 ((and (eq? (cadar rest) insn0)
 			       (or (memq (caar rest) byte-jmp-insns)
-				   (eq (caar rest) 'push-label))) nil)
+				   (eq? (caar rest) 'push-label))) nil)
 			 (t (loop (cdr rest))))))
 	    (del-0)
 	    (setq keep-going t))
@@ -394,11 +394,11 @@
 	   ;; jmp X; ... Y: --> jmp X; Y:
 	   ;; return; ... Y: --> return; Y:
 	   ((and (memq (car insn0) '(jmp ejmp return))
-		 insn1 (not (symbolp insn1)))
+		 insn1 (not (symbol? insn1)))
 	    (setq tem (nthcdr 2 point))
-	    (while (and tem (not (symbolp (car tem))))
+	    (while (and tem (not (symbol? (car tem))))
 	      (setq tem (cdr tem)))
-	    (unless (eq tem (nthcdr 2 point))
+	    (unless (eq? tem (nthcdr 2 point))
 	      (rplacd (cdr point) tem)
 	      (refill)
 	      (setq keep-going t)))
@@ -409,18 +409,18 @@
 			       (error "Can't find jump destination: %s, %s"
 				      insn0 (cdr code-string))))
 		 (setq tem (car (cdr tem)))
-		 (eq (car tem) 'jmp)
-		 (not (eq (cadr insn0) (cadr tem))))
+		 (eq? (car tem) 'jmp)
+		 (not (eq? (cadr insn0) (cadr tem))))
 	    (rplacd insn0 (cdr tem))
 	    (setq keep-going t))
 
 	   ;; jmp X; ... X: return --> return; ... X: return
-	   ((and (eq (car insn0) 'jmp)
+	   ((and (eq? (car insn0) 'jmp)
 		 (setq tem (or (memq (cadr insn0) (cdr code-string))
 			       (error "Can't find jump destination: %s, %s"
 				      insn0 (cdr code-string))))
 		 (setq tem (car (cdr tem)))
-		 (eq (car tem) 'return))
+		 (eq? (car tem) 'return))
 	    (rplaca insn0 'return)
 	    (rplacd insn0 nil)
 	    (setq keep-going t))
@@ -435,13 +435,13 @@
 	    (let
 		((jmp (car tem))
 		 need-new-label)
-	      (if (eq (car insn0) 'jtp)
+	      (if (eq? (car insn0) 'jtp)
 		  (cond
 		   ((memq (car jmp) '(jpt jt))
 		    ;; jtp X; ... X: jpt Y --> jt Y; ...
 		    ;; jtp X; ... X: jt Y --> jt Y; ...
 		    (rplaca insn0 'jt))
-		   ((eq (car jmp) 'jpn)
+		   ((eq? (car jmp) 'jpn)
 		    ;; jtp X; ... X: jpn Y --> jpt Z; ... X: jpn Y; Z:
 		    (rplaca insn0 'jpt)
 		    (setq need-new-label t))
@@ -450,11 +450,11 @@
 		    ;; jtp X; ... X: jnp Y --> jt Z; ... X: jpn Y; Z:
 		    (rplaca insn0 'jt)
 		    (setq need-new-label t))
-		   ((eq (car jmp) 'jtp)
+		   ((eq? (car jmp) 'jtp)
 		    ;; jtp X; ... X: jtp Y --> jtp Y; ...
 		    (rplaca insn0 'jtp)))
 		(cond
-		 ((eq (car jmp) 'jpt)
+		 ((eq? (car jmp) 'jpt)
 		  ;; jnp X; ... X: jpt Y --> jn Z; ... X: jpt Y; Z:
 		  (rplaca insn0 'jnp)
 		  (setq need-new-label t))
@@ -467,7 +467,7 @@
 		  ;; jnp X; ... X: jtp Y --> jn Z; ... X: jt Y; Z:
 		  (rplaca insn0 'jn)
 		  (setq need-new-label t))
-		 ((eq (car jmp) 'jnp)
+		 ((eq? (car jmp) 'jnp)
 		  ;; jnp X; ... X: jnp Y --> jnp Y ...
 		  (rplaca insn0 'jnp))))
 	      (if (not need-new-label)
@@ -480,9 +480,9 @@
 
 	   ;; {jpt,jpn} X; jmp Y; X: --> {jnp,jtp} Y; X:
 	   ;; {jtp,jnp} X; jmp Y; X: --> {jpn,jpt} Y; X:
-	   ((and (eq (car insn1) 'jmp)
+	   ((and (eq? (car insn1) 'jmp)
 		 (memq (car insn0) '(jpt jpn jtp jnp))
-		 (eq (cadr insn0) insn2))
+		 (eq? (cadr insn0) insn2))
 	    (rplaca insn1 (case (car insn0)
 			    ((jpt) 'jnp)
 			    ((jpn) 'jtp)
@@ -509,10 +509,10 @@
 	(cond
 	 ;; push X; {<varset>,<varbind>} Y; push X
 	 ;;   --> push X; dup; {<varset>,<varbind>} Y
-	 ((and (eq (car insn0) 'push)
+	 ((and (eq? (car insn0) 'push)
 	       (or (memq (car insn1) byte-varset-insns)
 		   (memq (car insn1) byte-varbind-insns))
-	       (equal insn0 insn2))
+	       (equal? insn0 insn2))
 	  (rplaca insn2 (car insn1))
 	  (rplacd insn2 (cdr insn1))
 	  (rplaca insn1 'dup)
@@ -522,11 +522,11 @@
 
 	 ;; push X; {dup,push X}... --> push X; dup...
 	 ;; <varref> X; {dup,<varref> X}... --> <varref> X; dup...
-	 ((or (eq (car insn0) 'push)
+	 ((or (eq? (car insn0) 'push)
 	      (memq (car insn0) byte-varref-insns))
 	  (setq tem (nthcdr 2 point))
-	  (while (or (eq (caar tem) 'dup)
-		     (equal (car tem) insn0))
+	  (while (or (eq? (caar tem) 'dup)
+		     (equal? (car tem) insn0))
 	    (rplaca (car tem) 'dup)
 	    (rplacd (car tem) nil)
 	    (setq tem (cdr tem)))))

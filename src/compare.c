@@ -40,9 +40,9 @@ rep_value_cmp(repv v1, repv v2)
   return 1;
 }
 
-DEFUN("equal", Fequal, Sequal, (repv val1, repv val2), rep_Subr2) /*
-::doc:rep.data#equal::
-equal VALUE1 VALUE2
+DEFUN("equal?", Fequal, Sequal, (repv val1, repv val2), rep_Subr2) /*
+::doc:rep.data#equal?::
+equal? VALUE1 VALUE2
 
 Compares VALUE1 and VALUE2, compares the actual structure of the
 objects not just whether the objects are one and the same. ie, will
@@ -53,12 +53,12 @@ order even if the strings' location in memory is different.
   return rep_value_cmp(val1, val2) == 0 ? Qt : rep_nil;
 }
 
-DEFUN("eq", Feq, Seq, (repv val1, repv val2), rep_Subr2) /*
-::doc:rep.data#eq::
-eq VALUE1 VALUE2
+DEFUN("eq?", Feq, Seq, (repv val1, repv val2), rep_Subr2) /*
+::doc:rep.data#eq?::
+eq? VALUE1 VALUE2
 
 Returns t if VALUE1 and VALUE2 are one and the same object. Note that
-this may or may not be true for numbers of the same value (see `eql').
+this may or may not be true for numbers of the same value (see `eqv?').
 ::end:: */
 {
   return val1 == val2 ? Qt : rep_nil;
@@ -97,7 +97,7 @@ DEFUN("=", Fnum_eq, Snum_eq, (int argc, repv *argv), rep_SubrV) /*
 = ARG1 ARG2 [ARG3 ...]
 
 Returns t if each value is the same as every other value. (Using
-`equal' to compare values, except for numbers, where exactness is
+`equal?' to compare values, except for numbers, where exactness is
 ignored.)
 ::end:: */
 {
@@ -109,7 +109,7 @@ DEFUN("/=", Fnum_noteq, Snum_noteq, (int argc, repv *argv), rep_SubrV) /*
 /= ARG1 ARG2 ...
 
 Returns t if each value is different from every other value. (Using
-`equal' to compare values, except for numbers, where exactness is
+`equal?' to compare values, except for numbers, where exactness is
 ignored.)
 ::end:: */
 {

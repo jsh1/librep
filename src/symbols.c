@@ -222,9 +222,9 @@ Returns the print-name of SYMBOL.
   return rep_SYM(sym)->name;
 }
 
-DEFUN("symbolp", Fsymbolp, Ssymbolp, (repv sym), rep_Subr1) /*
-::doc:rep.lang.symbols#symbolp::
-symbolp ARG
+DEFUN("symbol?", Fsymbolp, Ssymbolp, (repv sym), rep_Subr1) /*
+::doc:rep.lang.symbols#symbol?::
+symbol? ARG
 
 Returns t if ARG is a symbol.
 ::end:: */
@@ -257,9 +257,9 @@ signalled if SYMBOL is itself a keyword.
   return key;
 }
 
-DEFUN("keywordp", Fkeywordp, Skeywordp, (repv arg), rep_Subr1) /*
-::doc:rep.lang.symbols#keywordp::
-keywordp ARG
+DEFUN("keyword?", Fkeywordp, Skeywordp, (repv arg), rep_Subr1) /*
+::doc:rep.lang.symbols#keyword?::
+keyword? ARG
 
 Return true if ARG is a keyword symbol.
 ::end:: */

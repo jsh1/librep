@@ -2080,16 +2080,16 @@ Returns the bitwise logical `and' of its arguments.
   return number_foldv(argc, argv, rep_number_logand);
 }
 
-DEFUN("eql", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
-::doc:rep.data#eql::
-eql ARG1 ARG2
+DEFUN("eqv?", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
+::doc:rep.data#eqv?::
+eqv? ARG1 ARG2
 
-Similar to `eq' except that numbers with the same value will always be
-considered `eql' (this may or may not be the case with `eq').
+Similar to `eq?' except that numbers with the same value will always be
+considered `eqv?' (this may or may not be the case with `eq?').
 
 Note however that exact and inexact versions of the same number are not
 considered the same value. As a rule of thumb, if two numbers print the
-same, they will be considered `eql'.
+same, they will be considered `eqv?'.
 ::end:: */
 {
   if (rep_NUMERICP(arg1) && rep_NUMERICP(arg2)) {
@@ -2099,9 +2099,9 @@ same, they will be considered `eql'.
   }
 }
 
-DEFUN("zerop", Fzerop, Szerop, (repv num), rep_Subr1) /*
-::doc:rep.lang.math#zerop::
-zerop NUMBER
+DEFUN("zero?", Fzerop, Szerop, (repv num), rep_Subr1) /*
+::doc:rep.lang.math#zero?::
+zero? NUMBER
 
 Return t if NUMBER is zero.
 ::end:: */
@@ -2641,9 +2641,9 @@ is always non-negative. Returns 0 with arguments.
   }
 }
 
-DEFUN("numberp", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
-::doc:rep.lang.math#numberp::
-numberp ARG
+DEFUN("number?", Fnumberp, Snumberp, (repv arg), rep_Subr1) /*
+::doc:rep.lang.math#number?::
+number? ARG
 
 Return t if ARG is a number.
 ::end:: */
@@ -2651,9 +2651,9 @@ Return t if ARG is a number.
   return rep_NUMERICP(arg) ? Qt : rep_nil;
 }
 
-DEFUN("integerp", Fintegerp, Sintegerp, (repv arg), rep_Subr1) /*
-::doc:rep.lang.math#integerp::
-integerp ARG
+DEFUN("integer?", Fintegerp, Sintegerp, (repv arg), rep_Subr1) /*
+::doc:rep.lang.math#integer?::
+integer? ARG
 
 Return t if ARG is a integer.
 ::end:: */
@@ -2676,9 +2676,9 @@ Return t if ARG is a integer.
   }
 }
 
-DEFUN("fixnump", Ffixnump, Sfixnump, (repv arg), rep_Subr1) /*
-::doc:rep.lang.math#fixnump::
-fixnump ARG
+DEFUN("fixnum?", Ffixnump, Sfixnump, (repv arg), rep_Subr1) /*
+::doc:rep.lang.math#fixnum?::
+fixnum? ARG
 
 Return t if ARG is a fixnum(i.e. an integer that fits in a Lisp
 pointer).
@@ -2687,14 +2687,24 @@ pointer).
   return rep_INTP(arg) ? Qt : rep_nil;
 }
 
-DEFUN("exactp", Fexactp, Sexactp, (repv arg), rep_Subr1) /*
-::doc:rep.lang.math#exactp::
-exactp ARG
+DEFUN("exact?", Fexactp, Sexactp, (repv arg), rep_Subr1) /*
+::doc:rep.lang.math#exact?::
+exact? ARG
 
 Return t if ARG is an exact number.
 ::end:: */
 {
   return rep_INTP(arg) || (rep_NUMBERP(arg) && !rep_NUMBER_FLOAT_P(arg)) ? Qt : rep_nil;
+}
+
+DEFUN("inexact?", Finexactp, Sinexactp, (repv arg), rep_Subr1) /*
+::doc:rep.lang.math#exact?::
+exact? ARG
+
+Return t if ARG is an exact number.
+::end:: */
+{
+  return rep_NUMBERP(arg) && rep_NUMBER_FLOAT_P(arg) ? Qt : rep_nil;
 }
 
 DEFUN("exact->inexact", Fexact_to_inexact,
@@ -3158,6 +3168,7 @@ rep_numbers_init(void)
   rep_ADD_SUBR(Sintegerp);
   rep_ADD_SUBR(Sfixnump);
   rep_ADD_SUBR(Sexactp);
+  rep_ADD_SUBR(Sinexactp);
   rep_ADD_SUBR(Sexact_to_inexact);
   rep_ADD_SUBR(Sinexact_to_exact);
   rep_ADD_SUBR(Snumerator);

@@ -332,9 +332,9 @@ Calls FUNCTION with arguments ARGS... and returns the result.
   return rep_apply(rep_CAR(args), rep_CDR(args));
 }
 
-DEFUN("functionp", Ffunctionp, Sfunctionp, (repv arg), rep_Subr1) /*
-::doc:rep.lang.interpreter#functionp::
-functionp ARG
+DEFUN("function?", Ffunctionp, Sfunctionp, (repv arg), rep_Subr1) /*
+::doc:rep.lang.interpreter#function?::
+function? ARG
 
 Returns t if ARG is a function.
 ::end:: */
@@ -565,9 +565,9 @@ THUNK is then returned.
   return ret;
 }
 
-DEFUN("subrp", Fsubrp, Ssubrp, (repv arg), rep_Subr1) /*
-::doc:rep.lang.interpreter#subrp::
-subrp ARG
+DEFUN("subr?", Fsubrp, Ssubrp, (repv arg), rep_Subr1) /*
+::doc:rep.lang.interpreter#subr?::
+subr? ARG
 
 Returns t if arg is a primitive function.
 ::end:: */

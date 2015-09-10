@@ -26,8 +26,8 @@
     (export make-queue
 	    enqueue
 	    dequeue
-	    queue-empty-p
-	    queuep
+	    queue-empty?
+	    queue?
 	    queue->list
 	    queue-length
 	    delete-from-queue)
@@ -53,7 +53,7 @@
   (define (enqueue q x)
     (let ((cell (datum-ref q type-id))
 	  (new (list x)))
-      (if (null (cdr cell))
+      (if (null? (cdr cell))
 	  ;; empty queue
 	  (progn
 	    (rplacd cell new)
@@ -64,21 +64,21 @@
 
   (define (dequeue q)
     (let ((cell (datum-ref q type-id)))
-      (if (null (cdr cell))
+      (if (null? (cdr cell))
 	  (error "Can't dequeue from empty queue")
 	(prog1 (car (cdr cell))
-	  (if (not (eq (car cell) (cdr cell)))
+	  (if (not (eq? (car cell) (cdr cell)))
 	      ;; at least one element left
 	      (rplacd cell (cdr (cdr cell)))
 	    ;; queue needs to be empty now
 	    (rplacd cell '())
 	    (rplaca cell '()))))))
 
-  (define (queue-empty-p q)
-    (null (cdr (datum-ref q type-id))))
+  (define (queue-empty? q)
+    (null? (cdr (datum-ref q type-id))))
 
-  (define (queuep q)
-    (has-type-p q type-id))
+  (define (queue? q)
+    (datum? q type-id))
 
   (define (queue->list q)
     (cdr (datum-ref q type-id)))
@@ -89,12 +89,12 @@
   (define (delete-from-queue q x)
     (let ((cell (datum-ref q type-id)))
       (let loop ((ptr cell))
-	(if (null (cdr ptr))
+	(if (null? (cdr ptr))
 	    ;; avoid pointing tail to itself..
-	    (if (null (cdr cell))
+	    (if (null? (cdr cell))
 		(rplaca cell '())
 	      (rplaca cell ptr))
-	  (if (eq (cadr ptr) x)
+	  (if (eq? (cadr ptr) x)
 	      (progn
 		(rplacd ptr (cddr ptr))
 		(loop ptr))
@@ -107,38 +107,38 @@
     (lambda ()
       (let ((queue (make-queue)))
 
-	(test (queuep queue))
-	(test (queue-empty-p queue))
-	(test (null (queue->list queue)))
+	(test (queue? queue))
+	(test (queue-empty? queue))
+	(test (null? (queue->list queue)))
 	(test (= (queue-length queue) 0))
 
 	(enqueue queue 1)
-	(test (not (queue-empty-p queue)))
-	(test (equal (queue->list queue) '(1)))
+	(test (not (queue-empty? queue)))
+	(test (equal? (queue->list queue) '(1)))
 	(test (= (queue-length queue) 1))
 
 	(enqueue queue 2)
-	(test (equal (queue->list queue) '(1 2)))
+	(test (equal? (queue->list queue) '(1 2)))
 	(test (= (queue-length queue) 2))
 
 	(test (= (dequeue queue) 1))
-	(test (equal (queue->list queue) '(2)))
+	(test (equal? (queue->list queue) '(2)))
 	(test (= (queue-length queue) 1))
 
 	(enqueue queue 3)
 	(enqueue queue 4)
 	(enqueue queue 5)
-	(test (equal (queue->list queue) '(2 3 4 5)))
+	(test (equal? (queue->list queue) '(2 3 4 5)))
 
 	(delete-from-queue queue 2)
-	(test (equal (queue->list queue) '(3 4 5)))
+	(test (equal? (queue->list queue) '(3 4 5)))
 
 	(delete-from-queue queue 4)
-	(test (equal (queue->list queue) '(3 5)))
+	(test (equal? (queue->list queue) '(3 5)))
 
 	(delete-from-queue queue 5)
-	(test (equal (queue->list queue) '(3)))
+	(test (equal? (queue->list queue) '(3)))
 
 	(delete-from-queue queue 3)
 	(test (= (queue-length queue) 0))
-	(test (queue-empty-p queue))))))
+	(test (queue-empty? queue))))))

@@ -411,9 +411,9 @@ return nil.
 For example:
 
   (cond
-    ((stringp foo)
+    ((string? foo)
       (title "foo is a string"))
-    ((numberp foo)
+    ((number? foo)
       (setq bar foo)
       (title "foo is a number"))
     (t
@@ -452,9 +452,9 @@ For example:
   return ret;
 }
 
-DEFUN("macrop", Fmacrop, Smacrop, (repv arg), rep_Subr1) /*
-::doc:rep.lang.interpreter#macrop::
-macrop ARG
+DEFUN("macro?", Fmacrop, Smacrop, (repv arg), rep_Subr1) /*
+::doc:rep.lang.interpreter#macro?::
+macro? ARG
 
 Returns t if ARG is a macro.
 ::end:: */
@@ -462,10 +462,10 @@ Returns t if ARG is a macro.
   return rep_CONSP(arg) && rep_CAR(arg) == Qmacro ? Qt : rep_nil;
 }
 	
-DEFUN("special-form-p", Fspecial_form_p,
+DEFUN("special-form?", Fspecial_form_p,
       Sspecial_form_p, (repv arg), rep_Subr1) /*
-::doc:rep.lang.interpreter#special-form-p::
-special-form-p ARG
+::doc:rep.lang.interpreter#special-form?::
+special-form? ARG
 
 Returns t if ARG is a special-form.
 ::end:: */

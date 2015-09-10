@@ -27,10 +27,10 @@
 	    vector-heapsort
 	    make-heap
 	    heap?
-	    heap/size
-	    heap/data
-	    heap/add
-	    heap/remove)
+	    heap-size
+	    heap-data
+	    heap-add
+	    heap-remove)
 
     (open rep
 	  rep.data.records
@@ -84,16 +84,16 @@ as the comparison function."
   (define-record-type :heap
     (heap size data less)
     heap?
-    (size heap/size heap/size-set!)
-    (data heap/data heap/data-set!)
-    (less heap/less))
+    (size heap-size heap-size-set!)
+    (data heap-data heap-data-set!)
+    (less heap-less))
 
   (define (make-heap #!optional (less <))
     (heap 0 nil less))
 
-  (define (heap/resize heap delta)
-    (let* ((size (+ (heap/size heap) delta))
-	   (old-vec (heap/data heap))
+  (define (heap-resize heap delta)
+    (let* ((size (+ (heap-size heap) delta))
+	   (old-vec (heap-data heap))
 	   (old-size (if old-vec (length old-vec) 0)))
       (when (< old-size size)
 	(let* ((new-size (max (* old-size 2) 16))
@@ -101,26 +101,26 @@ as the comparison function."
 	  (do ((i 0 (1+ i)))
 	      ((= i old-size))
 	    (aset new-vec i (aref old-vec i)))
-	  (heap/data-set! heap new-vec)))))
+	  (heap-data-set! heap new-vec)))))
 
-  (define (heap/add heap value)
-    (heap/resize heap 1)
-    (let ((i (heap/size heap)))
-      (heap/size-set! heap (1+ (heap/size heap)))
-      (aset (heap/data heap) i value)
-      (sift-up (heap/data heap) (heap/less heap) i)))
+  (define (heap-add heap value)
+    (heap-resize heap 1)
+    (let ((i (heap-size heap)))
+      (heap-size-set! heap (1+ (heap-size heap)))
+      (aset (heap-data heap) i value)
+      (sift-up (heap-data heap) (heap-less heap) i)))
 
-  (define (heap/remove heap)
-    (if (= (heap/size heap) 0)
+  (define (heap-remove heap)
+    (if (= (heap-size heap) 0)
 	nil
-      (let ((vec (heap/data heap))
-	    (i (1- (heap/size heap))))
+      (let ((vec (heap-data heap))
+	    (i (1- (heap-size heap))))
 	(prog1 (aref vec 0)
 	  (aset vec 0 (aref vec i))
 	  (aset vec i nil)
-	  (heap/size-set! heap i)
-	  (sift-down (heap/data heap) (heap/less heap) 0 (heap/size heap))
-	  (heap/resize heap -1)))))
+	  (heap-size-set! heap i)
+	  (sift-down (heap-data heap) (heap-less heap) 0 (heap-size heap))
+	  (heap-resize heap -1)))))
 
 ;;; tests
 
@@ -131,13 +131,13 @@ as the comparison function."
 	    (data '(10 3 1 6 9 8 51 4)))
 
 	(test (heap? heap))
-	(test (= (heap/size heap) 0))
+	(test (= (heap-size heap) 0))
 
-	(for-each (lambda (x) (heap/add heap x)) data)
-	(test (= (heap/size heap) (length data)))
+	(for-each (lambda (x) (heap-add heap x)) data)
+	(test (= (heap-size heap) (length data)))
 
 	(for-each (lambda (x)
-		    (test (= (heap/remove heap) x)))
+		    (test (= (heap-remove heap) x)))
 		  (sort (copy-sequence data)))
 
-	(test (= (heap/size heap) 0))))))
+	(test (= (heap-size heap) 0))))))

@@ -53,29 +53,29 @@
 				       (fluid found-strings))))))
 
   (define (includedp name)
-    (or (eq (fluid included-definers) t)
+    (or (eq? (fluid included-definers) t)
 	(memq name (fluid included-definers))))
 
   (define (scan form)
 
-    (if (and (consp form) (eq (car form) '_) (stringp (nth 1 form)))
+    (if (and (pair? form) (eq? (car form) '_) (string? (nth 1 form)))
 	(register (nth 1 form))
 
-      (when (and (car form) (macrop (car form)))
+      (when (and (car form) (macro? (car form)))
 	(setq form (macroexpand form)))
 
-      (when (consp form)
+      (when (pair? form)
 	(case (car form)
 	  ((quote))
 
 	  ((setq setq-default %define)
 	   (do ((tem (cdr form) (cddr tem)))
-	       ((null (cdr tem)))
+	       ((null? (cdr tem)))
 	     (scan (cadr tem))))
 
 	  ((let let* letrec let-fluids)
 	   (setq form (cdr form))
-	   (when (symbolp (car form))
+	   (when (symbol? (car form))
 	     (setq form (cdr form)))
 	   (let loop ((vars (car form)))
 	     (when vars
@@ -94,7 +94,7 @@
 	  ((defun defmacro defsubst defvar defconst)
 	   (when (includedp (car form))
 	     (let ((doc (nth 3 form)))
-	       (when (stringp doc)
+	       (when (string? doc)
 		 (register doc))))
 	   (if (memq (car form) '(defun defmacro defsubst))
 	       (scan-list (nthcdr 3 form))

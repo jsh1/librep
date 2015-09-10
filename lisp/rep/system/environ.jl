@@ -32,7 +32,7 @@
 `*process-environment*' is used to find the value."
   (let ((regexp (concat (quote-regexp name) #\=)))
     (let loop ((rest *process-environment*))
-      (cond ((null rest) nil)
+      (cond ((null? rest) nil)
 	    ((string-looking-at regexp (car rest))
 	     (substring (car rest) (match-end)))
 	    (t (loop (cdr rest)))))))
@@ -43,7 +43,7 @@
 The `*process-environment*' variable is destructively modified."
   (let ((regexp (concat (quote-regexp name) #\=)))
     (let loop ((rest *process-environment*))
-      (cond ((null rest)
+      (cond ((null? rest)
 	     (setq *process-environment* (cons (concat name #\= value)
 					       *process-environment*)))
 	    ((string-looking-at regexp (car rest))
