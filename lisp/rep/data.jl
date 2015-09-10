@@ -37,10 +37,6 @@ string INPUT."
 (defun setcar (cell x) (rplaca cell x) x)
 (defun setcdr (cell x) (rplacd cell x) x)
 
-;; Some function pseudonyms
-(%define string= equal)
-(%define string< <)
-
 (defun member-if (fun lst)
   "Similar to the `member' function, except that the function FUN is
 called to test the elements for matches. If `(FUN ELT)' returns true,
@@ -71,8 +67,8 @@ returns false."
   "Returns a new copy of LST with all elements `eq' to ELT discarded."
   (remove-if (lambda (x) (eq x elt)) lst))
 
-(export-bindings '(assoc-regexp setcar setcdr string= string<
-		   member-if remove-if remove-if-not remove remq))
+(export-bindings '(assoc-regexp setcar setcdr member-if remove-if
+		   remove-if-not remove remq))
 
 
 ;; cons accessors

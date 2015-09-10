@@ -109,8 +109,8 @@
     (setq user (remote-get-user host)))
   (catch 'foo
     (for-each (lambda (s)
-		(when (and (string= (aref s remote-rep-host) host)
-			   (string= (aref s remote-rep-user) user))
+		(when (and (string=? (aref s remote-rep-host) host)
+			   (string=? (aref s remote-rep-user) user))
 		  ;; Move S to the head of the list
 		  (setq remote-rep-sessions
 			(cons s (delq s remote-rep-sessions)))
@@ -160,12 +160,12 @@
 (defun remote-rep-close-host (host #!optional user)
   "Close the rep-remote subprocess connected to `USER@HOST'."
   (interactive "sHost:\nsUser:")
-  (when (or (null user) (string= user ""))
+  (when (or (null user) (string=? user ""))
     (setq user (remote-get-user host)))
   (catch 'foo
     (for-each (lambda (s)
-		(when (and (string= (aref s remote-rep-host) host)
-			   (string= (aref s remote-rep-user) user))
+		(when (and (string=? (aref s remote-rep-host) host)
+			   (string=? (aref s remote-rep-user) user))
 		  (remote-rep-close-session s)
 		  (throw 'foo t)))
 	      remote-rep-sessions)))
@@ -483,14 +483,14 @@
 (defconst remote-rep-cache-struct-size 3)
 
 (defun remote-rep-file-owner-p (session file)
-  (string= (aref session remote-rep-user)
+  (string=? (aref session remote-rep-user)
 	   (aref file remote-rep-file-user)))
 
 (defun remote-rep-dir-cached-p (session dir)
   (setq dir (directory-file-name dir))
   (catch 'exit
     (for-each (lambda (dir-entry)
-		(when (string= (aref dir-entry remote-rep-cache-dir) dir)
+		(when (string=? (aref dir-entry remote-rep-cache-dir) dir)
 		  (throw 'exit dir-entry)))
 	      (aref session remote-rep-dircache))))
 
@@ -499,11 +499,11 @@
       ((dir (file-name-directory filename))
        (base (file-name-nondirectory filename))
        entry)
-    (when (string= base "")
+    (when (string=? base "")
       ;; hack, hack
       (setq base (file-name-nondirectory dir)
 	    dir (file-name-directory dir))
-      (when (string= base "")
+      (when (string=? base "")
 	(setq base ".")))
     (setq dir (directory-file-name dir))
     (setq entry (remote-rep-dir-cached-p session dir))
@@ -542,7 +542,7 @@
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
       (for-each (lambda (f)
-		  (when (string= (aref f remote-rep-file-name) base)
+		  (when (string=? (aref f remote-rep-file-name) base)
 		    (throw 'return f)))
 		(aref entry remote-rep-cache-entries))
       nil)))
@@ -628,7 +628,7 @@
       ((joined (concat user #\@ host)))
     (catch 'foo
       (for-each (lambda (cell)
-		  (when (string= (car cell) joined)
+		  (when (string=? (car cell) joined)
 		    (setcdr cell passwd)
 		    (throw 'foo)))
 		remote-rep-passwd-alist)
@@ -713,8 +713,8 @@
     (let
 	((session (remote-rep-open-host (nth 1 split-name) (car split-name)))
 	 (dest-split (remote-split-filename (nth 1 args))))
-      (or (and (string= (car dest-split) (car split-name))
-	       (string= (nth 1 dest-split) (nth 1 split-name)))
+      (or (and (string=? (car dest-split) (car split-name))
+	       (string=? (nth 1 dest-split) (nth 1 split-name)))
 	  (error "Can't rename files across rep sessions"))
       (remote-rep-mv session (nth 2 split-name) (nth 2 dest-split))))
    (t

@@ -88,7 +88,7 @@
 				   (repl-set-pending repl input)
 				   (throw 'return
 					  (and input
-					       (not (string= "" input))))))))
+					       (not (string=? "" input))))))))
 		      (let ((result (repl-eval form)))
 			(unless (eq result #undefined)
 			  (format *standard-output* "%S\n" result))))))

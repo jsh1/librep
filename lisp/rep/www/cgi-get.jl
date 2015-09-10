@@ -52,7 +52,7 @@
 		     (substring query-string (match-start 1) (match-end 1)))))
 	(setq value (unquote
 		     (substring query-string (match-start 2) (match-end 2))))
-	(when (string= value "")
+	(when (string=? value "")
 	  (setq value nil))
 	(setq params (cons (cons name value) params)))
       (nreverse params)))

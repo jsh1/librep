@@ -75,10 +75,10 @@
 		      (setq arg (car *command-line-args*))
 		      (setq *command-line-args* (cdr *command-line-args*))
 		      (do-load arg))
-		     ((string= arg "--check")
+		     ((string=? arg "--check")
 		      (require 'rep.test.framework)
 		      (run-self-tests-and-exit))
-		     ((string= arg "--help")
+		     ((string=? arg "--help")
 		      (format *standard-error* "\
 usage: %s [OPTIONS...]
 
@@ -105,7 +105,7 @@ where OPTIONS are any of:
     --no-rc		don't load rc or site-init files
     --quit, -q		terminate the interpreter process\n" program-name)
 		      (throw 'quit 0))
-		     ((string= arg "--version")
+		     ((string=? arg "--version")
 		      (format *standard-output* "rep version %s\n" rep-version)
 		      (throw 'quit 0))
 		     ((member arg '("--quit" "-q"))

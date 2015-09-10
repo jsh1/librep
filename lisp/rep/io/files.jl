@@ -29,7 +29,7 @@
 
 (defun file-name= (name1 name2)
   "Returns t when NAME1 and NAME2 both name the same file."
-  (string= (canonical-file-name name1) (canonical-file-name name2)))
+  (string=? (canonical-file-name name1) (canonical-file-name name2)))
 
 (defun file-newer-than-file-p (file1 file2)
   "Returns t when FILE1 was modified more recently than FILE2."

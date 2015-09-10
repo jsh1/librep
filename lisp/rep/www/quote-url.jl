@@ -60,13 +60,13 @@ internet drafts directory for a copy.")
 ;; Tests
 
   (define (self-test)
-    (test (string= (quote-url "http://www.foo.com/bar.html")
+    (test (string=? (quote-url "http://www.foo.com/bar.html")
 		   "http%3A%2F%2Fwww.foo.com%2Fbar.html"))
-    (test (string= (quote-url "http://www.foo.com/~jsh/")
+    (test (string=? (quote-url "http://www.foo.com/~jsh/")
 		   "http%3A%2F%2Fwww.foo.com%2F~jsh%2F"))
-    (test (string= (unquote-url "http%3A%2F%2Fwww.foo.com%2Fbar.html")
+    (test (string=? (unquote-url "http%3A%2F%2Fwww.foo.com%2Fbar.html")
 		   "http://www.foo.com/bar.html"))
-    (test (string= (unquote-url "http%3A%2F%2Fwww.foo.com%2F~jsh%2F")
+    (test (string=? (unquote-url "http%3A%2F%2Fwww.foo.com%2F~jsh%2F")
 		   "http://www.foo.com/~jsh/")))
 
   ;;###autoload

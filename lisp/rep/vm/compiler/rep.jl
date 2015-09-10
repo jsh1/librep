@@ -40,16 +40,16 @@
       last member memq arrayp aref substring concat length elt lognot not
       logior logxor logand equal = /= > < >= <= ash zerop null atom consp
       listp numberp integerp stringp vectorp bytecodep functionp macrop
-      special-form-p subrp sequencep string-head-eq string-equal
-      string-lessp string-match string-looking-at quote-regexp
+      string<=? string>? string>=? string-ci=? string-ci<? string-ci<=?
+      string-ci>? string-ci>=? special-form-p subrp sequencep
+      string-head-eq string-match string-looking-at quote-regexp
       complete-string alpha-char-p upper-case-p lower-case-p
       digit-char-p alphanumericp space-char-p char-upcase char-downcase
       quotient floor ceiling truncate round exp log sin cos tan asin acos
       atan sqrt expt prin1-to-string read-from-string assoc-regexp
-      string= string< nop identity caar cdar cadr cddr caaar cdaar
-      cadar cddar caadr cdadr caddr cdddr positivep negativep oddp
-      evenp abs lcm % modulo lsh string-upper-case-p string-lower-case-p
-      string-capitalized-p))
+      nop identity caar cdar cadr cddr caaar cdaar cadar cddar caadr
+      cdadr caddr cdddr positivep negativep oddp evenp abs lcm % modulo
+      lsh string-upper-case-p string-lower-case-p string-capitalized-p))
 
   ;; List of symbols, when the name of the function called by a top-level
   ;; form is one of these that form is compiled.
@@ -1265,10 +1265,6 @@
     (put 'expt 'rep-compile-opcode 'expt)
 
     ;; some pseudonyms
-    (put 'string= 'rep-compile-fun compile-2-args)
-    (put 'string= 'rep-compile-opcode 'equal)
-    (put 'string< 'rep-compile-fun compile-transitive-relation)
-    (put 'string< 'rep-compile-opcode 'lt)
     (put '% 'rep-compile-fun compile-2-args)
     (put '% 'rep-compile-opcode 'rem)
     (put 'modulo 'rep-compile-fun compile-2-args)

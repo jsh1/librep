@@ -82,7 +82,7 @@ accessed on specific hosts.")
 
 	   ((eq op 'file-name-as-directory)
 	    (remote-join-filename (car split) (nth 1 split)
-				  (if (string= (nth 2 split) "")
+				  (if (string=? (nth 2 split) "")
 				      ""
 				    (file-name-as-directory (nth 2 split)))))
 

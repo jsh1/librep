@@ -280,13 +280,13 @@
 
 (defun tarfh-file-owner-p (file)
   ;; XXX maybe just return t always?
-  (string= (user-login-name) (aref file tarfh-file-user)))
+  (string=? (user-login-name) (aref file tarfh-file-user)))
 
 (defun tarfh-tarfile-cached-p (tarfile)
   (setq tarfile (canonical-file-name tarfile))
   (catch 'exit
     (for-each (lambda (dir-entry)
-		(when (string= tarfile (aref dir-entry tarfh-cache-tarfile))
+		(when (string=? tarfile (aref dir-entry tarfh-cache-tarfile))
 		  (throw 'exit dir-entry)))
 	      tarfh-dir-cache)))
 
@@ -320,7 +320,7 @@
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
       (for-each (lambda (f)
-		  (when (string= (aref f tarfh-file-name) filename)
+		  (when (string=? (aref f tarfh-file-name) filename)
 		    (throw 'return f)))
 		(aref entry tarfh-cache-entries)))))
 

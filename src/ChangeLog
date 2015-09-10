@@ -1,3 +1,8 @@
+2015-09-10  John Harper  <jsh@unfactored.org>
+
+	* strings.c: replaced string-equal and string-lessp by a full
+	set of scheme string comparators
+
 2015-09-09  John Harper  <jsh@unfactored.org>
 
 	* streams.c, rep_lisp.h, rep-xgettext.jl, processes.c, print.c,

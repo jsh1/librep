@@ -211,7 +211,7 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	  (setq total-seconds (- total-seconds 86400))
 	  (setq total-days (1+ total-days))))
       
-      (when (and (string= day-abbrev "") total-days)
+      (when (and (string=? day-abbrev "") total-days)
 	;; January 1, 1970 was a Thursday
 	(let ((dow (% (+ total-days 4) 7)))
 	  (when (< dow 0)

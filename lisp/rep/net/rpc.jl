@@ -363,7 +363,7 @@ becomes invalid."
   (define proxy-token (cons))
 
   ;; table mapping GLOBAL-ID -> PROXY-WEAK-REF
-  (define proxy-table (make-table string-hash string=))
+  (define proxy-table (make-table string-hash string=?))
 
   (define (make-proxy server port servant-id)
     (let ((global-id (make-global-id server port servant-id)))

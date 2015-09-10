@@ -54,7 +54,7 @@
 	    ((< (length p1) (length p2))
 	     (loop p1 (cdr p2) (1- ret)))
 	    ((and p1 p2)
-	     (if (string= (car p1) (car p2))
+	     (if (string=? (car p1) (car p2))
 		 (loop (cdr p1) (cdr p2) ret)
 	       nil))
 	    (t ret))))
@@ -71,7 +71,7 @@
 
   (define (domain-equal-p d1 d2)
     "Return true if the domain names D1 and D2 are the same"
-    (string= d1 d2))
+    (string=? d1 d2))
 
   (define (map-domains fun domain)
     "Call (FUN NAME) for each sub-domain of DOMAIN (starting with DOMAIN)."

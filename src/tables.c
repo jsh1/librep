@@ -176,7 +176,7 @@ DEFUN("string-hash", Fstring_hash, Sstring_hash, (repv string), rep_Subr1) /*
 string-hash STRING
 
 Return a positive fixnum somehow related to the contents of STRING,
-such that (string= X Y) implies (= (string-hash X) (string-hash Y)).
+such that (string=? X Y) implies (= (string-hash X) (string-hash Y)).
 ::end:: */
 {
   rep_DECLARE1(string, rep_STRINGP);

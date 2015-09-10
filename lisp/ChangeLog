@@ -1,3 +1,15 @@
+2015-09-10  John Harper  <jsh@unfactored.org>
+
+	* rep/data.jl, rep/io/file-handlers/remote.jl,
+	rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/ftp.jl,
+	rep/io/file-handlers/tar.jl, rep/io/files.jl, rep/net/rpc.jl,
+	rep/net/domain-name.jl, rep/test/data.jl, rep/user.jl,
+	rep/util/repl.jl, rep/util/gaol.jl, rep/util/date.jl,
+	rep/vm/compiler/rep.jl, rep/www/quote-url.jl,
+	rep/www/cgi-get.jl, rep/xml/reader.jl: use standard string
+	comparators
+
 2015-09-09  John Harper  <jsh@unfactored.org>
 
 	* many changes to track updates to C code

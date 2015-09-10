@@ -490,52 +490,208 @@ Returns t if STRING2 matches the beginning of STRING1, i.e.,
   return (*s1 || (*s1 == *s2)) ? Qt : rep_nil;
 }
 
-DEFUN("string-equal", Fstring_equal, Sstring_equal,
+static repv
+string_compare(repv str1, repv str2)
+{
+  rep_DECLARE1(str1, rep_STRINGP);
+  rep_DECLARE2(str2, rep_STRINGP);
+
+  const char *s1 = rep_STR(str1);
+  const char *s2 = rep_STR(str2);
+
+  while (*s1 && *s2) {
+    int c1 = *s1++;
+    int c2 = *s2++;
+    if (c1 != c2) {
+      return rep_MAKE_INT(c1 - c2);
+    }
+  }
+
+  if (*s1) {
+    return rep_MAKE_INT(1);
+  } else if (*s2) {
+    return rep_MAKE_INT(-1);
+  } else {
+    return rep_MAKE_INT(0);
+  }
+}
+
+static repv
+string_compare_ci(repv str1, repv str2)
+{
+  rep_DECLARE1(str1, rep_STRINGP);
+  rep_DECLARE2(str2, rep_STRINGP);
+
+  const char *s1 = rep_STR(str1);
+  const char *s2 = rep_STR(str2);
+
+  while (*s1 && *s2) {
+    int c1 = rep_toupper(*s1++);
+    int c2 = rep_toupper(*s2++);
+    if (c1 != c2) {
+      return rep_MAKE_INT(c1 - c2);
+    }
+  }
+
+  if (*s1) {
+    return rep_MAKE_INT(1);
+  } else if (*s2) {
+    return rep_MAKE_INT(-1);
+  } else {
+    return rep_MAKE_INT(0);
+  }
+}
+
+DEFUN("string=?", Fstring_equal, Sstring_equal,
       (repv str1, repv str2), rep_Subr2) /*
-::doc:rep.data#string-equal::
+::doc:rep.data#string=?::
 string-equal STRING1 STRING2
 
 Returns t if STRING1 and STRING2 are the same, ignoring case.
 ::end:: */
 {
-  rep_DECLARE1(str1, rep_STRINGP);
-  rep_DECLARE2(str2, rep_STRINGP);
-
-  const char *s1 = rep_STR(str1);
-  const char *s2 = rep_STR(str2);
-
-  while (*s1 && *s2) {
-    if (rep_toupper(*s1) != rep_toupper(*s2)) {
-      return rep_nil;
-    }
-    s1++; s2++;
+  repv ret = string_compare(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) == 0 ? Qt : rep_nil;
   }
-
-  return (*s1 || *s2) ? rep_nil : Qt;
+  return ret;
 }
 
-DEFUN("string-lessp", Fstring_lessp, Sstring_lessp,
+DEFUN("string<?", Fstring_less, Sstring_less,
       (repv str1, repv str2), rep_Subr2) /*
-::doc:rep.data#string-lessp::
+::doc:rep.data#string<?::
 string-lessp STRING1 STRING2
 
-Returns t if STRING1 is `less' than STRING2, ignoring case.
+Returns t if STRING1 is less than STRING2, ignoring case.
 ::end:: */
 {
-  rep_DECLARE1(str1, rep_STRINGP);
-  rep_DECLARE2(str2, rep_STRINGP);
-
-  const char *s1 = rep_STR(str1);
-  const char *s2 = rep_STR(str2);
-
-  while (*s1 && *s2) {
-    if (rep_toupper(*s1) != rep_toupper(*s2)) {
-      return (rep_toupper(*s1) < rep_toupper(*s2)) ? Qt : rep_nil;
-    }
-    s1++; s2++;
+  repv ret = string_compare(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) < 0 ? Qt : rep_nil;
   }
+  return ret;
+}
 
-  return *s2 ? Qt : rep_nil;
+DEFUN("string<=?", Fstring_less_equal, Sstring_less_equal,
+      (repv str1, repv str2), rep_Subr2) /*
+::doc:rep.data#string<=?::
+string-lessp STRING1 STRING2
+
+Returns t if STRING1 is less than or equal to STRING2, ignoring case.
+::end:: */
+{
+  repv ret = string_compare(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) <= 0 ? Qt : rep_nil;
+  }
+  return ret;
+}
+
+DEFUN("string>?", Fstring_greater, Sstring_greater,
+      (repv str1, repv str2), rep_Subr2) /*
+::doc:rep.data#string>?::
+string-lessp STRING1 STRING2
+
+Returns t if STRING1 is greater than STRING2, ignoring case.
+::end:: */
+{
+  repv ret = string_compare(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) > 0 ? Qt : rep_nil;
+  }
+  return ret;
+}
+
+DEFUN("string>=?", Fstring_greater_equal, Sstring_greater_equal,
+      (repv str1, repv str2), rep_Subr2) /*
+::doc:rep.data#string>=?::
+string-lessp STRING1 STRING2
+
+Returns t if STRING1 is greater than or equal to STRING2, ignoring
+case.
+::end:: */
+{
+  repv ret = string_compare(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) >= 0 ? Qt : rep_nil;
+  }
+  return ret;
+}
+
+DEFUN("string-ci=?", Fstring_equal_ci, Sstring_equal_ci,
+      (repv str1, repv str2), rep_Subr2) /*
+::doc:rep.data#string-ci=?::
+string-equal STRING1 STRING2
+
+Returns t if STRING1 and STRING2 are the same, ignoring case.
+::end:: */
+{
+  repv ret = string_compare_ci(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) == 0 ? Qt : rep_nil;
+  }
+  return ret;
+}
+
+DEFUN("string-ci<?", Fstring_less_ci, Sstring_less_ci,
+      (repv str1, repv str2), rep_Subr2) /*
+::doc:rep.data#string-ci<?::
+string-lessp STRING1 STRING2
+
+Returns t if STRING1 is less than STRING2, ignoring case.
+::end:: */
+{
+  repv ret = string_compare_ci(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) < 0 ? Qt : rep_nil;
+  }
+  return ret;
+}
+
+DEFUN("string-ci<=?", Fstring_less_equal_ci, Sstring_less_equal_ci,
+      (repv str1, repv str2), rep_Subr2) /*
+::doc:rep.data#string-ci<=?::
+string-lessp STRING1 STRING2
+
+Returns t if STRING1 is less than or equal to STRING2, ignoring case.
+::end:: */
+{
+  repv ret = string_compare_ci(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) <= 0 ? Qt : rep_nil;
+  }
+  return ret;
+}
+
+DEFUN("string-ci>?", Fstring_greater_ci, Sstring_greater_ci,
+      (repv str1, repv str2), rep_Subr2) /*
+::doc:rep.data#string-ci>?::
+string-lessp STRING1 STRING2
+
+Returns t if STRING1 is greater than STRING2, ignoring case.
+::end:: */
+{
+  repv ret = string_compare_ci(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) > 0 ? Qt : rep_nil;
+  }
+  return ret;
+}
+
+DEFUN("string-ci>=?", Fstring_greater_equal_ci, Sstring_greater_equal_ci,
+      (repv str1, repv str2), rep_Subr2) /*
+::doc:rep.data#string-ci>=?::
+string-lessp STRING1 STRING2
+
+Returns t if STRING1 is greater than or equal to STRING2, ignoring
+case.
+::end:: */
+{
+  repv ret = string_compare_ci(str1, str2);
+  if (ret) {
+    ret = rep_INT(ret) >= 0 ? Qt : rep_nil;
+  }
+  return ret;
 }
 
 DEFUN("translate-string", Ftranslate_string,
@@ -647,7 +803,15 @@ rep_strings_init(void)
   rep_ADD_SUBR(Sconcat);
   rep_ADD_SUBR(Sstring_head_eq);
   rep_ADD_SUBR(Sstring_equal);
-  rep_ADD_SUBR(Sstring_lessp);
+  rep_ADD_SUBR(Sstring_less);
+  rep_ADD_SUBR(Sstring_less_equal);
+  rep_ADD_SUBR(Sstring_greater);
+  rep_ADD_SUBR(Sstring_greater_equal);
+  rep_ADD_SUBR(Sstring_equal_ci);
+  rep_ADD_SUBR(Sstring_less_ci);
+  rep_ADD_SUBR(Sstring_less_equal_ci);
+  rep_ADD_SUBR(Sstring_greater_ci);
+  rep_ADD_SUBR(Sstring_greater_equal_ci);
   rep_ADD_SUBR(Stranslate_string);
   rep_ADD_SUBR(Scomplete_string);
   rep_pop_structure(tem);
