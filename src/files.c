@@ -101,8 +101,6 @@ accessed in the buffer are resolved from (unless they're absolute.)
 /* List of all allocated file objects */
 static rep_file *file_list;
 
-int rep_file_type;
-
 DEFSYM(file_name_absolute_p, "file-name-absolute?");
 DEFSYM(expand_file_name, "expand-file-name");
 DEFSYM(local_file_name, "local-file-name");
@@ -676,7 +674,7 @@ make_file(void)
   repv file = rep_VAL(rep_alloc(sizeof(rep_file)));
   rep_data_after_gc += sizeof(rep_file);
 
-  rep_FILE(file)->car = rep_file_type | rep_LFF_BOGUS_LINE_NUMBER;
+  rep_FILE(file)->car = rep_File | rep_LFF_BOGUS_LINE_NUMBER;
   rep_FILE(file)->name = rep_nil;
   rep_FILE(file)->handler = rep_nil;
   rep_FILE(file)->handler_data = rep_nil;
@@ -1806,6 +1804,7 @@ rep_files_init(void)
   rep_pop_structure(tem);
 
   static rep_type file = {
+    .car = rep_File,
     .name = "file",
     .print = file_prin,
     .sweep = file_sweep,
@@ -1813,7 +1812,7 @@ rep_files_init(void)
     .mark_type = mark_input_handlers,
   };
 
-  rep_file_type = rep_define_type(&file);
+  rep_define_type(&file);
 }
 
 void

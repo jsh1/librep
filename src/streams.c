@@ -60,6 +60,16 @@ return the string to be inserted.
 int
 rep_stream_getc(repv stream)
 {
+  /* Fast path for `load` from local file. */
+
+  if (rep_FILEP(stream) && rep_LOCAL_FILE_P(stream)) {
+    int c = getc(rep_FILE(stream)->file.fh);
+    if (c == '\n') {
+      rep_FILE(stream)->line_number++;
+    }
+    return c;
+  }
+
   if (stream == rep_nil) {
     stream = Fsymbol_value(Qstandard_input, rep_nil);
     if (!stream) {

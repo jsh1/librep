@@ -1,5 +1,11 @@
 2015-09-10  John Harper  <jsh@unfactored.org>
 
+	* streams.c, rep_subrs.h, rep_lisp.h, read.c, librep.sym,
+	files.c: give files the last cell8 type code, and add the fast
+	local-file path into the top of rep_stream_getc() -- allows us
+	to remove the non-reentrant local-file special case from the
+	reader
+
 	* vectors.c, variables.c, tables.c, symbols.c, structures.c,
 	strings.c, streams.c, sockets.c, sequences.c, rep-sdbm.c,
 	rep-gdbm.c, readline.c, processes.c, numbers.c, lists.c,

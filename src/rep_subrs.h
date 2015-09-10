@@ -69,7 +69,6 @@ extern repv Qdefault_directory;
 extern repv Qstart, Qend;
 extern repv Qread, Qwrite, Qappend;
 extern repv rep_fh_env;
-extern int rep_file_type;
 extern int rep_op_write_buffer_contents;
 extern int rep_op_read_file_contents;
 extern int rep_op_insert_file_contents;

@@ -272,7 +272,7 @@ typedef struct rep_type_struct {
 #define rep_String	0x05
 #define rep_Bytecode	0x07		/* a vector */
 #define rep_Void	0x09
-#define rep_Reserved	0x0b
+#define rep_File	0x0b
 #define rep_Number	0x0d
 #define rep_SF		0x0f
 #define rep_Subr0	0x11
@@ -288,7 +288,6 @@ typedef struct rep_type_struct {
 #define rep_CELL_TYPE(v) (rep_CONSP(v) ? rep_Cons		\
 			  : !rep_CELL16P(v) ? rep_CELL8_TYPE(v)	\
 			  : rep_CELL16_TYPE(v))
-
 /* Return a type code given a repv */
 #define rep_TYPE(v)	(rep_INTP(v) ? rep_Int : rep_CELL_TYPE(v))
 
@@ -526,12 +525,12 @@ typedef struct rep_file_struct {
 
 } rep_file;
 
-#define rep_LFF_DONT_CLOSE	(1 << (rep_CELL16_TYPE_BITS + 0))
-#define rep_LFF_BOGUS_LINE_NUMBER (1 << (rep_CELL16_TYPE_BITS + 1))
-#define rep_LFF_SILENT_ERRORS	(1 << (rep_CELL16_TYPE_BITS + 2))
+#define rep_LFF_DONT_CLOSE	(1 << (rep_CELL8_TYPE_BITS + 0))
+#define rep_LFF_BOGUS_LINE_NUMBER (1 << (rep_CELL8_TYPE_BITS + 1))
+#define rep_LFF_SILENT_ERRORS	(1 << (rep_CELL8_TYPE_BITS + 2))
 
 #define rep_FILE(v)		((rep_file *)rep_PTR(v))
-#define rep_FILEP(v)		rep_CELL16_TYPEP(v, rep_file_type)
+#define rep_FILEP(v)		rep_CELL8_TYPEP(v, rep_File)
 
 #define rep_LOCAL_FILE_P(v)	(rep_FILE(v)->handler == Qt)
 

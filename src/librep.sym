@@ -550,7 +550,6 @@ rep_event_loop
 rep_event_loop_fun
 rep_expand_and_get_handler
 rep_file_length
-rep_file_type
 rep_find_c_symbol
 rep_find_dl_symbol
 rep_foldl

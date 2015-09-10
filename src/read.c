@@ -44,25 +44,6 @@ DEFSYM(structure_ref, "structure-ref");
    someone else or unread before exiting... */
 
 static repv readl(repv, register int *, repv);
-
-/* Inline common case of reading from local files; this appears to
-   decrease startup time by about 25% */
-
-static bool reading_from_local_file;
-
-static int
-fast_getc(repv stream)
-{
-  if (reading_from_local_file) {
-    int c = getc(rep_FILE(stream)->file.fh);
-    if (c == '\n') {
-      rep_FILE(stream)->line_number++;
-    }
-    return c;
-  }
-
-  return rep_stream_getc(stream);
-}
  
 static repv
 signal_reader_error(repv type, repv stream, char *message)
@@ -91,7 +72,7 @@ read_comment(repv strm, int *c_p)
   int depth = 1;
   int c;
 
-  while ((c = fast_getc(strm)) != EOF) {
+  while ((c = rep_stream_getc(strm)) != EOF) {
   again:
     if (c == terminator) {
       c = rep_stream_getc(strm);
@@ -131,7 +112,10 @@ read_list(repv strm, register int *c_p)
   rep_GC_root gc_result;
   rep_PUSHGC(gc_result, result);
 
-  int start_line = reading_from_local_file ? rep_FILE(strm)->line_number : -1;
+  int start_line = -1;
+  if (rep_FILEP(strm)) {
+    start_line = rep_FILE(strm)->line_number;
+  }
 
   *c_p = rep_stream_getc(strm);
 
@@ -147,16 +131,16 @@ read_list(repv strm, register int *c_p)
     case '\n':
     case '\r':
     case '\f':
-      *c_p = fast_getc(strm);
+      *c_p = rep_stream_getc(strm);
       continue;
 
     case ';': {
       int c;
-      while ((c = fast_getc(strm)) != EOF
+      while ((c = rep_stream_getc(strm)) != EOF
 	     && c != '\n' && c != '\f' && c != '\r')
       {
       }
-      *c_p = fast_getc(strm);
+      *c_p = rep_stream_getc(strm);
       continue; }
 
     case ')':
@@ -419,7 +403,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
       buf[buf_i++] = c;
     }
 
-    c = fast_getc(strm);
+    c = rep_stream_getc(strm);
   }
 
 done:
@@ -527,7 +511,7 @@ read_str(repv strm, int *c_p)
       }
     } else {
       buf[buf_i++] = c;
-      c = fast_getc(strm);
+      c = rep_stream_getc(strm);
     }
   }
 
@@ -665,7 +649,7 @@ read_character(repv strm, int *c_p)
     if (char_names[i].name[0] == c && char_names[i].name[1] == c2) {
       char *ptr = char_names[i].name + 2;
       while (1) {
-	c = fast_getc(strm);
+	c = rep_stream_getc(strm);
 	if (*ptr == 0) {
 	  *c_p = c;
 	  return rep_MAKE_INT(char_names[i].value);
@@ -702,12 +686,12 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
     case '\n':
     case '\f':
     case '\r':
-      *c_p = fast_getc(strm);
+      *c_p = rep_stream_getc(strm);
       continue;
 
     case ';': {
       int c;
-      while ((c = fast_getc(strm)) != EOF
+      while ((c = rep_stream_getc(strm)) != EOF
 	     && c != '\n' && c != '\f' && c != '\r')
       {
       }
@@ -919,14 +903,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 repv
 rep_readl(repv stream, int *c_p)
 {
-  bool old = reading_from_local_file;
-  reading_from_local_file = rep_FILEP(stream) && rep_LOCAL_FILE_P(stream);
-
-  repv form = readl(stream, c_p, Qend_of_stream);
-
-  reading_from_local_file = old;
-
-  return form;
+  return readl(stream, c_p, Qend_of_stream);
 }
 
 void
