@@ -271,7 +271,7 @@ typedef struct rep_type_struct {
 #define rep_Cons	0x04		/* made up */
 #define rep_String	0x05
 #define rep_Bytecode	0x07		/* a vector */
-#define rep_Void	0x09
+#define rep_Datum	0x09
 #define rep_File	0x0b
 #define rep_Number	0x0d
 #define rep_SF		0x0f
@@ -315,11 +315,15 @@ typedef struct {
 
 /* End-of-list / false value. */
 
-extern rep_tuple rep_eol_datum;
+extern rep_tuple rep_eol_datum, rep_void_datum;
 
 #define rep_nil rep_VAL(&rep_eol_datum)
+#define rep_void rep_VAL(&rep_void_datum)
+
+#define rep_VOIDP(v)		((v) == rep_void)
 
 
+
 /* Numbers (private defs in numbers.c) */
 
 /* Is V a non-fixnum number? */
@@ -610,9 +614,6 @@ typedef struct rep_closure_struct {
 
 
 /* Other definitions */
-
-/* Macros for other types */
-#define rep_VOIDP(v)	rep_CELL8_TYPEP(v, rep_Void)
 
 /* Building lists */
 #define rep_LIST_1(v1)			Fcons(v1, rep_nil)

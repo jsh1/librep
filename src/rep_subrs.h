@@ -415,7 +415,6 @@ extern int rep_unbind_symbols(repv);
 extern repv rep_obarray;
 extern repv Qt;
 extern repv Qvariable_documentation, Qpermanent_local;
-extern repv rep_void_value;
 extern bool rep_warn_shadowing;
 extern repv Fmake_symbol(repv);
 extern repv Fmake_obarray(repv);

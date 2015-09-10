@@ -150,10 +150,6 @@ rep_lisp_prin(repv strm, repv obj)
     rep_stream_putc(strm, '>');
     break;
 
-  case rep_Void:
-    rep_stream_puts(strm, "#<void>", -1, false);
-    break;
-
   default:
     rep_stream_puts(strm, "#<unknown object type>", -1, false);
   }

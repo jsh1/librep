@@ -146,11 +146,6 @@ rep_types_init(void)
     .compare = rep_vector_cmp,
     .print = rep_lisp_prin,
   }, {
-    .car = rep_Void,
-    .name = "void",
-    .compare = rep_type_cmp,
-    .print = rep_lisp_prin,
-  }, {
     .car = rep_SF,
     .name = "special-form",
     .print = rep_lisp_prin,

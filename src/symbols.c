@@ -37,13 +37,10 @@ DEFSYM(t, "t");
 
 /* Void value. */
 
-rep_ALIGN_CELL(static rep_cell void_object) = {rep_Void};
-repv rep_void_value = rep_VAL(&void_object);
-
 /* Value that marks end of an obarray hash-bucket list. It can be any
    Lisp value which isn't a symbol.  */
 
-#define OB_NIL rep_VAL(&void_object)
+#define OB_NIL rep_void
 
 /* #f, #t and #undefined pseudo-symbols. */
 

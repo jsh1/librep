@@ -26,18 +26,18 @@
 
 #include "repint.h"
 
-static int datum_type;
-
 /* List of (ID . PRINTER) */
 static repv printer_alist;
 
-#define DATUMP(x) rep_CELL16_TYPEP(x, datum_type)
+#define DATUMP(x) rep_CELL8_TYPEP(x, rep_Datum)
 #define DATUM(x) ((datum *)rep_PTR (x))
 
 #define DATUM_ID(x) (rep_TUPLE(x)->a)
 #define DATUM_VALUE(x) (rep_TUPLE(x)->b)
 
-rep_tuple rep_eol_datum;
+rep_ALIGN_CELL(rep_tuple rep_eol_datum);
+rep_ALIGN_CELL(rep_tuple rep_void_datum);
+
 repv Qnil;
 
 
@@ -58,6 +58,9 @@ datum_print(repv stream, repv arg)
 {    
   if (arg == rep_nil) {
     DEFSTRING(eol, "()");
+    rep_stream_puts(stream, rep_PTR(rep_VAL(&eol)), 2, true);
+  } else if (arg == rep_void) {
+    DEFSTRING(eol, "#<void>");
     rep_stream_puts(stream, rep_PTR(rep_VAL(&eol)), 2, true);
   } else {
     repv printer = Fassq(DATUM_ID(arg), printer_alist);
@@ -85,7 +88,7 @@ Create and return a new data object of type ID (an arbitrary value), it
 will have object VALUE associated with it.
 ::end:: */
 {
-  return rep_make_tuple(datum_type, id, value);
+  return rep_make_tuple(rep_Datum, id, value);
 }
 
 DEFUN("define-datum-printer", Fdefine_datum_printer,
@@ -154,21 +157,26 @@ void
 rep_pre_datums_init(void)
 {
   static rep_type datum = {
+    .car = rep_Datum,
     .name = "datum",
     .compare = datum_cmp,
     .print = datum_print,
     .mark = rep_mark_tuple,
   };
 
-  datum_type = rep_define_type(&datum);
+  rep_define_type(&datum);
 
   /* Including CELL_MARK_BIT means we don't have to worry about GC; the
      cell will never get remarked, and it's not on any allocation lists
      to get swept up from. */
 
-  rep_eol_datum.car = datum_type | rep_CELL_STATIC_BIT | rep_CELL_MARK_BIT;
+  rep_eol_datum.car = rep_Datum | rep_CELL_STATIC_BIT | rep_CELL_MARK_BIT;
   rep_eol_datum.a = rep_VAL(&rep_eol_datum);
   rep_eol_datum.b = rep_VAL(&rep_eol_datum);
+
+  rep_void_datum.car = rep_Datum | rep_CELL_STATIC_BIT | rep_CELL_MARK_BIT;
+  rep_void_datum.a = rep_VAL(&rep_void_datum);
+  rep_void_datum.b = rep_VAL(&rep_void_datum);
 
   Qnil = rep_nil;
 }

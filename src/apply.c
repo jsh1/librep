@@ -209,7 +209,7 @@ again:;
       fprintf(stderr, "rep: culprit is subr %s\n",
 	      rep_STR(rep_XSUBR(lc.fun)->name));
     }
-    result = rep_throw_value ? 0 : rep_void_value;
+    result = rep_throw_value ? 0 : rep_void;
   }
 
   rep_POP_CALL(lc);
@@ -233,11 +233,11 @@ rep_call_lispn(repv fun, int argc, repv *argv)
 
     rep_stack_frame lc;
     lc.fun = fun;
-    lc.args = rep_void_value;
+    lc.args = rep_void;
     rep_PUSH_CALL(lc);
     rep_USE_CLOSURE(fun);
 
-    repv(*bc_apply) (repv, int, repv *);
+    repv (*bc_apply)(repv, int, repv *);
     bc_apply = rep_STRUCTURE(rep_structure)->apply_bytecode;
 
     repv ret;

@@ -151,7 +151,6 @@ again:
     }
     break;
 
-  case rep_Void:
   case rep_Subr0:
   case rep_Subr1:
   case rep_Subr2:

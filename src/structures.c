@@ -823,7 +823,7 @@ Returns a void value if no such binding.
     n = rep_search_imports(s, var);
   }
 
-  return n ? n->binding : rep_void_value;
+  return n ? n->binding : rep_void;
 }
 
 DEFUN("structure-bound?", Fstructure_bound_p,
@@ -1740,7 +1740,7 @@ rep_get_initial_special_value(repv sym)
     if (rep_STRUCTUREP(s)) {
       repv old = F_structure_ref(s, sym);
       if (!rep_VOIDP(old)) {
-	Fstructure_define(s, sym, rep_void_value);
+	Fstructure_define(s, sym, rep_void);
 	cache_invalidate_symbol(sym);
 	return old;
       }

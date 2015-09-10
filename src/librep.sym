@@ -702,5 +702,5 @@ rep_update_last_match
 rep_used_cons
 rep_utime
 rep_value_cmp
-rep_void_value
+rep_void_datum
 rep_wait_for_input_fun

@@ -486,7 +486,7 @@ again: {
 
       rep_stack_frame lc;
       lc.fun = fun;
-      lc.args = rep_void_value;
+      lc.args = rep_void;
       rep_PUSH_CALL(lc);
 
       SYNC_GC;

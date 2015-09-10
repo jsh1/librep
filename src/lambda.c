@@ -22,8 +22,7 @@
 
 /* Used to mark tail calling throws */
 
-rep_ALIGN_CELL(static rep_cell tail_call_tag) = {rep_Void};
-#define TAIL_CALL_TAG rep_VAL(&tail_call_tag)
+static repv tail_call_tag;
 
 DEFSYM(lambda, "lambda");
 
@@ -287,7 +286,7 @@ rep_apply_lambda(repv lambda_exp, repv arg_list, bool tail_posn)
     rep_unbind_symbols(frame);
 
     if (tail_posn || result || !rep_throw_value
-	|| rep_CAR(rep_throw_value) != TAIL_CALL_TAG
+	|| rep_CAR(rep_throw_value) != tail_call_tag
 	|| !rep_CONSP(rep_CDR(rep_throw_value)))
     {
       /* Result isn't a preserved tail-call, exit immediately. Or if
@@ -328,7 +327,7 @@ rep_apply_lambda(repv lambda_exp, repv arg_list, bool tail_posn)
 repv
 rep_tail_call_throw(repv lst)
 {
-  return Fcons(TAIL_CALL_TAG, lst);
+  return Fcons(tail_call_tag, lst);
 }
 
 void
@@ -339,6 +338,10 @@ rep_lambda_init(void)
   DEFSTRING(key, "#!key");
 
   rep_INTERN(lambda);
+
+  tail_call_tag = Fmake_datum(rep_nil, rep_nil);
+  rep_TUPLE(tail_call_tag)->a = tail_call_tag;
+  rep_mark_static(&tail_call_tag);
 
   ex_optional = Fmake_symbol(rep_VAL(&optional));
   ex_rest = Fmake_symbol(rep_VAL(&rest));

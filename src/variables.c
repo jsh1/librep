@@ -311,13 +311,13 @@ symbol_special_value(repv sym, bool only_default)
   int spec = check_special_variable(sym);
 
   if (!(spec < 0 || (spec > 0 && !(rep_SYM(sym)->car & rep_SF_WEAK_MOD)))) {
-    return rep_void_value;
+    return rep_void;
   }
 
   if (!only_default) {
     if (rep_SYM(sym)->car & rep_SF_LOCAL) {
       repv val = (*rep_deref_local_symbol_fun)(sym);
-      if (val != rep_void_value) {
+      if (val != rep_void) {
 	return val;
       }
     }
@@ -447,7 +447,7 @@ SYMBOL in buffers or windows which do not have their own local value.
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
 
-  repv val = rep_void_value;
+  repv val = rep_void;
 
   if (rep_SYM(sym)->car & rep_SF_SPECIAL) {
     val = symbol_special_value(sym, true);
@@ -610,7 +610,7 @@ makunbound SYMBOL
 Make SYMBOL have no value as a variable.
 ::end:: */
 {
-  return Freal_set(sym, rep_void_value);
+  return Freal_set(sym, rep_void);
 }
 
 DEFUN("make-variable-special", Fmake_variable_special,
