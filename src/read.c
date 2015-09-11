@@ -566,7 +566,7 @@ skip_chars(repv stream, const char *str, repv ret, int *ptr)
 }
 
 static repv
-read_character(repv strm, int *c_p)
+read_character(repv stream, int *c_p)
 {
   static const struct {
     char *name;
@@ -621,48 +621,58 @@ read_character(repv strm, int *c_p)
     {"gs",  '\035'},
     {"rs",  '\036'},
     {"us",  '\037'},
-
-    {0, 0}
   };
 
-  int c = rep_stream_getc(strm);
-  if (c == EOF) {
+  int c1 = rep_stream_getc(stream);
+  if (c1 == EOF) {
     return signal_reader_error(Qpremature_end_of_stream,
-			       strm, "During #\\ syntax");
+			       stream, "During #\\ syntax");
   }
 
-  if (!rep_isalpha(c)) {
-    *c_p = rep_stream_getc(strm);
-    return rep_MAKE_INT(c);
+  int c2 = rep_stream_getc(stream);
+
+  if (c1 >= '0' && c1 <= '7' && c2 >= '0' && c2 <= '7') {
+    int c3 = rep_stream_getc(stream);
+    if (c3 >= '0' && c3 <= '7') {
+      // three octal digits => numeric ASCII code
+      *c_p = rep_stream_getc(stream);
+      return rep_MAKE_INT(((c1 - '0') * 8 + (c2 - '0')) * 8 + (c3 - '0'));
+    }
+    rep_stream_ungetc(stream, c3);
   }
 
-  int c2 = rep_stream_getc(strm);
-  if (!rep_isalpha(c2) || c2 == EOF) {
+  // FIXME: also support #\uHHHH syntax for hex Unicode characters
+
+  if (!rep_isalpha(c1) || !rep_isalpha(c2) || c2 == EOF) {
     *c_p = c2;
-    return rep_MAKE_INT(c);
+    return rep_MAKE_INT(c1);
   }
 
-  c = rep_tolower(c);
+  c1 = rep_tolower(c1);
   c2 = rep_tolower(c2);
 
-  for (int i = 0; char_names[i].name != 0; i++) {
-    if (char_names[i].name[0] == c && char_names[i].name[1] == c2) {
-      char *ptr = char_names[i].name + 2;
-      while (1) {
-	c = rep_stream_getc(strm);
-	if (*ptr == 0) {
-	  *c_p = c;
-	  return rep_MAKE_INT(char_names[i].value);
-	}
-	if (c == EOF || rep_tolower(c) != *ptr++) {
-	  return signal_reader_error(Qinvalid_read_syntax, strm,
-				     "Unknown character name");
-	}
-      }
+  char buf[16];
+
+  for (size_t i = 0; i < sizeof(buf) - 1; i++) {
+    int c = rep_stream_getc(stream);
+    if (c == EOF || !rep_isalpha(c)) {
+      *c_p = c;
+      buf[i] = 0;
+      break;
+    }
+    buf[i] = rep_tolower(c);
+  }
+
+  for (size_t i = 0; i < sizeof(char_names) / sizeof(char_names[0]); i++) {
+    if (char_names[i].name[0] == c1
+	&& char_names[i].name[1] == c2
+	&& strcmp(char_names[i].name + 2, buf) == 0)
+    {
+      return rep_MAKE_INT(char_names[i].value);
     }
   }
 
-  return signal_reader_error(Qinvalid_read_syntax, strm,
+  return signal_reader_error(Qinvalid_read_syntax, stream,
 			     "Unknown character name"); 
 }
 
@@ -749,29 +759,6 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 
     case '"':
       return read_str(strm, c_p);
-
-    case '?': {
-      static bool dep;
-      rep_deprecated(&dep, "?C character read syntax");
-      int c;
-      switch (c = rep_stream_getc(strm)) {
-      case EOF:
-	return signal_reader_error(Qpremature_end_of_stream,
-				   strm, "During ? syntax");
-      case '\\':
-	if ((*c_p = rep_stream_getc(strm)) == EOF) {
-	  return signal_reader_error(Qpremature_end_of_stream,
-				     strm, "During ? syntax");
-	} else {
-	  return rep_MAKE_INT(rep_stream_read_esc(strm, c_p));
-	}
-	break;
-      default:
-	*c_p = rep_stream_getc(strm);
-	return rep_MAKE_INT(c);
-      }
-      // not reached
-      break; }
 
     case '#':
       switch (*c_p = rep_stream_getc(strm)) {

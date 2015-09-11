@@ -1,5 +1,8 @@
 2015-09-11  John Harper  <jsh@unfactored.org>
 
+	* read.c: better character reader, error on character name
+	prefix match, and supports `#\123` octal ASCII characters
+
 	* read.c: removed archaic #'FOO -> (function FOO) read syntax
 
 	* closures.c, apply.c: second arg to make-closure should now be
