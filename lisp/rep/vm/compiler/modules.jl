@@ -277,7 +277,7 @@
   (defun note-macro-def (name body)
     (fluid-set macro-env
 	       (cons (cons name
-			   (let ((closure (make-closure body)))
+			   (let ((closure (make-closure body name)))
 			     (set-closure-structure
 			      closure (get-structure *user-structure*))
 			     closure))

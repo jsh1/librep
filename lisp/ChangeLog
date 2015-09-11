@@ -1,3 +1,8 @@
+2015-09-11  John Harper  <jsh@unfactored.org>
+
+	* rep/lang/interpreter.jl, rep/vm/compiler/modules.jl:
+	make-closure takes a symbol as name
+
 2015-09-10  John Harper  <jsh@unfactored.org>
 
 	* rep/*.jl: updated for renamed predicates. And added

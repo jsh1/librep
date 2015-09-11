@@ -56,8 +56,7 @@
 	      (list '%define symbol
 		    (list 'cons
 			  (list 'quote 'macro)
-			  (list 'make-closure body
-				(symbol-name symbol))))))
+			  (list 'make-closure body (list 'quote symbol))))))
   "defmacro NAME LAMBDA-LIST [DOC-STRING] BODY...
 defmacro NAME BYTECODE-OBJECT
 
@@ -79,7 +78,7 @@ documentation DOC-STRING (optional) and body BODY."
   (cond ((bytecode? (car body))
 	 (setq body (car body)))
 	(t (setq body (list 'quote (cons 'lambda body)))))
-  (list '%define symbol (list 'make-closure body (symbol-name symbol))))
+  (list '%define symbol (list 'make-closure body (list 'quote symbol))))
 
 (defmacro defconst (symbol value . rest)
   "defconst NAME VALUE [DOC-STRING]

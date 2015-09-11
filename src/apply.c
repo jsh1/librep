@@ -430,10 +430,8 @@ ARGLIST had been evaluated or not before being put into the stack.
     }
 
     repv function_name = rep_nil;
-    if (rep_CLOSUREP(lc->fun)) {
-      if (rep_STRINGP(rep_CLOSURE(lc->fun)->name)) {
-	function_name = rep_CLOSURE(lc->fun)->name;
-      }
+    if (rep_CLOSUREP(lc->fun) && rep_CLOSURE(lc->fun)->name) {
+      function_name = rep_CLOSURE(lc->fun)->name;
     } else if (Fsubrp(lc->fun) != rep_nil) {
       if (rep_STRINGP(rep_XSUBR(lc->fun)->name)) {
 	function_name = rep_XSUBR(lc->fun)->name;

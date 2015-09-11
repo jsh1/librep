@@ -1,3 +1,9 @@
+2015-09-11  John Harper  <jsh@unfactored.org>
+
+	* closures.c, apply.c: second arg to make-closure should now be
+	a symbol (though it's never checked, and anything that prints
+	reasonably is fine as it's only used for backtraces)
+
 2015-09-10  John Harper  <jsh@unfactored.org>
 
 	* variables.c, types.c, symbols.c, structures.c, rep_subrs.h,
@@ -17,7 +23,7 @@
 	lispmach.c, files.c, eval.c, datums.c, compare.c, closures.c,
 	characters.c, bytecodes.h, arrays.c, apply.c: renamed
 	predicates as `foo?` rather than `foop`. Also changed `consp`
-	to `pair?` and `null` to `nullp`, and some other functions to
+	to `pair?` and `null` to `null?`, and some other functions to
 	either be compatible with scheme or just better
 
 	* strings.c: replaced string-equal and string-lessp by a full

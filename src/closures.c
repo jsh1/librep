@@ -37,7 +37,7 @@ int rep_allocated_closures, rep_used_closures;
 DEFUN("make-closure", Fmake_closure, Smake_closure,
       (repv fun, repv name), rep_Subr2) /*
 ::doc:rep.lang.interpreter#make-closure::
-make-closure FUNCTION &optional NAME
+make-closure FUNCTION [NAME]
 
 Return a functional object which makes the closure of FUNCTION and the
 current environment.
@@ -141,7 +141,6 @@ DEFUN("set-closure-name", Fset_closure_name,
       Sset_closure_name, (repv closure, repv name), rep_Subr2)
 {
   rep_DECLARE1(closure, rep_CLOSUREP);
-  rep_DECLARE2(name, rep_STRINGP);
 
   rep_CLOSURE(closure)->name = name;
   return rep_nil;
