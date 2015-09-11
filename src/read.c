@@ -775,24 +775,9 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 
     case '#':
       switch (*c_p = rep_stream_getc(strm)) {
-	int c;
       case EOF:
 	return signal_reader_error(Qpremature_end_of_stream,
 				   strm, "During # syntax");
-      case '\'':
-	form = Fcons(Qfunction, Fcons(rep_nil, rep_nil));
-	rep_PUSHGC(gc_form, form);
-	if ((*c_p = rep_stream_getc(strm)) == EOF) {
-	  rep_POPGC;
-	  return signal_reader_error(Qpremature_end_of_stream,
-				     strm, "During #' syntax");
-	}
-	rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
-	rep_POPGC;
-	if (!rep_CADR(form)) {
-	  return 0;
-	}
-	return form;
 
       case '[': {
 	repv vec = read_vector(strm, c_p);
@@ -837,8 +822,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	    continue;
 	  }
 	}
-	c = rep_stream_getc(strm);
-	switch (c) {
+	switch (rep_stream_getc(strm)) {
 	case 'o':
 	  return skip_chars(strm, "ptional", ex_optional, c_p);
         case 'r':

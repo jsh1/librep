@@ -1,5 +1,7 @@
 2015-09-11  John Harper  <jsh@unfactored.org>
 
+	* read.c: removed archaic #'FOO -> (function FOO) read syntax
+
 	* closures.c, apply.c: second arg to make-closure should now be
 	a symbol (though it's never checked, and anything that prints
 	reasonably is fine as it's only used for backtraces)

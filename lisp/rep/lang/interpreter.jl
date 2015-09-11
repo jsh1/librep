@@ -99,19 +99,9 @@ call it. Otherwise exactly the same as defun."
   ;; These actions are also hard-coded into dump.jl
   (list* 'defun symbol body))
 
-(defmacro function (arg)
-  "#'ARG
-
-Return the closure from ARG, either a lambda-expression, or a symbol.
-When applied to a symbol, the symbol's value is returned."
-  (if (symbol? arg)
-      arg
-    (list 'make-closure (list 'quote arg))))
-
 (%define %make-binding-immutable make-binding-immutable)
 
-(export-bindings '(defmacro defun defconst defsubst function
-		   %make-binding-immutable))
+(export-bindings '(defmacro defun defconst defsubst %make-binding-immutable))
 
 
 ;; Binding syntax
