@@ -151,13 +151,7 @@ again:
     }
     break;
 
-  case rep_Subr0:
-  case rep_Subr1:
-  case rep_Subr2:
-  case rep_Subr3:
-  case rep_Subr4:
-  case rep_Subr5:
-  case rep_SubrN:
+  case rep_Subr:
   case rep_SF:
     break;
 

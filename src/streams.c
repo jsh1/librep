@@ -799,7 +799,7 @@ are printed around strings.
   return !rep_INTERRUPTP ? Qt : 0;
 }
 
-DEFUN("format", Fformat, Sformat, (repv args), rep_SubrN) /*
+DEFUN("format", Fformat, Sformat, (repv args), rep_SubrL) /*
 ::doc:rep.io.streams#format::
 format STREAM FORMAT-STRING ARGS...
 

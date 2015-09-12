@@ -23,7 +23,6 @@
 #define TYPE_HASH_SIZE 32
 #define TYPE_HASH(type) (((type) >> 1) & (TYPE_HASH_SIZE-1))
 
-static int next_free_type = 0;
 static rep_type *data_types[TYPE_HASH_SIZE];
 
 static int
@@ -47,6 +46,7 @@ rep_define_type(rep_type *t)
 {
   if (!t->initialized) {
     if (t->car == 0) {
+      static int next_free_type = 0;
       assert(next_free_type != 256);
       t->car = ((next_free_type++ << rep_CELL16_TYPE_SHIFT)
 		 | rep_CELL_IS_8 | rep_CELL_IS_16);
@@ -150,32 +150,8 @@ rep_types_init(void)
     .name = "special-form",
     .print = rep_lisp_prin,
   }, {
-    .car = rep_Subr0,
-    .name = "subr0",
-    .print = rep_lisp_prin,
-  }, {
-    .car = rep_Subr1,
-    .name = "subr1",
-    .print = rep_lisp_prin,
-  }, {
-    .car = rep_Subr2,
-    .name = "subr2",
-    .print = rep_lisp_prin,
-  }, {
-    .car = rep_Subr3,
-    .name = "subr3",
-    .print = rep_lisp_prin,
-  }, {
-    .car = rep_Subr4,
-    .name = "subr4",
-    .print = rep_lisp_prin,
-  }, {
-    .car = rep_Subr5,
-    .name = "subr5",
-    .print = rep_lisp_prin,
-  }, {
-    .car = rep_SubrN,
-    .name = "subrN",
+    .car = rep_Subr,
+    .name = "subr",
     .print = rep_lisp_prin,
   }};
 

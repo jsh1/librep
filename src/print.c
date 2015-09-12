@@ -110,13 +110,7 @@ rep_lisp_prin(repv strm, repv obj)
     rep_stream_putc(strm, ']');
     break; }
 
-  case rep_Subr0:
-  case rep_Subr1:
-  case rep_Subr2:
-  case rep_Subr3:
-  case rep_Subr4:
-  case rep_Subr5:
-  case rep_SubrN:
+  case rep_Subr:
 #ifdef HAVE_SNPRINTF
     snprintf(tbuf, sizeof(tbuf), "#<subr %s>", rep_STR(rep_XSUBR(obj)->name));
 #else

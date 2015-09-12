@@ -363,6 +363,109 @@ inline_apply_bytecode(repv subr, int nargs, repv *args)
 }
 
 static repv
+call_subr(repv fun, int argc, repv *argv)
+{
+  switch (rep_SUBR_ARITY(fun)) {
+  case 0:
+    return rep_SUBR_F0(fun)();
+    break;
+
+  case 1:
+    return rep_SUBR_F1(fun)(argc >= 1 ? argv[0] : rep_nil);
+    break;
+
+  case 2:
+    switch (argc) {
+    case 0:
+      return rep_SUBR_F2(fun)(rep_nil, rep_nil);
+      break;
+    case 1:
+      return rep_SUBR_F2(fun)(argv[0], rep_nil);
+      break;
+    default:
+      return rep_SUBR_F2(fun)(argv[0], argv[1]);
+      break;
+    }
+    break;
+
+  case 3:
+    switch (argc) {
+    case 0:
+      return rep_SUBR_F3(fun)(rep_nil, rep_nil, rep_nil);
+      break;
+    case 1:
+      return rep_SUBR_F3(fun)(argv[0], rep_nil, rep_nil);
+      break;
+    case 2:
+      return rep_SUBR_F3(fun)(argv[0], argv[1], rep_nil);
+      break;
+    default:
+      return rep_SUBR_F3(fun)(argv[0], argv[1], argv[2]);
+      break;
+    }
+    break;
+
+  case 4:
+    switch (argc) {
+    case 0:
+      return rep_SUBR_F4(fun)(rep_nil, rep_nil, rep_nil, rep_nil);
+      break;
+    case 1:
+      return rep_SUBR_F4(fun)(argv[0], rep_nil, rep_nil, rep_nil);
+      break;
+    case 2:
+      return rep_SUBR_F4(fun)(argv[0], argv[1], rep_nil, rep_nil);
+      break;
+    case 3:
+      return rep_SUBR_F4(fun)(argv[0], argv[1], argv[2], rep_nil);
+      break;
+    default:
+      return rep_SUBR_F4(fun)(argv[0], argv[1], argv[2], argv[3]);
+      break;
+    }
+    break;
+
+  case 5:
+    switch (argc) {
+    case 0:
+      return rep_SUBR_F5(fun)(rep_nil, rep_nil, rep_nil, rep_nil, rep_nil);
+      break;
+    case 1:
+      return rep_SUBR_F5(fun)(argv[0], rep_nil, rep_nil, rep_nil, rep_nil);
+      break;
+    case 2:
+      return rep_SUBR_F5(fun)(argv[0], argv[1], rep_nil, rep_nil, rep_nil);
+      break;
+    case 3:
+      return rep_SUBR_F5(fun)(argv[0], argv[1], argv[2], rep_nil, rep_nil);
+      break;
+    case 4:
+      return rep_SUBR_F5(fun)(argv[0], argv[1], argv[2], argv[3], rep_nil);
+      break;
+    default:
+      return rep_SUBR_F5(fun)(argv[0], argv[1], argv[2], argv[3], argv[4]);
+      break;
+    }
+    break;
+
+  case rep_SUBR_L: {
+    repv lst = rep_nil;
+    for (int i = argc - 1; i >= 0; i--) {
+      lst = Fcons(argv[i], lst);
+    }
+    rep_call_stack->args = lst;
+    return rep_SUBR_FL(fun)(lst);
+    break; }
+
+  case rep_SUBR_V:
+    return rep_SUBR_FV(fun)(argc, argv);
+    break;
+  }
+
+  return 0;
+}
+
+static repv
 bytecode_vm(repv code, repv consts, repv req, int argc, repv *argv)
 {
   /* Actual reusable size of the argv array. I did try reusing the
@@ -438,7 +541,7 @@ bytecode_vm(repv code, repv consts, repv req, int argc, repv *argv)
 again: {
 
   /* Make sure that even when the stack has no entries, the TOP element
-     still != 0(for the error-detection at label quit:) */
+     still != 0 (for the error-detection at label quit:) */
 
   stack[0] = Qt;
 
@@ -497,119 +600,14 @@ again: {
 	fun = rep_CLOSURE(fun)->fun;
       }
 
-      if (!rep_CELLP(fun)) {
-	goto invalid;
-      }
+      if (rep_CELLP(fun) && !rep_CELL_CONS_P(fun)) {
+	if (rep_CELL8_TYPE(fun) == rep_Subr) {
+	  TOP = call_subr(fun, arg, sp + 1);
+	} else if (was_closed && rep_CELL8_TYPE(fun) == rep_Bytecode) {
+	  repv (*bc_apply) (repv, int, repv *) =
+	    rep_STRUCTURE(rep_structure)->apply_bytecode;
 
-      if (rep_CELL8P(fun)) {
-	switch (rep_CELL8_TYPE(fun)) {
-	case rep_Subr0:
-	  TOP = rep_SUBR0FUN(fun)();
-	  break;
-
-	case rep_Subr1:
-	  TOP = rep_SUBR1FUN(fun)(arg >= 1 ? sp[1] : rep_nil);
-	  break;
-
-	case rep_Subr2:
-	  switch (arg) {
-	  case 0:
-	    TOP = rep_SUBR2FUN(fun)(rep_nil, rep_nil);
-	    break;
-	  case 1:
-	    TOP = rep_SUBR2FUN(fun)(sp[1], rep_nil);
-	    break;
-	  default:
-	    TOP = rep_SUBR2FUN(fun)(sp[1], sp[2]);
-	    break;
-	  }
-	  break;
-
-	case rep_Subr3:
-	  switch (arg) {
-	  case 0:
-	    TOP = rep_SUBR3FUN(fun)(rep_nil, rep_nil, rep_nil);
-	    break;
-	  case 1:
-	    TOP = rep_SUBR3FUN(fun)(sp[1], rep_nil, rep_nil);
-	    break;
-	  case 2:
-	    TOP = rep_SUBR3FUN(fun)(sp[1], sp[2], rep_nil);
-	    break;
-	  default:
-	    TOP = rep_SUBR3FUN(fun)(sp[1], sp[2], sp[3]);
-	    break;
-	  }
-	  break;
-
-	case rep_Subr4:
-	  switch (arg) {
-	  case 0:
-	    TOP = rep_SUBR4FUN(fun)(rep_nil, rep_nil, rep_nil, rep_nil);
-	    break;
-	  case 1:
-	    TOP = rep_SUBR4FUN(fun)(sp[1], rep_nil, rep_nil, rep_nil);
-	    break;
-	  case 2:
-	    TOP = rep_SUBR4FUN(fun)(sp[1], sp[2], rep_nil, rep_nil);
-	    break;
-	  case 3:
-	    TOP = rep_SUBR4FUN(fun)(sp[1], sp[2], sp[3], rep_nil);
-	    break;
-	  default:
-	    TOP = rep_SUBR4FUN(fun)(sp[1], sp[2], sp[3], sp[4]);
-	    break;
-	  }
-	  break;
-
-	case rep_Subr5:
-	  switch (arg) {
-	  case 0:
-	    TOP = rep_SUBR5FUN(fun)(rep_nil, rep_nil, rep_nil, rep_nil, rep_nil);
-	    break;
-	  case 1:
-	    TOP = rep_SUBR5FUN(fun)(sp[1], rep_nil, rep_nil, rep_nil, rep_nil);
-	    break;
-	  case 2:
-	    TOP = rep_SUBR5FUN(fun)(sp[1], sp[2], rep_nil, rep_nil, rep_nil);
-	    break;
-	  case 3:
-	    TOP = rep_SUBR5FUN(fun)(sp[1], sp[2], sp[3], rep_nil, rep_nil);
-	    break;
-	  case 4:
-	    TOP = rep_SUBR5FUN(fun)(sp[1], sp[2], sp[3], sp[4], rep_nil);
-	    break;
-	  default:
-	    TOP = rep_SUBR5FUN(fun)(sp[1], sp[2], sp[3], sp[4], sp[5]);
-	    break;
-	  }
-	  break;
-
-	case rep_SubrN:
-	  if (rep_SUBR_VEC_P(fun)) {
-	    TOP = rep_SUBRVFUN(fun) (arg, sp + 1);
-	  } else {
-	    repv lst = rep_nil;
-	    POPN(-arg); /* reclaim my args */
-	    while (arg-- != 0) {
-	      repv x = POP;
-	      lst = Fcons(x, lst);
-	    }
-	    lc.args = lst;
-	    TOP = rep_SUBRNFUN(fun)(lst);
-	  }
-	  break;
-
-	case rep_Bytecode:
-	  if (!was_closed) {
-	    goto invalid;
-	  }
-	  repv(*bc_apply) (repv, int, repv *);
-	  bc_apply = rep_STRUCTURE(rep_structure)->apply_bytecode;
 	  if (bc_apply == BC_APPLY_SELF) {
-
-	    /* Calling self, enable optimizations. */
-
 	    if (impurity != 0 || *pc != OP_RETURN) {
 
 	      /* Not a tail-call we can eliminate. */
@@ -685,17 +683,15 @@ again: {
 
 	      goto again;
 	    }
-
 	  } else {
 	    TOP = bc_apply(fun, arg, sp+1);
 	  }
-	  break;
-
-	default: invalid:
+	} else {
 	  TOP = Fsignal(Qinvalid_function, rep_LIST_1(TOP));
 	}
-
-      } else {
+	rep_POP_CALL(lc);
+	INLINE_NEXT;
+      } else {				/* not cell8 type */
 	POPN(-arg);
 	repv lst = rep_nil;
 	while (arg-- > 0) {
@@ -706,9 +702,6 @@ again: {
 	TOP = rep_apply(TOP, lst);
 	NEXT;
       }
-
-      rep_POP_CALL(lc);
-      INLINE_NEXT;
     }
 
     INSN_WITH_ARG(OP_PUSH) {

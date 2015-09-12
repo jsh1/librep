@@ -99,7 +99,7 @@ executed. If not, an error will be signalled.
 }
 
 DEFUN("make-byte-code-subr", Fmake_byte_code_subr,
-      Smake_byte_code_subr, (repv args), rep_SubrN) /*
+      Smake_byte_code_subr, (repv args), rep_SubrL) /*
 ::doc:rep.vm.interpreter#make-byte-code-subr::
 make-byte-code-subr CODE CONSTANTS STACK [DOC] [INTERACTIVE]
 

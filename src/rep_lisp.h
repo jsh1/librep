@@ -275,14 +275,14 @@ typedef struct rep_type_struct {
 #define rep_File	0x0b
 #define rep_Number	0x0d
 #define rep_SF		0x0f
-#define rep_Subr0	0x11
-#define rep_Subr1	0x13
-#define rep_Subr2	0x15
-#define rep_Subr3	0x17
-#define rep_Subr4	0x19
-#define rep_Subr5	0x1b
-#define rep_SubrN	0x1d
-#define rep_Closure	0x1f
+#define rep_Subr	0x11
+#define rep_Structure	0x13
+#define rep_Guardian	0x15
+#define rep_Closure	0x17
+#define rep_Process	0x19
+#define rep_Weak_Ref	0x1b
+#define rep_Unused1	0x1d
+#define rep_Unused2	0x1f
 
 /* Assuming that V is a cell, return the type code */
 #define rep_CELL_TYPE(v) (rep_CONSP(v) ? rep_Cons		\
@@ -467,7 +467,6 @@ typedef struct rep_vector_struct {
 #define rep_SET_VECT_LEN(v,l)	(rep_VECT(v)->car = ((l) << 8 | rep_Vector))
 
 #define rep_VECTORP(v)		rep_CELL8_TYPEP(v, rep_Vector)
-
 #define rep_VECTOR_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
 
@@ -535,7 +534,6 @@ typedef struct rep_file_struct {
 
 #define rep_FILE(v)		((rep_file *)rep_PTR(v))
 #define rep_FILEP(v)		rep_CELL8_TYPEP(v, rep_File)
-
 #define rep_LOCAL_FILE_P(v)	(rep_FILE(v)->handler == Qt)
 
 
@@ -571,24 +569,42 @@ typedef struct {
   repv int_spec;			/* put this in plist? */
 } rep_xsubr;
 
-/* If set in rep_SubrN types, it'll be passed a vector of args, instead
-   of a list */
+/* Subroutine "arity", L = f(args_lst), V = f(argc, argv). */
 
-#define rep_SUBR_VEC      (1 << (rep_CELL8_TYPE_BITS + 0))
-#define rep_SUBR_VEC_P(v) (rep_SUBR(v)->car & rep_SUBR_VEC)
-#define rep_SubrV         (rep_SubrN | rep_SUBR_VEC)
+enum {
+  rep_SUBR_0,
+  rep_SUBR_1,
+  rep_SUBR_2,
+  rep_SUBR_3,
+  rep_SUBR_4,
+  rep_SUBR_5,
+  rep_SUBR_L,
+  rep_SUBR_V,
+};
 
-#define rep_XSUBR(v)	((rep_xsubr *) rep_PTR(v))
-#define rep_SUBR(v)	((rep_subr *) rep_PTR(v))
-#define rep_SUBR0FUN(v)	(rep_SUBR(v)->fun.fun0)
-#define rep_SUBR1FUN(v)	(rep_SUBR(v)->fun.fun1)
-#define rep_SUBR2FUN(v)	(rep_SUBR(v)->fun.fun2)
-#define rep_SUBR3FUN(v)	(rep_SUBR(v)->fun.fun3)
-#define rep_SUBR4FUN(v)	(rep_SUBR(v)->fun.fun4)
-#define rep_SUBR5FUN(v)	(rep_SUBR(v)->fun.fun5)
-#define rep_SUBRNFUN(v)	(rep_SUBR(v)->fun.fun1)
-#define rep_SUBRVFUN(v)	(rep_SUBR(v)->fun.funv)
-#define rep_SFFUN(v)	(rep_SUBR(v)->fun.funsf)
+#define rep_Subr0	(rep_Subr | (rep_SUBR_0 << rep_CELL8_TYPE_BITS))
+#define rep_Subr1	(rep_Subr | (rep_SUBR_1 << rep_CELL8_TYPE_BITS))
+#define rep_Subr2	(rep_Subr | (rep_SUBR_2 << rep_CELL8_TYPE_BITS))
+#define rep_Subr3	(rep_Subr | (rep_SUBR_3 << rep_CELL8_TYPE_BITS))
+#define rep_Subr4	(rep_Subr | (rep_SUBR_4 << rep_CELL8_TYPE_BITS))
+#define rep_Subr5	(rep_Subr | (rep_SUBR_5 << rep_CELL8_TYPE_BITS))
+#define rep_SubrL	(rep_Subr | (rep_SUBR_L << rep_CELL8_TYPE_BITS))
+#define rep_SubrV	(rep_Subr | (rep_SUBR_V << rep_CELL8_TYPE_BITS))
+
+#define rep_SUBRP(v)	rep_CELL8_TYPEP(v, rep_Subr)
+#define rep_SUBR_ARITY(v) (rep_PTR(v)->car >> rep_CELL8_TYPE_BITS)
+
+#define rep_SUBR(v)	((rep_subr *)rep_PTR(v))
+#define rep_XSUBR(v)	((rep_xsubr *)rep_PTR(v))
+#define rep_SUBR_F0(v)	(rep_SUBR(v)->fun.fun0)
+#define rep_SUBR_F1(v)	(rep_SUBR(v)->fun.fun1)
+#define rep_SUBR_F2(v)	(rep_SUBR(v)->fun.fun2)
+#define rep_SUBR_F3(v)	(rep_SUBR(v)->fun.fun3)
+#define rep_SUBR_F4(v)	(rep_SUBR(v)->fun.fun4)
+#define rep_SUBR_F5(v)	(rep_SUBR(v)->fun.fun5)
+#define rep_SUBR_FL(v)	(rep_SUBR(v)->fun.fun1)
+#define rep_SUBR_FV(v)	(rep_SUBR(v)->fun.funv)
+#define rep_SF_FUN(v)	(rep_SUBR(v)->fun.funsf)
 
 
 /* Closures */
@@ -603,14 +619,13 @@ typedef struct rep_closure_struct {
 
 #define rep_CLOSURE(v) ((rep_closure *)rep_PTR(v))
 #define rep_CLOSUREP(v) (rep_CELL8_TYPEP(v, rep_Closure))
-
 #define rep_CLOSURE_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
 
 /* Guardians */
 
 #define rep_GUARDIAN(v)		((rep_guardian *) rep_PTR(v))
-#define rep_GUARDIANP(v)	rep_CELL16_TYPEP(v, rep_guardian_type)
+#define rep_GUARDIANP(v)	rep_CELL8_TYPEP(v, rep_Guardian)
 
 
 /* Other definitions */

@@ -111,14 +111,12 @@ struct rep_process_struct {
   repv connection_type;
 };
 
-static repv process_type(void);
-
 static rep_process *process_list;
 static rep_process *notify_list;
 static int active_process_count;
 
 #define PROC(v) ((rep_process *)rep_PTR(v))
-#define PROCESSP(v) rep_CELL16_TYPEP(v, process_type())
+#define PROCESSP(v) rep_CELL8_TYPEP(v, rep_Process)
 
 /* Status is two bits above the type code (presently 8->9) */
 
@@ -1009,7 +1007,7 @@ If the DIR parameter is nil it will be inherited from the
   rep_process *pr = rep_alloc(sizeof(rep_process));
   rep_data_after_gc += sizeof (rep_process);
 
-  pr->car = process_type();
+  pr->car = rep_Process;
   pr->next = process_list;
   process_list = pr;
   pr->notify_next = NULL;
@@ -1061,7 +1059,7 @@ process-object PROCESS.
 }
 
 DEFUN("start-process", Fstart_process,
-      Sstart_process, (repv arg_list), rep_SubrN) /*
+      Sstart_process, (repv arg_list), rep_SubrL) /*
 ::doc:rep.io.processes#start-process::
 start-process [PROCESS] [PROGRAM] [ARGS...]
 
@@ -1145,7 +1143,7 @@ set in the PROCESS prior to calling this function.
 }
 
 DEFUN("call-process", Fcall_process,
-      Scall_process, (repv arg_list), rep_SubrN) /*
+      Scall_process, (repv arg_list), rep_SubrL) /*
 ::doc:rep.io.processes#call-process::
 call-process [PROCESS] [IN-FILE] [PROGRAM] [ARGS...]
 
@@ -2076,31 +2074,6 @@ processes_init(void)
   rep_ADD_SUBR(Saccept_process_output_1);
 }
 
-static repv
-process_type(void)
-{
-  static repv type;
-
-  if (!type) {
-    static rep_type process = {
-      .name = "process",
-      .print = process_print,
-      .sweep = process_sweep,
-      .mark = process_mark,
-      .mark_type = process_mark_active,
-      .putc = process_putc,
-      .puts = process_puts,
-    };
-
-    type = rep_define_type(&process);
-
-    rep_register_process_input_handler(read_from_fd);
-    rep_add_event_loop_callback(event_loop_callback);
-  }
-
-  return type;
-}
-
 void
 rep_processes_init(void)
 {
@@ -2118,6 +2091,22 @@ rep_processes_init(void)
   sigaction(SIGCHLD, &chld_sigact, NULL);
 
   signal(SIGPIPE, SIG_IGN);
+
+  static rep_type process = {
+    .car = rep_Process,
+    .name = "process",
+    .print = process_print,
+    .sweep = process_sweep,
+    .mark = process_mark,
+    .mark_type = process_mark_active,
+    .putc = process_putc,
+    .puts = process_puts,
+  };
+
+  rep_define_type(&process);
+
+  rep_register_process_input_handler(read_from_fd);
+  rep_add_event_loop_callback(event_loop_callback);
 
   rep_lazy_structure("rep.io.processes", processes_init);
 }

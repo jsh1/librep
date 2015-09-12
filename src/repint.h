@@ -149,9 +149,7 @@ struct rep_struct_node_struct {
   bool is_exported : 1;
 };
 
-extern int rep_structure_type;
-
-#define rep_STRUCTUREP(v)	rep_CELL16_TYPEP(v, rep_structure_type)
+#define rep_STRUCTUREP(v)	rep_CELL8_TYPEP(v, rep_Structure)
 #define rep_STRUCTURE(v)	((rep_struct *) rep_PTR(v))
 
 /* If set, currently recursively searching this module for a binding */

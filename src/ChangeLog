@@ -1,3 +1,11 @@
+2015-09-12  John Harper  <jsh@unfactored.org>
+
+	* weak-refs.c, types.c, structures.c, streams.c, repint.h,
+	rep_lisp.h, record-profile.c, processes.c, print.c, lispmach.h,
+	lispmach.c, librep.sym, guardians.c, gc.c, eval.c, apply.c:
+	merged all rep_SubrX types into one value, then allocate the
+	resulting extra cell8 types to other built-in object types
+
 2015-09-11  John Harper  <jsh@unfactored.org>
 
 	* read.c: better character reader, error on character name

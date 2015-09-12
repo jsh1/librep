@@ -77,84 +77,11 @@ again:;
     fun = rep_CLOSURE(fun)->fun;
   }
 
-  int type = rep_TYPE(fun);
-  switch (type) {
-    int nargs;
-    repv argv[5];
+  if (!rep_CELLP(fun)) {
+    goto invalid;
+  }
 
-  case rep_SubrN:
-    if (!rep_SUBR_VEC_P(fun)) {
-      result = rep_SUBRNFUN(fun)(arglist);
-    } else {
-      int length = rep_list_length(arglist);
-      if (length < 0) {
-	result = 0;
-	break;
-      }
-      repv *vec = rep_stack_alloc(repv, length);
-      if (!vec) {
-	result = rep_mem_error();
-	break;
-      }
-      copy_to_vector(arglist, length, vec);
-      result = rep_SUBRVFUN(fun) (length, vec);
-      rep_stack_free(repv, length, vec);
-    }
-    break;
-
-  case rep_Subr0:
-    result = rep_SUBR0FUN(fun)();
-    break;
-
-  case rep_Subr1:
-    nargs = 1;
-    goto call_subr;
-
-  case rep_Subr2:
-    nargs = 2;
-    goto call_subr;
-
-  case rep_Subr3:
-    nargs = 3;
-    goto call_subr;
-
-  case rep_Subr4:
-    nargs = 4;
-    goto call_subr;
-
-  case rep_Subr5:
-    nargs = 5;
-    // fall through
-
-  call_subr:
-    for (int i = 0; i < nargs; i++) {
-      if (rep_CONSP(arglist)) {
-	argv[i] = rep_CAR(arglist);
-	arglist = rep_CDR(arglist);
-      } else {
-	argv[i] = rep_nil;
-      }
-    }
-    switch (type) {
-    case rep_Subr1:
-      result = rep_SUBR1FUN(fun)(argv[0]);
-      break;
-    case rep_Subr2:
-      result = rep_SUBR2FUN(fun)(argv[0], argv[1]);
-      break;
-    case rep_Subr3:
-      result = rep_SUBR3FUN(fun)(argv[0], argv[1], argv[2]);
-      break;
-    case rep_Subr4:
-      result = rep_SUBR4FUN(fun)(argv[0], argv[1], argv[2], argv[3]);
-      break;
-    case rep_Subr5:
-      result = rep_SUBR5FUN(fun)(argv[0], argv[1], argv[2], argv[3], argv[4]);
-      break;
-    }
-    break;
-
-  case rep_Cons: {
+  if (rep_CELL_CONS_P(fun)) {
     if (!closure) {
       goto invalid;
     }
@@ -169,31 +96,99 @@ again:;
     } else {
       goto invalid;
     }
-    break; }
+  } else if (rep_CELL8_TYPE(fun) == rep_Subr) {
+    int arity = rep_SUBR_ARITY(fun);
+    switch (arity) {
+      int nargs;
+      repv argv[5];
 
-  case rep_Bytecode: {
+    case 0:
+      result = rep_SUBR_F0(fun)();
+      break;
+
+    case 1:
+      nargs = 1;
+      goto call_subr;
+    case 2:
+      nargs = 2;
+      goto call_subr;
+    case 3:
+      nargs = 3;
+      goto call_subr;
+    case 4:
+      nargs = 4;
+      goto call_subr;
+    case 5:
+      nargs = 5;
+      // fall through
+
+    call_subr:
+      for (int i = 0; i < nargs; i++) {
+	if (rep_CONSP(arglist)) {
+	  argv[i] = rep_CAR(arglist);
+	  arglist = rep_CDR(arglist);
+	} else {
+	  argv[i] = rep_nil;
+	}
+      }
+      switch (arity) {
+      case 1:
+	result = rep_SUBR_F1(fun)(argv[0]);
+	break;
+      case 2:
+	result = rep_SUBR_F2(fun)(argv[0], argv[1]);
+	break;
+      case 3:
+	result = rep_SUBR_F3(fun)(argv[0], argv[1], argv[2]);
+	break;
+      case 4:
+	result = rep_SUBR_F4(fun)(argv[0], argv[1], argv[2], argv[3]);
+	break;
+      case 5:
+	result = rep_SUBR_F5(fun)(argv[0], argv[1], argv[2], argv[3], argv[4]);
+	break;
+      }
+      break;
+
+    case rep_SUBR_L:
+      result = rep_SUBR_FL(fun)(arglist);
+      break;
+
+    case rep_SUBR_V: {
+      int length = rep_list_length(arglist);
+      if (length < 0) {
+	result = 0;
+	break;
+      }
+      repv *vec = rep_stack_alloc(repv, length);
+      if (!vec) {
+	result = rep_mem_error();
+	break;
+      }
+      copy_to_vector(arglist, length, vec);
+      result = rep_SUBR_FV(fun) (length, vec);
+      rep_stack_free(repv, length, vec);
+      break; }
+    }
+  } else if (rep_CELL8_TYPE(fun) == rep_Bytecode) {
     int nargs = rep_list_length(arglist);
-    if (nargs < 0) {
-      result = 0;
-      break;
+    if (nargs >= 0) {
+      repv *args = rep_stack_alloc(repv, nargs);
+      if (args) {
+	copy_to_vector(arglist, nargs, args);
+	repv (*bc_apply)(repv, int, repv *) =
+	rep_STRUCTURE(rep_structure)->apply_bytecode;
+	if (!bc_apply) {
+	  result = rep_apply_bytecode(fun, nargs, args);
+	} else {
+	  result = bc_apply(fun, nargs, args);
+	}
+	rep_stack_free(repv, nargs, args);
+      } else {
+	rep_mem_error();
+      }
     }
-    repv *args = rep_stack_alloc(repv, nargs);
-    if (!args) {
-      result = rep_mem_error();
-      break;
-    }
-    copy_to_vector(arglist, nargs, args);
-    repv (*bc_apply)(repv, int, repv *) =
-      rep_STRUCTURE(rep_structure)->apply_bytecode;
-    if (!bc_apply) {
-      result = rep_apply_bytecode(fun, nargs, args);
-    } else {
-      result = bc_apply(fun, nargs, args);
-    }
-    rep_stack_free(repv, nargs, args);
-    break; }
-
-  default:
+  } else {
   invalid:
     Fsignal(Qinvalid_function, rep_LIST_1(lc.fun));
   }
@@ -318,7 +313,7 @@ Evaluates to an anonymous function.
   return Fmake_closure(Fcons(Qlambda, args), rep_nil);
 }
 
-DEFUN("funcall", Ffuncall, Sfuncall, (repv args), rep_SubrN) /*
+DEFUN("funcall", Ffuncall, Sfuncall, (repv args), rep_SubrL) /*
 ::doc:rep.lang.interpreter#funcall::
 funcall FUNCTION ARGS...
 
@@ -340,13 +335,7 @@ Returns t if ARG is a function.
 ::end:: */
 {
   switch(rep_TYPE(arg)) {
-  case rep_Subr0:
-  case rep_Subr1:
-  case rep_Subr2:
-  case rep_Subr3:
-  case rep_Subr4:
-  case rep_Subr5:
-  case rep_SubrN:
+  case rep_Subr:
   case rep_Closure:
     return Qt;
 
@@ -571,13 +560,7 @@ Returns t if arg is a primitive function.
 ::end:: */
 {
   switch (rep_TYPE(arg)) {
-  case rep_Subr0:
-  case rep_Subr1:
-  case rep_Subr2:
-  case rep_Subr3:
-  case rep_Subr4:
-  case rep_Subr5:
-  case rep_SubrN:
+  case rep_Subr:
   case rep_SF:
     return Qt;
   default:
@@ -593,13 +576,7 @@ Returns the name (a string) associated with SUBR.
 ::end:: */
 {
   switch(rep_TYPE(subr)) {
-  case rep_Subr0:
-  case rep_Subr1:
-  case rep_Subr2:
-  case rep_Subr3:
-  case rep_Subr4:
-  case rep_Subr5:
-  case rep_SubrN:
+  case rep_Subr:
   case rep_SF:
     return rep_SUBR(subr)->name;
   default:

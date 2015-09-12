@@ -98,9 +98,8 @@ test_interrupt(void)
     repv name;
 
     switch (rep_TYPE(c->fun)) {
-    case rep_Subr0: case rep_Subr1: case rep_Subr2: case rep_Subr3:
-    case rep_Subr4: case rep_Subr5: case rep_SubrN:
-      name = rep_XSUBR(c->fun)->name;
+    case rep_Subr:
+      name = rep_SUBR(c->fun)->name;
       break;
     case rep_Closure:
       name = rep_CLOSURE(c->fun)->name;

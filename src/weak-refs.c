@@ -20,18 +20,16 @@
 
 #include "repint.h"
 
-#define WEAKP(x)	rep_CELL16_TYPEP(x, weak_ref_type ())
+#define WEAKP(x)	rep_CELL8_TYPEP(x, rep_Weak_Ref)
 #define WEAK(v)		((rep_tuple *) rep_PTR (v))
 #define WEAK_NEXT(v)	(WEAK(v)->a)
 #define WEAK_REF(v)	(WEAK(v)->b)
 
 static repv weak_refs;
 
-static int weak_ref_type (void);
-
 DEFUN("make-weak-ref", Fmake_weak_ref, Smake_weak_ref, (repv ref), rep_Subr1)
 {
-  repv weak_ref = rep_make_tuple(weak_ref_type(), 0, 0);
+  repv weak_ref = rep_make_tuple(rep_Weak_Ref, 0, 0);
 
   WEAK_REF(weak_ref) = ref;
   WEAK_NEXT(weak_ref) = weak_refs;
@@ -90,26 +88,17 @@ weak_ref_print(repv stream, repv arg)
   rep_stream_puts(stream, "#<weak-reference>", -1, false);
 }
 
-static int
-weak_ref_type(void)
-{
-  static int type;
-
-  if (type == 0) {
-    static rep_type weak_ref = {
-      .name = "weak-ref",
-      .print = weak_ref_print,
-    };
-
-    type = rep_define_type(&weak_ref);
-  }
-
-  return type;
-}
-
 void
 rep_weak_refs_init(void)
 {
+  static rep_type weak_ref = {
+    .car = rep_Weak_Ref,
+    .name = "weak-ref",
+    .print = weak_ref_print,
+  };
+
+  rep_define_type(&weak_ref);
+
   repv tem = rep_push_structure("rep.data");
   rep_ADD_SUBR(Smake_weak_ref);
   rep_ADD_SUBR(Sweak_ref);

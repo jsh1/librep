@@ -100,7 +100,6 @@
 #define MIN_BUCKETS 8
 #define MAX_MULTIPLIER 2
 
-int rep_structure_type;
 static rep_struct *all_structures;
 
 #define rep_INTERFACEP(v) rep_LISTP(v)
@@ -739,7 +738,7 @@ BODY-THUNK may be modified by this function!
   rep_struct *s = rep_alloc(sizeof(rep_struct));
   rep_data_after_gc += sizeof(rep_struct);
 
-  s->car = rep_structure_type;
+  s->car = rep_Structure;
   s->inherited = sig;
   s->name = name;
   s->total_buckets = s->total_bindings = 0;
@@ -1784,13 +1783,14 @@ void
 rep_pre_structures_init(void)
 {
   static rep_type structure = {
+    .car = rep_Structure,
     .name = "structure",
     .print = structure_print,
     .sweep = structure_sweep,
     .mark = structure_mark,
   };
 
-  rep_structure_type = rep_define_type(&structure);
+  rep_define_type(&structure);
 
   rep_default_structure = Fmake_structure(rep_nil, rep_nil, rep_nil, rep_nil);
   rep_specials_structure = Fmake_structure(rep_nil, rep_nil, rep_nil, rep_nil);

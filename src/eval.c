@@ -32,7 +32,7 @@ DEFSYM(debug_macros, "*debug-macros*");
 DEFSYM(debug_entry, "*debug-entry*");
 DEFSYM(debug_exit, "*debug-exit*");
 
-DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrN) /*
+DEFUN("apply", Fapply, Sapply, (repv args), rep_SubrL) /*
 ::doc:rep.lang.interpreter#apply::
 apply FUNCTION ARGS... ARG-LIST
 
@@ -173,7 +173,7 @@ inner_eval(repv obj, bool tail_posn)
 
     /* Special form. */
 
-    ret = rep_SFFUN(fun)(rep_CDR(obj), tail_posn);
+    ret = rep_SF_FUN(fun)(rep_CDR(obj), tail_posn);
 
   } else if (rep_CONSP(fun) && rep_CAR(fun) == Qmacro) {
 

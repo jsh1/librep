@@ -20,8 +20,6 @@
 
 #include "repint.h"
 
-int rep_guardian_type;
-
 static rep_guardian *guardians;
 
 DEFUN("make-primitive-guardian", Fmake_primitive_guardian,
@@ -29,7 +27,7 @@ DEFUN("make-primitive-guardian", Fmake_primitive_guardian,
 {
   rep_guardian *g = rep_alloc(sizeof(rep_guardian));
 
-  g->car = rep_guardian_type;
+  g->car = rep_Guardian;
   g->accessible = rep_nil;
   g->inaccessible = rep_nil;
   g->next = guardians;
@@ -155,13 +153,14 @@ void
 rep_guardians_init(void)
 {
   static rep_type guardian = {
+    .car = rep_Guardian,
     .name = "guardian",
     .print = print_guardian,
     .sweep = sweep_guardians,
     .mark = mark_guardian,
   };
 
-  rep_guardian_type = rep_define_type(&guardian);
+  rep_define_type(&guardian);
 
   repv tem = rep_push_structure("rep.data");
   rep_ADD_INTERNAL_SUBR(Smake_primitive_guardian);

@@ -565,7 +565,6 @@ rep_get_long_int
 rep_get_long_uint
 rep_get_longlong_int
 rep_get_option
-rep_guardian_type
 rep_handle_error
 rep_handle_input_exception
 rep_handle_var_int
