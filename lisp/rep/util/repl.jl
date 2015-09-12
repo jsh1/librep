@@ -374,6 +374,12 @@
    "FORM")
 
   (define-repl-command
+   'expand-once
+   (lambda (form)
+     (format *standard-output* "%s\n" (repl-eval `(,macroexpand-1 ',form))))
+   "FORM")
+
+  (define-repl-command
    'step
    (lambda (form)
      (format *standard-output* "%s\n" (repl-eval `(,step ',form))))
