@@ -679,6 +679,8 @@ Copy all characters from SOURCE-STREAM to DEST-STREAM until an EOF is
 read. Returns the number of characters copied.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   intptr_t total = 0;
 
   char buf[4096];
@@ -846,6 +848,8 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 `S' conversion, (or the `s' conversion when the ARG isn't a string).
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   if (!rep_CONSP(args)) {
     return rep_signal_missing_arg(1);
   }

@@ -29,21 +29,21 @@ static volatile bool in_fatal_signal_handler;
 void
 rep_sig_restart(int sig, bool flag)
 {
-#if defined (HAVE_SIGINTERRUPT)
-  siginterrupt (sig, !flag);
+#if defined(HAVE_SIGINTERRUPT)
+  siginterrupt(sig, !flag);
 #else
   struct sigaction act;
-  sigaction (sig, 0, &act);
+  sigaction(sig, 0, &act);
   if (flag) {
-# if defined (SA_RESTART)
+# if defined(SA_RESTART)
     act.sa_flags |= SA_RESTART;
-# elif defined (SA_INTERRUPT)
+# elif defined(SA_INTERRUPT)
     act.sa_flags &= ~SA_INTERRUPT;
 # endif
   } else {
-# if defined (SA_RESTART)
+# if defined(SA_RESTART)
     act.sa_flags &= ~SA_RESTART;
-# elif defined (SA_INTERRUPT)
+# elif defined(SA_INTERRUPT)
     act.sa_flags |= SA_INTERRUPT;
 # endif
   }
@@ -106,11 +106,11 @@ static RETSIGTYPE
 interrupt_signal_handler(int sig)
 {
   if (rep_throw_value == rep_int_cell) {
-    signal (sig, SIG_DFL);
-    raise (sig);
+    signal(sig, SIG_DFL);
+    raise(sig);
   } else {
     rep_throw_value = rep_int_cell;
-    signal (sig, interrupt_signal_handler);
+    signal(sig, interrupt_signal_handler);
   }
 }
 
@@ -120,18 +120,18 @@ static RETSIGTYPE
 termination_signal_handler(int sig)
 {
   if (rep_throw_value == rep_term_cell) {
-    signal (sig, SIG_DFL);
-    raise (sig);
+    signal(sig, SIG_DFL);
+    raise(sig);
   } else {
     rep_throw_value = rep_term_cell;
-    signal (sig, termination_signal_handler);
+    signal(sig, termination_signal_handler);
   }
 }
 
 /* Invoked by SIGUSR1 or SIGUSR2. */
 
 static RETSIGTYPE
-usr_signal_handler (int sig)
+usr_signal_handler(int sig)
 {
   switch (sig) {
   case SIGUSR1:
@@ -141,13 +141,13 @@ usr_signal_handler (int sig)
     break;
 
   case SIGUSR2:
-    fprintf (stderr, "\n\nDebug buffers:\n");
-    rep_db_spew_all ();
-    fputc ('\n', stderr);
+    fprintf(stderr, "\n\nDebug buffers:\n");
+    rep_db_spew_all();
+    fputc('\n', stderr);
     break;
   }
 
-  signal (sig, usr_signal_handler);
+  signal(sig, usr_signal_handler);
 }
 
 void
@@ -194,7 +194,7 @@ rep_signals_init(void)
   if (signal(SIGINT, interrupt_signal_handler) == SIG_IGN) {
     signal(SIGINT, SIG_IGN);
   } else {
-    rep_sig_restart (SIGINT, false);
+    rep_sig_restart(SIGINT, false);
   }
 #endif
 
@@ -204,14 +204,14 @@ rep_signals_init(void)
   if (signal(SIGTERM, termination_signal_handler) == SIG_IGN) {
     signal(SIGTERM, SIG_IGN);
   } else {
-    rep_sig_restart (SIGTERM, false);
+    rep_sig_restart(SIGTERM, false);
   }
 #endif
 #ifdef SIGHUP
   if (signal(SIGHUP, termination_signal_handler) == SIG_IGN) {
     signal(SIGHUP, SIG_IGN);
   } else {
-    rep_sig_restart (SIGHUP, false);
+    rep_sig_restart(SIGHUP, false);
   }
 #endif
 

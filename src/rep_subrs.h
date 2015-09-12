@@ -47,6 +47,7 @@ extern volatile repv rep_throw_value;
 extern volatile int rep_test_int_counter;
 extern int rep_test_int_period;
 extern void (*rep_test_int_fun)(void);
+extern void rep_test_interrupt(void);
 extern repv rep_int_cell, rep_term_cell;
 extern void rep_handle_error(repv, repv);
 extern repv rep_signal_arg_error(repv, int);

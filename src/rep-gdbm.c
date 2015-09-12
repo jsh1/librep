@@ -189,6 +189,8 @@ DEFUN("gdbm-walk", Fgdbm_walk, Sgdbm_walk,
 gdbm-walk FUN DBM
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(dbm, rep_DBMP);
 
   rep_GC_root gc_dbm, gc_fun;

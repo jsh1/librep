@@ -1155,6 +1155,8 @@ Mark that the current structures has opened the list of structures
 named in the list STRUCT-NAMES.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(args, rep_LISTP);
 
   rep_struct *dst = rep_STRUCTURE(rep_structure);
@@ -1201,6 +1203,8 @@ Mark that the current structures may access the list of structures
 named in the list STRUCT-NAMES.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(args, rep_LISTP);
 
   rep_struct *dst = rep_STRUCTURE(rep_structure);
@@ -1430,6 +1434,8 @@ Fexport_binding(repv var)
 DEFUN("export-bindings", Fexport_bindings,
        Sexport_bindings, (repv vars), rep_Subr1)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(vars, rep_LISTP);
 
   while (rep_CONSP(vars)) {

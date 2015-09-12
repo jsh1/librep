@@ -96,6 +96,8 @@ If the lists FLUIDS and VALUES are not of the same length, an error is
 signalled.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(fluids, rep_LISTP);
   rep_DECLARE2(values, rep_LISTP);
 

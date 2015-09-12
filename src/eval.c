@@ -43,6 +43,8 @@ ARG-LIST. For example:
    => 21
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   repv list = rep_nil;
   repv *last = &list;
 
@@ -52,9 +54,11 @@ ARG-LIST. For example:
 
   while (rep_CONSP(rep_CDR(args))) {
     repv cell = Fcons(rep_CAR(args), rep_nil);
+    args = rep_CDR(args);
+
     *last = cell;
     last = rep_CDRLOC(cell);
-    args = rep_CDR(args);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       return 0;
@@ -73,6 +77,8 @@ ARG-LIST. For example:
 static repv
 eval_list(repv list)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   repv result = rep_nil;
   repv *last = &result;
 
@@ -367,6 +373,8 @@ progn FORMS...
 Eval's each of the FORMS in order returning the value of the last.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   repv result = rep_nil;
   repv old_current = rep_call_stack ? rep_call_stack->current_form : 0;
 

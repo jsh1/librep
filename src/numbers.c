@@ -1227,6 +1227,8 @@ number_prin(repv stream, repv obj)
 repv
 rep_number_foldl(repv args, repv(*op)(repv, repv))
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   if (!rep_CONSP(args)) {
     return rep_signal_missing_arg(1);
   }
@@ -1281,6 +1283,8 @@ number_foldv(int argc, repv *argv, repv(*op) (repv, repv))
 repv
 rep_integer_foldl(repv args, repv(*op)(repv, repv))
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   if (!rep_CONSP(args)) {
     return rep_signal_missing_arg(1);
   }
@@ -1335,6 +1339,8 @@ integer_foldv(int argc, repv *argv, repv(*op) (repv, repv))
 repv
 rep_foldl(repv args, repv(*op)(repv, repv))
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   if (!rep_CONSP(args)) {
     return rep_signal_missing_arg(1);
   }

@@ -30,15 +30,10 @@ volatile repv rep_throw_value;
 
 volatile int rep_test_int_counter = 0;
 
-/* Limit before calling test_int_fun() */
-
-int rep_test_int_period = 1000;
-
 /* Function to test asynchronously for interrupts. If it detects an
    interrupt, it should set `rep_throw_value' to `rep_int_cell' */
 
-static void default_test_int(void) {}
-void(*rep_test_int_fun)(void) = default_test_int;
+void (*rep_test_int_fun)(void);
 
 /* This cons cell is used for interrupts. We don't know if it's safe to
    call Fcons() (maybe in gc?) so this is always valid.  */
@@ -294,6 +289,16 @@ repv
 rep_mem_error(void)
 {
   return Fsignal(Qno_memory, rep_nil);
+}
+
+void
+rep_test_interrupt(void)
+{
+  rep_test_int_counter = 0;
+
+  if (rep_test_int_fun) {
+    (*rep_test_int_fun)();
+  }
 }
 
 void

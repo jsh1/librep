@@ -41,6 +41,8 @@ In all cases the value returned by the last-evaluated function is
 returned.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   if (!Qor) {
     rep_INTERN(or);
     rep_INTERN(and);
@@ -65,12 +67,14 @@ returned.
   while (rep_CONSP(hook)) {
     value = rep_apply(rep_CAR(hook), arg_list);
     hook = rep_CDR(hook);
+
     if (!value
 	|| (type == Qand && value == rep_nil)
 	|| (type == Qor && value != rep_nil))
     {
       break;
     }
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       value = 0;

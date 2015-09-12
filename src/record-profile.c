@@ -51,7 +51,7 @@ static RETSIGTYPE
 sigprof_handler(int unused)
 {
   /* force an interrupt */
-  rep_test_int_counter = rep_test_int_period;
+  rep_test_int_counter = rep_TEST_INT_PERIOD;
 }
 
 #endif
@@ -146,7 +146,9 @@ test_interrupt(void)
   set_timer();
 
 out:
-  (*chained_test_interrupt)();
+  if (chained_test_interrupt) {
+    (*chained_test_interrupt)();
+  }
 }
 
 DEFUN("start-profiler", Fstart_profiler, Sstart_profiler, (void), rep_Subr0)

@@ -880,34 +880,29 @@ typedef struct rep_gc_n_roots {
 
 /* Macros for interrupt handling */
 
-/* rep_TEST_INT is called before testing rep_INTERRUPTP, if necessary
-   the target operating system will define it to be something useful.
-   There's also a variant rep_TEST_INT_SLOW that should be used by code
-   that only checks a few times or less a second */
+/* rep_TEST_INT is called within loops, to check for async input
+   arriving containing user-interrupt sequences. */
 
-#ifndef rep_TEST_INT
-
-# define rep_TEST_INT						\
-  do {								\
-    if (++rep_test_int_counter > rep_test_int_period) { 	\
-      (*rep_test_int_fun)();					\
-      rep_test_int_counter = 0;					\
-    }								\
-  } while (0)
-
-# define rep_TEST_INT_SLOW	\
-  do {				\
-    (*rep_test_int_fun)();	\
-    rep_test_int_counter = 0;	\
-  } while (0)
-
-#else /* !rep_TEST_INT */
-
-# ifndef rep_TEST_INT_SLOW
-#  define rep_TEST_INT_SLOW rep_TEST_INT
-# endif
-
+#ifndef rep_TEST_INT_PERIOD
+# define rep_TEST_INT_PERIOD 1000
 #endif
+
+#define rep_TEST_INT					\
+  do {							\
+    if (++rep_test_int_counter > rep_TEST_INT_PERIOD) {	\
+      rep_test_interrupt();				\
+    }							\
+  } while (0)
+
+#define rep_TEST_INT_SLOW	\
+  do {				\
+      rep_test_interrupt();	\
+  } while (0)
+
+/* Can be used by functions that loop calling rep_TEST_INT -- allocates
+   the loop counter locally, to avoid costly global references. */
+
+#define rep_TEST_INT_LOOP_COUNTER int rep_test_int_counter = 0
 
 /* True when an interrupt has occurred; this means that the function
    should exit as soon as possible, returning 0. */

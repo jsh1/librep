@@ -468,6 +468,8 @@ call_subr(repv fun, int argc, repv *argv)
 static repv
 bytecode_vm(repv code, repv consts, repv req, int argc, repv *argv)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   /* Actual reusable size of the argv array. I did try reusing the
      passed in argv, but that caused stack corruption in some cases.. */
 
@@ -1943,17 +1945,22 @@ again: {
     }
 
     INSN(OP_JMP) {
-    do_jmp:
-      pc = (unsigned char *) rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
-      
-      rep_TEST_INT;
-      if (rep_INTERRUPTP) {
-	HANDLE_ERROR;
-      }
+    do_jmp:;
+      const uint8_t *old_pc = pc;
+      pc = (uint8_t *) rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
 
-      if (rep_data_after_gc >= rep_gc_threshold) {
-	SYNC_GC;
-	Fgarbage_collect(rep_nil);
+      /* Only check for interrupts / GC on backwards jumps, i.e. loops. */
+
+      if (pc < old_pc) {
+	rep_TEST_INT;
+	if (rep_INTERRUPTP) {
+	  HANDLE_ERROR;
+	}
+
+	if (rep_data_after_gc >= rep_gc_threshold) {
+	  SYNC_GC;
+	  Fgarbage_collect(rep_nil);
+	}
       }
 
       SAFE_NEXT;
@@ -2004,7 +2011,7 @@ again: {
 	  sp = stack + rep_INT(rep_CDR(item));
 	  PUSH(rep_throw_value);
 	  rep_throw_value = 0;
-	  pc = (unsigned char *) rep_STR(code) + rep_INT(rep_CAR(item));
+	  pc = (uint8_t *) rep_STR(code) + rep_INT(rep_CAR(item));
 	  impurity--;
 	  SAFE_NEXT;
 

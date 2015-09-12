@@ -49,6 +49,8 @@ rep_lisp_prin(repv strm, repv obj)
 {
   static int print_level = 0;
 
+  rep_TEST_INT_LOOP_COUNTER;
+
   switch (rep_TYPE(obj)) {
     char tbuf[64];
 

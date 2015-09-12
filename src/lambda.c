@@ -47,6 +47,8 @@ bind_lambda_list_1(repv lambda_list, repv *args, int nargs)
 
   const size_t lambda_var_elts = sizeof(struct lambda_var) / sizeof(repv);
 
+  rep_TEST_INT_LOOP_COUNTER;
+
   int lambda_len = rep_list_length(lambda_list);
   if (lambda_len < 0) {
     return 0;
@@ -222,6 +224,8 @@ bind_lambda_list_1(repv lambda_list, repv *args, int nargs)
 static repv
 bind_lambda_list(repv lambda_list, repv args)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   int argc = rep_list_length(args);
   if (argc < 0) {
     return 0;

@@ -80,6 +80,8 @@ DEFSTRING(noarg, "No argument for option");
 bool
 rep_get_option(char *option, repv *argp)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   size_t optlen = strlen(option);
   repv tem = Fsymbol_value(Qcommand_line_args, Qt);
 

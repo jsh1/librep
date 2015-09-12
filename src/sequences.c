@@ -62,6 +62,8 @@ copy-sequence SEQUENCE
 Returns a new sequence whose elements are eq? to those in SEQUENCE.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   if (seq == rep_nil) {
     return rep_nil;
   }

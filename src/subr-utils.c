@@ -29,6 +29,8 @@
 bool
 rep_assign_args(repv list, int required, int total, ...)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   va_list vars;
   va_start(vars, total);
 

@@ -681,9 +681,9 @@ rep_structure
 rep_structure_exports_all
 rep_structure_set_binds
 rep_term_cell
+rep_test_interrupt
 rep_test_int_counter
 rep_test_int_fun
-rep_test_int_period
 rep_thread_lock
 rep_throw_value
 rep_time

@@ -206,6 +206,8 @@ rep_unbound_file_error(repv file)
 repv
 rep_get_file_handler(repv file_name, int op)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(file_name, rep_STRINGP);
 
   repv list = Fsymbol_value(Qfile_handler_alist, Qt);
@@ -231,6 +233,7 @@ rep_get_file_handler(repv file_name, int op)
       }
     }
     list = rep_CDR(list);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       break;

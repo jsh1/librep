@@ -72,6 +72,8 @@ rep_search_special_environment(repv key)
 static int
 check_special_variable(repv sym)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   repv env = rep_STRUCTURE(rep_structure)->special_variables;
 
   if (env == Qt) {

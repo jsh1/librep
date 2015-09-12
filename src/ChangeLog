@@ -1,5 +1,13 @@
 2015-09-12  John Harper  <jsh@unfactored.org>
 
+	* variables.c, subr-utils.c, structures.c, streams.c,
+	signals.c, sequences.c, rep_subrs.h, rep_lisp.h, rep-gdbm.c,
+	record-profile.c, print.c, numbers.c, main.c, lists.c,
+	lispmach.h, librep.sym, lambda.c, fluids.c, files.c, eval.c,
+	errors.c, call-hook.c: define a macro rep_TEST_INT_LOOP_DECL
+	that creates the counter for rep_TEST_INT locally to the
+	function. Also reorganized interrupt checking slightly.
+
 	* weak-refs.c, types.c, structures.c, streams.c, repint.h,
 	rep_lisp.h, record-profile.c, processes.c, print.c, lispmach.h,
 	lispmach.c, librep.sym, guardians.c, gc.c, eval.c, apply.c:

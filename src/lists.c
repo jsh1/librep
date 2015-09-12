@@ -161,6 +161,8 @@ rep_list_5(repv v1, repv v2, repv v3, repv v4, repv v5)
 int
 rep_list_length(repv list)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   int i = 0;
 
   while (rep_CONSP(list)) {
@@ -178,6 +180,8 @@ rep_list_length(repv list)
 repv
 rep_copy_list(repv list)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   repv result;
   repv *last = &result;
 
@@ -196,6 +200,8 @@ rep_copy_list(repv list)
 repv
 rep_concat_lists(repv args)
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   int len = rep_list_length(args);
   if (len < 0) {
     return 0;
@@ -330,6 +336,8 @@ Non-destructively concatenates each of it's argument LISTS... into one
 new list which is returned.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   repv res = rep_nil;
   repv *res_end = &res;
 
@@ -365,6 +373,8 @@ list. Every LIST but the last is modified so that it's last cdr points
 to the beginning of the next list. Returns the new list.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   repv res = rep_nil;
   repv *res_end = &res;
 
@@ -395,18 +405,23 @@ Returns a new list which is a copy of LIST except that the members are in
 reverse order.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(head, rep_LISTP);
 
-  repv res = rep_nil;
+  repv ret = rep_nil;
+
   while (rep_CONSP(head)) {
-    res = Fcons(rep_CAR(head), res);
+    ret = Fcons(rep_CAR(head), ret);
     head = rep_CDR(head);
+
     rep_TEST_INT;
     if(rep_INTERRUPTP) {
       return 0;
     }
   }
-  return res;
+
+  return ret;
 }
 
 DEFUN("nreverse", Fnreverse, Snreverse, (repv head), rep_Subr1) /*
@@ -417,25 +432,29 @@ Returns LIST altered so that it's members are in reverse order to what they
 were. This function is destructive towards it's argument.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(head, rep_LISTP);
 
   if (rep_NILP(head)) {
     return head;
   }
 
-  repv res = rep_nil;
+  repv ret = rep_nil;
+
   while (rep_CONSP(head)) {
     repv next = rep_CDR(head);
-    rep_CDR(head) = res;
-    res = head;
+    rep_CDR(head) = ret;
+    ret = head;
     head = next;
+
     rep_TEST_INT;
     if(rep_INTERRUPTP) {
       return 0;
     }
   }
 
-  return res;
+  return ret;
 }
 
 DEFUN("assoc", Fassoc, Sassoc, (repv elt, repv list), rep_Subr2) /*
@@ -450,14 +469,18 @@ For example,
      => (three . 3)
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   while (rep_CONSP(list)) {
     repv car = rep_CAR(list);
+    list = rep_CDR(list);
+
     if (rep_CONSP(car) && !rep_value_cmp(elt, rep_CAR(car))) {
       return car;
     }
-    list = rep_CDR(list);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       return 0;
@@ -476,14 +499,18 @@ to compare elements. Returns the sub-list starting from the first matching
 association.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   while (rep_CONSP(list)) {
     repv car = rep_CAR(list);
+    list = rep_CDR(list);
+
     if (rep_CONSP(car) && elt == rep_CAR(car)) {
       return car;
     }
-    list = rep_CDR(list);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       return 0;
@@ -504,14 +531,18 @@ For example,
      => (three . 3)
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   while (rep_CONSP(list)) {
     repv car = rep_CAR(list);
+    list = rep_CDR(list);
+
     if (rep_CONSP(car) && !rep_value_cmp(elt, rep_CDR(car))) {
       return car;
     }
-    list = rep_CDR(list);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       return 0;
@@ -529,14 +560,18 @@ Searches ASSOC-LIST for a cons-cell whose cdr is `eq?' to ELT.
 Returns the first matching cons-cell, else nil.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   while (rep_CONSP(list)) {
     repv car = rep_CAR(list);
+    list = rep_CDR(list);
+
     if (rep_CONSP(car) && elt == rep_CDR(car)) {
       return car;
     }
-    list = rep_CDR(list);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       return 0;
@@ -553,12 +588,15 @@ nth INDEX LIST
 Returns the INDEXth element of LIST. The first element has an INDEX of zero.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(index, rep_NON_NEG_INT_P);
   rep_DECLARE2(list, rep_LISTP);
 
   intptr_t i = rep_INT(index);
   while (i-- > 0 && rep_CONSP(list)) {
     list = rep_CDR(list);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       return 0;
@@ -575,12 +613,15 @@ nthcdr INDEX LIST
 Returns the INDEXth cdr of LIST. The first is INDEX zero.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(index, rep_NON_NEG_INT_P);
   rep_DECLARE2(list, rep_LISTP);
 
   intptr_t i = rep_INT(index);
   while (i-- > 0 && rep_CONSP(list)) {
     list = rep_CDR(list);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       return 0;
@@ -597,6 +638,8 @@ last LIST
 Returns the last element of LIST.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE1(list, rep_LISTP);
 
   if (!rep_CONSP(list)) {
@@ -605,6 +648,7 @@ Returns the last element of LIST.
 
   while (rep_CONSP(rep_CDR(list))) {
     list = rep_CDR(list);
+
     rep_TEST_INT;
     if (rep_INTERRUPTP) {
       return 0;
@@ -625,6 +669,8 @@ made from the result of each function call. If more than one list is
 provided, they must all have the same number of elements.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   if (argc < 2) {
     return rep_signal_missing_arg(argc + 1);
   }
@@ -691,6 +737,8 @@ results. If more than one list is provided, they must all have the same
 number of elements.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   if (argc < 2) {
     return rep_signal_missing_arg(argc + 1);
   }
@@ -772,6 +820,8 @@ PREDICATE returns t when applied to; i.e. something like
 		       LIST))
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   repv output = rep_nil, *ptr = &output;
@@ -811,6 +861,8 @@ from the matched ELT, ie,
 `member' uses `equal?' to compare atoms.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   while (rep_CONSP(list)) {
@@ -838,6 +890,8 @@ from the matched ELT, ie,
 `memq' uses `eq?' to compare atoms.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   while (rep_CONSP(list)) {
@@ -862,6 +916,8 @@ If ELT is a member of list LIST then return the tail of the list starting
 from the matched ELT. `memql' uses `eqv?' to compare list items.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   while (rep_CONSP(list)) {
@@ -889,6 +945,8 @@ delete ELT LIST
 Returns LIST with any members `equal?' to ELT destructively removed.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   repv *ptr = &list;
@@ -915,6 +973,8 @@ delq ELT LIST
 Returns LIST with any members `eq?' to ELT destructively removed.
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   repv *ptr = &list;
@@ -946,6 +1006,8 @@ applied to that element, ie,
    => (2 3 4 2)
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   rep_GC_root gc_list, gc_pred;
@@ -983,6 +1045,8 @@ applied to that element, ie,
    => (1 1)
 ::end:: */
 {
+  rep_TEST_INT_LOOP_COUNTER;
+
   rep_DECLARE2(list, rep_LISTP);
 
   rep_GC_root gc_list, gc_pred;
