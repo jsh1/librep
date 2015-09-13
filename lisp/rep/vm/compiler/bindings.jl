@@ -258,7 +258,7 @@
 				  ((lex-set)
 				   (list 'env-set (heap-address var bindings)))))
 		 (let ((register (register-address var bindings base-env)))
-		   (setq max-register (max max-register (1+ register)))
+		   (set! max-register (max max-register (1+ register)))
 		   (set-car! rest (case (caar rest)
 				  ((lex-bind lex-set)
 				   (list 'reg-set register))

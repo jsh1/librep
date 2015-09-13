@@ -70,16 +70,16 @@
 (define remote-rep-hex-map (let
 			       ((map (make-string 128 0))
 				i)
-			     (setq i #\0)
+			     (set! i #\0)
 			     (while (<= i #\9)
 			       (string-set! map i (- i #\0))
-			       (setq i (1+ i)))
-			     (setq i #\a)
+			       (set! i (1+ i)))
+			     (set! i #\a)
 			     (while (<= i #\f)
 			       (string-set! map i (+ (- i #\a) 10))
 			       (string-set! map (+ i (- #\A #\a))
 					    (string-ref map i))
-			       (setq i (1+ i)))
+			       (set! i (1+ i)))
 			     map))
 
 (defconst remote-rep-success #\001)
@@ -107,13 +107,13 @@
 ;; Return an rep structure for HOST and USER, with a running rep session
 (defun remote-rep-open-host (host #!optional user)
   (unless user
-    (setq user (remote-get-user host)))
+    (set! user (remote-get-user host)))
   (catch 'foo
     (for-each (lambda (s)
 		(when (and (string=? (vector-ref s remote-rep-host) host)
 			   (string=? (vector-ref s remote-rep-user) user))
 		  ;; Move S to the head of the list
-		  (setq remote-rep-sessions
+		  (set! remote-rep-sessions
 			(cons s (delq! s remote-rep-sessions)))
 		  (throw 'foo s)))
 	      remote-rep-sessions)
@@ -142,7 +142,7 @@
     (vector-set! session remote-rep-status 'busy)
     (or (start-process process)
 	(error "Can't start rep-remote session"))
-    (setq remote-rep-sessions (cons session remote-rep-sessions))
+    (set! remote-rep-sessions (cons session remote-rep-sessions))
     (condition-case data
 	(remote-rep-connect session)
       (error
@@ -162,7 +162,7 @@
   "Close the rep-remote subprocess connected to `USER@HOST'."
   (interactive "sHost:\nsUser:")
   (when (or (null? user) (string=? user ""))
-    (setq user (remote-get-user host)))
+    (set! user (remote-get-user host)))
   (catch 'foo
     (for-each (lambda (s)
 		(when (and (string=? (vector-ref s remote-rep-host) host)
@@ -255,7 +255,7 @@
     
 (defun remote-rep-output-filter (session output)
   (when (vector-ref session remote-rep-pending-output)
-    (setq output (concat (vector-ref session remote-rep-pending-output) output))
+    (set! output (concat (vector-ref session remote-rep-pending-output) output))
     (vector-set! session remote-rep-pending-output nil))
   (when remote-rep-echo-output
     (let
@@ -280,15 +280,15 @@
 		    (error "No valid password"))
 		  (vector-set! session remote-rep-login-data pass)
 		  pass))
-	       (setq point (string-length output)))
+	       (set! point (string-length output)))
 	      ((string-match remote-rep-signature output point)
 	       (vector-set! session remote-rep-protocol
 		     (string->number (expand-last-match "\\1")))
-	       (setq point (match-end)))
+	       (set! point (match-end)))
 	      ((= (string-ref output point) remote-rep-success)
 	       ;; success
 	       (vector-set! session remote-rep-status 'success)
-	       (setq point (1+ point)))
+	       (set! point (1+ point)))
 	      ((= (string-ref output point) remote-rep-failure)
 	       ;; failure, look for error message
 	       (let
@@ -297,15 +297,15 @@
 		     (progn
 		       (vector-set! session remote-rep-error msg)
 		       (vector-set! session remote-rep-status 'failure)
-		       (setq point (+ point 9 (string-length msg))))
+		       (set! point (+ point 9 (string-length msg))))
 		   (vector-set! session remote-rep-pending-output
 				(substring output point))
-		   (setq point (string-length output)))))
+		   (set! point (string-length output)))))
 	      (t
 ;	       (unless (string-looking-at "\\s*$" output point)
 ;		 (format *standard-error* "remote-rep: unhandled output %S\n"
 ;			 (substring output point)))
-	       (setq point (string-length output))))))))
+	       (set! point (string-length output))))))))
 
 (defun remote-rep-sentinel (process)
   (let
@@ -316,7 +316,7 @@
       (vector-set! session remote-rep-status nil)
       (vector-set! session remote-rep-pending-output nil)
       (vector-set! session remote-rep-callback nil)
-      (setq remote-rep-sessions (delq! session remote-rep-sessions)))))
+      (set! remote-rep-sessions (delq! session remote-rep-sessions)))))
 
 
 ;; Commands
@@ -347,8 +347,8 @@
 					output (1+ point))))
 			       (if len
 				   (progn
-				     (setq remote-rep-len len)
-				     (setq point (+ point 9)))
+				     (set! remote-rep-len len)
+				     (set! point (+ point 9)))
 				 ;; wait for next output
 				 (vector-set! session remote-rep-pending-output
 				       (substring output point)))))
@@ -370,8 +370,8 @@
 				      (- (string-length output) point))))
 			(write remote-rep-get-fh
 			       (substring output point (+ point this)))
-			(setq remote-rep-len (- remote-rep-len this))
-			(setq point (+ point this)))
+			(set! remote-rep-len (- remote-rep-len this))
+			(set! point (+ point this)))
 		      (when (zero? remote-rep-len)
 			(vector-set! session remote-rep-status 'success)))))
 	    (unwind-protect
@@ -442,7 +442,7 @@
 	  (lambda (session output point)
 	    (cond ((= (string-ref output point) remote-rep-success)
 		   ;; success
-		   (setq remote-rep-link
+		   (set! remote-rep-link
 			 (remote-rep-read-string
 			  output (1+ point)))
 		   (if remote-rep-link
@@ -488,7 +488,7 @@
 	   (vector-ref file remote-rep-file-user)))
 
 (defun remote-rep-dir-cached-p (session dir)
-  (setq dir (directory-file-name dir))
+  (set! dir (directory-file-name dir))
   (catch 'exit
     (for-each (lambda (dir-entry)
 		(when (string=? (vector-ref dir-entry remote-rep-cache-dir) dir)
@@ -502,12 +502,12 @@
        entry)
     (when (string=? base "")
       ;; hack, hack
-      (setq base (file-name-nondirectory dir)
-	    dir (file-name-directory dir))
+      (set! base (file-name-nondirectory dir))
+      (set! dir (file-name-directory dir))
       (when (string=? base "")
-	(setq base ".")))
-    (setq dir (directory-file-name dir))
-    (setq entry (remote-rep-dir-cached-p session dir))
+	(set! base ".")))
+    (set! dir (directory-file-name dir))
+    (set! entry (remote-rep-dir-cached-p session dir))
     (if (not (and entry (> (vector-ref entry remote-rep-cache-expiry)
 			   (current-time))))
 	(progn
@@ -515,7 +515,7 @@
 	  (when entry
 	    (vector-set! session remote-rep-dircache
 		  (delq! entry (vector-ref session remote-rep-dircache)))
-	    (setq entry nil))
+	    (set! entry nil))
 	  (remote-rep-while session 'busy 'dircache)
 	  (when (>= (list-length (vector-ref session remote-rep-dircache))
 		    remote-rep-dircache-max-dirs)
@@ -523,7 +523,7 @@
 	    (set-cdr! (list-tail (vector-ref session remote-rep-dircache)
 			    (1- (list-length (vector-ref session remote-rep-dircache)))) nil))
 	  ;; add the new (empty) entry for the directory to be read.
-	  (setq entry (vector dir (+ (current-time)
+	  (set! entry (vector dir (+ (current-time)
 				     remote-rep-dircache-expiry-time) nil))
 	  (vector-set! session remote-rep-dircache
 		(cons entry (vector-ref session remote-rep-dircache)))
@@ -556,8 +556,8 @@
 		(eq? (vector-ref file-struct remote-rep-file-type) 'symlink))
       (let
 	  ((link (remote-rep-read-symlink session file)))
-	(setq file (expand-file-name link (file-name-directory file)))
-	(setq file-struct (remote-rep-get-file session file))))
+	(set! file (expand-file-name link (file-name-directory file)))
+	(set! file-struct (remote-rep-get-file session file))))
     file-struct))
 
 (defun remote-rep-dircache-callback (cache-entry session output point)
@@ -569,13 +569,13 @@
 	   file-struct)
 	(if text
 	    (progn
-	      (setq file-struct (read-from-string text))
+	      (set! file-struct (read-from-string text))
 	      (unless (vector? file-struct)
 		(error "file-struct isn't a vector!: %S" file-struct))
 	      (vector-set! cache-entry remote-rep-cache-entries
 		    (cons file-struct
 			  (vector-ref cache-entry remote-rep-cache-entries)))
-	      (setq point (+ start 8 (string-length text))))
+	      (set! point (+ start 8 (string-length text))))
 	  (throw 'done t)))))
   (when (< point (string-length output))
     (cond ((= (string-ref output point) remote-rep-success)
@@ -598,7 +598,7 @@
 		 remote-rep-pending-output (substring output point))))))
 
 (defun remote-rep-invalidate-directory (session directory)
-  (setq directory (directory-file-name directory))
+  (set! directory (directory-file-name directory))
   (let
       ((entry (remote-rep-dir-cached-p session directory)))
     (when entry
@@ -633,7 +633,7 @@
 		    (set-cdr! cell passwd)
 		    (throw 'foo)))
 		remote-rep-passwd-alist)
-      (setq remote-rep-passwd-alist (cons (cons joined passwd)
+      (set! remote-rep-passwd-alist (cons (cons joined passwd)
 					  remote-rep-passwd-alist)))))
 
 
@@ -754,7 +754,7 @@
 	    ;; Need to transfer the file initially
 	    (remote-rep-get session file-name local-file))
 	  ;; Open the local file
-	  (setq local-fh (make-file-from-stream (car args)
+	  (set! local-fh (make-file-from-stream (car args)
 						(open-file local-file type)
 						'remote-file-handler))
 	  (set-file-handler-data local-fh

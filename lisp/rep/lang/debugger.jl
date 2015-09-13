@@ -78,10 +78,10 @@
 		 (do-set-result
 		  (eval (read-from-string (substring input (match-end))))))
 		((string-match "^\\s*u" input)
-		 (setq next-last do-up)
+		 (set! next-last do-up)
 		 (do-up))
 		((string-match "^\\s*d" input)
-		 (setq next-last do-down)
+		 (set! next-last do-down)
 		 (do-down))
 		((string-match "^\\s*p\\w*\\s+" input)
 		 (condition-case data
@@ -93,7 +93,7 @@
 		((string-match "^\\s*b" input)
 		 (print-backtrace))
 		((string-match "^\\s*f" input)
-		 (setq last-printed-frame t)
+		 (set! last-printed-frame t)
 		 (print-frame (fluid frame-id))
 		 (if (fluid obj)
 		     (progn
@@ -106,7 +106,7 @@
 		 (if (fluid last)
 		     (progn
 		       ((fluid last))
-		       (setq next-last (fluid last)))
+		       (set! next-last (fluid last)))
 		   (write *standard-error* "Nothing to repeat\n")))
 		(t
 		 (write *standard-error* "\
@@ -140,7 +140,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 				  (file-name-nondirectory (car location))
 				  (cdr location))
 			""))))))
-      (setq last-printed-frame frame)))
+      (set! last-printed-frame frame)))
 
   (defun print-backtrace ()
     (do ((i (fluid bottom-frame-id) (1- i)))
@@ -239,6 +239,6 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 
 ;;; initialize debug hooks (special variables)
 
-  (setq *debug-entry* entry)
-  (setq *debug-exit* exit)
-  (setq *debug-error-entry* error-entry))
+  (set! *debug-entry* entry)
+  (set! *debug-exit* exit)
+  (set! *debug-error-entry* error-entry))

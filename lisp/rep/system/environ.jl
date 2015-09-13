@@ -44,7 +44,7 @@ The `*process-environment*' variable is destructively modified."
   (let ((regexp (concat (quote-regexp name) #\=)))
     (let loop ((rest *process-environment*))
       (cond ((null? rest)
-	     (setq *process-environment* (cons (concat name #\= value)
+	     (set! *process-environment* (cons (concat name #\= value)
 					       *process-environment*)))
 	    ((string-looking-at regexp (car rest))
 	     (set-car! rest (concat name #\= value)))
@@ -54,6 +54,6 @@ The `*process-environment*' variable is destructively modified."
 (defun unsetenv (name)
   "Delete the environment variable called NAME."
   (let ((re (concat (quote-regexp name) #\=)))
-    (setq *process-environment*
+    (set! *process-environment*
 	  (delete-if! (lambda (x)
 		       (string-looking-at re x)) *process-environment*))))

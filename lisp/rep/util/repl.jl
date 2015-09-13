@@ -60,7 +60,7 @@
 
   ;; returns t if repl should run again
   (define (repl-iterate repl input)
-    (setq input (concat (repl-pending repl) input))
+    (set! input (concat (repl-pending repl) input))
     (repl-set-pending repl nil)
     (let-fluids ((current-repl repl))
       (let ((*print-escape* t))
@@ -74,8 +74,8 @@
 			(sexps '()))
 		    (condition-case nil
 			(while t
-			  (setq sexps (cons (read stream) sexps)))
-		      (end-of-stream (setq sexps (reverse! sexps))))
+			  (set! sexps (cons (read stream) sexps)))
+		      (end-of-stream (set! sexps (reverse! sexps))))
 		    (let ((command (repl-command (car sexps))))
 		      (and command (apply command (cdr sexps))))))
 
@@ -178,7 +178,7 @@
     (let ((cell (assq name repl-commands)))
       (if cell
 	  (set-cdr! cell (list function doc))
-	(setq repl-commands (cons (list name function doc) repl-commands)))))
+	(set! repl-commands (cons (list name function doc) repl-commands)))))
 
   (define (find-command name)
     (let ((cell (assq name repl-commands)))
@@ -272,7 +272,7 @@
        (structure-walk (lambda (var value)
 			 (declare (unused value))
 			 (when value
-			   (setq structures (cons var structures))))
+			   (set! structures (cons var structures))))
 		       (get-structure '%structures))
        (print-list (sort! structures)))))
 
@@ -282,7 +282,7 @@
      (let (interfaces)
        (structure-walk (lambda (var value)
 			 (declare (unused value))
-			 (setq interfaces (cons var interfaces)))
+			 (set! interfaces (cons var interfaces)))
 		       (get-structure '%interfaces))
        (print-list (sort! interfaces)))))
 
@@ -440,7 +440,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
 			 (declare (unused k))
 			 (when (and v (structure-name v)
 				    (structure-exports? v var))
-			   (setq out (cons (structure-name v) out))))
+			   (set! out (cons (structure-name v) out))))
 		       (get-structure '%structures))
        (if out
 	   (format *standard-output* "%s is exported by: %s.\n"
@@ -452,9 +452,9 @@ commands may be abbreviated to their unique leading characters.\n\n")
    'time
    (lambda (form)
      (let (t1 t2 ret)
-       (setq t1 (current-utime))
-       (setq ret (repl-eval form))
-       (setq t2 (current-utime))
+       (set! t1 (current-utime))
+       (set! ret (repl-eval form))
+       (set! t2 (current-utime))
        (format *standard-output*
 	       "%S\nElapsed: %d seconds\n" ret (/ (- t2 t1) 1e6))))
    "FORM")

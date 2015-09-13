@@ -155,17 +155,17 @@
   (defmacro define-record-type (rt constructor . fields)
     (let (names predicate-defs accessor-defs modifier-defs)
       (when (and fields (symbol? (car fields)))
-	(setq predicate-defs `((define ,(car fields) (record-predicate ,rt))))
-	(setq fields (cdr fields)))
-      (setq names (map car fields))
+	(set! predicate-defs `((define ,(car fields) (record-predicate ,rt))))
+	(set! fields (cdr fields)))
+      (set! names (map car fields))
       (for-each (lambda (field)
 		  (when (cadr field)
-		    (setq accessor-defs
+		    (set! accessor-defs
 			  (cons `(define ,(cadr field)
 				   (record-accessor ,rt ',(car field)))
 				accessor-defs)))
 		  (when (caddr field)
-		    (setq modifier-defs
+		    (set! modifier-defs
 			  (cons `(define ,(caddr field)
 				   (record-modifier ,rt ',(car field)))
 				modifier-defs))))

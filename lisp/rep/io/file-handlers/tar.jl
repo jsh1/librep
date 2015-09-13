@@ -101,11 +101,11 @@
 	   ((output (make-string-output-stream))
 	    (process (make-process output)))
 	 (when (zero? (call-process process nil prog "--version"))
-	   (setq output (get-output-stream-string output))
+	   (set! output (get-output-stream-string output))
 	   (when (string-looking-at
 		  "(tar )?[(]?GNU tar[)]?\\s*(.*?)\\s*\n" output)
-	     (setq tarfh-gnu-tar-program prog)
-	     (setq tarfh-gnu-tar-version (expand-last-match "\\2"))
+	     (set! tarfh-gnu-tar-program prog)
+	     (set! tarfh-gnu-tar-version (expand-last-match "\\2"))
 	     (throw 'out t)))))
      (cons tarfh-gnu-tar-program tarfh-alternative-gnu-tar-programs))
     (error "Can't find/execute GNU tar")))
@@ -114,7 +114,7 @@
   ;; XXX handle non-local files by copying
   ;; XXX but then again, that's a bad idea in gaolled code..
   (when (file-exists? tar-file)
-    (setq tar-file (local-file-name tar-file))
+    (set! tar-file (local-file-name tar-file))
     (unless tarfh-gnu-tar-version
       (tarfh-check-tar-program))
     (let* ((process (make-process output))
@@ -140,8 +140,8 @@
 	    (make-directory dir-name)
 	    (set-file-modes dir-name #o700)
 	    (tarfh-call-tar nil nil "--extract" tarfile "-C" dir-name)
-	    (setq cached-file tarfile)
-	    (setq cached-dir dir-name))
+	    (set! cached-file tarfile)
+	    (set! cached-dir dir-name))
 	(file-error))))
   (if (and cached-file (file-name= cached-file tarfile))
       (copy-file (expand-file-name file-name cached-dir) dest-file)
@@ -158,7 +158,7 @@
     ;; delete the old file in the background..
     (system
      (format nil "nice rm -rf '%s' & >/dev/null 2>&1 </dev/null" cached-dir))
-    (setq cached-file nil)))
+    (set! cached-file nil)))
 
 (add-hook '*idle-hook* empty-file-cache)
 (add-hook '*before-exit-hook* empty-file-cache)
@@ -187,20 +187,20 @@
 
 (defun tarfh-output-function (string cache)
   (when tarfh-pending-output
-    (setq string (concat tarfh-pending-output string))
-    (setq tarfh-pending-output nil))
+    (set! string (concat tarfh-pending-output string))
+    (set! tarfh-pending-output nil))
   (let
       ((point 0)
        entry next)
     (while (string-match "\n" string point)
-      (setq next (match-end))
-      (setq entry (tarfh-parse-list string point))
-      (setq point next)
+      (set! next (match-end))
+      (set! entry (tarfh-parse-list string point))
+      (set! point next)
       (when entry
 	(vector-set! cache tarfh-cache-entries
 	      (cons entry (vector-ref cache tarfh-cache-entries)))))
     (when (< point (string-length string))
-      (setq tarfh-pending-output (substring string point)))))
+      (set! tarfh-pending-output (substring string point)))))
 
 (defun tarfh-parse-list (string point)
   (when (string-looking-at tarfh-list-regexp string point)
@@ -214,9 +214,9 @@
 	 (name (substring string (match-start 6) (match-end 6)))
 	 symlink file-name)
       (when (string-match " -> " name)
-	(setq symlink (substring name (match-end)))
-	(setq name (substring name 0 (match-start))))
-      (setq file-name (expand-file-name name ""))
+	(set! symlink (substring name (match-end)))
+	(set! name (substring name 0 (match-start))))
+      (set! file-name (expand-file-name name ""))
       (vector name file-name size modtime
 	      (cdr (assq (string-ref mode-string 0) tarfh-list-type-alist))
 	      nil mode-string user group symlink))))
@@ -255,14 +255,14 @@
       ((entry (tarfh-lookup-file tarfile dir))
        re files tem)
     (when entry
-      (setq dir (vector-ref entry tarfh-file-name)))
-    (setq dir (file-name-as-directory dir))
-    (setq re (concat (quote-regexp dir) "([^/]+)"))
+      (set! dir (vector-ref entry tarfh-file-name)))
+    (set! dir (file-name-as-directory dir))
+    (set! re (concat (quote-regexp dir) "([^/]+)"))
     (for-each (lambda (e)
 		(when (string-looking-at re (vector-ref e tarfh-file-name))
-		  (setq tem (expand-last-match "\\1"))
+		  (set! tem (expand-last-match "\\1"))
 		  (unless (member tem files)
-		    (setq files (cons tem files)))))
+		    (set! files (cons tem files)))))
 	      (vector-ref (car tarfh-dir-cache) tarfh-cache-entries))
     files))
 
@@ -270,7 +270,7 @@
   (catch 'out
     (let
 	((cache (tarfh-tarfile-cached-p tarfile)))
-      (setq name (expand-file-name (file-name-as-directory name) ""))
+      (set! name (expand-file-name (file-name-as-directory name) ""))
       (when cache
 	(for-each (lambda (entry)
 		    (when (string-prefix? (vector-ref entry tarfh-file-name) name)
@@ -283,7 +283,7 @@
   (string=? (user-login-name) (vector-ref file tarfh-file-user)))
 
 (defun tarfh-tarfile-cached-p (tarfile)
-  (setq tarfile (canonical-file-name tarfile))
+  (set! tarfile (canonical-file-name tarfile))
   (catch 'exit
     (for-each (lambda (dir-entry)
 		(when (string=? tarfile (vector-ref dir-entry tarfh-cache-tarfile))
@@ -293,30 +293,30 @@
 (defun tarfh-get-file (tarfile filename)
   (let
       (entry)
-    (setq tarfile (canonical-file-name tarfile))
-    (setq filename (expand-file-name filename ""))
-    (setq entry (tarfh-tarfile-cached-p tarfile))
+    (set! tarfile (canonical-file-name tarfile))
+    (set! filename (expand-file-name filename ""))
+    (set! entry (tarfh-tarfile-cached-p tarfile))
     (if (not (and entry (equal? (vector-ref entry tarfh-cache-modtime)
 			       (file-modtime tarfile))))
 	(progn
 	  ;; Cache TARFILE
 	  (when entry
-	    (setq tarfh-dir-cache (delq! entry tarfh-dir-cache))
-	    (setq entry nil))
+	    (set! tarfh-dir-cache (delq! entry tarfh-dir-cache))
+	    (set! entry nil))
 	  (when (>= (list-length tarfh-dir-cache) tarfh-max-cached-dirs)
 	    ;; delete the least-recently-used entry
 	    (set-cdr! (list-tail tarfh-dir-cache
 			       (1- (list-length tarfh-dir-cache))) nil))
 	  ;; add the new (empty) entry for the directory to be read.
-	  (setq entry (vector tarfile (file-modtime tarfile) nil))
-	  (setq tarfh-dir-cache (cons entry tarfh-dir-cache))
+	  (set! entry (vector tarfile (file-modtime tarfile) nil))
+	  (set! tarfh-dir-cache (cons entry tarfh-dir-cache))
 	  (tarfh-call-tar nil (lambda (o)
 				(tarfh-output-function o entry))
 			  "--list" tarfile "--verbose")
 	  (vector-set! entry tarfh-cache-entries
 		(reverse! (vector-ref entry tarfh-cache-entries))))
       ;; entry is still valid, move it to the front of the list
-      (setq tarfh-dir-cache (cons entry (delq! entry tarfh-dir-cache))))
+      (set! tarfh-dir-cache (cons entry (delq! entry tarfh-dir-cache))))
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
       (for-each (lambda (f)
@@ -332,26 +332,26 @@
 		(eq? (vector-ref file-struct tarfh-file-type) 'symlink))
       (let
 	  ((link (vector-ref file-struct tarfh-file-symlink)))
-	(setq file (expand-file-name link (file-name-directory file)))
-	(setq file-struct (tarfh-get-file tarfile file))))
+	(set! file (expand-file-name link (file-name-directory file)))
+	(set! file-struct (tarfh-get-file tarfile file))))
     file-struct))
 
 (defun tarfh-invalidate-tarfile (tarfile)
-  (setq tarfile (canonical-file-name tarfile))
+  (set! tarfile (canonical-file-name tarfile))
   (let
       ((entry (tarfh-tarfile-cached-p tarfile)))
     (when entry
-      (setq tarfh-dir-cache (delq! entry tarfh-dir-cache)))))
+      (set! tarfh-dir-cache (delq! entry tarfh-dir-cache)))))
 
 (defun tarfh-empty-cache ()
   "Discard all cached TAR directory entries."
   (interactive)
-  (setq tarfh-dir-cache nil))
+  (set! tarfh-dir-cache nil))
 
 (defun tarfh-after-gc ()
   (let
       (fh)
-    (while (setq fh (tarfh-fh-guardian))
+    (while (set! fh (tarfh-fh-guardian))
       (when (file-binding fh)
 	(close-file fh)))))
 
@@ -455,7 +455,7 @@
 	    (tarfh-copy-out
 	     tarfile (vector-ref file tarfh-file-full-name) local-file))
 	  ;; Open the local file
-	  (setq local-fh (make-file-from-stream (car args)
+	  (set! local-fh (make-file-from-stream (car args)
 						(open-file local-file type)
 						'tar-file-handler))
 	  (set-file-handler-data local-fh local-file)
@@ -496,7 +496,7 @@
        (t
 	(error "Unsupported TAR op: %s %s" op args)))))))
 
-;;;###autoload (setq *file-handler-alist* (cons '("#tar\\b" . tar-file-handler) *file-handler-alist*))
+;;;###autoload (set! *file-handler-alist* (cons '("#tar\\b" . tar-file-handler) *file-handler-alist*))
 ;;;###autoload (autoload-file-handler 'tar-file-handler 'rep.io.file-handlers.tar)
 
 (define-file-handler 'tar-file-handler tar-file-handler))

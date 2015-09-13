@@ -34,27 +34,26 @@
 				 (i 0))
 			     (while (< i #\+)
 			       (string-set! map i i)
-			       (setq i (1+ i)))
+			       (set! i (1+ i)))
 			     (string-set! map #\+ #\space)
 			     map))
 
   (defun cgi-get-params (#!optional query-string)
     (unless query-string
-      (setq query-string (getenv "QUERY_STRING")))
-    (let
-	((point 0)
-	 (params nil)
-	 name value)
+      (set! query-string (getenv "QUERY_STRING")))
+    (let ((point 0)
+	  (params nil)
+	  name value)
       (while (string-looking-at "([^=]+)=([^&]*)(&|$)" query-string point)
-	(setq point (match-end))
-	(setq name (intern
+	(set! point (match-end))
+	(set! name (intern
 		    (unquote
 		     (substring query-string (match-start 1) (match-end 1)))))
-	(setq value (unquote
+	(set! value (unquote
 		     (substring query-string (match-start 2) (match-end 2))))
 	(when (string=? value "")
-	  (setq value nil))
-	(setq params (cons (cons name value) params)))
+	  (set! value nil))
+	(set! params (cons (cons name value) params)))
       (reverse! params)))
 
   (defsubst hexdigit (char)
@@ -66,15 +65,15 @@
     (let
 	((frags nil)
 	 (point 0))
-      (setq string (translate-string! string unquote-plus-map))
+      (set! string (translate-string! string unquote-plus-map))
       (while (string-match "%.." string point)
-	(setq frags (cons (substring string point (match-start)) frags))
-	(setq point (match-end))
-	(setq frags (cons (+ (* (hexdigit (string-ref string (- point 2))) 16)
+	(set! frags (cons (substring string point (match-start)) frags))
+	(set! point (match-end))
+	(set! frags (cons (+ (* (hexdigit (string-ref string (- point 2))) 16)
 			     (hexdigit (string-ref string (1- point)))) frags)))
       (if (zero? point)
 	  string
-	(setq frags (cons (substring string point) frags))
+	(set! frags (cons (substring string point) frags))
 	(apply concat (reverse! frags)))))
 
 

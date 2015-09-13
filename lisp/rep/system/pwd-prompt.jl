@@ -38,7 +38,7 @@ contents of the prompt will be masked out whilst being entered."
 	  (flush-file *standard-error*)
 	  (let ((string (read-line *standard-input*)))
 	    (when (string-match "\n$" string)
-	      (setq string (substring string 0 (match-start))))
+	      (set! string (substring string 0 (match-start))))
 	    (write *standard-error* #\newline)
 	    string))
       (system "stty echo"))))

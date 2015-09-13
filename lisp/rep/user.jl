@@ -30,7 +30,7 @@
 	   rep.io.processes)
      (set-binds))
 
-  (setq *user-structure* 'user)
+  (set! *user-structure* 'user)
 
   ;; Install all autoload hooks.
   (load-all "autoload" (lambda (f) (load f nil t)))
@@ -62,18 +62,18 @@
 
 	 (parse-options
 	  (lambda ()
-	    (let (arg)
-	      (condition-case error-data
-		  (while (setq arg (car *command-line-args*))
-		    (setq *command-line-args* (cdr *command-line-args*))
+	    (condition-case error-data
+		(while *command-line-args*
+		  (let ((arg (car *command-line-args*)))
+		    (set! *command-line-args* (cdr *command-line-args*))
 		    (cond
 		     ((member arg '("--call" "-f"))
-		      (setq arg (car *command-line-args*))
-		      (setq *command-line-args* (cdr *command-line-args*))
+		      (set! arg (car *command-line-args*))
+		      (set! *command-line-args* (cdr *command-line-args*))
 		      ((symbol-value (read-from-string arg))))
 		     ((member arg '("--load" "-l"))
-		      (setq arg (car *command-line-args*))
-		      (setq *command-line-args* (cdr *command-line-args*))
+		      (set! arg (car *command-line-args*))
+		      (set! *command-line-args* (cdr *command-line-args*))
 		      (do-load arg))
 		     ((string=? arg "--check")
 		      (require 'rep.test.framework)
@@ -111,12 +111,12 @@ where OPTIONS are any of:
 		     ((member arg '("--quit" "-q"))
 		      (throw 'quit 0))
 		     (t
-		      (setq *batch-mode* t)
-		      (do-load arg))))
-		(error
-		 (declare (special *error-handler-function*))
-		 (*error-handler-function* (car error-data) (cdr error-data))
-		 (throw 'quit 1)))))))
+		      (set! *batch-mode* t)
+		      (do-load arg)))))
+	      (error
+	       (declare (special *error-handler-function*))
+	       (*error-handler-function* (car error-data) (cdr error-data))
+	       (throw 'quit 1))))))
 
     ;; Use all arguments which are left.
     (if (get-command-line-option "--debug")
@@ -124,8 +124,8 @@ where OPTIONS are any of:
 	  (require 'rep.lang.debugger)
 	  (call-with-lexical-origins
 	   (lambda ()
-	     (setq *interpreted-mode* t)
-	     (setq *debug-on-error*
+	     (set! *interpreted-mode* t)
+	     (set! *debug-on-error*
 		   '(bad-arg missing-arg invalid-function void-value
 		     invalid-read-syntax premature-end-of-stream
 		     invalid-lambda-list invalid-macro invalid-autoload

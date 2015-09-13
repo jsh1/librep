@@ -187,13 +187,13 @@
 	     ;; make #<subr macroexpand> pass us any inner expansions
 	     (*macro-environment* compiler-macroexpand-1))
 	(if def
-	    (setq form (apply (cdr def) (cdr form)))
-	  (setq def (compiler-symbol-value (car form)))
+	    (set! form (apply (cdr def) (cdr form)))
+	  (set! def (compiler-symbol-value (car form)))
 	  (when (and (eq? (car def) 'macro) (function? (cdr def)))
 	    (when (and (closure? (cdr def))
 		       (eq? (car (closure-function (cdr def))) 'autoload))
-	      (setq def (load-autoload (cdr def))))
-	    (setq form (apply (cdr def) (cdr form)))))))
+	      (set! def (load-autoload (cdr def))))
+	    (set! form (apply (cdr def) (cdr form)))))))
     form)
 
   (defun compiler-macroexpand (form #!optional pred)
@@ -235,11 +235,11 @@
 
       ;; pass 1. remember definitions in the body for pass 2
       (when pass-1
-	(setq body (pass-1 body)))
+	(set! body (pass-1 body)))
 
       ;; pass 2. the actual compilation
       (when pass-2
-	(setq body (pass-2 body)))
+	(set! body (pass-2 body)))
 
       ;; return the compiled representation of the body
       body))
@@ -349,28 +349,28 @@
 	 (config (car body))
 	 header)
 
-      (setq body (cdr body))
+      (set! body (cdr body))
       (unless (list? (car config))
-	(setq config (list config)))
+	(set! config (list config)))
       (for-each (lambda (clause)
 		  (case (car clause)
 		    ((open)
-		     (setq opened (append! (reverse (cdr clause)) opened))
-		     (setq header (cons clause header)))
+		     (set! opened (append! (reverse (cdr clause)) opened))
+		     (set! header (cons clause header)))
 
 		    ((access)
-		     (setq accessed (append! (reverse (cdr clause)) accessed))
-		     (setq header (cons clause header)))
+		     (set! accessed (append! (reverse (cdr clause)) accessed))
+		     (set! header (cons clause header)))
 
-		    (t (setq header (cons clause header)))))
+		    (t (set! header (cons clause header)))))
 		config)
-      (setq header (cons '(open rep.module-system) (reverse! header)))
+      (set! header (cons '(open rep.module-system) (reverse! header)))
 
       (let-fluids ((current-structure nil)
 		   (current-module name))
 	(call-with-module-env
 	 (lambda ()
-	   (setq body (compile-module-body-1 body))
+	   (set! body (compile-module-body-1 body))
 
 	   (if top-level
 	       (if name

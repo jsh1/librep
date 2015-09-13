@@ -162,13 +162,13 @@ file types.")
 ;; Return an ftp structure for HOST and USER, with a running ftp session
 (defun remote-ftp-open-host (host #!optional user)
   (unless user
-    (setq user (remote-get-user host)))
+    (set! user (remote-get-user host)))
   (catch 'foo
     (for-each (lambda (s)
 		(when (and (string=? (vector-ref s remote-ftp-host) host)
 			   (string=? (vector-ref s remote-ftp-user) user))
 		  ;; Move S to the head of the list
-		  (setq remote-ftp-sessions
+		  (set! remote-ftp-sessions
 			(cons s (delq! s remote-ftp-sessions)))
 		  (throw 'foo s)))
 	      remote-ftp-sessions)
@@ -196,7 +196,7 @@ file types.")
     (vector-set! session remote-ftp-status 'busy)
     (or (start-process process)
 	(error "Can't start FTP session"))
-    (setq remote-ftp-sessions (cons session remote-ftp-sessions))
+    (set! remote-ftp-sessions (cons session remote-ftp-sessions))
     (condition-case data
 	(progn
 	  (remote-ftp-connect session)
@@ -218,7 +218,7 @@ file types.")
   "Close the FTP subprocess connect to `USER@HOST'."
   (interactive "sHost:\nsUser:")
   (when (or (null? user) (string=? user ""))
-    (setq user (remote-get-user host)))
+    (set! user (remote-get-user host)))
   (catch 'foo
     (for-each (lambda (s)
 		(when (and (string=? (vector-ref s remote-ftp-host) host)
@@ -263,7 +263,7 @@ file types.")
   (let
       ((retry t))
     (while retry
-      (setq retry nil)
+      (set! retry nil)
       (condition-case data
 	  (progn
 	    (when remote-ftp-display-progress
@@ -283,7 +283,7 @@ file types.")
 			    (vector-ref session remote-ftp-host)))
 	   (remote-ftp-while session 'dying type)
 	   (remote-ftp-open-session session)
-	   (setq retry t)))))
+	   (set! retry t)))))
     (remote-ftp-error-if-unsuccessful session fmt args)))
 
 ;; Return t if successful, else signal a file-error
@@ -302,7 +302,7 @@ file types.")
 	((*print-escape* t))
       (format (stderr-file) "FTP output: %S\n" output)))
   (when (vector-ref session remote-ftp-pending-output)
-    (setq output (concat (vector-ref session remote-ftp-pending-output) output))
+    (set! output (concat (vector-ref session remote-ftp-pending-output) output))
     (vector-set! session remote-ftp-pending-output nil))
   (let
       ((point 0)
@@ -310,10 +310,10 @@ file types.")
     (while (< point (string-length output))
       ;; Skip any prompts
       (when (string-looking-at remote-ftp-prompt-regexp output point)
-	(setq point (match-end)))
+	(set! point (match-end)))
       ;; Look for `#' progress characters
       (when (string-looking-at "#+" output point)
-	(setq point (match-end))
+	(set! point (match-end))
 	(when remote-ftp-display-progress
 	  (write t (substring output (match-start) (match-end)))
 	  (when (feature? 'jade)
@@ -338,27 +338,27 @@ file types.")
 		       (vector-set! session remote-ftp-login-data pass)
 		       pass))))
 	    ;; Can't be anything more?
-	    (setq point (string-length output)))
+	    (set! point (string-length output)))
 	(if (string-match "\n" output point)
 	    (progn
 	      ;; At least one whole line
-	      (setq line-end (match-end))
+	      (set! line-end (match-end))
 	      (cond
 	       ((string-looking-at remote-ftp-skip-msgs output point)
 		;; Ignore this line of output
-		(setq point line-end))
+		(set! point line-end))
 	       ((string-looking-at remote-ftp-good-msgs output point)
 		;; Success!
 		(vector-set! session remote-ftp-status 'success)
-		(setq point line-end))
+		(set! point line-end))
 	       ((string-looking-at remote-ftp-bad-msgs output point)
 		;; Failure!
 		(vector-set! session remote-ftp-status 'failure)
-		(setq point line-end))
+		(set! point line-end))
 	       ((string-looking-at remote-ftp-multi-msgs output point)
 		;; One line of a multi-line message
 		(remote-ftp-show-multi output point line-end)
-		(setq point line-end))
+		(set! point line-end))
 	       ((string-looking-at remote-ftp-reconnect-msgs output point)
 		;; Transient error. Kill the session, then try to reopen it
 		(remote-ftp-close-session session)
@@ -368,10 +368,10 @@ file types.")
 		(when (vector-ref session remote-ftp-callback)
 		  ((vector-ref session remote-ftp-callback)
 		   session output point line-end))
-		(setq point line-end))))
+		(set! point line-end))))
 	  ;; A partial line. Store it as pending
 	  (vector-set! session remote-ftp-pending-output (substring output point))
-	  (setq point (string-length output)))))))
+	  (set! point (string-length output)))))))
 
 (defun remote-ftp-sentinel (process)
   (let
@@ -382,7 +382,7 @@ file types.")
       (vector-set! session remote-ftp-status nil)
       (vector-set! session remote-ftp-pending-output nil)
       (vector-set! session remote-ftp-callback nil)
-      (setq remote-ftp-sessions (delq! session remote-ftp-sessions)))))
+      (set! remote-ftp-sessions (delq! session remote-ftp-sessions)))))
 
 (defun remote-ftp-show-multi (string start end)
   (if (feature? 'jade)
@@ -432,7 +432,7 @@ file types.")
 	 (vector-set! session remote-ftp-login-data nil))
        (remote-ftp-command session 'login "type %s" remote-ftp-transfer-type)
        ;; For testing the reconnection-on-idle
-       ;(setq remote-ftp-echo-output t)
+       ;(set! remote-ftp-echo-output t)
        ;(remote-ftp-command session 'login "quote site idle 30")
        (and remote-ftp-display-progress
 	    (remote-ftp-command session 'login "hash"))))
@@ -523,7 +523,7 @@ file types.")
 	 (name (substring string (match-start 7) (match-end 7)))
 	 symlink)
       (when (string-match ".*\\s+->\\s+(\\S+)" string point)
-	(setq symlink (substring string (match-start 1) (match-end 1))))
+	(set! symlink (substring string (match-start 1) (match-end 1))))
       (vector name size modtime (cdr (assq (string-ref mode-string 0)
 					   remote-ftp-ls-l-type-alist))
 	      nil mode-string nlinks user group symlink))))
@@ -561,7 +561,7 @@ file types.")
 	   (vector-ref file remote-ftp-file-user)))
 
 (defun remote-ftp-dir-cached-p (session dir)
-  (setq dir (directory-file-name dir))
+  (set! dir (directory-file-name dir))
   (catch 'exit
     (for-each (lambda (dir-entry)
 		(when (string=? (vector-ref dir-entry remote-ftp-cache-dir) dir)
@@ -575,12 +575,12 @@ file types.")
        entry)
     (when (string=? base "")
       ;; hack, hack
-      (setq base (file-name-nondirectory dir)
-	    dir (file-name-directory dir))
+      (set! base (file-name-nondirectory dir))
+      (set! dir (file-name-directory dir))
       (when (string=? base "")
-	(setq base ".")))
-    (setq dir (directory-file-name dir))
-    (setq entry (remote-ftp-dir-cached-p session dir))
+	(set! base ".")))
+    (set! dir (directory-file-name dir))
+    (set! entry (remote-ftp-dir-cached-p session dir))
     (if (not (and entry (> (vector-ref entry remote-ftp-cache-expiry)
 			   (current-time))))
 	(progn
@@ -588,7 +588,7 @@ file types.")
 	  (when entry
 	    (vector-set! session remote-ftp-dircache
 		  (delq! entry (vector-ref session remote-ftp-dircache)))
-	    (setq entry nil))
+	    (set! entry nil))
 	  (remote-ftp-while session 'busy 'dircache)
 	  (when (>= (list-length (vector-ref session remote-ftp-dircache))
 		    remote-ftp-dircache-max-dirs)
@@ -596,7 +596,7 @@ file types.")
 	    (set-cdr! (list-tail (vector-ref session remote-ftp-dircache)
 			    (1- (list-length (vector-ref session remote-ftp-dircache)))) nil))
 	  ;; add the new (empty) entry for the directory to be read.
-	  (setq entry (vector dir (+ (current-time)
+	  (set! entry (vector dir (+ (current-time)
 				     remote-ftp-dircache-expiry-time) nil))
 	  (vector-set! session remote-ftp-dircache
 		(cons entry (vector-ref session remote-ftp-dircache)))
@@ -639,12 +639,12 @@ file types.")
 		(eq? (vector-ref file-struct remote-ftp-file-type) 'symlink))
       (let
 	  ((link (vector-ref file-struct remote-ftp-file-symlink)))
-	(setq file (expand-file-name link (file-name-directory file)))
-	(setq file-struct (remote-ftp-get-file session file))))
+	(set! file (expand-file-name link (file-name-directory file)))
+	(set! file-struct (remote-ftp-get-file session file))))
     file-struct))
 
 (defun remote-ftp-invalidate-directory (session directory)
-  (setq directory (directory-file-name directory))
+  (set! directory (directory-file-name directory))
   (let
       ((entry (remote-ftp-dir-cached-p session directory)))
     (when entry
@@ -680,7 +680,7 @@ file types.")
 		    (set-cdr! cell passwd)
 		    (throw 'foo)))
 		remote-ftp-passwd-alist)
-      (setq remote-ftp-passwd-alist (cons (cons joined passwd)
+      (set! remote-ftp-passwd-alist (cons (cons joined passwd)
 					  remote-ftp-passwd-alist)))))
 
 
@@ -797,7 +797,7 @@ file types.")
 	    ;; Need to transfer the file initially
 	    (remote-ftp-get session file-name local-file))
 	  ;; Open the local file
-	  (setq local-fh (make-file-from-stream (car args)
+	  (set! local-fh (make-file-from-stream (car args)
 						(open-file local-file type)
 						'remote-file-handler))
 	  (set-file-handler-data local-fh

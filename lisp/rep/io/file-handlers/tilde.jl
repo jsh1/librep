@@ -89,7 +89,7 @@
   ;; Runtime initialisation
   (progn
     ;; Install the handler
-    (setq *file-handler-alist* (cons '("^~" . tilde-file-handler)
+    (set! *file-handler-alist* (cons '("^~" . tilde-file-handler)
 				   *file-handler-alist*))
     ;; Fix the initial *default-directory*; replacing $HOME by ~ if possible
     (when (string-looking-at (concat (quote-regexp

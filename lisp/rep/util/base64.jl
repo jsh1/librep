@@ -38,14 +38,14 @@
 	  reg reg1 reg2 reg3)
       (catch 'done
 	(while t
-	  (setq reg1 (read-char input))
-	  (setq reg2 (read-char input))
-	  (setq reg3 (read-char input))
+	  (set! reg1 (read-char input))
+	  (set! reg2 (read-char input))
+	  (set! reg3 (read-char input))
 	  (cond
 	   ((and reg1 reg2 reg3)
 	    ;; Got our 24 bits, split into four 6 bit quantities
 	    (progn
-	      (setq reg (logior (ash reg1 16) (ash reg2 8) reg3))
+	      (set! reg (logior (ash reg1 16) (ash reg2 8) reg3))
 	      (write output (string-ref mime-base64-alphabet (ash reg -18)))
 	      (write output (string-ref mime-base64-alphabet
 					(logand (ash reg -12) #o77)))
@@ -53,13 +53,13 @@
 					(logand (ash reg -6) #o77)))
 	      (write output (string-ref mime-base64-alphabet
 					(logand reg #o77)))
-	      (setq col (+ col 4))
+	      (set! col (+ col 4))
 	      (when (>= col 76)
 		(write output #\newline)
-		(setq col 0))))
+		(set! col 0))))
 	   (reg2
 	    ;; 16 bits read, shift in 2 zeros
-	    (setq reg (ash (logior (ash reg1 8) reg2) 2))
+	    (set! reg (ash (logior (ash reg1 8) reg2) 2))
 	    (write output (string-ref mime-base64-alphabet (ash reg -12)))
 	    (write output (string-ref mime-base64-alphabet
 				(logand (ash reg -6) #o77)))
@@ -68,7 +68,7 @@
 	    (throw 'done t))
 	   (reg1
 	    ;; eight bits read, shift in 4 zeros
-	    (setq reg (ash reg1 4))
+	    (set! reg (ash reg1 4))
 	    (write output (string-ref mime-base64-alphabet (ash reg -6)))
 	    (write output (string-ref mime-base64-alphabet (logand reg #o77)))
 	    (write output #\=)
@@ -83,24 +83,27 @@
     (let ((reg 0)
 	  (bits 0)
 	  char)
-      (while (setq char (read-char input))
-	(cond
-	 ((and (>= char #\A) (<= char #\Z))
-	  (setq char (- char #\A)))
-	 ((and (>= char #\a) (<= char #\z))
-	  (setq char (+ 26 (- char #\a))))
-	 ((and (>= char #\0) (<= char #\9))
-	  (setq char (+ 52 (- char #\0))))
-	 ((= char #\+)
-	  (setq char 62))
-	 ((= char #\/)
-	  (setq char 63))
-	 (t (setq char nil)))
+      (let loop ()
+	(set! char (read-char input))
 	(when char
-	  (setq reg (logior (ash reg 6) char))
-	  (setq bits (+ bits 6)))
-	(while (>= bits 8)
-	  (setq char (ash reg (- 8 bits)))
-	  (setq reg (logxor reg (ash char (- bits 8))))
-	  (setq bits (- bits 8))
-	  (write output char))))))
+	  (cond
+	   ((and (>= char #\A) (<= char #\Z))
+	    (set! char (- char #\A)))
+	   ((and (>= char #\a) (<= char #\z))
+	    (set! char (+ 26 (- char #\a))))
+	   ((and (>= char #\0) (<= char #\9))
+	    (set! char (+ 52 (- char #\0))))
+	   ((= char #\+)
+	    (set! char 62))
+	   ((= char #\/)
+	    (set! char 63))
+	   (t (set! char nil)))
+	  (when char
+	    (set! reg (logior (ash reg 6) char))
+	    (set! bits (+ bits 6)))
+	  (while (>= bits 8)
+	    (set! char (ash reg (- 8 bits)))
+	    (set! reg (logxor reg (ash char (- bits 8))))
+	    (set! bits (- bits 8))
+	    (write output char))
+	  (loop))))))

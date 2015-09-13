@@ -223,6 +223,8 @@
       (string-ref . #xd3)
       (string-set! . #xd4)
 
+      (undefined . #xd5)
+
       (last-before-jmps . #xf7)
 
 ;;; All jmps take two-byte arguments
@@ -272,7 +274,7 @@
      0   -1  0   -1  -1  0   0   nil
      -1  -2  -1  -1  0   0   -1  -2	;#xc0
      -1  +1  +1  +1  0   0   nil nil
-     -1 -2 0 -1 -2 nil nil nil		;#xd0
+     -1 -2 0 -1 -2 1 nil nil		;#xd0
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;#xe0
      -1  nil nil nil nil nil nil nil

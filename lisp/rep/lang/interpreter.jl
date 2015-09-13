@@ -51,8 +51,8 @@
       (cons 'macro
 	    (lambda (symbol . body)
 	      (cond ((bytecode? (car body))
-		     (setq body (car body)))
-		    (t (setq body (list 'quote (cons 'lambda body)))))
+		     (set! body (car body)))
+		    (t (set! body (list 'quote (cons 'lambda body)))))
 	      (list '%define symbol
 		    (list 'cons
 			  (list 'quote 'macro)
@@ -76,8 +76,8 @@ Defines a function called NAME with argument specification LAMBDA-LIST,
 documentation DOC-STRING (optional) and body BODY."
 
   (cond ((bytecode? (car body))
-	 (setq body (car body)))
-	(t (setq body (list 'quote (cons 'lambda body)))))
+	 (set! body (car body)))
+	(t (set! body (list 'quote (cons 'lambda body)))))
   (list '%define symbol (list 'make-closure body (list 'quote symbol))))
 
 (defmacro defconst (symbol value . rest)
@@ -122,10 +122,10 @@ form. Thus the execution of BODY... may be repeated by invoking VAR."
   ((lambda (fun vars values)
      (cond ((symbol? (car args))
 	    ;; named let
-	    (setq fun (car args))
-	    (setq args (cdr args))))
-     (setq vars (map (lambda (x) (if (pair? x) (car x) x)) (car args)))
-     (setq values (map (lambda (x) (if (pair? x) (cons 'progn (cdr x)) nil))
+	    (set! fun (car args))
+	    (set! args (cdr args))))
+     (set! vars (map (lambda (x) (if (pair? x) (car x) x)) (car args)))
+     (set! values (map (lambda (x) (if (pair? x) (cons 'progn (cdr x)) nil))
 		       (car args)))
      (cond (fun (list 'letrec
 		      (list (list fun (list* 'lambda vars (cdr args))))
@@ -157,8 +157,8 @@ functions."
 		(t x)))
 	bindings)
    (map (lambda (x)
-	  (cond ((pair? x) (list 'setq (car x) (cons 'progn (cdr x))))
-		(t (list 'setq x nil))))
+	  (cond ((pair? x) (list 'set! (car x) (cons 'progn (cdr x))))
+		(t (list 'set! x nil))))
 	bindings)))
 
 (defmacro let-fluids (bindings . body)
@@ -169,8 +169,8 @@ not the variables containing the fluids."
   (let ((fluids nil)
 	(values nil))
     (for-each (lambda (x)
-		(setq fluids (cons (car x) fluids))
-		(setq values (cons (cons 'progn (cdr x)) values))) bindings)
+		(set! fluids (cons (car x) fluids))
+		(set! values (cons (cons 'progn (cdr x)) values))) bindings)
     (list 'with-fluids (cons 'list fluids)
 	  (cons 'list values) (list* 'lambda '() body))))
 
@@ -262,7 +262,7 @@ is returned from the `and' form."
 
 Sets the default value of each VARIABLE to the value of its
 corresponding FORM evaluated, returns the value of the last evaluation.
-See also `setq'. Returns the value of the last FORM."
+See also `set!'. Returns the value of the last FORM."
 
   (let loop ((rest args)
 	     (body nil))
@@ -272,7 +272,7 @@ See also `setq'. Returns the value of the last FORM."
 	    (cons (list 'set-default
 			(list 'quote (car rest)) (list-ref rest 1)) body)))))
 
-;; XXX it would be nice to do the same for setq.. might stress the
+;; XXX it would be nice to do the same for set!.. might stress the
 ;; XXX interpreter somewhat..? :-(
 
 (defmacro define-special-variable (var #!optional value doc)
@@ -285,7 +285,7 @@ string associated with VARIABLE."
 
   (list 'progn
 	(list 'defvar var nil doc)
-	(list 'setq var value)))
+	(list 'set! var value)))
 
 (export-bindings '(setq-default define-special-variable))
 
@@ -402,7 +402,7 @@ of the possible declaration types.")
   (let (saved-data)
     (let ((ret (call-with-exception-handler
 		thunk
-		(lambda (data) (setq saved-data data)))))
+		(lambda (data) (set! saved-data data)))))
       (prot-thunk)
       (if saved-data
 	  (raise-exception saved-data)

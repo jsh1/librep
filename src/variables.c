@@ -532,6 +532,49 @@ Returns t if SYMBOL has a value as a variable.
   return rep_VOIDP(rep_symbol_value(sym, true, false)) ? rep_nil : Qt;
 }
 
+DEFUN("set!", Fset_, Sset_, (repv args, bool tail_posn), rep_SF) /*
+::doc:rep.lang.interpter#set!::
+set! SYMBOL FORM
+
+Set the value of SYMBOL to the result of evaluating FORM.
+::end */
+{
+  if (!rep_CONSP(args)) {
+    return rep_signal_missing_arg(1);
+  }
+
+  repv sym = rep_CAR(args);
+  args = rep_CDR(args);
+
+  rep_DECLARE1(sym, rep_SYMBOLP);
+
+  if (!rep_CONSP(args)) {
+    return rep_signal_missing_arg(2);
+  }
+
+  if (rep_CDR(args) != rep_nil) {
+    DEFSTRING(too_many, "too many args to set!");
+    return Fsignal(Qerror, rep_LIST_1(rep_VAL(&too_many)));
+  }
+
+  rep_GC_root gc_sym;
+  rep_PUSHGC(gc_sym, sym);
+
+  repv value = Feval(rep_CAR(args));
+
+  rep_POPGC;
+
+  if (!value) {
+    return 0;
+  }
+
+  if (!set_symbol_value(sym, value, true, Fstructure_set)) {
+    return 0;
+  }
+
+  return rep_undefined_value;
+}
+
 DEFUN("setq", Fsetq, Ssetq, (repv args, bool tail_posn), rep_SF) /*
 ::doc:rep.lang.interpreter#setq::
 setq [SYMBOL FORM] ...
@@ -681,6 +724,7 @@ rep_variables_init(void)
   rep_pop_structure(tem);
   
   tem = rep_push_structure("rep.lang.interpreter");
+  rep_ADD_SUBR(Sset_);
   rep_ADD_SUBR(Ssetq);
   rep_ADD_SUBR(S_define);
   rep_ADD_SUBR(Sdefvar);

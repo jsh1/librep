@@ -226,7 +226,8 @@ we would like. This is due to the view of folded functions as
        (lambda ()
 	 (unwind-protect
 	     (progn
-	       (when (setq src-file (open-file file-name 'read))
+	       (set! src-file (open-file file-name 'read))
+	       (when src-file
 		 (unwind-protect
 		     ;; Read the file, ensuring we record line numbers
 		     (call-with-lexical-origins
@@ -238,25 +239,29 @@ we would like. This is due to the view of folded functions as
 				  tem)
 			      (write out "#!")
 			      (catch 'done
-				(while (setq tem (read-char src-file))
-				  (write out tem)
-				  (when (and (= tem #\!)
-					     (setq tem (read-char src-file)))
+				(let loop ()
+				  (set! tem (read-char src-file))
+				  (when tem 
 				    (write out tem)
-				    (when (= tem #\#)
-				      (throw 'done t)))))
-			      (setq header (get-output-stream-string out)))
+				    (when (and (= tem #\!)
+					       (set! tem (read-char src-file)))
+				      (write out tem)
+				      (when (= tem #\#)
+					(throw 'done t)))
+				    (loop))))
+			      (set! header (get-output-stream-string out)))
 			  (seek-file src-file 0 'start))
 
 			;; Scan for top-level definitions in the file.
 			;; Also eval require forms (for macro defs)
 			(condition-case nil
 			    (while t
-			      (setq body (cons (read src-file) body)))
+			      (set! body (cons (read src-file) body)))
 			  (end-of-stream))))
 		   (close-file src-file))
-		 (setq body (compile-module-body (reverse! body) t t))
-		 (when (setq dst-file (open-file temp-file 'write))
+		 (set! body (compile-module-body (reverse! body) t t))
+		 (set! dst-file (open-file temp-file 'write))
+		 (when dst-file
 		   (condition-case error-info
 		       (unwind-protect
 			   (progn
@@ -324,19 +329,19 @@ that files which shouldn't be compiled aren't."
 ;; Call like `rep --batch -l compiler -f compile-lib-batch [--force] DIR'
 (defun compile-lib-batch ()
   (let ((force (when (equal? (car *command-line-args*) "--force")
-		 (setq *command-line-args* (cdr *command-line-args*))
+		 (set! *command-line-args* (cdr *command-line-args*))
 		 t))
        (dir (car *command-line-args*)))
-    (setq *command-line-args* (cdr *command-line-args*))
+    (set! *command-line-args* (cdr *command-line-args*))
     (compile-lisp-lib dir force)))
 
 ;; Call like `rep --batch -l compiler -f compile-batch [--write-docs] FILES...'
 (defun compile-batch ()
   (when (get-command-line-option "--write-docs")
-    (setq *compiler-write-docs* t))
+    (set! *compiler-write-docs* t))
   (while *command-line-args*
     (compile-file (car *command-line-args*))
-    (setq *command-line-args* (cdr *command-line-args*))))
+    (set! *command-line-args* (cdr *command-line-args*))))
 
 (defun bootstrap (sources)
   (let ((*compiler-write-docs* t))

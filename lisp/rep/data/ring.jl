@@ -77,10 +77,9 @@
 
 ;;; higher level public api
 
-  (define (make-ring #!optional size)
+  (define (make-ring #!optional (size default-size))
     "Create a ring buffer that can contain SIZE values. If SIZE is not
 specified the default capacity `ring-default-size' is used."
-    (unless size (setq size default-size))
     (let ((ring (make-datum (make-vector (+ size 2)) key)))
       (set-size! ring 0)
       (set-pos! ring 0)
@@ -99,12 +98,11 @@ added object."
 	(set-size! ring (1+ (ring-size ring))))
       (set-pos! ring new-pos)))
 
-  (define (ring-ref ring #!optional depth)
+  (define (ring-ref ring #!optional (depth 0))
     "Read an object from the ring buffer RING. If DEPTH is true it
 defines the object to access, the most recently added item is at
 depth zero, the next at depth one, and so on. If there is no item at
 DEPTH nil is returned."
-    (unless depth (setq depth 0))
     (if (>= depth (ring-capacity ring))
 	nil
       (get-item ring (mod (- (get-pos ring) (1+ depth))
@@ -123,7 +121,7 @@ If RING contains no items, add OBJECT as the first."
 	  (contents '()))
       (do ((i 0 (1+ i)))
 	  ((= i size) (reverse! contents))
-	(setq contents (cons (ring-ref ring i) contents)))))
+	(set! contents (cons (ring-ref ring i) contents)))))
 
 ;;; compatibility api
 

@@ -187,7 +187,7 @@ by knowing its address and port number."
   (define make-call-id
     (let ((counter 0))
       (lambda ()
-	(setq counter (1+ counter)))))
+	(set! counter (1+ counter)))))
 
   (define (record-pending-call socket id callback)
     (table-set! pending-calls id callback)
@@ -206,7 +206,7 @@ by knowing its address and port number."
     "The function that should be used to listen for connections on rpc
 server sockets."
     (let (socket)
-      (setq socket (socket-accept master-socket
+      (set! socket (socket-accept master-socket
 				  (lambda (output)
 				    (rpc-output-handler socket output))
 				  (lambda ()
@@ -217,7 +217,7 @@ server sockets."
   ;; Open an rpc connection to HOST:PORT; signals an error on failure
   (define (open-server host port)
     (let (socket)
-      (setq socket (socket-client host port
+      (set! socket (socket-client host port
 				  (lambda (x)
 				    (rpc-output-handler socket x))
 				  (lambda ()
@@ -237,7 +237,7 @@ server sockets."
 			 (socket-pending-data sock-data)))
 		form)
 	    (condition-case nil
-		(setq form (read stream))
+		(set! form (read stream))
 	      ((premature-end-of-stream end-of-stream)
 	       (throw 'out))
 	      ((invalid-read-syntax)
@@ -297,9 +297,9 @@ server sockets."
 	  succeeded value)
       (invoke-method socket id
 		     (lambda (a b)
-		       (setq done t)
-		       (setq succeeded a)
-		       (setq value b))
+		       (set! done t)
+		       (set! succeeded a)
+		       (set! value b))
 		     servant-id args)
       (while (not done)
 	(accept-process-output 60))
@@ -316,13 +316,13 @@ server sockets."
   (define (rpc-create-server)
     "Start listening for rpc connections on the current machine"
     (unless listener-socket
-      (setq listener-socket (socket-server nil nil rpc-socket-listener))))
+      (set! listener-socket (socket-server nil nil rpc-socket-listener))))
 
   (define (rpc-destroy-server)
     "Stop listening for rpc connections on the current machine"
     (when listener-socket
       (close-socket listener-socket)
-      (setq listener-socket nil)))
+      (set! listener-socket nil)))
 
 ;;; servants
 

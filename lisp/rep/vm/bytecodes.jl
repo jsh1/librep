@@ -106,7 +106,4 @@
   (define byte-opcodes-with-constants
     (list (bytecode push)
 	  (bytecode refq)
-	  (bytecode setq)
-	  (bytecode refq)
-	  (bytecode setq)
-	  (bytecode bindspec))))
+	  (bytecode setq))))

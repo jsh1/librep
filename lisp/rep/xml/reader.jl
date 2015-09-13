@@ -144,7 +144,7 @@
 		 (let ((ended
 			(catch 'list-ended
 			  (while (current stream)
-			    (setq items (cons (read-xml-item
+			    (set! items (cons (read-xml-item
 					       stream 'list-ended) items))))))
 		   (or (string=? ended name)
 		       (error "Unmatched items: %s, %s" name ended)))

@@ -47,7 +47,7 @@
   (define (emit-insn insn)
     (when (pair? insn)
       ;; so the peepholer can safely modify code
-      (setq insn (copy-sequence insn)))
+      (set! insn (copy-sequence insn)))
     (fluid-set intermediate-code (cons insn (fluid intermediate-code))))
 
   ;; Create a new label

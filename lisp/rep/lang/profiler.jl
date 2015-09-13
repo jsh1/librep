@@ -42,10 +42,10 @@
     (let ((profile '())
 	  (total-samples 0))
       (symbol-table-walk (lambda (key data)
-			   (setq profile (cons (cons key data) profile))
-			   (setq total-samples (+ total-samples (car data))))
+			   (set! profile (cons (cons key data) profile))
+			   (set! total-samples (+ total-samples (car data))))
 			 (fetch-profile))
-      (setq profile (sort! profile (lambda (x y)
+      (set! profile (sort! profile (lambda (x y)
 				     (> (cadr x) (cadr y)))))
       (format (or stream *standard-output*)
 	      "%-32s       %10s       %10s\n\n"

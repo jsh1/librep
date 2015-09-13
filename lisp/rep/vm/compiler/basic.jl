@@ -152,7 +152,7 @@ their position in that file.")
 	(cond
 	 ((keyword? form)
 	  (compile-constant form))
-	 ((setq val (assq form (fluid const-env)))
+	 ((progn (set! val (assq form (fluid const-env))) val)
 	  ;; A constant from this file
 	  (compile-constant (cdr val)))
 	 ((compiler-binding-immutable? form)
@@ -167,28 +167,30 @@ their position in that file.")
 	(let-fluids ((current-form form))
 	  (let ((new (source-code-transform form)))
 	    (if (pair? new)
-		(setq form new)
+		(set! form new)
 	      (compile-form-1 new)
-	      (setq form nil)))
+	      (set! form nil)))
 	  (unless (null? form)
 	    ;; A subroutine application of some sort
 	    (let (fun)
 	      (cond
 	       ;; Check if there's a special handler for this function
 	       ((and (variable-ref? (car form))
-		     (setq fun (get-procedure-handler
-				(car form) 'compiler-handler-property)))
+		     (progn
+		       (set! fun (get-procedure-handler
+				  (car form) 'compiler-handler-property))
+		       fun))
 		(fun form return-follows))
 
 	       (t
 		;; Expand macros
 		(test-function-call (car form) (list-length (cdr form)))
-		(if (not (eq? (setq fun (compiler-macroexpand
-					form macroexpand-pred)) form))
+		(set! fun (compiler-macroexpand form macroexpand-pred))
+		(if (not (eq? fun form))
 		    ;; The macro did something, so start again
 		    (compile-form-1 fun #:return-follows return-follows)
 		  ;; No special handler, so do it ourselves
-		  (setq fun (car form))
+		  (set! fun (car form))
 		  (cond
 		   ;; XXX assumes usual rep binding of `lambda'
 		   ((and (pair? fun) (eq? (car fun) 'lambda))
@@ -215,12 +217,12 @@ their position in that file.")
 		   (t
 		    (compile-form-1
 		     fun #:in-tail-slot (inlinable-call? fun return-follows))
-		    (setq form (cdr form))
+		    (set! form (cdr form))
 		    (let ((i 0))
 		      (while (pair? form)
 			(compile-form-1 (car form))
-			(setq i (1+ i)
-			      form (cdr form)))
+			(set! i (1+ i))
+			(set! form (cdr form)))
 		      (emit-insn `(call ,i))
 		      (decrement-stack i)))))))))))
        (t
@@ -243,7 +245,7 @@ their position in that file.")
 	(when (cdr body)
 	  (emit-insn '(pop))
 	  (decrement-stack))
-	(setq body (cdr body)))))
+	(set! body (cdr body)))))
 
 
 ;;; creating assembly code
@@ -307,7 +309,7 @@ their position in that file.")
 		      (test-variable-bind var)
 		      (when (eq? state 'key)
 			(compile-constant (make-keyword var))
-			(setq pushed (1+ pushed)))
+			(set! pushed (1+ pushed)))
 		      (emit-insn (case state
 				   ((required) '(required-arg))
 				   ((optional) (if default
@@ -392,16 +394,16 @@ their position in that file.")
 	  (body (list-tail lst 2))
 	  doc interactive)
       (when (string? (car body))
-	(setq doc (car body))
-	(setq body (cdr body)))
+	(set! doc (car body))
+	(set! body (cdr body)))
       (when (eq? (car (car body)) 'interactive)
 	;; If we have (interactive), set the interactive spec to t
 	;; so that it's not ignored
-	(setq interactive (or (car (cdr (car body))) t)
-	      body (cdr body))
+	(set! interactive (or (car (cdr (car body))) t))
+	(set! body (cdr body))
 	;; See if it might be a good idea to compile the interactive decl
 	(when (pair? interactive)
-	  (setq interactive (compile-form interactive))))
+	  (set! interactive (compile-form interactive))))
       (when (and *compiler-write-docs* doc name)
 	(add-documentation name (fluid current-module) doc)
 	(add-documentation-params name (fluid current-module) args))
@@ -415,16 +417,16 @@ their position in that file.")
 	  (body (list-tail lst 2))
 	  doc interactive)
       (when (string? (car body))
-	(setq doc (car body))
-	(setq body (cdr body)))
+	(set! doc (car body))
+	(set! body (cdr body)))
       (when (eq? (car (car body)) 'interactive)
 	;; If we have (interactive), set the interactive spec to t
 	;; so that it's not ignored
-	(setq interactive (or (car (cdr (car body))) t)
-	      body (cdr body))
+	(set! interactive (or (car (cdr (car body))) t))
+	(set! body (cdr body))
 	;; See if it might be a good idea to compile the interactive decl
 	(when (pair? interactive)
-	  (setq interactive (compile-form interactive))))
+	  (set! interactive (compile-form interactive))))
       (when (and *compiler-write-docs* doc name)
 	(add-documentation name (fluid current-module) doc)
 	(add-documentation-params name (fluid current-module) args))

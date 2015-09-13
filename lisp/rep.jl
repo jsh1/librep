@@ -37,8 +37,6 @@
 		   rep.regexp
 		   rep.system))
 
-;;(setq *backtrace-on-error* '(void-value invalid-function bad-arg missing-arg))
-
 (defvar *standard-output* (stdout-file)
   "Stream that `prin?' writes its output to by default.")
 
@@ -65,7 +63,7 @@
 				    (export backquote))))
 
 ;; later changed to 'user
-(setq *user-structure* 'rep)
+(set! *user-structure* 'rep)
 
 (require 'rep.lang.backquote)
 (require 'rep.io.file-handlers.tilde)

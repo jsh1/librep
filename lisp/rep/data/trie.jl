@@ -113,9 +113,9 @@
 	    (let ((string (read-line file)))
 	      (when string
 		(when (string-match "\\s+$" string)
-		  (setq string (substring string 0 (match-start))))
+		  (set! string (substring string 0 (match-start))))
 		(when callback
-		  (setq string (callback string)))
+		  (set! string (callback string)))
 		(when string
 		  (trie-insert-string! tree string))
 		(loop))))

@@ -53,9 +53,9 @@
       (let
 	  ((args (map (lambda (arg)
 			(when (pair? arg)
-			  (setq arg (compiler-macroexpand arg)))
+			  (set! arg (compiler-macroexpand arg)))
 			(when (and (pair? arg) (foldablep (car arg)))
-			  (setq arg (fold-constants arg)))
+			  (set! arg (fold-constants arg)))
 			(if (compiler-constant? arg)
 			    (compiler-constant-value arg)
 			  ;; Not a constant, abort, abort
@@ -92,15 +92,15 @@
 ;;; Entry point
 
   (defun source-code-transform (form)
-    (let (tem)
-      ;; first try constant folding
-      (when (and (pair? form) (foldablep (car form)))
-	(setq form (fold-constants form)))
+    ;; first try constant folding
+    (when (and (pair? form) (foldablep (car form)))
+      (set! form (fold-constants form)))
+	 
+    ;; then look for a specific tranformer
+    (let ((transformer (and (symbol? (car form))
+			    (get-procedure-handler
+			     (car form) 'compiler-transform-property))))
+      (when transformer
+	(set! form (transformer form))))
 
-      ;; then look for a specific tranformer
-      (when (and (symbol? (car form))
-		 (setq tem (get-procedure-handler
-			    (car form) 'compiler-transform-property)))
-	(setq form (tem form)))
-
-      form)))
+    form))

@@ -43,11 +43,11 @@
 	  ;; First of all, evaluate each argument onto the stack
 	  (while (pair? args)
 	    (compile-form-1 (car args))
-	    (setq args (cdr args)
-		  arg-count (1+ arg-count)))
+	    (set! args (cdr args))
+	    (set! arg-count (1+ arg-count)))
 	;; Args already on stack
-	(setq args nil
-	      arg-count pushed-args-already))
+	(set! args nil)
+	(set! arg-count pushed-args-already))
       ;; Now the interesting bit. The args are on the stack, in
       ;; reverse order. So now we have to scan the lambda-list to
       ;; see what they should be bound to.
@@ -59,21 +59,24 @@
 	(while lambda-list
 	  (cond
 	   ((symbol? lambda-list)
-	    (setq bind-stack (cons (cons lambda-list args-left) bind-stack))
-	    (setq args-left 0))
+	    (set! bind-stack (cons (cons lambda-list args-left) bind-stack))
+	    (set! args-left 0))
 	   ((pair? lambda-list)
 	    (case (car lambda-list)
-	      ((#!optional &optional) (setq state 'optional))
-	      ((#!rest &rest) (setq state 'rest))
+	      ((#!optional &optional)
+	       (set! state 'optional))
+	      ((#!rest &rest)
+	       (set! state 'rest))
 	      ;; XXX implement keyword params
-	      ((#!key) (compiler-error "can't inline `#!key' parameters"))
+	      ((#!key)
+	       (compiler-error "can't inline `#!key' parameters"))
 	      (t (case state
 		   ((required)
 		    (if (zero? args-left)
 			(compiler-error "required arg `%s' missing"
 					(car lambda-list))
-		      (setq bind-stack (cons (car lambda-list) bind-stack)
-			    args-left (1- args-left))))
+		      (set! bind-stack (cons (car lambda-list) bind-stack))
+		      (set! args-left (1- args-left))))
 		   ((optional)
 		    (if (zero? args-left)
 			(let ((def (cdar lambda-list)))
@@ -81,15 +84,15 @@
 			      (compile-form-1 (car def))
 			    (emit-insn '(push ())))
 			  (increment-stack))
-		      (setq args-left (1- args-left)))
-		    (setq bind-stack (cons (or (caar lambda-list)
+		      (set! args-left (1- args-left)))
+		    (set! bind-stack (cons (or (caar lambda-list)
 					       (car lambda-list)) bind-stack)))
 		   ((rest)
-		    (setq bind-stack (cons (cons (car lambda-list) args-left)
-					   bind-stack)
-			  args-left 0
-			  state '*done*)))))))
-	  (setq lambda-list (cdr lambda-list)))
+		    (set! bind-stack (cons (cons (car lambda-list) args-left)
+					   bind-stack))
+		    (set! args-left 0)
+		    (set! state '*done*)))))))
+	  (set! lambda-list (cdr lambda-list)))
 	(when (> args-left 0)
 	  (compiler-warning 'parameters
 	   "%d unused %s to lambda expression"
@@ -110,12 +113,12 @@
 	    (setter (car (car bind-stack))))
 	(setter (car bind-stack)))
       (decrement-stack)
-      (setq bind-stack (cdr bind-stack)))
+      (set! bind-stack (cdr bind-stack)))
     ;; Then pop any args that weren't used.
     (while (> args-left 0)
       (emit-insn '(pop))
       (decrement-stack)
-      (setq args-left (1- args-left))))
+      (set! args-left (1- args-left))))
 
   ;; This compiles an inline lambda, i.e. FUN is something like
   ;; (lambda (LAMBDA-LIST...) BODY...)
@@ -124,7 +127,7 @@
   ;; ARGS is ignored
   (defun compile-lambda-inline (fun args #!optional pushed-args-already
 				return-follows name)
-    (setq fun (compiler-macroexpand fun))
+    (set! fun (compiler-macroexpand fun))
     (when (>= (fluid-set inline-depth (1+ (fluid inline-depth)))
 	      max-inline-depth)
       (fluid-set inline-depth 0)
@@ -146,7 +149,7 @@
 		     (or (string? (car body))
 			 (and (pair? (car body))
 			      (eq? (car (car body)) 'interactive))))
-	   (setq body (cdr body)))
+	   (set! body (cdr body)))
     
 	 ;; Now we have a list of things to bind to, in the same order
 	 ;; as the stack of evaluated arguments. The list has items
@@ -170,7 +173,7 @@
 	   (while (> args-left 0)
 	     (emit-insn '(pop))
 	     (decrement-stack)
-	     (setq args-left (1- args-left)))
+	     (set! args-left (1- args-left)))
 	   (call-with-lambda-record name lambda-list 0
 	    (lambda ()
 	      (fix-label (lambda-label (current-lambda)))

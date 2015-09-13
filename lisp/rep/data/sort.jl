@@ -23,7 +23,7 @@
 (open-structures '(rep.lang.math))
 
 ;;;###autoload
-(defun sort! (lst #!optional pred)
+(defun sort! (lst #!optional (pred <))
   "Sort LST destructively, but stably, returning the sorted list.
 
 If PRED is defined it is used to compare two objects, it should return t
@@ -32,48 +32,43 @@ function (`<') is used.
 
 The fact that the sort is stable means that sort keys which are equal will
 preserve their original position in relation to each other."
-  (let
-      ((len (list-length lst)))
+  (let ((len (list-length lst)))
   (if (< len 2)
       lst
-    ;; default to sorting smaller to greater
-    (unless pred (setq pred <))
-    (let
-	((mid (list-tail lst (1- (quotient len 2)))))
-      (setq mid (prog1
+    (let ((mid (list-tail lst (1- (quotient len 2)))))
+      (set! mid (prog1
 		    (cdr mid)
 		  (set-cdr! mid nil)))
       ;; Now we have two separate lists, LST and MID; sort them..
-      (setq lst (sort! lst pred)
-	    mid (sort! mid pred))
+      (set! lst (sort! lst pred))
+      (set! mid (sort! mid pred))
       ;; ..then merge them back together
-      (let
-	  ((out-head nil)		;Start of the list being built
-	   (out nil)			;Cell whose cdr is next link
-	   tem)
+      (let ((out-head nil)		;Start of the list being built
+	    (out nil)			;Cell whose cdr is next link
+	    tem)
 	;; While both lists have elements compare them
 	(while (and lst mid)
-	  (setq tem (if (pred (car mid) (car lst))
+	  (set! tem (if (pred (car mid) (car lst))
 			(prog1
 			    mid
-			  (setq mid (cdr mid)))
+			  (set! mid (cdr mid)))
 		      (prog1
 			  lst
-			(setq lst (cdr lst)))))
+			(set! lst (cdr lst)))))
 	  (if out
 	      (progn
 		(set-cdr! out tem)
-		(setq out tem))
-	    (setq out-head tem
-		  out tem)))
+		(set! out tem))
+	    (set! out-head tem)
+	    (set! out tem)))
 	;; If either has elements left just append them
 	(when (or lst mid)
 	  (if out
 	      (set-cdr! out (or lst mid))
-	    (setq out-head (or lst mid))))
+	    (set! out-head (or lst mid))))
 	out-head)))))
 
 ;;;###autoload
-(defun sort (lst #!optional pred)
+(defun sort (lst #!optional (pred <))
   "Returns a sorted copy of LST."
   (sort! (copy-sequence lst) pred))

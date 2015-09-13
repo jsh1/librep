@@ -339,7 +339,7 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_KEYWORD_ARG_),						\
   /* 0xd0 */								\
   &&TAG(OP_VECTOR_REF), &&TAG(OP_VECTOR_SET), &&TAG(OP_STRING_LENGTH),	\
-  &&TAG(OP_STRING_REF), &&TAG(OP_STRING_SET), &&TAG_DEFAULT,		\
+  &&TAG(OP_STRING_REF), &&TAG(OP_STRING_SET), &&TAG(OP_UNDEFINED),	\
   &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
   &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
   &&TAG_DEFAULT, &&TAG_DEFAULT,						\
@@ -1909,6 +1909,11 @@ again: {
 
     INSN(OP_STRING_SET) {
       CALL_3(Fstring_set);
+    }
+
+    INSN(OP_UNDEFINED) {
+      PUSH(rep_undefined_value);
+      SAFE_NEXT;
     }
 
     /** Jump instructions. **/

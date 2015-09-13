@@ -70,15 +70,15 @@
       (define (get-const-id value)
 	(or (cdr (assoc value constants))
 	    (prog1 next-const-id
-	      (setq constants (cons (cons value next-const-id) constants))
-	      (setq next-const-id (1+ next-const-id)))))
+	      (set! constants (cons (cons value next-const-id) constants))
+	      (set! next-const-id (1+ next-const-id)))))
 
       (define (emit-byte-at byte addr)
-	(setq code (cons (cons byte addr) code)))
+	(set! code (cons (cons byte addr) code)))
 
       (define (emit-byte byte)
 	(emit-byte-at byte pc)
-	(setq pc (1+ pc)))
+	(set! pc (1+ pc)))
 
       (define (emit-address-at addr pc)
 	(emit-byte-at (ash addr -8) pc)
@@ -86,13 +86,13 @@
 
       (define (emit-address addr)
 	(emit-address-at addr pc)
-	(setq pc (+ pc 2)))
+	(set! pc (+ pc 2)))
 
       (define (emit-label-addr label)
 	(if (label-address label)
 	    (emit-address (label-address label))
 	  (label-forwards-set label (cons pc (label-forwards label)))
-	  (setq pc (+ pc 2))))
+	  (set! pc (+ pc 2))))
 
       (define (emit-insn insn #!optional arg)
 	(let ((op (bytecode-ref insn)))
@@ -163,6 +163,7 @@
 
 	      ((eq? arg '()) (emit-insn 'nil))
 	      ((eq? arg 't) (emit-insn 't))
+	      ((eq? arg #undefined) (emit-insn 'undefined))
 
 	      (t (emit-insn 'push (get-const-id arg)))))
 

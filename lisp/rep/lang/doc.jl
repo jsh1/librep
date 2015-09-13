@@ -47,9 +47,9 @@
 	  ;; Unless the it's a lambda-list keyword, print in capitals
 	  (unless (memq (car lambda-list)
 			'(#!optional #!key #!rest &optional &rest))
-	    (setq arg-name (string-upcase arg-name)))
+	    (set! arg-name (string-upcase arg-name)))
 	  (format output " %s" arg-name))
-	(setq lambda-list (cdr lambda-list)))
+	(set! lambda-list (cdr lambda-list)))
       (when (and lambda-list (symbol? lambda-list))
 	(format output " . %s" (string-upcase (symbol-name lambda-list))))
       (get-output-stream-string output)))
@@ -62,7 +62,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 		((special-form? value) "Special Form")
 		((macro? value)
 		 ;; macros are stored as `(macro . FUNCTION)'
-		 (setq value (cdr value))
+		 (set! value (cdr value))
 		 "Macro")
 		((subr? value) "Native Function")
 		((closure? value) "Function")
@@ -71,16 +71,16 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 	(unless structure
 	  (let ((tem (closure-structure value)))
 	    (when (structure-name tem)
-	      (setq structure (structure-name tem)))))
-	(setq value (closure-function value)))
+	      (set! structure (structure-name tem)))))
+	(set! value (closure-function value)))
       ;; Check if it's been compiled.
       (when (bytecode? value)
-	(setq type (concat "Compiled " type)))
+	(set! type (concat "Compiled " type)))
       (when (and name structure (not (special-variable? name))
 		 (binding-immutable? name (get-structure structure)))
-	(setq type (concat "Constant " type)))
+	(set! type (concat "Constant " type)))
       (when (and name (special-variable? name))
-	(setq type (concat "Special " type)))
+	(set! type (concat "Special " type)))
 		       
       (format *standard-output* "%s: " type)
       (let ((arg-doc (cond ((eq? (car value) 'lambda)
@@ -147,16 +147,16 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       (when (and (not structure) (closure? value))
 	(let ((tem (closure-structure value)))
 	  (when (structure-name tem)
-	    (setq structure (structure-name tem)))))
+	    (set! structure (structure-name tem)))))
 
       ;; First check for in-core documentation
       (when value
 	(let ((tem value))
 	  (when (eq? 'macro (car tem))
-	    (setq tem (cdr tem)))
+	    (set! tem (cdr tem)))
 	  (when (and (closure? tem)
 		     (eq? (car (closure-function tem)) 'lambda))
-	    (setq tem (list-ref (closure-function tem) 2))
+	    (set! tem (list-ref (closure-function tem) 2))
 	    (when (string? tem)
 	      (throw 'exit tem)))))
 

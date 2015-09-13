@@ -105,7 +105,7 @@
 
   (define (file-prefix #!optional form)
     (unless form
-      (setq form (fluid current-form)))
+      (set! form (fluid current-form)))
     (let ((origin (and form (lexical-origin form))))
       (cond (origin
 	     (format nil "%s:%d: "
@@ -126,8 +126,8 @@
 		  (file-prefix form))))
       (apply format (fluid output-stream)
 	     (concat "%s" fmt #\newline) (file-prefix form) args)
-      (setq last-current-fun (fluid current-fun))
-      (setq last-current-file (fluid current-file))))
+      (set! last-current-fun (fluid current-fun))
+      (set! last-current-file (fluid current-file))))
 
   (put 'compile-error 'error-message "Compilation mishap")
   (defun compiler-error (fmt #!key form #!rest data)
@@ -143,7 +143,7 @@
   (defun compiler-deprecated (id fmt #!rest args)
     (unless (memq id deprecated-seen)
       (apply compiler-warning 'deprecated (concat "deprecated - " fmt) args)
-      (setq deprecated-seen (cons id deprecated-seen))))
+      (set! deprecated-seen (cons id deprecated-seen))))
 
 
 ;;; Code to handle warning tests
@@ -172,17 +172,17 @@
 	    (if (memq (car args) '(&optional &rest #!optional #!key #!rest))
 		(case (car args)
 		  ((&optional #!optional)
-		   (setq state 1)
+		   (set! state 1)
 		   (vector-set! count 1 0))
 		  ((#!key)
-		   (setq state 'key))
+		   (set! state 'key))
 		  ((&rest #!rest)
-		   (setq args nil)
+		   (set! args nil)
 		   (vector-set! count 2 t)))
 	      (if (number? state)
 		  (vector-set! count state (1+ (vector-ref count state)))
-		(setq keys (cons (or (caar args) (car args)) keys)))))
-	  (setq args (cdr args)))
+		(set! keys (cons (or (caar args) (car args)) keys)))))
+	  (set! args (cdr args)))
 	(fluid-set defuns (cons (list name (vector-ref count 0)
 				      (vector-ref count 1)
 				      (vector-ref count 2) keys)
@@ -246,19 +246,19 @@
 	    ((decl (assq name (fluid defuns))))
 	  (when (and (null? decl) (or (assq name (fluid inline-env))
 				     (compiler-bound? name)))
-	    (setq decl (or (cdr (assq name (fluid inline-env)))
+	    (set! decl (or (cdr (assq name (fluid inline-env)))
 			   (compiler-symbol-value name)))
 	    (when (or (subr? decl)
 		      (and (closure? decl)
 			   (eq? (car (closure-function decl)) 'autoload)))
 	      (throw 'return))
 	    (when (eq? (car decl) 'macro)
-	      (setq decl (cdr decl)))
+	      (set! decl (cdr decl)))
 	    (when (closure? decl)
-	      (setq decl (closure-function decl)))
+	      (set! decl (closure-function decl)))
 	    (unless (bytecode? decl)
 	      (remember-function name (list-ref decl 1)))
-	    (setq decl (assq name (fluid defuns))))
+	    (set! decl (assq name (fluid defuns))))
 	  (if (null? decl)
 	      (unless (or (has-local-binding? name)
 			  (memq name (fluid defvars))
@@ -319,10 +319,10 @@
 	(vars)
       (while args
 	(if (symbol? args)
-	    (setq vars (cons args vars))
+	    (set! vars (cons args vars))
 	  (unless (memq (car args) '(#!optional #!key #!rest &optional &rest))
-	    (setq vars (cons (or (caar args) (car args)) vars))))
-	(setq args (cdr args)))
+	    (set! vars (cons (or (caar args) (car args)) vars))))
+	(set! args (cdr args)))
       (reverse! vars)))
 
 
@@ -355,13 +355,13 @@
    (t form)))
 
 (defun constant-function? (form)
-  (setq form (compiler-macroexpand form))
+  (set! form (compiler-macroexpand form))
   (and (memq (car form) '(lambda function))
        ;; XXX this is broken
        (compiler-binding-from-rep? (car form))))
 
 (defun constant-function-value (form)
-  (setq form (compiler-macroexpand form))
+  (set! form (compiler-macroexpand form))
   (cond ((eq? (car form) 'lambda)
 	 form)
 	((eq? (car form) 'function)

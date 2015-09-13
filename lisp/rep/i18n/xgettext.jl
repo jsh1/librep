@@ -62,21 +62,21 @@
 	(register (list-ref form 1))
 
       (when (and (car form) (macro? (car form)))
-	(setq form (macroexpand form)))
+	(set! form (macroexpand form)))
 
       (when (pair? form)
 	(case (car form)
 	  ((quote))
 
-	  ((setq setq-default %define)
+	  ((set! setq-default %define)
 	   (do ((tem (cdr form) (cddr tem)))
 	       ((null? (cdr tem)))
 	     (scan (cadr tem))))
 
 	  ((let let* letrec let-fluids)
-	   (setq form (cdr form))
+	   (set! form (cdr form))
 	   (when (symbol? (car form))
-	     (setq form (cdr form)))
+	     (set! form (cdr form)))
 	   (let loop ((vars (car form)))
 	     (when vars
 	       (scan-list (cdar vars))
@@ -142,9 +142,9 @@
 	       (format *standard-output* "  _(%s);\n\n" out)
 	     (while (and (< point (string-length out))
 			 (string-match "\\\\n" out point))
-	       (setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
+	       (set! out (concat (substring out 0 (match-start)) "\\n\"\n\""
 				 (substring out (match-end))))
-	       (setq point (+ (match-end) 3)))
+	       (set! point (+ (match-end) 3)))
 	     (format *standard-output* "msgid %s\nmsgstr \"\"\n\n" out)))))
      (reverse! (fluid found-strings))))
 

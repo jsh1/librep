@@ -73,35 +73,35 @@ results have been received.")
   ;; Function to buffer output from Ispell
   (define (output-filter output)
     (when (integer? output)
-      (setq output (make-string 1 output)))
+      (set! output (make-string 1 output)))
     (and *ispell-echo-output*
 	 (string? output)
 	 (let ((*print-escape* t))
 	   (format *standard-error* "Ispell: %S\n" output)))
-    (setq pending-output (concat pending-output output))
+    (set! pending-output (concat pending-output output))
     (while (and (fluid line-callback)
 		pending-output
 		(string-match "\n" pending-output))
       (let ((line (substring pending-output 0 (match-end))))
-	(setq pending-output (substring pending-output (match-end)))
+	(set! pending-output (substring pending-output (match-end)))
 	((fluid line-callback) line))))
 
   ;; Start the process if it isn't already
   (define (ispell-start)
     (unless process
-      (setq process (make-process output-filter))
+      (set! process (make-process output-filter))
       (set-process-function! process (lambda ()
-				      (setq process nil)
-				      (setq id-string nil)))
+				      (set! process nil)
+				      (set! id-string nil)))
       ;; Use a pty if possible. This allow EOF to be sent via ^D
       (set-process-connection-type! process 'pty)
       (apply start-process process *ispell-program* "-a"
 	     (append! (and *ispell-dictionary*
 			 (list "-d" *ispell-dictionary*))
 		    *ispell-options*))
-      (setq pending-output nil)
+      (set! pending-output nil)
       (fluid-set line-callback nil)
-      (setq id-string (ispell-read-line))
+      (set! id-string (ispell-read-line))
       (unless (string-match "ispell version" id-string 0 t)
 	(ispell-stop)
 	(error "Ispell: %s" id-string))))
@@ -120,13 +120,13 @@ results have been received.")
 	  (if (< counter 2)
 	      (interrupt-process process)
 	    (kill-process process))
-	  (setq counter (1+ counter))))))
+	  (set! counter (1+ counter))))))
 
   ;; Read one whole line from the process (including newline)
   (define (ispell-read-line)
     (let ((out nil))
       (let-fluids ((line-callback (lambda (l)
-				    (setq out l)
+				    (set! out l)
 				    ;; Only want the first line
 				    (fluid-set line-callback nil))))
 	;; Flush any pending output
@@ -150,8 +150,8 @@ results have been received.")
 	(if process-busy
 	    (error "Ispell process is busy!")
 	  (ispell-start)
-	  (setq process-busy t))
-      (setq process-busy nil)))
+	  (set! process-busy t))
+      (set! process-busy nil)))
 
   ;; Check a word with Ispell. Returns the raw (single-line) output
   ;; see ispell(1) for details (under the -a option)
@@ -161,12 +161,12 @@ results have been received.")
       (unwind-protect
 	  (progn
 	    (format process "%s\n" word)
-	    (setq response (ispell-read-line))
+	    (set! response (ispell-read-line))
 	    (if (eq? (string-ref response 0) #\newline)
 		;; This shouldn't happen
 		(error "Null output from Ispell")
 	      ;; Gobble following blank line
-	      (setq tem (ispell-read-line))
+	      (set! tem (ispell-read-line))
 	      (unless (eq? (string-ref tem 0) #\newline)
 		(error "Non-null trailing line from Ispell"))))
 	(mutex nil))
@@ -181,7 +181,7 @@ results have been received.")
 
   (define (ispell-set-dictionary dict-name)
     "Set the name of the dictionary used by Ispell to DICT-NAME."
-    (setq *ispell-dictionary* dict-name)
+    (set! *ispell-dictionary* dict-name)
     (when process
       (ispell-stop)
       (ispell-start))

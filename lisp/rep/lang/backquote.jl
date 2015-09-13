@@ -102,37 +102,37 @@ Vectors work just like lists.  Nested backquotes are permitted."
       (while (pair? rest)
 	;; Turn . (, foo) into (,@ foo).
 	(if (eq? (car rest) 'backquote-unquote)
-	    (setq rest (list (list 'backquote-splice (list-ref rest 1)))))
-	(setq item (backquote-process (car rest)))
+	    (set! rest (list (list 'backquote-splice (list-ref rest 1)))))
+	(set! item (backquote-process (car rest)))
 	(cond
 	 ((= (car item) 2)
 	  ;; Put the nonspliced items before the first spliced item
 	  ;; into FIRSTLIST.
-	  (if (null? lists)
-	      (setq firstlist lst
-		    lst nil))
+	  (when (null? lists)
+	    (set! firstlist lst)
+	    (set! lst nil))
 	  ;; Otherwise, put any preceding nonspliced items into LISTS.
 	  (if lst
-	      (setq lists (cons (backquote-listify lst '(0 . nil)) lists)))
-	  (setq lists (cons (cdr item) lists))
-	  (setq lst nil))
+	      (set! lists (cons (backquote-listify lst '(0 . nil)) lists)))
+	  (set! lists (cons (cdr item) lists))
+	  (set! lst nil))
 	 (t
-	  (setq lst (cons item lst))))
-	(setq rest (cdr rest)))
+	  (set! lst (cons item lst))))
+	(set! rest (cdr rest)))
       ;; Handle nonsplicing final elements, and the tail of the list
       ;; (which remains in REST).
       (if (or rest lst)
-	  (setq lists (cons (backquote-listify lst (backquote-process rest))
+	  (set! lists (cons (backquote-listify lst (backquote-process rest))
 			    lists)))
       ;; Turn LISTS into a form that produces the combined list. 
-      (setq expression
+      (set! expression
 	    (if (or (cdr lists)
 		    (eq? (car (car lists)) 'backquote-splice))
 		(cons 'append (reverse! lists))
 	      (car lists)))
       ;; Tack on any initial elements.
       (if firstlist
-	  (setq expression (backquote-listify firstlist (cons 1 expression))))
+	  (set! expression (backquote-listify firstlist (cons 1 expression))))
       (if (eq? (car expression) 'quote)
 	  (cons 0 (list 'quote s))
 	(cons 1 expression))))))
@@ -149,19 +149,19 @@ Vectors work just like lists.  Nested backquotes are permitted."
 
 (defun backquote-listify (lst old-tail)
   (let ((heads nil) (tail (cdr old-tail)) (list-tail lst) (item nil))
-    (if (= (car old-tail) 0)
-	(setq tail (backquote-eval tail)
-	      old-tail nil))
+    (when (= (car old-tail) 0)
+      (set! tail (backquote-eval tail))
+      (set! old-tail nil))
     (while (pair? list-tail)
-      (setq item (car list-tail))
-      (setq list-tail (cdr list-tail))
+      (set! item (car list-tail))
+      (set! list-tail (cdr list-tail))
       (if (or heads old-tail (/= (car item) 0))
-	  (setq heads (cons (cdr item) heads))
-	(setq tail (cons (backquote-eval (cdr item)) tail))))
+	  (set! heads (cons (cdr item) heads))
+	(set! tail (cons (backquote-eval (cdr item)) tail))))
     (cond
      (tail
       (if (null? old-tail)
-	  (setq tail (list 'quote tail)))
+	  (set! tail (list 'quote tail)))
       (if heads
 	  (let ((use-list* (or (cdr heads)
 			       (and (pair? (car heads))

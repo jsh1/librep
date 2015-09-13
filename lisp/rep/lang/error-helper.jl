@@ -68,7 +68,7 @@ in the wrong position."))
 	   (for-each-structure
 	    (lambda (name struct)
 	      (when (structure-exports? struct symbol)
-		(setq structs (cons name structs)))))
+		(set! structs (cons name structs)))))
 	   (cond ((null? structs)
 		  (output "You're accessing an undefined variable or function `%s'"
 			  symbol))

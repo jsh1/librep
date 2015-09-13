@@ -81,11 +81,11 @@
     (let ((cell (assq type action-alist)))
       (if cell
 	  (set-cdr! cell action)
-	(setq action-alist (cons (cons type action) action-alist)))))
+	(set! action-alist (cons (cons type action) action-alist)))))
 
   (define (disable-self-tests type)
     (unless (memq type disabled)
-      (setq disabled (cons type disabled))))
+      (set! disabled (cons type disabled))))
 
 
 ;;; test management
@@ -102,7 +102,7 @@
   (define (run-all-self-tests)
     (let ((failures 0))
       (walk (lambda (x)
-	      (setq failures (+ failures (run-module-self-tests x)))))
+	      (set! failures (+ failures (run-module-self-tests x)))))
       failures))
 
   (define (run-module-self-tests module)

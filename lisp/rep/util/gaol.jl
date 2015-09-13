@@ -74,7 +74,7 @@
       prin1-to-string princ print prog1 prog2 progn put quote
       quote-regexp random rassoc rassq read read-char read-chars
       read-from-string read-line reverse set-car! set-cdr! sequence? set
-      set-default set-car! set-cdr! setplist setq setq-default
+      set-default set-car! set-cdr! setplist setq set! setq-default
       signal sit-for sleep-for sort! sort char-whitespace? special-form?
       special-variable? stream? string-length string-ref string-set!
       string-prefix? string-looking-at string-match string-split
@@ -126,14 +126,14 @@
   ;; initialization
   (define (build-structure)
     (unless gaol-structure
-      (setq gaol-structure (make-structure))
+      (set! gaol-structure (make-structure))
       (name-structure gaol-structure '%gaol)
       (structure-exports-all gaol-structure t)
       (for-each (lambda (var)
 		  (structure-define gaol-structure var
 				    (%structure-ref (current-structure) var)))
 		gaol-safe-functions)
-      (setq file-handler-env (map (lambda (sym)
+      (set! file-handler-env (map (lambda (sym)
 				       (cons sym t))
 				     gaol-safe-file-handlers))))
 
@@ -152,7 +152,7 @@
   (define default-gaol (let (gaol)
 			 (lambda ()
 			   (unless gaol
-			     (setq gaol (make-gaol)))
+			     (set! gaol (make-gaol)))
 			   gaol)))
 
 ;;; public environment mutators
@@ -165,14 +165,14 @@
     (build-structure)
     (unless (memq var gaol-safe-specials)
       ;; use append! to affect existing environments
-      (setq gaol-safe-specials (append! gaol-safe-specials (list var)))))
+      (set! gaol-safe-specials (append! gaol-safe-specials (list var)))))
 
   (define (gaol-define-file-handler name fun)
     (build-structure)
     (let ((cell (assq name file-handler-env)))
       (if cell
 	  (set-cdr! cell fun)
-	(setq file-handler-env (append! file-handler-env
+	(set! file-handler-env (append! file-handler-env
 				      (list (cons name fun)))))))
 
   ;; only works properly for gaols created after calling this function
@@ -180,7 +180,7 @@
     (build-structure)
     (gaol-define 'run-byte-code run)
     (gaol-define 'validate-byte-code validate)
-    (setq byte-code-interpreter run))
+    (set! byte-code-interpreter run))
 
   (define (gaol-open struct)
     (build-structure)

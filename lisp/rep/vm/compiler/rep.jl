@@ -101,7 +101,7 @@
     (let-fluids ((current-form form))
       (unless (or (memq (car form) top-level-unexpanded)
 		  (memq (car form) top-level-compiled))
-	(setq form (compiler-macroexpand
+	(set! form (compiler-macroexpand
 		    form (lambda (in out)
 			   (or (eq? in out)
 			       (memq (car out) top-level-unexpanded)
@@ -145,11 +145,11 @@
 	   (eval (list-ref form 1))))
 
 	((progn)
-	 (setq form (cons 'progn (pass-1* (cdr form)))))
+	 (set! form (cons 'progn (pass-1* (cdr form)))))
 
 	;; put bare forms into progns so they can be merged in pass-1
 	(t (unless (memq (car form) top-level-unexpanded)
-	     (setq form (list 'progn form)))))
+	     (set! form (list 'progn form)))))
 
       form))
 
@@ -195,7 +195,7 @@
 	 (let ((doc (list-ref form 3)))
 	   (when (and *compiler-write-docs* (string? doc))
 	     (add-documentation (list-ref form 1) (fluid current-module) doc)
-	     (setq form (delq! doc form)))
+	     (set! form (delq! doc form)))
 	   (unless (memq (list-ref form 1) (fluid defvars))
 	     (remember-variable (list-ref form 1)))
 	   (unless (assq (list-ref form 1) (fluid const-env))
@@ -212,7 +212,7 @@
 	     (set-car! (list-tail form 2) (compile-form (list-ref form 2))))
 	   (when (and *compiler-write-docs* (string? doc))
 	     (add-documentation (list-ref form 1) nil doc)
-	     (setq form (delq! (list-ref form 3) form)))
+	     (set! form (delq! (list-ref form 3) form)))
 	   (unless (memq (list-ref form 1) (fluid defvars))
 	     (remember-variable (list-ref form 1))))
 	 form)
@@ -225,7 +225,7 @@
 	     (remember-lexical-variable (compiler-constant-value sym)))
 	   (when (and *compiler-write-docs* (string? doc))
 	     (add-documentation sym (fluid current-module) doc)
-	     (setq form (delq! doc form)))
+	     (set! form (delq! doc form)))
 	   (when (and (list? value) (not (compiler-constant? value)))
 	     ;; Compile the definition. A good idea?
 	     (set-car! (list-tail form 2) (compile-form (list-ref form 2))))
@@ -254,12 +254,12 @@
   (defun trans-setq (form)
     (let
 	(lst)
-      (setq form (cdr form))
+      (set! form (cdr form))
       (while form
 	(unless (pair? (cdr form))
 	  (compiler-error "odd number of args to setq"))
-	(setq lst (cons `(set ',(car form) ,(list-ref form 1)) lst))
-	(setq form (list-tail form 2)))
+	(set! lst (cons `(set ',(car form) ,(list-ref form 1)) lst))
+	(set! form (list-tail form 2)))
       (cons 'progn (reverse! lst))))
   (put 'setq 'rep-compile-transform trans-setq)
 
@@ -273,12 +273,12 @@
 		 (string? (compiler-constant-value doc))
 		 *compiler-write-docs*)
 	(add-documentation name nil (compiler-constant-value doc))
-	(setq doc nil))
+	(set! doc nil))
       `(progn
 	 ,@(and doc (list `(put ',name 'documentation ,doc)))
 	 (make-variable-special ',name)
 	 (unless (bound? ',name)
-	   (setq ,name ,value)))))
+	   (set! ,name ,value)))))
   (put 'defvar 'rep-compile-transform trans-defvar)
 
   (defun trans-require (form)
@@ -351,7 +351,7 @@
 	  (let
 	      ((top-label (make-label))
 	       (test-label (make-label)))
-	    (setq fun (constant-function-value fun))
+	    (set! fun (constant-function-value fun))
 	    (compile-form-1 lst)
 	    (emit-insn `(jmp ,test-label))
 	    (fix-label top-label)
@@ -410,7 +410,7 @@
       (if (compiler-constant? sym)
 	  ;; use setq
 	  (progn
-	    (setq sym (compiler-constant-value sym))
+	    (set! sym (compiler-constant-value sym))
 	    (unless (symbol? sym)
 	      (compiler-error "trying to set value of a non-symbol: %s" sym))
 	    (compile-form-1 val)
@@ -425,6 +425,19 @@
 	(emit-insn '(set))
 	(decrement-stack))))
   (put 'set 'rep-compile-fun compile-set)
+
+  (defun compile-set! (form)
+    (let ((sym (list-ref form 1))
+	  (val (list-ref form 2)))
+      (unless (symbol? sym)
+	(compiler-error "trying to set value of a non-symbol: %s" sym))
+      (compile-form-1 val)
+      (emit-varset sym)
+      (note-binding-modified sym)
+      (decrement-stack)
+      (emit-insn '(push #undefined))
+      (increment-stack)))
+  (put 'set! 'rep-compile-fun compile-set!)
 
   ;; compile let* specially to coalesce all bindings into a single frame
   (defun compile-let* (form #!optional return-follows)
@@ -447,7 +460,7 @@
 		    (note-binding (car lst))
 		    (emit-binding (car lst))))
 	   (decrement-stack)
-	   (setq lst (cdr lst)))
+	   (set! lst (cdr lst)))
 	 (compile-body (list-tail form 2) return-follows)
 	 (emit-insn '(unbind))
 	 (decrement-b-stack)))))
@@ -491,15 +504,15 @@
 				value (not (cdr value))
 				(eq? (caar value) 'lambda))
 		     (throw 'no t))
-		   (setq value (car value))
+		   (set! value (car value))
 		   (let ((body (list-tail form 2)))
 		     (unless (= (list-length body) 1)
 		       (throw 'no t))
-		     (setq body (car body))
+		     (set! body (car body))
 		     (when (and (eq? (car body) (get-language-property
 						'compiler-sequencer))
 				(= (list-length body) 2))
-		       (setq body (cadr body)))
+		       (set! body (cadr body)))
 		     (unless (eq? (car body) var)
 		       (throw 'no t))
 
@@ -563,7 +576,7 @@
     (let
 	((end-label (make-label))
 	 (need-trailing-nil t))
-      (setq form (cdr form))
+      (set! form (cdr form))
       (while (pair? form)
 	(let*
 	    ((subl (car form))
@@ -571,7 +584,7 @@
 	     (next-label (make-label)))
 	  ;; See if we can squash a constant condition to t or nil
 	  (when (compiler-constant? condition)
-	    (setq condition (not (not (compiler-constant-value condition)))))
+	    (set! condition (not (not (compiler-constant-value condition)))))
 	  (cond
 	   ((eq? condition t)
 	    ;; condition t -- always taken
@@ -588,8 +601,8 @@
 	      ;;(compiler-warning
 	      ;; 'misc "unreachable conditions after t in cond statement")
 	      ;; Ignore the rest of the statement
-	      (setq form nil))
-	    (setq need-trailing-nil nil))
+	      (set! form nil))
+	    (set! need-trailing-nil nil))
 	   ((eq? condition nil)
 	    ;; condition nil -- never taken
 	    (when (cdr subl)
@@ -619,7 +632,7 @@
 		  (emit-insn `(jnp ,end-label))
 		  (compile-body (cdr subl) return-follows)
 		  (decrement-stack)
-		  (setq need-trailing-nil nil))
+		  (set! need-trailing-nil nil))
 	      ;; No action to take
 	      (if (cdr form)
 		  ;; This isn't the last condition list
@@ -627,8 +640,8 @@
 		;; This is the last condition list, since there's no
 		;; action to take, just fall out the bottom, with the
 		;; condition as value.
-		(setq need-trailing-nil nil))))))
-	(setq form (cdr form)))
+		(set! need-trailing-nil nil))))))
+	(set! form (cdr form)))
       (when need-trailing-nil
 	(emit-insn '(push ())))
       (increment-stack)
@@ -639,12 +652,12 @@
     (let
 	((end-label (make-label))
 	 (had-default nil))
-      (setq form (cdr form))
+      (set! form (cdr form))
       (unless form
 	(compiler-error "no key value in case statement"))
       ;; XXX if key is constant optimise case away..
       (compile-form-1 (car form))
-      (setq form (cdr form))
+      (set! form (cdr form))
       (while (pair? form)
 	(unless (pair? form)
 	  (compiler-error "badly formed clause in case statement"))
@@ -666,14 +679,14 @@
 		 (decrement-stack)
 		 (emit-insn `(jn ,next-label))
 		 (decrement-stack))
-		((eq? cases t) (setq had-default t))
+		((eq? cases t) (set! had-default t))
 		(t (compiler-error
 		    "badly formed clause in case statement" #:form cases)))
 	  (compile-body forms return-follows)
 	  (decrement-stack)
 	  (emit-insn `(jmp ,end-label))
 	  (fix-label next-label)
-	  (setq form (cdr form))))
+	  (set! form (cdr form))))
       (unless had-default
 	(emit-insn '(push ())))
       (increment-stack)
@@ -820,7 +833,7 @@
 		 (compiler-error
 		  "badly formed condition-case handler: `%s'"
 		  (car handlers) #:form handlers))
-	       (setq handlers (cdr handlers)))
+	       (set! handlers (cdr handlers)))
 	     ;; The last handler
 	     (if (pair? (car handlers))
 		 (let
@@ -900,8 +913,8 @@
 	(compile-form-1 fun))
       (while args
 	(compile-form-1 (car args))
-	(setq args (cdr args)
-	      arg-count (1+ arg-count)))
+	(set! args (cdr args))
+	(set! arg-count (1+ arg-count)))
       (if open-code
 	  (progn
 	    (compile-lambda-inline
@@ -1042,17 +1055,17 @@
   (defun compile-binary-op (form)
     (let
 	((opcode (get-form-opcode (car form))))
-      (setq form (cdr form))
+      (set! form (cdr form))
       (unless (>= (list-length form) 2)
 	(compiler-error
 	 "too few arguments to binary operator `%s'" (car form)))
       (compile-form-1 (car form))
-      (setq form (cdr form))
+      (set! form (cdr form))
       (while (pair? form)
 	(compile-form-1 (car form))
 	(emit-insn (list opcode))
 	(decrement-stack)
-	(setq form (cdr form)))))
+	(set! form (cdr form)))))
 
   ;; Used for >, >=, < and <=
   (defun compile-transitive-relation (form)

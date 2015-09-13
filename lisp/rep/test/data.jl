@@ -33,7 +33,7 @@
   (define (equality-self-test)
     (define (gen-counter)
       (let ((n 0))
-	(lambda () (setq n (1+ n)) n)))
+	(lambda () (set! n (1+ n)) n)))
 
     (test (eqv? 'a 'a))
     (test (not (eqv? 'a 'b)))

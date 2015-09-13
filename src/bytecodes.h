@@ -272,6 +272,8 @@
 #define OP_STRING_REF 0xd3
 #define OP_STRING_SET 0xd4
 
+#define OP_UNDEFINED 0xd5
+
 
 /* Jump opcodes */
 

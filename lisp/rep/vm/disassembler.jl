@@ -75,7 +75,7 @@
      "set" "required-arg" "optional-arg" "rest-arg"
      "not-zero?" "keyword-arg" "optional-arg*" "keyword-arg*"
      "vector-ref" "vector-set!" "string-length"
-     "string-ref" "string-set!" nil nil nil	; #xd0
+     "string-ref" "string-set!" "undefined" nil nil	; #xd0
      nil nil nil nil nil nil nil nil
      nil nil nil nil nil nil nil nil	; #xe0
      nil nil nil nil nil nil nil nil
@@ -88,25 +88,25 @@
       (if (< i (vector-length consts))
 	  (vector-ref consts i)
 	'*invalid-constant*))
-    (unless depth (setq depth 0))
+    (unless depth (set! depth 0))
     (let
 	((i 0)
 	 (indent (make-string depth))
 	 c arg op)
       (while (< i (string-length code-string))
-	(setq c (string-ref code-string i))
+	(set! c (string-ref code-string i))
 	(format stream "\n%s%d\t" indent i)
 	(cond
 	 ((< c (bytecode last-with-args))
-	  (setq op (logand c #xf8))
+	  (set! op (logand c #xf8))
 	  (cond
 	   ((< (logand c #x07) 6)
-	    (setq arg (logand c #x07)))
+	    (set! arg (logand c #x07)))
 	   ((= (logand c #x07) 6)
-	    (setq i (1+ i)
+	    (set! i (1+ i)
 		  arg (string-ref code-string i)))
 	   (t
-	    (setq arg (logior (ash (string-ref code-string (1+ i)) 8)
+	    (set! arg (logior (ash (string-ref code-string (1+ i)) 8)
 			      (string-ref code-string (+ i 2)))
 		  i (+ i 2))))
 	  (cond
@@ -133,33 +133,34 @@
 	    (format stream "reg-set #%d" arg))
 	   ((= op (bytecode refq))
 	    (format stream "refq [%d] %S" arg (const-ref arg)))
-	   ((= op (bytecode setq))
-	    (format stream "setq [%d] %S" arg (const-ref arg)))))
+	   ((= op (bytecode set!))
+	    (format stream "set! [%d] %S" arg (const-ref arg)))))
 	 ((> c (bytecode last-before-jmps))
-	  (setq arg (logior (ash (string-ref code-string (1+ i)) 8)
+	  (set! arg (logior (ash (string-ref code-string (1+ i)) 8)
 			    (string-ref code-string (+ i 2)))
 		op c
 		i (+ i 2))
 	  (format stream (vector-ref disassembler-opcodes op) arg))
 	 ((= c (bytecode pushi))
-	  (setq arg (string-ref code-string (1+ i)))
-	  (setq i (1+ i))
+	  (set! arg (string-ref code-string (1+ i)))
+	  (set! i (1+ i))
 	  (when (>= arg 128)
-	    (setq arg (- (- 256 arg))))
+	    (set! arg (- (- 256 arg))))
 	  (format stream (vector-ref disassembler-opcodes c) arg))
 	 ((or (= c (bytecode pushi-pair-neg))
 	      (= c (bytecode pushi-pair-pos)))
-	  (setq arg (logior (ash (string-ref code-string (1+ i)) 8)
+	  (set! arg (logior (ash (string-ref code-string (1+ i)) 8)
 			    (string-ref code-string (+ i 2))))
-	  (setq i (+ i 2))
+	  (set! i (+ i 2))
 	  (when (= c (bytecode pushi-pair-neg))
-	    (setq arg (- arg)))
+	    (set! arg (- arg)))
 	  (format stream (vector-ref disassembler-opcodes c) arg))
 	 (t
-	  (if (setq op (vector-ref disassembler-opcodes c))
+	  (set! op (vector-ref disassembler-opcodes c))
+	  (if op
 	      (write stream op)
 	    (format stream "<unknown opcode %d>" c))))
-	(setq i (1+ i)))
+	(set! i (1+ i)))
       (write stream #\newline)))
 
   ;;;###autoload
@@ -174,33 +175,33 @@
 	    (progn
 	      (declare (bound open-buffer clear-buffer goto-other-view
 			      goto-buffer insert start-of-buffer goto))
-	      (setq stream (open-buffer "*disassembly*"))
+	      (set! stream (open-buffer "*disassembly*"))
 	      (clear-buffer stream)
 	      (goto-other-view)
 	      (goto-buffer stream)
 	      (insert "\n" stream)
 	      (goto (start-of-buffer))
-	      (setq stream (cons stream t)))
-	  (setq stream *standard-output*)))
+	      (set! stream (cons stream t)))
+	  (set! stream *standard-output*)))
       (unless depth
-	(setq depth 0))
+	(set! depth 0))
       (when (zero? depth)
 	(if (symbol? arg)
 	    (progn
 	      (format stream "Disassembly of function %s:\n\n" arg)
-	      (setq arg (symbol-value arg)))
+	      (set! arg (symbol-value arg)))
 	  (format stream "Disassembly of %S:\n\n" arg)))
       (when (closure? arg)
-	(setq arg (closure-function arg)))
+	(set! arg (closure-function arg)))
       (cond
        ((and (pair? arg) (eq? (car arg) 'run-byte-code))
-	(setq code-string (list-ref arg 1)
-	      consts (list-ref arg 2)
-	      stack (list-ref arg 3)))
+	(set! code-string (list-ref arg 1))
+	(set! consts (list-ref arg 2))
+	(set! stack (list-ref arg 3)))
        (t
 	;; bytecode vector
-	(setq code-string (vector-ref arg 0)
-	      consts (vector-ref arg 1))
+	(set! code-string (vector-ref arg 0))
+	(set! consts (vector-ref arg 1))
 	(when (zero? depth)
 	  (let ((spec (and (> (vector-length arg) 4) (vector-ref arg 4)))
 		(doc (and (> (vector-length arg) 3) (vector-ref arg 3))))
@@ -208,7 +209,7 @@
 	      (format stream "Interactive spec: %S\n" spec))
 	    (when doc
 	      (format stream "Doc string: %S\n" doc)))
-	  (setq stack (vector-ref arg 2)))))
+	  (set! stack (vector-ref arg 2)))))
       (when (zero? depth)
 	(format stream "%d bytes, %d constants, %d stack slots, %d binding frames and %d registers.\n"
 		(string-length code-string) (vector-length consts)

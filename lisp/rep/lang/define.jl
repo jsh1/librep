@@ -51,11 +51,10 @@
 	   (and (string? (caddr args)) (list (caddr args))))))
 
 (defun define-scan-internals (body)
-  (let
-      (defs)
+  (let (defs)
     (while (eq? (caar body) 'define)
-      (setq defs (cons (define-parse (cdar body)) defs))
-      (setq body (cdr body)))
+      (set! defs (cons (define-parse (cdar body)) defs))
+      (set! body (cdr body)))
     (if defs
 	(list* 'letrec
 	       (map (lambda (def)
@@ -143,6 +142,9 @@
 		  (cadr form))
 	     (define-scan-internals (cddr form))))
 
+      ((set!)
+       (list 'set! (cadr form) (define-scan-form (caddr form))))
+
       ((setq)
        (let loop ((rest (cdr form))
 		  (out nil))
@@ -188,8 +190,8 @@
 	     (header nil))
 	 ;; skip doc strings and interactive decls..
 	 (while (or (string? (car body)) (eq? (caar body) 'interactive))
-	   (setq header (cons (car body) header))
-	   (setq body (cdr body)))
+	   (set! header (cons (car body) header))
+	   (set! body (cdr body)))
 	 `(lambda ,(cadr form)
 	    ,@(reverse! header)
 	    ,(let-fluids ((define-bound-vars

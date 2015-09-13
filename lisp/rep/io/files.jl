@@ -62,7 +62,7 @@ match the FILE argument to `load'."
   (let ((tem (assoc library *after-load-alist*)))
     (if tem
 	(set-cdr! tem (cons thunk (cdr tem)))
-      (setq *after-load-alist* (cons (cons library (list thunk))
+      (set! *after-load-alist* (cons (cons library (list thunk))
 				     *after-load-alist*)))))
 
 (defun eval-after-load (library form)

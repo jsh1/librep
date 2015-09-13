@@ -39,53 +39,53 @@
   ;; shift the instruction window
   (defmacro shift ()
     '(progn
-       (setq point (cdr point))
-       (setq insn0 insn1)
-       (setq insn1 insn2)
-       (setq insn2 (list-ref point 3))))
+       (set! point (cdr point))
+       (set! insn0 insn1)
+       (set! insn1 insn2)
+       (set! insn2 (list-ref point 3))))
 
   ;; refill the window
   (defmacro refill ()
     '(progn
-       (setq insn0 (list-ref point 1))
-       (setq insn1 (list-ref point 2))
-       (setq insn2 (list-ref point 3))))
+       (set! insn0 (list-ref point 1))
+       (set! insn1 (list-ref point 2))
+       (set! insn2 (list-ref point 3))))
 
   ;; delete the first instruction in the window
   (defmacro del-0 ()
     '(progn
        (set-cdr! point (list-tail point 2))
-       (setq insn0 insn1)
-       (setq insn1 insn2)
-       (setq insn2 (list-ref point 3))))
+       (set! insn0 insn1)
+       (set! insn1 insn2)
+       (set! insn2 (list-ref point 3))))
 
   ;; delete the second instruction in the window
   (defmacro del-1 ()
     '(progn
        (set-cdr! (cdr point) (list-tail point 3))
-       (setq insn1 insn2)
-       (setq insn2 (list-ref point 3))))
+       (set! insn1 insn2)
+       (set! insn2 (list-ref point 3))))
 
   ;; delete the third instruction in the window
   (defmacro del-2 ()
     '(progn
        (set-cdr! (list-tail point 2) (list-tail point 4))
-       (setq insn2 (list-ref point 3))))
+       (set! insn2 (list-ref point 3))))
 
   ;; delete the first two instructions in the window
   (defmacro del-0-1 ()
     '(progn
        (set-cdr! point (list-tail point 3))
-       (setq insn0 insn2)
-       (setq insn1 (list-ref point 2))
-       (setq insn2 (list-ref point 3))))
+       (set! insn0 insn2)
+       (set! insn1 (list-ref point 2))
+       (set! insn2 (list-ref point 3))))
 
   ;; delete the second two instructions in the window
   (defmacro del-1-2 ()
     '(progn
        (set-cdr! (cdr point) (list-tail point 4))
-       (setq insn1 (list-ref point 2))
-       (setq insn2 (list-ref point 3))))
+       (set! insn1 (list-ref point 2))
+       (set! insn2 (list-ref point 3))))
 
   ;; delete all instructions in the window
   (defmacro del-0-1-2 ()
@@ -110,10 +110,10 @@
       ;; add an extra cons cell so we can always refer to the
       ;; cdr of the intsruction _before_ insn0, this makes it
       ;; easy to delete instructions
-      (setq code-string (cons 'start code-string))
+      (set! code-string (cons 'start code-string))
       (while keep-going
-	(setq keep-going nil)
-	(setq point code-string)
+	(set! keep-going nil)
+	(set! point code-string)
 	(refill)
 	(while insn0
 	  ;;(format *standard-error* "iter: %S\n\n" code-string)
@@ -123,17 +123,17 @@
 	   ;; <side-effect-free w/ stack-1>; pop --> pop; pop
 	   ((and (eq? (car insn1) 'pop)
 		 (memq (car insn0) byte-side-effect-free-insns))
-	    (setq tem (vector-ref byte-insn-stack-delta (bytecode-ref (car insn0))))
+	    (set! tem (vector-ref byte-insn-stack-delta (bytecode-ref (car insn0))))
 	    (cond ((= tem 1)
 		   (del-0-1)
-		   (setq keep-going t))
+		   (set! keep-going t))
 		  ((= tem 0)
 		   (del-0)
-		   (setq keep-going t))
+		   (set! keep-going t))
 		  ((= tem -1)
 		   (set-car! insn0 'pop)
 		   (set-cdr! insn0 nil)
-		   (setq keep-going t))))
+		   (set! keep-going t))))
 
 	   ;; {push,dup}; env-set #X; env-ref #X
 	   ;;    --> {push,dup}; env-set #X; {push, dup}
@@ -150,7 +150,7 @@
 		 (or (eq? (car insn0) 'dup) (eq? (car insn0) 'push)))
 	    (set-car! insn2 (car insn0))
 	    (set-cdr! insn2 (cdr insn0))
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; env-set #X; env-ref #X --> dup; env-set #X
 	   ;; bind; env-ref #0 --> dup; bind
@@ -169,8 +169,8 @@
 	    (set-car! insn0 'dup)
 	    (set-cdr! insn0 nil)
 	    ;; this might require extra stack space
-	    (setq extra-stack 1)
-	    (setq keep-going t))
+	    (set! extra-stack 1)
+	    (set! keep-going t))
 
 	   ;; dup; {<varset>,<varbind>} X; pop --> {<varset>,<varbind>} X
 	   ((and (eq? (car insn0) 'dup)
@@ -180,7 +180,7 @@
 	    (set-car! insn2 (car insn1))
 	    (set-cdr! insn2 (cdr insn1))
 	    (del-0-1)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; <varref> X; <varref> X --> <varref> X; dup
 	   ((and (memq (car insn0) byte-varref-insns)
@@ -188,7 +188,7 @@
 		 (eq? (cadr insn0) (cadr insn1)))
 	    (set-car! insn1 'dup)
 	    (set-cdr! insn1 nil)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; <varref> X; <varset> X --> deleted
 	   ((or (and (eq? (car insn0) 'env-ref)
@@ -201,7 +201,7 @@
 		     (eq? (car insn1) 'reg-set)
 		     (eq? (cadr insn0) (cadr insn1))))
 	    (del-0-1)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; c?r; c?r --> c??r
 	   ((and (memq (car insn0) '(car cdr))
@@ -210,7 +210,7 @@
 			      (if (eq? (car insn1) 'car) 'caar 'cdar)
 			    (if (eq? (car insn1) 'car) 'cadr 'cddr)))
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; push 1; sub --> dec
 	   ;; push -1; sub --> inc
@@ -225,54 +225,54 @@
 			 (if (eq? (car insn1) 'sub) 'inc 'dec))))
 	      (set-car! insn1 new)
 	      (del-0)
-	      (setq keep-going t)))
+	      (set! keep-going t)))
 
 	   ;; push 0; {add,sub} --> <deleted>
 	   ((and (equal? insn0 '(push 0)) (memq (car insn1) '(add sub)))
 	    (del-0-1)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; push 0; num-eq --> zerop
 	   ((and (equal? insn0 '(push 0)) (eq? (car insn1) 'num-eq))
 	    (set-car! insn1 'zerop)
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; zerop; not --> not-zero-p
 	   ((and (eq? (car insn0) 'zerop) (eq? (car insn1) 'not))
 	    (set-car! insn1 'not-zero-p)
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; jmp X; X: --> X:
 	   ((and (eq? (car insn0) 'jmp) (eq? (cadr insn0) insn1))
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; {jn,jt} X; X: --> pop; X:
 	   ((and (memq (car insn0) '(jn jt)) (eq? (cadr insn0) insn1))
 	    (set-car! insn0 'pop)
 	    (set-cdr! insn0 nil)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; {jpt,jpn} X; pop --> {jt,jn} X
 	   ((and (memq (car insn0) '(jpt jpn)) (eq? (car insn1) 'pop))
 	    (set-car! insn0 (if (eq? (car insn0) 'jpt) 'jt 'jn))
 	    (del-1)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; not; {jn,jt} X --> {jt,jn} X
 	   ((and (eq? (car insn0) 'not)
 		 (memq (car insn1) '(jn jt)))
 	    (set-car! insn1 (if (eq? (car insn1) 'jn) 'jt 'jn))
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; jt X; (push ()) --> jpt X
 	   ((and (eq? (car insn0) 'jt) (equal? insn1 '(push ())))
 	    (set-car! insn0 'jpt)
 	    (del-1)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; {jn,jt} X; jmp Y; X: --> {jt,jn} Y; X:
 	   ((and (memq (car insn0) '(jn jt))
@@ -280,7 +280,7 @@
 		 (eq? (cadr insn0) insn2))
 	    (set-car! insn1 (if (eq? (car insn0) 'jn) 'jt 'jn))
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; (push X); <cond. jump> X; --> whatever
 	   ((and (eq? (car insn0) 'push)
@@ -319,7 +319,7 @@
 		     ;; nil; jpt X --> nil
 		     (del-1))
 		    (t (error "Unhandled contional jump case")))
-	      (setq keep-going t)))
+	      (set! keep-going t)))
 
 	   ;; <varref-and-error-free-op>; unbind ---> unbind; op
 	   ((and (eq? (car insn1) 'unbind)
@@ -331,30 +331,30 @@
 	      (set-cdr! insn0 (cdr insn1))
 	      (set-car! insn1 op)
 	      (set-cdr! insn1 arg)
-	      (setq keep-going t)))
+	      (set! keep-going t)))
 
 	   ;; <varbind> X; unbind --> pop; unbind
 	   ((and (memq (car insn0) byte-varbind-insns)
 		 (eq? (car insn1) 'unbind))
 	    (set-car! insn0 'pop)
 	    (set-cdr! insn0 nil)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; init-bind; unbind --> deleted
 	   ((and (eq? (car insn0) 'init-bind) (eq? (car insn1) 'unbind))
 	    (del-0-1)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; init-bind; {return,unbindall} --> {return,unbindall}
 	   ((and (eq? (car insn0) 'init-bind)
 		 (memq (car insn1) '(return unbindall)))
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; unbind; return --> return
 	   ((and (eq? (car insn0) 'unbind) (eq? (car insn1) 'return))
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; <varref> X; dup... ; <varref> X --> <varref> X; dup...; dup
 	   ((and (memq (car insn0) byte-varref-insns)
@@ -362,11 +362,11 @@
 	    (let
 		((tem (list-tail point 2)))
 	      (while (eq? (car (car tem)) 'dup)
-		(setq tem (cdr tem)))
+		(set! tem (cdr tem)))
 	      (when (equal? (car tem) insn0)
 		(set-car! (car tem) 'dup)
 		(set-cdr! (car tem) nil)
-		(setq keep-going t))))
+		(set! keep-going t))))
 
 	   ;; X: Y: --> X:  [s/X/Y/]
 	   ((and (symbol? insn0) (symbol? insn1))
@@ -378,7 +378,7 @@
 		  (set-car! (cdar rest) insn0))
 		(loop (cdr rest))))
 	    (del-1)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; [unused] X: --> deleted
 	   ((and (symbol? insn0)
@@ -389,45 +389,45 @@
 				   (eq? (caar rest) 'push-label))) nil)
 			 (t (loop (cdr rest))))))
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; jmp X; ... Y: --> jmp X; Y:
 	   ;; return; ... Y: --> return; Y:
 	   ((and (memq (car insn0) '(jmp ejmp return))
 		 insn1 (not (symbol? insn1)))
-	    (setq tem (list-tail point 2))
+	    (set! tem (list-tail point 2))
 	    (while (and tem (not (symbol? (car tem))))
-	      (setq tem (cdr tem)))
+	      (set! tem (cdr tem)))
 	    (unless (eq? tem (list-tail point 2))
 	      (set-cdr! (cdr point) tem)
 	      (refill)
-	      (setq keep-going t)))
+	      (set! keep-going t)))
 
 	   ;; j* X; ... X: jmp Y --> j* Y; ... X: jmp Y
 	   ((and (memq (car insn0) byte-jmp-insns)
-		 (setq tem (or (memq (cadr insn0) (cdr code-string))
+		 (set! tem (or (memq (cadr insn0) (cdr code-string))
 			       (error "Can't find jump destination: %s, %s"
 				      insn0 (cdr code-string))))
-		 (setq tem (car (cdr tem)))
+		 (set! tem (car (cdr tem)))
 		 (eq? (car tem) 'jmp)
 		 (not (eq? (cadr insn0) (cadr tem))))
 	    (set-cdr! insn0 (cdr tem))
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; jmp X; ... X: return --> return; ... X: return
 	   ((and (eq? (car insn0) 'jmp)
-		 (setq tem (or (memq (cadr insn0) (cdr code-string))
+		 (set! tem (or (memq (cadr insn0) (cdr code-string))
 			       (error "Can't find jump destination: %s, %s"
 				      insn0 (cdr code-string))))
-		 (setq tem (car (cdr tem)))
+		 (set! tem (car (cdr tem)))
 		 (eq? (car tem) 'return))
 	    (set-car! insn0 'return)
 	    (set-cdr! insn0 nil)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; {jnp,jtp} X; ... X: <cond. jmp> Y --> whatever
 	   ((and (memq (car insn0) '(jnp jtp))
-		 (setq tem (cdr (or (memq (cadr insn0) (cdr code-string))
+		 (set! tem (cdr (or (memq (cadr insn0) (cdr code-string))
 				    (error "Can't find jump destination: %s, %s"
 					   insn0 (cdr code-string)))))
 		 (car tem)
@@ -444,12 +444,12 @@
 		   ((eq? (car jmp) 'jpn)
 		    ;; jtp X; ... X: jpn Y --> jpt Z; ... X: jpn Y; Z:
 		    (set-car! insn0 'jpt)
-		    (setq need-new-label t))
+		    (set! need-new-label t))
 		   ((memq (car jmp) '(jn jnp))
 		    ;; jtp X; ... X: jn Y --> jt Z; ... X: jpn Y; Z:
 		    ;; jtp X; ... X: jnp Y --> jt Z; ... X: jpn Y; Z:
 		    (set-car! insn0 'jt)
-		    (setq need-new-label t))
+		    (set! need-new-label t))
 		   ((eq? (car jmp) 'jtp)
 		    ;; jtp X; ... X: jtp Y --> jtp Y; ...
 		    (set-car! insn0 'jtp)))
@@ -457,7 +457,7 @@
 		 ((eq? (car jmp) 'jpt)
 		  ;; jnp X; ... X: jpt Y --> jn Z; ... X: jpt Y; Z:
 		  (set-car! insn0 'jnp)
-		  (setq need-new-label t))
+		  (set! need-new-label t))
 		 ((memq (car jmp) '(jpn jn))
 		  ;; jnp X; ... X: jpn Y --> jn Y ...
 		  ;; jnp X; ... X: jn Y --> jn Y ...
@@ -466,7 +466,7 @@
 		  ;; jnp X; ... X: jt Y --> jn Z; ... X: jt Y; Z:
 		  ;; jnp X; ... X: jtp Y --> jn Z; ... X: jt Y; Z:
 		  (set-car! insn0 'jn)
-		  (setq need-new-label t))
+		  (set! need-new-label t))
 		 ((eq? (car jmp) 'jnp)
 		  ;; jnp X; ... X: jnp Y --> jnp Y ...
 		  (set-car! insn0 'jnp))))
@@ -476,7 +476,7 @@
 		(let ((label (cons (gensym) (cdr tem))))
 		  (set-car! (cdr insn0) (car label))
 		  (set-cdr! tem label)))
-	      (setq keep-going t)))
+	      (set! keep-going t)))
 
 	   ;; {jpt,jpn} X; jmp Y; X: --> {jnp,jtp} Y; X:
 	   ;; {jtp,jnp} X; jmp Y; X: --> {jpn,jpt} Y; X:
@@ -489,7 +489,7 @@
 			    ((jtp) 'jpn)
 			    ((jnp) 'jpt)))
 	    (del-0)
-	    (setq keep-going t))
+	    (set! keep-going t))
 
 	   ;; <const>; jmp X; ... X: <cond. jmp> Y --> whatever
 	   ;;
@@ -503,7 +503,7 @@
 	  (shift)))
 
       ;; now do one last pass, looking for simple things
-      (setq point code-string)
+      (set! point code-string)
       (refill)
       (while insn0
 	(cond
@@ -517,19 +517,19 @@
 	  (set-cdr! insn2 (cdr insn1))
 	  (set-car! insn1 'dup)
 	  (set-cdr! insn1 nil)
-	  (setq extra-stack 1)
-	  (setq keep-going t))
+	  (set! extra-stack 1)
+	  (set! keep-going t))
 
 	 ;; push X; {dup,push X}... --> push X; dup...
 	 ;; <varref> X; {dup,<varref> X}... --> <varref> X; dup...
 	 ((or (eq? (car insn0) 'push)
 	      (memq (car insn0) byte-varref-insns))
-	  (setq tem (list-tail point 2))
+	  (set! tem (list-tail point 2))
 	  (while (or (eq? (caar tem) 'dup)
 		     (equal? (car tem) insn0))
 	    (set-car! (car tem) 'dup)
 	    (set-cdr! (car tem) nil)
-	    (setq tem (cdr tem)))))
+	    (set! tem (cdr tem)))))
 	(shift))
 
       ;; drop the extra cons we added
