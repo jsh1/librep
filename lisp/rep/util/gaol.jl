@@ -91,7 +91,7 @@
 
       make-datum define-datum-printer datum-ref datum-set! datum?
 
-      make-fluid fluid fluid-set with-fluids let-fluids
+      make-fluid fluid-ref fluid-set! with-fluids let-fluids
 
       string->number number->string mapconcat string-upper-case?
       string-lower-case? string-capitalized? string-upcase string-downcase

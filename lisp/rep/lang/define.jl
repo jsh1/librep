@@ -71,7 +71,7 @@
 
 (defun define-macroexpand-1 (form)
   (declare (special *macro-environment*))
-  (if (memq (car form) (fluid define-bound-vars))
+  (if (memq (car form) (fluid-ref define-bound-vars))
       form
     (macroexpand-1 form *macro-environment*)))
 
@@ -80,7 +80,7 @@
 (defun define-scan-form (form)
   (if (atom? form)
       form
-    (case (if (memq (car form) (fluid define-bound-vars)) '() (car form))
+    (case (if (memq (car form) (fluid-ref define-bound-vars)) '() (car form))
       ((let)
        (if (and (eq? (car form) 'let) (cadr form) (symbol? (cadr form)))
 	   ;; named let, expand
@@ -91,7 +91,7 @@
 	   (cond ((null? rest)
 		  (list 'let (reverse! clauses)
 			(let-fluids ((define-bound-vars
-				      (append! vars (fluid define-bound-vars))))
+				      (append! vars (fluid-ref define-bound-vars))))
 			  (define-scan-internals (cddr form)))))
 		 ((pair? (car rest))
 		  (loop (cdr rest)
@@ -103,28 +103,28 @@
 			  (cons (car rest) clauses)))))))
 
       ((let*)
-       (let-fluids ((define-bound-vars (fluid define-bound-vars)))
+       (let-fluids ((define-bound-vars (fluid-ref define-bound-vars)))
 	 (let loop ((rest (cadr form))
 		    (clauses '()))
 	   (cond ((null? rest)
 		  (list 'let* (reverse! clauses)
 			(define-scan-internals (cddr form))))
 		 ((pair? (car rest))
-		  (fluid-set define-bound-vars
-			     (cons (caar rest) (fluid define-bound-vars)))
+		  (fluid-set! define-bound-vars
+			     (cons (caar rest) (fluid-ref define-bound-vars)))
 		  (loop (cdr rest)
 			(cons (cons (caar rest)
 				    (define-scan-body (cdar rest))) clauses)))
 		 (t
-		  (fluid-set define-bound-vars
-			     (cons (car rest) (fluid define-bound-vars)))
+		  (fluid-set! define-bound-vars
+			     (cons (car rest) (fluid-ref define-bound-vars)))
 		  (loop (cdr rest)
 			(cons (car rest) clauses)))))))
 
       ((letrec)
        (let-fluids ((define-bound-vars
 		     (append! (map (lambda (x) (or (car x) x)) (cadr form))
-			    (fluid define-bound-vars))))
+			    (fluid-ref define-bound-vars))))
 	 (list 'letrec
 	       (map (lambda (x)
 		      (if (pair? x)
@@ -168,7 +168,7 @@
 
       ((condition-case)
        (let ((var (if (eq? (cadr form) 'nil) nil (cadr form))))
-	 (let-fluids ((define-bound-vars (cons var (fluid define-bound-vars))))
+	 (let-fluids ((define-bound-vars (cons var (fluid-ref define-bound-vars))))
 	   (list* 'condition-case (cadr form)
 		  (define-scan-body (cddr form))))))
 
@@ -195,7 +195,7 @@
 	 `(lambda ,(cadr form)
 	    ,@(reverse! header)
 	    ,(let-fluids ((define-bound-vars
-			   (append! vars (fluid define-bound-vars))))
+			   (append! vars (fluid-ref define-bound-vars))))
 	       (define-scan-internals body)))))
 
       ((defvar)

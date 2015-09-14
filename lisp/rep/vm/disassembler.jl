@@ -70,7 +70,7 @@
      "log" "sin" "cos" "tan"		; #xb0
      "sqrt" "expt" "swap2" "mod"
      "make-closure" "unbindall-0" "closure?" "pop-all"
-     "fluid-set" "fluid-bind" "memv" "num-eq"
+     "fluid-set!" "fluid-bind" "memv" "num-eq"
      nil nil "%define" "spec-bind"	; #xc0
      "set" "required-arg" "optional-arg" "rest-arg"
      "not-zero?" "keyword-arg" "optional-arg*" "keyword-arg*"

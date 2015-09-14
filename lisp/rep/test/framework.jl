@@ -68,8 +68,8 @@
   (define (self-test/failed type message)
     (format *standard-error* "\n ** %s failed: %s\n\n"
 	    (capitalize-string (symbol-name type)) message)
-    (when (and (eq? type 'test) (fluid failed-tests))
-      (fluid-set failed-tests (1+ (fluid failed-tests))))
+    (when (and (eq? type 'test) (fluid-ref failed-tests))
+      (fluid-set! failed-tests (1+ (fluid-ref failed-tests))))
     (abort-if-fatal type message))
 
   (define (self-test/disabled? type) (memq type disabled))
@@ -112,7 +112,7 @@
 	(format *standard-error* "%s\n" module)
 	(let-fluids ((failed-tests 0))
 	  (test-case)
-	  (fluid failed-tests)))))
+	  (fluid-ref failed-tests)))))
 
   (define (run-self-tests-and-exit)
     (let ((failures (run-all-self-tests)))

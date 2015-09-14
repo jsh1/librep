@@ -79,12 +79,12 @@ results have been received.")
 	 (let ((*print-escape* t))
 	   (format *standard-error* "Ispell: %S\n" output)))
     (set! pending-output (concat pending-output output))
-    (while (and (fluid line-callback)
+    (while (and (fluid-ref line-callback)
 		pending-output
 		(string-match "\n" pending-output))
       (let ((line (substring pending-output 0 (match-end))))
 	(set! pending-output (substring pending-output (match-end)))
-	((fluid line-callback) line))))
+	((fluid-ref line-callback) line))))
 
   ;; Start the process if it isn't already
   (define (ispell-start)
@@ -100,7 +100,7 @@ results have been received.")
 			 (list "-d" *ispell-dictionary*))
 		    *ispell-options*))
       (set! pending-output nil)
-      (fluid-set line-callback nil)
+      (fluid-set! line-callback nil)
       (set! id-string (ispell-read-line))
       (unless (string-match "ispell version" id-string 0 t)
 	(ispell-stop)
@@ -128,7 +128,7 @@ results have been received.")
       (let-fluids ((line-callback (lambda (l)
 				    (set! out l)
 				    ;; Only want the first line
-				    (fluid-set line-callback nil))))
+				    (fluid-set! line-callback nil))))
 	;; Flush any pending output
 	(output-filter nil)
 	(while (and (not out) process

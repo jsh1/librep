@@ -51,18 +51,18 @@
   (define lexically-pure (make-fluid t))	;any dynamic state?
 
   (define (spec-bound? var)
-    (or (memq var (fluid defvars))
+    (or (memq var (fluid-ref defvars))
 	(special-variable? var)
-	(memq var (fluid spec-bindings))))
+	(memq var (fluid-ref spec-bindings))))
 
-  (define (lexical-binding var) (assq var (fluid lex-bindings)))
+  (define (lexical-binding var) (assq var (fluid-ref lex-bindings)))
 
   (define (lexically-bound? var)
     (let ((cell (lexical-binding var)))
       (and cell (not (cell-tagged? 'no-location cell)))))
 
   (define (has-local-binding? var)
-    (or (memq var (fluid spec-bindings))
+    (or (memq var (fluid-ref spec-bindings))
 	(lexical-binding var)))
 
   (define (cell-tagged? tag cell) (memq tag (cdr cell)))
@@ -91,15 +91,15 @@
   ;; install a new binding contour, such that THUNK can add any bindings
   ;; (lexical and special), then when THUNK exits, the bindings are removed
   (define (call-with-frame thunk)
-    (let ((old-d (list-length (fluid lex-bindings))))
-      (let-fluids ((spec-bindings (fluid spec-bindings))
-		   (lexically-pure (fluid lexically-pure)))
+    (let ((old-d (list-length (fluid-ref lex-bindings))))
+      (let-fluids ((spec-bindings (fluid-ref spec-bindings))
+		   (lexically-pure (fluid-ref lexically-pure)))
 	(prog1 (thunk)
 	  ;; check for unused variables
-	  (do ((new-d (list-length (fluid lex-bindings)) (1- new-d))
-	       (new (fluid lex-bindings) (cdr new)))
+	  (do ((new-d (list-length (fluid-ref lex-bindings)) (1- new-d))
+	       (new (fluid-ref lex-bindings) (cdr new)))
 	      ((= new-d old-d)
-	       (fluid-set lex-bindings new))
+	       (fluid-set! lex-bindings new))
 	    (unless (or (cell-tagged? 'referenced (car new))
 			(cell-tagged? 'no-location (car new))
 			(cell-tagged? 'maybe-unused (car new)))
@@ -111,15 +111,15 @@
     (if (spec-bound? var)
 	(progn
 	  ;; specially bound (dynamic scope)
-	  (fluid-set spec-bindings (cons var (fluid spec-bindings)))
-	  (fluid-set lexically-pure nil))
+	  (fluid-set! spec-bindings (cons var (fluid-ref spec-bindings)))
+	  (fluid-set! lexically-pure nil))
       ;; assume it's lexically bound otherwise
-      (fluid-set lex-bindings (cons (list var) (fluid lex-bindings)))
+      (fluid-set! lex-bindings (cons (list var) (fluid-ref lex-bindings)))
       (when without-location
 	(tag-binding var 'no-location)))
     ;; XXX handled by `modified' tag?
-;    (when (eq? var (fluid lambda-name))
-;      (fluid-set lambda-name nil))
+;    (when (eq? var (fluid-ref lambda-name))
+;      (fluid-set! lambda-name nil))
 )
 
   (defmacro note-bindings (vars)
@@ -151,7 +151,7 @@
   ;; note that all current lexical bindings have been enclosed
   (define (note-closure-made)
     (for-each (lambda (cell)
-		(tag-cell 'enclosed cell)) (fluid lex-bindings)))
+		(tag-cell 'enclosed cell)) (fluid-ref lex-bindings)))
 
   (define (emit-binding var)
     (if (spec-bound? var)
@@ -160,7 +160,7 @@
 	  (increment-stack)
 	  (emit-insn '(spec-bind))
 	  (decrement-stack))
-      (emit-insn `(lex-bind ,var ,(fluid lex-bindings)))))
+      (emit-insn `(lex-bind ,var ,(fluid-ref lex-bindings)))))
 
   (define (emit-varset sym)
     (test-variable-ref sym)
@@ -171,7 +171,7 @@
 	   (decrement-stack))
 	  ((lexically-bound? sym)
 	    ;; The lexical address is known. Use it to avoid scanning
-	   (emit-insn `(lex-set ,sym ,(fluid lex-bindings))))
+	   (emit-insn `(lex-set ,sym ,(fluid-ref lex-bindings))))
 	  (t
 	   ;; No lexical binding, but not special either. Just
 	   ;; update the global value
@@ -186,7 +186,7 @@
 	   (decrement-stack))
 	  ((lexically-bound? form)
 	    ;; We know the lexical address, so use it
-	   (emit-insn `(lex-ref ,form ,(fluid lex-bindings)))
+	   (emit-insn `(lex-ref ,form ,(fluid-ref lex-bindings)))
 	   (note-binding-referenced form in-tail-slot))
 	  (t
 	   ;; It's not bound, so just update the global value
@@ -277,8 +277,8 @@
       asm))
 
   (define (allocate-bindings asm)
-    (identify-captured-bindings asm (fluid lex-bindings))
-    (allocate-bindings-1 asm (fluid lex-bindings)))
+    (identify-captured-bindings asm (fluid-ref lex-bindings))
+    (allocate-bindings-1 asm (fluid-ref lex-bindings)))
 
 
 ;; declarations
@@ -297,7 +297,7 @@
   (define (declare-special form)
     (let loop ((vars (cdr form)))
       (when vars
-	(fluid-set spec-bindings (cons (car vars) (fluid spec-bindings)))
+	(fluid-set! spec-bindings (cons (car vars) (fluid-ref spec-bindings)))
 	(loop (cdr vars)))))
   (put 'special 'compiler-decl-fun declare-special)
 

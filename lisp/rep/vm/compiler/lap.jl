@@ -48,7 +48,7 @@
     (when (pair? insn)
       ;; so the peepholer can safely modify code
       (set! insn (copy-sequence insn)))
-    (fluid-set intermediate-code (cons insn (fluid intermediate-code))))
+    (fluid-set! intermediate-code (cons insn (fluid-ref intermediate-code))))
 
   ;; Create a new label
   (define make-label gensym)
@@ -62,31 +62,31 @@
   (define fix-label emit-insn)
 
   (define (prefix-label label)
-    (fluid-set intermediate-code (append! (list label)
-					(fluid intermediate-code))))
+    (fluid-set! intermediate-code (append! (list label)
+					(fluid-ref intermediate-code))))
 
   (define (push-state)
-    (fluid-set saved-state
-	       (cons (list (cons intermediate-code (fluid intermediate-code))
-			   (cons spec-bindings (fluid spec-bindings))
+    (fluid-set! saved-state
+	       (cons (list (cons intermediate-code (fluid-ref intermediate-code))
+			   (cons spec-bindings (fluid-ref spec-bindings))
 			   (cons lex-bindings
-				 (map copy-sequence (fluid lex-bindings)))
-			   (cons lexically-pure (fluid lexically-pure))
-			   (cons current-stack (fluid current-stack))
-			   (cons max-stack (fluid max-stack))
-			   (cons current-b-stack (fluid current-b-stack))
-			   (cons max-b-stack (fluid max-b-stack)))
-		     (fluid saved-state))))
+				 (map copy-sequence (fluid-ref lex-bindings)))
+			   (cons lexically-pure (fluid-ref lexically-pure))
+			   (cons current-stack (fluid-ref current-stack))
+			   (cons max-stack (fluid-ref max-stack))
+			   (cons current-b-stack (fluid-ref current-b-stack))
+			   (cons max-b-stack (fluid-ref max-b-stack)))
+		     (fluid-ref saved-state))))
 
   (define (pop-state)
-    (fluid-set saved-state (cdr (fluid saved-state))))
+    (fluid-set! saved-state (cdr (fluid-ref saved-state))))
 
   ;; reload lex-bindings value, preserving eq-ness of cells
   (define (reload-lex-bindings saved)
-    (let loop ((rest (fluid lex-bindings)))
+    (let loop ((rest (fluid-ref lex-bindings)))
       (if (eq? (caar rest) (caar saved))
 	  (progn
-	    (fluid-set lex-bindings rest)
+	    (fluid-set! lex-bindings rest)
 	    (do ((old rest (cdr old))
 		 (new saved (cdr new)))
 		((null? old))
@@ -97,5 +97,5 @@
     (for-each (lambda (cell)
 		(if (eq? (car cell) lex-bindings)
 		    (reload-lex-bindings (cdr cell))
-		  (fluid-set (car cell) (cdr cell))))
-	      (car (fluid saved-state)))))
+		  (fluid-set! (car cell) (cdr cell))))
+	      (car (fluid-ref saved-state)))))

@@ -81,18 +81,18 @@
   (define last-current-fun t)
 
   (define (ensure-output-stream)
-    (when (null? (fluid output-stream))
+    (when (null? (fluid-ref output-stream))
       (if (or *batch-mode* (not (feature? 'jade)))
-	  (fluid-set output-stream (stdout-file))
+	  (fluid-set! output-stream (stdout-file))
 	(declare (bound open-buffer))
-	(fluid-set output-stream (open-buffer "*compilation-output*"))))
+	(fluid-set! output-stream (open-buffer "*compilation-output*"))))
     (when (and (feature? 'jade)
 	       (progn
 		 (declare (bound bufferp goto-buffer goto
 				 end-of-buffer current-buffer))
-		 (and (bufferp (fluid output-stream))
-		      (not (eq? (current-buffer) (fluid output-stream))))))
-      (goto-buffer (fluid output-stream))
+		 (and (bufferp (fluid-ref output-stream))
+		      (not (eq? (current-buffer) (fluid-ref output-stream))))))
+      (goto-buffer (fluid-ref output-stream))
       (goto (end-of-buffer))))
 
   (define (abbreviate-file file)
@@ -105,29 +105,29 @@
 
   (define (file-prefix #!optional form)
     (unless form
-      (set! form (fluid current-form)))
+      (set! form (fluid-ref current-form)))
     (let ((origin (and form (lexical-origin form))))
       (cond (origin
 	     (format nil "%s:%d: "
 		     (abbreviate-file (car origin)) (cdr origin)))
-	    ((fluid current-file)
-	     (format nil "%s: " (abbreviate-file (fluid current-file))))
+	    ((fluid-ref current-file)
+	     (format nil "%s: " (abbreviate-file (fluid-ref current-file))))
 	    (t ""))))
 
   (defun compiler-message (fmt #!key form #!rest args)
-    (unless (fluid silence-compiler)
+    (unless (fluid-ref silence-compiler)
       (ensure-output-stream)
-      (unless (and (eq? last-current-fun (fluid current-fun))
-		   (eq? last-current-file (fluid current-file)))
-	(if (fluid current-fun)
-	    (format (fluid output-stream) "%sIn function `%s':\n"
-		    (file-prefix form) (fluid current-fun))
-	  (format (fluid output-stream) "%sAt top-level:\n"
+      (unless (and (eq? last-current-fun (fluid-ref current-fun))
+		   (eq? last-current-file (fluid-ref current-file)))
+	(if (fluid-ref current-fun)
+	    (format (fluid-ref output-stream) "%sIn function `%s':\n"
+		    (file-prefix form) (fluid-ref current-fun))
+	  (format (fluid-ref output-stream) "%sAt top-level:\n"
 		  (file-prefix form))))
-      (apply format (fluid output-stream)
+      (apply format (fluid-ref output-stream)
 	     (concat "%s" fmt #\newline) (file-prefix form) args)
-      (set! last-current-fun (fluid current-fun))
-      (set! last-current-file (fluid current-file))))
+      (set! last-current-fun (fluid-ref current-fun))
+      (set! last-current-file (fluid-ref current-file))))
 
   (put 'compile-error 'error-message "Compilation mishap")
   (defun compiler-error (fmt #!key form #!rest data)
@@ -152,11 +152,11 @@
   ;; in the current file
   (defun remember-function (name args #!optional body)
     (when body
-      (let ((cell (assq name (fluid inline-env))))
+      (let ((cell (assq name (fluid-ref inline-env))))
 	;; a function previously declared inline
 	(when (and cell (not (cdr cell)))
 	  (set-cdr! cell (list* 'lambda args body)))))
-    (if (assq name (fluid defuns))
+    (if (assq name (fluid-ref defuns))
 	(compiler-warning
 	 'misc "function or macro `%s' defined more than once" name)
       (let
@@ -183,49 +183,49 @@
 		  (vector-set! count state (1+ (vector-ref count state)))
 		(set! keys (cons (or (caar args) (car args)) keys)))))
 	  (set! args (cdr args)))
-	(fluid-set defuns (cons (list name (vector-ref count 0)
+	(fluid-set! defuns (cons (list name (vector-ref count 0)
 				      (vector-ref count 1)
 				      (vector-ref count 2) keys)
-				(fluid defuns))))))
+				(fluid-ref defuns))))))
 
   (defun forget-function (name)
-    (let ((cell (assq name (fluid defuns))))
-      (fluid-set defuns (delq! cell (fluid defuns)))))
+    (let ((cell (assq name (fluid-ref defuns))))
+      (fluid-set! defuns (delq! cell (fluid-ref defuns)))))
 
   ;; Similar for variables
   (defun remember-variable (name)
-    (cond ((memq name (fluid defines))
+    (cond ((memq name (fluid-ref defines))
 	   (compiler-error
 	    "variable `%s' was previously declared lexically" name))	;
-	  ((memq name (fluid defvars))
+	  ((memq name (fluid-ref defvars))
 	   (compiler-warning 'misc "variable `%s' defined more than once" name))
 	  (t
-	   (fluid-set defvars (cons name (fluid defvars))))))
+	   (fluid-set! defvars (cons name (fluid-ref defvars))))))
 
   (defun remember-lexical-variable (name)
-    (cond ((memq name (fluid defvars))
+    (cond ((memq name (fluid-ref defvars))
 	   (compiler-error "variable `%s' was previously declared special" name))
-	  ((memq name (fluid defines))
+	  ((memq name (fluid-ref defines))
 	   (compiler-warning
 	    'misc "lexical variable `%s' defined more than once" name))
 	  (t
-	   (fluid-set defines (cons name (fluid defines))))))
+	   (fluid-set! defines (cons name (fluid-ref defines))))))
 
   ;; Test that a reference to variable NAME appears valid
   (defun test-variable-ref (name)
     (when (and (symbol? name)
 	       (not (keyword? name))
-	       (null? (memq name (fluid defvars)))
-	       (null? (memq name (fluid defines)))
+	       (null? (memq name (fluid-ref defvars)))
+	       (null? (memq name (fluid-ref defines)))
 	       (not (has-local-binding? name))
-	       (null? (assq name (fluid defuns)))
+	       (null? (assq name (fluid-ref defuns)))
 	       (not (compiler-bound? name)))
       (compiler-warning
        'bindings "referencing undeclared free variable `%s'" name)))
 
   ;; Test that binding to variable NAME appears valid
   (defun test-variable-bind (name)
-    (cond ((assq name (fluid defuns))
+    (cond ((assq name (fluid-ref defuns))
 	   (compiler-warning
 	    'shadowing "binding to `%s' shadows function" name))
 	  ((has-local-binding? name)
@@ -243,10 +243,10 @@
     (when (symbol? name)
       (catch 'return
 	(let
-	    ((decl (assq name (fluid defuns))))
-	  (when (and (null? decl) (or (assq name (fluid inline-env))
+	    ((decl (assq name (fluid-ref defuns))))
+	  (when (and (null? decl) (or (assq name (fluid-ref inline-env))
 				     (compiler-bound? name)))
-	    (set! decl (or (cdr (assq name (fluid inline-env)))
+	    (set! decl (or (cdr (assq name (fluid-ref inline-env)))
 			   (compiler-symbol-value name)))
 	    (when (or (subr? decl)
 		      (and (closure? decl)
@@ -258,11 +258,11 @@
 	      (set! decl (closure-function decl)))
 	    (unless (bytecode? decl)
 	      (remember-function name (list-ref decl 1)))
-	    (set! decl (assq name (fluid defuns))))
+	    (set! decl (assq name (fluid-ref defuns))))
 	  (if (null? decl)
 	      (unless (or (has-local-binding? name)
-			  (memq name (fluid defvars))
-			  (memq name (fluid defines))
+			  (memq name (fluid-ref defvars))
+			  (memq name (fluid-ref defines))
 			  (locate-variable name))
 		(compiler-warning
 		 'misc "calling undeclared function `%s'" name))
@@ -288,27 +288,27 @@
   ;; Increment the current stack size, setting the maximum stack size if
   ;; necessary
   (defmacro increment-stack (#!optional n)
-    (list 'when (list '> (list 'fluid-set 'current-stack
+    (list 'when (list '> (list 'fluid-set! 'current-stack
 			       (if n
-				   (list '+ '(fluid current-stack) n)
-				 (list '1+ '(fluid current-stack))))
-			 '(fluid max-stack))
-	  '(fluid-set max-stack (fluid current-stack))))
+				   (list '+ '(fluid-ref current-stack) n)
+				 (list '1+ '(fluid-ref current-stack))))
+			 '(fluid-ref max-stack))
+	  '(fluid-set! max-stack (fluid-ref current-stack))))
 
   ;; Decrement the current stack usage
   (defmacro decrement-stack (#!optional n)
-    (list 'fluid-set 'current-stack 
+    (list 'fluid-set! 'current-stack 
 	  (if n
-	      (list '- '(fluid current-stack) n)
-	    (list '1- '(fluid current-stack)))))
+	      (list '- '(fluid-ref current-stack) n)
+	    (list '1- '(fluid-ref current-stack)))))
 
   (defun increment-b-stack ()
-    (fluid-set current-b-stack (1+ (fluid current-b-stack)))
-    (when (> (fluid current-b-stack) (fluid max-b-stack))
-      (fluid-set max-b-stack (fluid current-b-stack))))
+    (fluid-set! current-b-stack (1+ (fluid-ref current-b-stack)))
+    (when (> (fluid-ref current-b-stack) (fluid-ref max-b-stack))
+      (fluid-set! max-b-stack (fluid-ref current-b-stack))))
 
   (defun decrement-b-stack ()
-    (fluid-set current-b-stack (1- (fluid current-b-stack))))
+    (fluid-set! current-b-stack (1- (fluid-ref current-b-stack))))
 
 
 
@@ -336,7 +336,7 @@
     (eq? (car form) 'quote))
    ((symbol? form)
     (or (keyword? form)
-	(assq form (fluid const-env))
+	(assq form (fluid-ref const-env))
 	(compiler-binding-immutable? form)))
    ;; Assume self-evaluating
    (t t)))
@@ -351,7 +351,7 @@
     (cond ((keyword? form) form)
 	  ((compiler-binding-immutable? form)
 	   (compiler-symbol-value form))
-	  (t (cdr (assq form (fluid const-env))))))
+	  (t (cdr (assq form (fluid-ref const-env))))))
    (t form)))
 
 (defun constant-function? (form)
@@ -383,8 +383,8 @@
   (for-each
    (lambda (name)
      (when (symbol? name)
-       (unless (assq name (fluid inline-env))
-	 (fluid-set inline-env (cons (cons name nil) (fluid inline-env))))))
+       (unless (assq name (fluid-ref inline-env))
+	 (fluid-set! inline-env (cons (cons name nil) (fluid-ref inline-env))))))
    (cdr form)))
 
 (put 'inline 'compiler-decl-fun declare-inline)

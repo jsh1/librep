@@ -58,21 +58,21 @@
 
   (defun debug-rep ()
     (let ((*print-escape* t))
-      (when (fluid obj)
+      (when (fluid-ref obj)
 	(print-form)
-	(print-emacs-form (fluid obj)))
+	(print-emacs-form (fluid-ref obj)))
       (while t
 	(let
 	    ((input (readline (format nil "rep-db> ")))
 	     next-last)
 	  (cond ((string-match "^\\s*n" input)
-		 (fluid-set last do-next)
+		 (fluid-set! last do-next)
 		 (do-next))
 		((string-match "^\\s*s" input)
-		 (fluid-set last do-step)
+		 (fluid-set! last do-step)
 		 (do-step))
 		((string-match "^\\s*c" input)
-		 (fluid-set last do-continue)
+		 (fluid-set! last do-continue)
 		 (do-continue))
 		((string-match "^\\s*r\\w*\\s+" input)
 		 (do-set-result
@@ -94,25 +94,25 @@
 		 (print-backtrace))
 		((string-match "^\\s*f" input)
 		 (set! last-printed-frame t)
-		 (print-frame (fluid frame-id))
-		 (if (fluid obj)
+		 (print-frame (fluid-ref frame-id))
+		 (if (fluid-ref obj)
 		     (progn
 		       (print-form)
-		       (print-emacs-form (fluid obj)))
-		   (print-emacs-frame (fluid frame-id))))
+		       (print-emacs-form (fluid-ref obj)))
+		   (print-emacs-frame (fluid-ref frame-id))))
 		((string-match "^\\s*l" input)
 		 (print-locals))
 		((string-match "^\\s*$" input)
-		 (if (fluid last)
+		 (if (fluid-ref last)
 		     (progn
-		       ((fluid last))
-		       (set! next-last (fluid last)))
+		       ((fluid-ref last))
+		       (set! next-last (fluid-ref last)))
 		   (write *standard-error* "Nothing to repeat\n")))
 		(t
 		 (write *standard-error* "\
 commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
           `p[rint] FORM', `f[rame], `l[ocals]', `u[p]', `d[own]'.\n")))
-	  (fluid-set last next-last)))))
+	  (fluid-set! last next-last)))))
 
 ;;; local functions
 
@@ -143,15 +143,15 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
       (set! last-printed-frame frame)))
 
   (defun print-backtrace ()
-    (do ((i (fluid bottom-frame-id) (1- i)))
+    (do ((i (fluid-ref bottom-frame-id) (1- i)))
 	((< i 0))
       (print-frame i)))
 
   (defun print-form ()
-    (let* ((form (if (= (fluid frame-id) (fluid bottom-frame-id))
-		     (fluid obj)
+    (let* ((form (if (= (fluid-ref frame-id) (fluid-ref bottom-frame-id))
+		     (fluid-ref obj)
 		   (stack-frame-current-form
-		    (stack-frame-ref (fluid frame-id)))))
+		    (stack-frame-ref (fluid-ref frame-id)))))
 	   (location (lexical-origin form)))
       (if location
 	  (format *standard-error* "%d:\t%S\n" (cdr location) form)
@@ -173,7 +173,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 	  (print-emacs-form location)))))
 
   (defun print-locals ()
-    (let ((frame (stack-frame-ref (fluid frame-id))))
+    (let ((frame (stack-frame-ref (fluid-ref frame-id))))
       (when frame
 	(for-each (lambda (cell)
 		    (if (symbol? (car cell))
@@ -183,7 +183,7 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 		  (stack-frame-environment frame)))))
 
   (defun eval-in-frame (form)
-    (let ((frame (stack-frame-ref (fluid frame-id))))
+    (let ((frame (stack-frame-ref (fluid-ref frame-id))))
       (when frame
 	(eval form (stack-frame-structure frame)
 	      (stack-frame-environment frame)))))
@@ -214,28 +214,28 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 	nil)))
 
   (defun do-step ()
-    (throw 'debug (cons 1 (fluid obj))))
+    (throw 'debug (cons 1 (fluid-ref obj))))
 
   (defun do-set-result (value)
     (throw 'debug (cons 4 value)))
 
   (defun do-next ()
-    (throw 'debug (cons 2 (fluid obj))))
+    (throw 'debug (cons 2 (fluid-ref obj))))
 
   (defun do-continue ()
-    (throw 'debug (cons 3 (fluid obj))))
+    (throw 'debug (cons 3 (fluid-ref obj))))
 
   (defun do-up ()
-    (when (fluid frame-id)
-      (fluid-set frame-id (max 0 (1- (fluid frame-id))))
-      (print-frame (fluid frame-id))
-      (print-emacs-frame (fluid frame-id))))
+    (when (fluid-ref frame-id)
+      (fluid-set! frame-id (max 0 (1- (fluid-ref frame-id))))
+      (print-frame (fluid-ref frame-id))
+      (print-emacs-frame (fluid-ref frame-id))))
 
   (defun do-down ()
-    (when (fluid frame-id)
-      (fluid-set frame-id (1+ (fluid frame-id)))
-      (print-frame (fluid frame-id))
-      (print-emacs-frame (fluid frame-id))))
+    (when (fluid-ref frame-id)
+      (fluid-set! frame-id (1+ (fluid-ref frame-id)))
+      (print-frame (fluid-ref frame-id))
+      (print-emacs-frame (fluid-ref frame-id))))
 
 ;;; initialize debug hooks (special variables)
 

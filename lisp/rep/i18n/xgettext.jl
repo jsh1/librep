@@ -41,20 +41,20 @@
   (define included-definers (make-fluid t))
   (define helper (make-fluid))
 
-  (define (set-included-definers lst) (fluid-set included-definers lst))
-  (define (set-helper h) (fluid-set helper h))
+  (define (set-included-definers lst) (fluid-set! included-definers lst))
+  (define (set-helper h) (fluid-set! helper h))
 
   (define (register string)
-    (let ((cell (assoc string (fluid found-strings))))
+    (let ((cell (assoc string (fluid-ref found-strings))))
       (if cell
-	  (unless (member (fluid current-file) (cdr cell))
-	    (set-cdr! cell (cons (fluid current-file) (cdr cell))))
-	(fluid-set found-strings (cons (list string (fluid current-file))
-				       (fluid found-strings))))))
+	  (unless (member (fluid-ref current-file) (cdr cell))
+	    (set-cdr! cell (cons (fluid-ref current-file) (cdr cell))))
+	(fluid-set! found-strings (cons (list string (fluid-ref current-file))
+				       (fluid-ref found-strings))))))
 
   (define (includedp name)
-    (or (eq? (fluid included-definers) t)
-	(memq name (fluid included-definers))))
+    (or (eq? (fluid-ref included-definers) t)
+	(memq name (fluid-ref included-definers))))
 
   (define (scan form)
 
@@ -107,8 +107,8 @@
 	  ((structure)
 	   (scan-list (list-tail form 3)))
 
-	  (t (if (fluid helper)
-		 ((fluid helper) form)
+	  (t (if (fluid-ref helper)
+		 ((fluid-ref helper) form)
 	       (scan-list form)))))))
 
   (define (scan-list body)
@@ -146,7 +146,7 @@
 				 (substring out (match-end))))
 	       (set! point (+ (match-end) 3)))
 	     (format *standard-output* "msgid %s\nmsgstr \"\"\n\n" out)))))
-     (reverse! (fluid found-strings))))
+     (reverse! (fluid-ref found-strings))))
 
   (define (output-c-file)
     (write *standard-output* "\

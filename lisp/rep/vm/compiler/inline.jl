@@ -128,9 +128,9 @@
   (defun compile-lambda-inline (fun args #!optional pushed-args-already
 				return-follows name)
     (set! fun (compiler-macroexpand fun))
-    (when (>= (fluid-set inline-depth (1+ (fluid inline-depth)))
+    (when (>= (fluid-set! inline-depth (1+ (fluid-ref inline-depth)))
 	      max-inline-depth)
-      (fluid-set inline-depth 0)
+      (fluid-set! inline-depth 0)
       (compiler-error "can't inline more than %d nested functions"
 		      max-inline-depth))
     (let*
@@ -179,7 +179,7 @@
 	      (fix-label (lambda-label (current-lambda)))
 	      (set-lambda-inlined (current-lambda) t)
 	      (compile-body body return-follows))))))
-      (fluid-set inline-depth (1- (fluid inline-depth)))))
+      (fluid-set! inline-depth (1- (fluid-ref inline-depth)))))
 
   (define (pop-between top bottom)
     (or (and (>= top bottom) (>= bottom 0))
@@ -217,7 +217,7 @@
 	     ;; some of the parameter bindings may have been captured,
 	     ;; so rebind all of them
 	     (progn
-	       (unbind-between (fluid current-b-stack)
+	       (unbind-between (fluid-ref current-b-stack)
 			       ;; the 1- is so that the frame of
 			       ;; the function itself is also removed
 			       (1- (lambda-bp lambda-record)))
@@ -225,8 +225,8 @@
 	       (pop-inline-args bind-stack args-left emit-binding))
 	   ;; none of the bindings are captured, so just modify them
 	   (pop-inline-args bind-stack args-left emit-varset)
-	   (unbind-between (fluid current-b-stack)
+	   (unbind-between (fluid-ref current-b-stack)
 			   (lambda-bp lambda-record)))
 	 ;; force the stack pointer to what it should be
-	 (pop-between (fluid current-stack) (lambda-sp lambda-record))
+	 (pop-between (fluid-ref current-stack) (lambda-sp lambda-record))
 	 (emit-insn `(jmp ,(lambda-label lambda-record))))))))

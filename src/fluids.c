@@ -42,9 +42,9 @@ it is the symbol `nil'.
 }
 
 /* hardcoded in lispmach.c */
-DEFUN("fluid", Ffluid, Sfluid, (repv f), rep_Subr1) /*
-::doc:rep.lang.interpreter#fluid::
-fluid FLUID
+DEFUN("fluid-ref", Ffluid, Sfluid, (repv f), rep_Subr1) /*
+::doc:rep.lang.interpreter#fluid-ref::
+fluid-ref FLUID
 
 Return the value of the most recently created binding of the fluid
 variable object FLUID.
@@ -62,9 +62,9 @@ variable object FLUID.
 
 /* Also hardcoded in lispmach.c */
 
-DEFUN("fluid-set", Ffluid_set, Sfluid_set, (repv f, repv v), rep_Subr2) /*
-::doc:rep.lang.interpreter#fluid-set::
-fluid-set FLUID VALUE
+DEFUN("fluid-set!", Ffluid_set, Sfluid_set, (repv f, repv v), rep_Subr2) /*
+::doc:rep.lang.interpreter#fluid-set!::
+fluid-set! FLUID VALUE
 
 Set the value of the most recently created binding of the fluid
 variable object FLUID to VALUE.

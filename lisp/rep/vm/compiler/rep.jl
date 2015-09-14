@@ -115,17 +115,17 @@
 	 (note-macro-def (list-ref form 1) (cons 'lambda (list-tail form 2))))
 
 	((defsubst)
-	 (fluid-set inline-env (cons (cons (list-ref form 1)
+	 (fluid-set! inline-env (cons (cons (list-ref form 1)
 					   (cons 'lambda (list-tail form 2)))
-				     (fluid inline-env))))
+				     (fluid-ref inline-env))))
 
 	((defvar)
 	 (remember-variable (list-ref form 1)))
 
 	((defconst)
 	 (remember-variable (list-ref form 1))
-	 (fluid-set const-env (cons (cons (list-ref form 1) (list-ref form 2))
-				    (fluid const-env))))
+	 (fluid-set! const-env (cons (cons (list-ref form 1) (list-ref form 2))
+				    (fluid-ref const-env))))
 
 	((%define) (remember-lexical-variable (list-ref form 1)))
 
@@ -167,9 +167,9 @@
     (let-fluids ((current-form form))
       (case (car form)
 	((defun defsubst)
-	 (let ((tmp (assq (list-ref form 1) (fluid macro-env))))
+	 (let ((tmp (assq (list-ref form 1) (fluid-ref macro-env))))
 	   (let-fluids ((current-fun (list-ref form 1)))
-	     ;;(format *standard-error* "[%s]\n" (fluid current-fun))
+	     ;;(format *standard-error* "[%s]\n" (fluid-ref current-fun))
 	     (when tmp
 	       (set-car! tmp nil)
 	       (set-cdr! tmp nil))
@@ -183,7 +183,7 @@
 			(note-binding '*macro-environment*)
 			(compile-lambda (cons 'lambda (list-tail form 2))
 					(list-ref form 1)))))
-	       (tmp (assq (list-ref form 1) (fluid macro-env))))
+	       (tmp (assq (list-ref form 1) (fluid-ref macro-env))))
 	   (let-fluids ((current-fun (list-ref form 1)))
 	     (if tmp
 		 (set-cdr! tmp (make-closure code))
@@ -194,11 +194,11 @@
 	((defconst)
 	 (let ((doc (list-ref form 3)))
 	   (when (and *compiler-write-docs* (string? doc))
-	     (add-documentation (list-ref form 1) (fluid current-module) doc)
+	     (add-documentation (list-ref form 1) (fluid-ref current-module) doc)
 	     (set! form (delq! doc form)))
-	   (unless (memq (list-ref form 1) (fluid defvars))
+	   (unless (memq (list-ref form 1) (fluid-ref defvars))
 	     (remember-variable (list-ref form 1)))
-	   (unless (assq (list-ref form 1) (fluid const-env))
+	   (unless (assq (list-ref form 1) (fluid-ref const-env))
 	     (compiler-warning
 	      'bindings "unknown constant `%s'" (list-ref form 1))))
 	 form)
@@ -213,7 +213,7 @@
 	   (when (and *compiler-write-docs* (string? doc))
 	     (add-documentation (list-ref form 1) nil doc)
 	     (set! form (delq! (list-ref form 3) form)))
-	   (unless (memq (list-ref form 1) (fluid defvars))
+	   (unless (memq (list-ref form 1) (fluid-ref defvars))
 	     (remember-variable (list-ref form 1))))
 	 form)
 
@@ -221,10 +221,10 @@
 	 (let ((sym (list-ref form 1))
 	       (value (list-ref form 2))
 	       (doc (list-ref form 3)))
-	   (unless (memq sym (fluid defines))
+	   (unless (memq sym (fluid-ref defines))
 	     (remember-lexical-variable (compiler-constant-value sym)))
 	   (when (and *compiler-write-docs* (string? doc))
-	     (add-documentation sym (fluid current-module) doc)
+	     (add-documentation sym (fluid-ref current-module) doc)
 	     (set! form (delq! doc form)))
 	   (when (and (list? value) (not (compiler-constant? value)))
 	     ;; Compile the definition. A good idea?
@@ -541,7 +541,7 @@
 	  (body (cddr form)))
       (call-with-frame
        (lambda ()
-	 (fluid-set lexically-pure nil)
+	 (fluid-set! lexically-pure nil)
 	 ;; compile each fluid, value pair onto the stack
 	 (for-each (lambda (cell)
 		     (compile-form-1 (car cell))
@@ -1259,10 +1259,10 @@
     (put 'bytecode? 'rep-compile-opcode 'bytecodep)
     (put 'closure? 'rep-compile-fun compile-1-args)
     (put 'closure? 'rep-compile-opcode 'closurep)
-    (put 'fluid 'rep-compile-fun compile-1-args)
-    (put 'fluid 'rep-compile-opcode 'fluid-ref)
-    (put 'fluid-set 'rep-compile-fun compile-2-args)
-    (put 'fluid-set 'rep-compile-opcode 'fluid-set)
+    (put 'fluid-ref 'rep-compile-fun compile-1-args)
+    (put 'fluid-ref 'rep-compile-opcode 'fluid-ref)
+    (put 'fluid-set! 'rep-compile-fun compile-2-args)
+    (put 'fluid-set! 'rep-compile-opcode 'fluid-set!)
 
     (put 'caar 'rep-compile-fun compile-1-args)
     (put 'caar 'rep-compile-opcode 'caar)

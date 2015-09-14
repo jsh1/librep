@@ -92,24 +92,24 @@ their position in that file.")
 ;;; lambda management
 
   (define (find-lambda name)
-    (let loop ((rest (fluid lambda-stack)))
+    (let loop ((rest (fluid-ref lambda-stack)))
       (cond ((null? rest) nil)
 	    ((eq? (lambda-name (car rest)) name) (car rest))
 	    (t (loop (cdr rest))))))
 
   (define (call-with-lambda-record name args depth-delta thunk)
     (let* ((label (make-label))
-	   (depth (if (fluid lambda-stack)
+	   (depth (if (fluid-ref lambda-stack)
 		      (+ (lambda-depth (current-lambda)) depth-delta)
 		    0))
 	   (lr (make-lambda-record name args depth
-				   (fluid current-stack)
-				   (fluid current-b-stack) label)))
-      (let-fluids ((lambda-stack (cons lr (fluid lambda-stack))))
+				   (fluid-ref current-stack)
+				   (fluid-ref current-b-stack) label)))
+      (let-fluids ((lambda-stack (cons lr (fluid-ref lambda-stack))))
 	(thunk))))
 
   (define (current-lambda)
-    (or (car (fluid lambda-stack)) (error "No current lambda!")))
+    (or (car (fluid-ref lambda-stack)) (error "No current lambda!")))
 
 
 ;;; driver function
@@ -129,7 +129,7 @@ their position in that file.")
     (let ((tem (find-lambda fun)))
       (and tem
 	   (or (lambda-inlined tem)
-	       (and (fluid lexically-pure)
+	       (and (fluid-ref lexically-pure)
 		    return-follows
 		    (not (binding-modified? fun))))
 	   (= (lambda-depth tem) (lambda-depth (current-lambda)))
@@ -152,7 +152,7 @@ their position in that file.")
 	(cond
 	 ((keyword? form)
 	  (compile-constant form))
-	 ((progn (set! val (assq form (fluid const-env))) val)
+	 ((progn (set! val (assq form (fluid-ref const-env))) val)
 	  ;; A constant from this file
 	  (compile-constant (cdr val)))
 	 ((compiler-binding-immutable? form)
@@ -209,10 +209,10 @@ their position in that file.")
 		    (increment-stack))
 
 		   ((and (symbol? fun)
-			 (cdr (assq fun (fluid inline-env)))
+			 (cdr (assq fun (fluid-ref inline-env)))
 			 (not (find-lambda fun)))
 		    ;; A call to a function that should be open-coded
-		    (compile-lambda-inline (cdr (assq fun (fluid inline-env)))
+		    (compile-lambda-inline (cdr (assq fun (fluid-ref inline-env)))
 					   (cdr form) nil return-follows fun))
 		   (t
 		    (compile-form-1
@@ -260,8 +260,8 @@ their position in that file.")
       (thunk)))
 
   (define (get-assembly)
-    (let ((asm (make-assembly (reverse! (fluid intermediate-code))
-			      (fluid max-stack) (fluid max-b-stack) 0)))
+    (let ((asm (make-assembly (reverse! (fluid-ref intermediate-code))
+			      (fluid-ref max-stack) (fluid-ref max-b-stack) 0)))
       asm))
 
   ;; returns (ASM MAX-STACK MAX-B-STACK)
@@ -405,8 +405,8 @@ their position in that file.")
 	(when (pair? interactive)
 	  (set! interactive (compile-form interactive))))
       (when (and *compiler-write-docs* doc name)
-	(add-documentation name (fluid current-module) doc)
-	(add-documentation-params name (fluid current-module) args))
+	(add-documentation name (fluid-ref current-module) doc)
+	(add-documentation-params name (fluid-ref current-module) args))
 
       (let ((asm (compile-lambda-to-asm `(lambda ,args ,@body) name)))
 	(allocate-bindings asm)
@@ -428,15 +428,15 @@ their position in that file.")
 	(when (pair? interactive)
 	  (set! interactive (compile-form interactive))))
       (when (and *compiler-write-docs* doc name)
-	(add-documentation name (fluid current-module) doc)
-	(add-documentation-params name (fluid current-module) args))
+	(add-documentation name (fluid-ref current-module) doc)
+	(add-documentation-params name (fluid-ref current-module) args))
 
       ;; push a pseudo instruction. All details of the bindings may
       ;; not yet be known. So allocate-bindings function will recursively
       ;; call itself for pushed bytecode
       (emit-insn `(push-bytecode
 		   ,(compile-lambda-to-asm `(lambda ,args ,@body) name)
-		   ,(fluid lex-bindings) ,doc ,interactive))
+		   ,(fluid-ref lex-bindings) ,doc ,interactive))
       (emit-insn '(enclose))
       (increment-stack)
       (note-closure-made))))

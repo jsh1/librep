@@ -349,11 +349,11 @@
   (set! tarfh-dir-cache nil))
 
 (defun tarfh-after-gc ()
-  (let
-      (fh)
-    (while (set! fh (tarfh-fh-guardian))
+  (let loop ((fh (tarfh-fh-guardian)))
+    (when fh
       (when (file-binding fh)
-	(close-file fh)))))
+	(close-file fh))
+      (loop (tarfh-fh-guardian)))))
 
 (add-hook '*after-gc-hook* tarfh-after-gc)
 

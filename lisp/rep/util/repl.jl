@@ -49,7 +49,7 @@
   (define repl-set-pending set-cdr!)
 
   (define (repl-eval form)
-    (eval form (intern-structure (repl-struct (fluid current-repl)))))
+    (eval form (intern-structure (repl-struct (fluid-ref current-repl)))))
 
   (define (repl-bound? x)
     (condition-case nil
@@ -109,11 +109,11 @@
     ;; returns t if repl should run again
     (define (run-repl)
       (let ((input (do-readline
-		    (format nil (if (repl-pending (fluid current-repl))
+		    (format nil (if (repl-pending (fluid-ref current-repl))
 				    "" "%s> ")
-			    (repl-struct (fluid current-repl)))
+			    (repl-struct (fluid-ref current-repl)))
 		    completion-generator)))
-	(and input (repl-iterate (fluid current-repl) input))))
+	(and input (repl-iterate (fluid-ref current-repl) input))))
     (define (interrupt-handler data)
       (if (eq? (car data) 'user-interrupt)
 	  (progn
@@ -162,12 +162,12 @@
      (structure-imports (get-structure name)))
 
   (define (locate-binding* name)
-    (or (locate-binding name (append (list (repl-struct (fluid current-repl)))
+    (or (locate-binding name (append (list (repl-struct (fluid-ref current-repl)))
 				     (module-imports
-				      (repl-struct (fluid current-repl)))))
+				      (repl-struct (fluid-ref current-repl)))))
 	(and (structure-bound?
-	      (get-structure (repl-struct (fluid current-repl))) name)
-	     (repl-struct (fluid current-repl)))))
+	      (get-structure (repl-struct (fluid-ref current-repl))) name)
+	     (repl-struct (fluid-ref current-repl)))))
 
 
 ;;; commands
@@ -217,7 +217,7 @@
      (if form
 	 (format *standard-output* "%S\n"
 		 (eval form (get-structure struct)))
-       (repl-set-struct (fluid current-repl) struct)))
+       (repl-set-struct (fluid-ref current-repl) struct)))
    "STRUCT [FORM ...]")
 
   (define-repl-command
@@ -292,26 +292,26 @@
      (structure-walk (lambda (var value)
 		       (format *standard-output* "  (%s %S)\n" var value))
 		     (intern-structure
-		      (repl-struct (fluid current-repl))))))
+		      (repl-struct (fluid-ref current-repl))))))
 
   (define-repl-command
    'exports
    (lambda ()
      (print-list (structure-interface
 		  (intern-structure
-		   (repl-struct (fluid current-repl)))))))
+		   (repl-struct (fluid-ref current-repl)))))))
 
   (define-repl-command
    'imports
    (lambda ()
-     (print-list (module-imports (repl-struct (fluid current-repl))))))
+     (print-list (module-imports (repl-struct (fluid-ref current-repl))))))
 
   (define-repl-command
    'accessible
    (lambda ()
      (print-list (structure-accessible
 		  (intern-structure
-		   (repl-struct (fluid current-repl)))))))
+		   (repl-struct (fluid-ref current-repl)))))))
 
   (define-repl-command
    'collect
@@ -347,7 +347,7 @@
    (lambda args
      (require 'rep.vm.compiler)
      (if (null? args)
-	 (compile-module (repl-struct (fluid current-repl)))
+	 (compile-module (repl-struct (fluid-ref current-repl)))
        (for-each compile-module args)))
    "[STRUCT ...]")
 
@@ -366,7 +366,7 @@
      (make-structure nil (lambda ()
 			   (%open-structures '(rep.module-system)))
 		     nil name)
-     (repl-set-struct (fluid current-repl) name))
+     (repl-set-struct (fluid-ref current-repl) name))
    "STRUCT")
 
   (define-repl-command

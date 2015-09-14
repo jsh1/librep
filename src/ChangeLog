@@ -1,5 +1,8 @@
 2015-09-14  John Harper  <jsh@unfactored.org>
 
+	* fluids.c: renamed fluid as fluid-ref and fluid-set as
+	fluid-set!
+
 	* closures.c, datums.c, processes.c, rep-gdbm.c, tables.c
 	variables.c, structures.c: most setters now return #undefined
 	instead of the value being set

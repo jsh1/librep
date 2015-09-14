@@ -439,10 +439,10 @@ reference the RPC proxy function PROXY."
     "Return the globally referenceable RPC servant id for the local servant
 id ID (a symbol) associated with the invoker of the currently active RPC
 request."
-    (unless (fluid active-socket)
+    (unless (fluid-ref active-socket)
       (error "Not called from an RPC servant"))
-    (make-global-id (socket-peer-address (fluid active-socket))
-		    (socket-peer-port (fluid active-socket)) id))
+    (make-global-id (socket-peer-address (fluid-ref active-socket))
+		    (socket-peer-port (fluid-ref active-socket)) id))
 
   (define (global-id->rpc-proxy id)
     "Return a function that can be used to call the RPC associated with the

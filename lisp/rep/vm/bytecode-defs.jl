@@ -198,7 +198,7 @@
       (unbindall-0 . #xbd)
       (closurep . #xbe)
       (pop-all . #xbf)
-      (fluid-set . #xc0)
+      (fluid-set! . #xc0)
       (fluid-bind . #xc1)
       (memv . #xc2)
       (num-eq . #xc3)

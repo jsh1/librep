@@ -64,17 +64,17 @@
   ;; if true, the namespace of the module being compiled in; only
   ;; set when compiling code outside a module definition
   (define current-structure (make-fluid
-			     (get-structure (fluid current-module))))
+			     (get-structure (fluid-ref current-module))))
 
   (define current-language (make-fluid 'rep))
 
   ;; the names of the currently open and accessed modules
-  (define open-modules (make-fluid (and (fluid current-structure)
+  (define open-modules (make-fluid (and (fluid-ref current-structure)
 					(structure-imports
-					 (fluid current-structure)))))
-  (define accessed-modules (make-fluid (and (fluid current-structure)
+					 (fluid-ref current-structure)))))
+  (define accessed-modules (make-fluid (and (fluid-ref current-structure)
 					    (structure-accessible
-					     (fluid current-structure)))))
+					     (fluid-ref current-structure)))))
 
 ;;; functions
 
@@ -106,7 +106,7 @@
   (defun locate-variable (var)
     (if (structure-ref? var)
 	(list-ref var 1)
-      (let loop ((rest (fluid open-modules)))
+      (let loop ((rest (fluid-ref open-modules)))
 	(if rest
 	    (if (module-exports? (car rest) var)
 		(car rest)
@@ -114,9 +114,9 @@
 	  ;; it's not exported by any opened modules, if we have a handle
 	  ;; on the current module (i.e. we're compiling code not in
 	  ;; a module definition) try looking in that
-	  (if (and (symbol? var) (fluid current-structure)
-		   (structure-bound? (fluid current-structure) var))
-	      (fluid current-module)
+	  (if (and (symbol? var) (fluid-ref current-structure)
+		   (structure-bound? (fluid-ref current-structure) var))
+	      (fluid-ref current-module)
 	    nil)))))
 
   (defun variable-stem (var)
@@ -127,9 +127,9 @@
   (defun symbol-value-1 (var)
     (cond ((and (symbol? var) (special-variable? var))
 	   (symbol-value var))
-	  ((and (symbol? var) (fluid current-structure)
-		(structure-bound? (fluid current-structure) var))
-	   (%structure-ref (fluid current-structure) var))
+	  ((and (symbol? var) (fluid-ref current-structure)
+		(structure-bound? (fluid-ref current-structure) var))
+	   (%structure-ref (fluid-ref current-structure) var))
 	  ((has-local-binding? var) nil)
 	  (t
 	   (let* ((struct (locate-variable var))
@@ -168,7 +168,7 @@
 					    (find-structure struct))))))
 
   (defun get-language-property (prop)
-    (and (fluid current-language) (get (fluid current-language) prop)))
+    (and (fluid-ref current-language) (get (fluid-ref current-language) prop)))
 
   (defun get-procedure-handler (name prop-name)
     (unless (has-local-binding? name)
@@ -183,7 +183,7 @@
     (when (and (pair? form)
 	       (symbol? (car form))
 	       (not (has-local-binding? (car form))))
-      (let* ((def (assq (car form) (fluid macro-env)))
+      (let* ((def (assq (car form) (fluid-ref macro-env)))
 	     ;; make #<subr macroexpand> pass us any inner expansions
 	     (*macro-environment* compiler-macroexpand-1))
 	(if def
@@ -207,20 +207,20 @@
 
   ;; if OPENED or ACCESSED are `t', the current values are used
   (defun call-with-module-env (thunk opened accessed)
-    (let-fluids ((macro-env (fluid default-macro-env))
-		 (current-module (fluid current-module))
-		 (current-structure (fluid current-structure))
-		 (current-language (fluid current-language))
+    (let-fluids ((macro-env (fluid-ref default-macro-env))
+		 (current-module (fluid-ref current-module))
+		 (current-structure (fluid-ref current-structure))
+		 (current-language (fluid-ref current-language))
 		 (open-modules (if (eq? opened t)
-				   (fluid open-modules)
+				   (fluid-ref open-modules)
 				 opened))
 		 (accessed-modules (if (eq? accessed t)
-				       (fluid accessed-modules)
+				       (fluid-ref accessed-modules)
 				     accessed))
 		 (const-env nil)
 		 (inline-env nil)
 		 (defuns nil)
-		 (defvars (fluid defvars))
+		 (defvars (fluid-ref defvars))
 		 (defines nil)
 		 (lexically-pure t)
 		 (output-stream nil))
@@ -250,49 +250,49 @@
      opened accessed))
 
   (defun note-require (feature)
-    (unless (or (memq feature (fluid open-modules))
-		(and (fluid current-structure)
-		     (eval `(feature? ',feature) (fluid current-structure))))
+    (unless (or (memq feature (fluid-ref open-modules))
+		(and (fluid-ref current-structure)
+		     (eval `(feature? ',feature) (fluid-ref current-structure))))
       ;; XXX this is broken; there's no way to tell if we're trying
       ;; XXX to load a module, or a bare file.
       (cond ((get-structure feature)
 	     ;; structure already loaded..
-	     (fluid-set open-modules (cons feature (fluid open-modules))))
+	     (fluid-set! open-modules (cons feature (fluid-ref open-modules))))
 
-	    ((fluid current-structure)
+	    ((fluid-ref current-structure)
 	     ;; try to require it..
-	     (eval `(require ',feature) (fluid current-structure))
+	     (eval `(require ',feature) (fluid-ref current-structure))
 	     (when (get-structure feature)
-	       (fluid-set open-modules (cons feature (fluid open-modules)))))
+	       (fluid-set! open-modules (cons feature (fluid-ref open-modules)))))
 
 	    ;; no current structure, try to load the file
 	    ;; as a module..
 	    ((intern-structure feature)
-	     (fluid-set open-modules (cons feature (fluid open-modules))))
+	     (fluid-set! open-modules (cons feature (fluid-ref open-modules))))
 
 	    (t (compiler-warning "unable to require `%s'" feature)))))
 
   ;; XXX enclose macro defs in the *user-structure*, this is different
   ;; to with interpreted code
   (defun note-macro-def (name body)
-    (fluid-set macro-env
+    (fluid-set! macro-env
 	       (cons (cons name
 			   (let ((closure (make-closure body name)))
 			     (set-closure-structure!
 			      closure (get-structure *user-structure*))
 			     closure))
-		     (fluid macro-env))))
+		     (fluid-ref macro-env))))
 
   (defun call-with-structure (thunk struct)
     (let-fluids ((current-module (structure-name struct))
 		 (current-structure struct)
 		 (current-language nil))
-      (let-fluids ((open-modules (and (fluid current-structure)
+      (let-fluids ((open-modules (and (fluid-ref current-structure)
 				      (structure-imports
-				       (fluid current-structure))))
-		   (accessed-modules (and (fluid current-structure)
+				       (fluid-ref current-structure))))
+		   (accessed-modules (and (fluid-ref current-structure)
 					  (structure-accessible
-					   (fluid current-structure)))))
+					   (fluid-ref current-structure)))))
 	(find-language-module)
 	(thunk))))
 
@@ -306,10 +306,10 @@
 	       (or (intern-structure (get struct 'compiler-module))
 		   (compiler-error "unable to load module `%s'"
 				   (get struct 'compiler-module)))
-	       (fluid-set current-language struct)
+	       (fluid-set! current-language struct)
 	       (throw 'out))))
-       (fluid open-modules))
-      (fluid-set current-language 'no-lang)))
+       (fluid-ref open-modules))
+      (fluid-set! current-language 'no-lang)))
 
 
 ;;; declarations
@@ -317,14 +317,14 @@
   ;; (declare (in-module STRUCT))
 
   (defun declare-in-module (form)
-    (fluid-set current-module (cadr form))
-    (fluid-set current-structure (intern-structure (fluid current-module))))
+    (fluid-set! current-module (cadr form))
+    (fluid-set! current-structure (intern-structure (fluid-ref current-module))))
   (put 'in-module 'compiler-decl-fun declare-in-module)
 
   ;; (declare (language LANG))
 
   (defun declare-language (form)
-    (fluid-set current-language (cadr form)))
+    (fluid-set! current-language (cadr form)))
   (put 'language 'compiler-decl-fun declare-language)
 
 
@@ -398,8 +398,8 @@
     (let
 	((struct (list-ref form 1))
 	 (var (list-ref form 2)))
-      (or (memq struct (fluid accessed-modules))
-	  (memq struct (fluid open-modules))
+      (or (memq struct (fluid-ref accessed-modules))
+	  (memq struct (fluid-ref open-modules))
 	  (compiler-error
 	   "referencing non-accessible structure `%s'" struct))
       (or (module-exports? struct var)
