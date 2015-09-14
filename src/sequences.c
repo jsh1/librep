@@ -38,7 +38,7 @@ Returns the number of elements in SEQUENCE (a string, list or vector).
 
   case rep_Vector:
   case rep_Bytecode:
-    return rep_MAKE_INT(rep_VECT_LEN(sequence));
+    return rep_MAKE_INT(rep_VECTOR_LEN(sequence));
     break;
 
   case rep_Cons: {
@@ -87,9 +87,9 @@ Returns a new sequence whose elements are eq? to those in SEQUENCE.
 
   case rep_Vector:
   case rep_Bytecode:
-    res = rep_make_vector(rep_VECT_LEN(seq));
+    res = rep_make_vector(rep_VECTOR_LEN(seq));
     if (res) {
-      intptr_t len = rep_VECT_LEN(seq);
+      intptr_t len = rep_VECTOR_LEN(seq);
       rep_VECT(res)->car = rep_VECT(seq)->car;
       for (intptr_t i = 0; i < len; i++) {
 	rep_VECTI(res, i) = rep_VECTI(seq, i);
@@ -116,7 +116,7 @@ Return the element of SEQUENCE at position INDEX (counting from zero).
 ::end:: */
 {
   if (rep_LISTP(seq)) {
-    return Fnth(index, seq);
+    return Flist_ref(seq, index);
   } else {
     return Faref(seq, index);
   }

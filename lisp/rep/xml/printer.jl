@@ -52,19 +52,19 @@
 	   (write stream (substitute-entities item)))
 
 	  ((eq? (car item) '!)
-	   (format stream "<!%s>" (nth 1 stream)))
+	   (format stream "<!%s>" (list-ref stream 1)))
 
 	  ((symbol? (car item))
 	   (format stream "<%s" (car item))
-	   (print-params stream (nth 1 item))
+	   (print-params stream (list-ref item 1))
 	   (cond ((string-match "^\\?" (symbol-name (car item)))
 		  (write stream "?>"))
-		 ((null? (nthcdr 2 item))
+		 ((null? (list-tail item 2))
 		  (write stream "/>"))
 		 (t
 		  (write stream #\>)
 		  (for-each (lambda (x)
-			      (print-xml-item stream x)) (nthcdr 2 item))
+			      (print-xml-item stream x)) (list-tail item 2))
 		  (format stream "</%s>" (car item)))))
 
 	  (t (error "Unknown item type: %s" item)))))

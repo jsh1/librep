@@ -45,8 +45,8 @@
 			   (setq profile (cons (cons key data) profile))
 			   (setq total-samples (+ total-samples (car data))))
 			 (fetch-profile))
-      (setq profile (sort profile (lambda (x y)
-				    (> (cadr x) (cadr y)))))
+      (setq profile (sort! profile (lambda (x y)
+				     (> (cadr x) (cadr y)))))
       (format (or stream *standard-output*)
 	      "%-32s       %10s       %10s\n\n"
 	      "Function Name" "Self" "Total")

@@ -50,46 +50,46 @@
   ;; module may be placed in this list)
   (define gaol-safe-functions
     '(nil t % * + - / /= 1+ 1- < <= = > >= add-hook char-alphabetic?
-      char-alphanumeric? and append apply aref array? aset ash assoc
-      assoc-regexp assq atom backquote beep bound? bytecode? call-hook
-      car caar cadr caaar cdaar cadar cddar caadr cdadr caddr cdddr
-      caaaar cadaar caadar caddar caaadr cadadr caaddr cadddr cdaaar
-      cddaar cdadar cdddar cdaadr cddadr cdaddr cddddr case catch
-      call-with-catch cdr cdar cddr char-downcase char-upcase closure?
-      complete-string concat cond condition-case
+      char-alphanumeric? and append apply array-length array-ref array?
+      array-set! ash assoc assoc-regexp assq atom? backquote beep bound?
+      bytecode? call-hook car caar cadr caaar cdaar cadar cddar caadr
+      cdadr caddr cdddr caaaar cadaar caadar caddar caaadr cadadr
+      caaddr cadddr cdaaar cddaar cdadar cdddar cdaadr cddadr cdaddr
+      cddddr case catch call-with-catch cdr cdar cddr char-downcase
+      char-upcase closure? complete-string concat cond condition-case
       call-with-error-handlers cons pair? copy-sequence copy-stream
       current-time current-time-string default-bound? default-value
       defconst %define define defmacro defsubst defun defvar
-      delete delete-if delete-if-not delq char-numeric? do
+      delete delete-if! delete-if-not! delq! char-numeric? do
       elt eq? eqv? equal? error eval eval-when-compile
-      expand-last-match feature? filter
-      for-each format funcall function function? garbage-collect gensym get
-      get-output-stream-string getenv identity if integer? interactive
-      intern lambda last length let let* letrec list list* list? logand logior
-      lognot logxor char-lower-case? lsh macroexpand macro?
-      make-closure make-list make-string make-string-input-stream
-      make-string-output-stream make-symbol make-vector
-      makunbound map mapc mapcar match-end match-start max member memq memql
-      message min mod nconc nop not nreverse nth nthcdr null? number? or
-      prin1 prin1-to-string princ print prog1 prog2 progn put quote
+      expand-last-match feature? filter for-each format funcall function
+      function? garbage-collect gensym get get-output-stream-string
+      getenv identity if integer? interactive intern lambda last length
+      let let* letrec list list* list? logand logior lognot logxor
+      char-lower-case? macroexpand macro? make-closure make-list
+      make-string make-string-input-stream make-string-output-stream
+      make-symbol make-vector makunbound map mapc mapcar match-end
+      match-start max member memq memv message min mod append! nop not
+      reverse! list-length list-ref list-tail null? number? or prin1
+      prin1-to-string princ print prog1 prog2 progn put quote
       quote-regexp random rassoc rassq read read-char read-chars
-      read-from-string read-line reverse rplaca rplacd sequence? set
-      set-default setcar setcdr setplist setq setq-default
-      signal sit-for sleep-for sort char-whitespace? special-form?
-      special-variable? stream? string-prefix? string-looking-at
-      string-match string-split string-replace string<? string=?
-      string? subr-name subr? substring symbol-name symbol-plist
-      symbol-value symbol? system-name throw
-      translate-string unless unwind-protect call-with-unwind-protect
-      char-upper-case? user-full-name user-login-name vector vector? when
-      while with-internal-definitions with-object write
-
+      read-from-string read-line reverse set-car! set-cdr! sequence? set
+      set-default set-car! set-cdr! setplist setq setq-default
+      signal sit-for sleep-for sort! sort char-whitespace? special-form?
+      special-variable? stream? string-length string-ref string-set!
+      string-prefix? string-looking-at string-match string-split
+      string-replace string<? string=? string? subr-name subr?
+      substring symbol-name symbol-plist symbol-value symbol?
+      system-name throw translate-string! unless unwind-protect
+      call-with-unwind-protect char-upper-case? user-full-name
+      user-login-name vector vector? vector-length vector-ref
+      vector-set! when while with-internal-definitions with-object write
       zero? remainder quotient modulo floor ceiling truncate round exp
       log sin cos tan asin acos atan sqrt expt gcd fixnum? rational?
       real? exact? inexact? exact->inexact inexact->exact numerator
       denominator positive? negative? odd? even? abs lcm
 
-      make-datum define-datum-printer datum-ref datum-set datum?
+      make-datum define-datum-printer datum-ref datum-set! datum?
 
       make-fluid fluid fluid-set with-fluids let-fluids
 
@@ -99,7 +99,7 @@
 
       ;; make-timer delete-timer set-timer
       ;; make-table make-weak-table string-hash symbol-hash eq-hash
-      ;; equal-hash table? table-ref table-set table-unset table-walk
+      ;; equal-hash table? table-ref table-set! table-delete! table-walk
 
       downcase-table flatten-table upcase-table rep-version))
 
@@ -142,8 +142,8 @@
     (declare (bound %open-structures))
     (let ((gaol (make-structure '() (lambda () (%open-structures '(%gaol))))))
       (set-file-handler-environment file-handler-env gaol)
-      (set-special-variables gaol-safe-specials gaol)
-      (structure-install-vm gaol byte-code-interpreter)
+      (set-special-variables! gaol-safe-specials gaol)
+      (set-bytecode-interpreter! gaol byte-code-interpreter)
       (call-hook '*make-gaol-hook* (list gaol))
       gaol))
 
@@ -164,15 +164,15 @@
   (define (gaol-define-special var)
     (build-structure)
     (unless (memq var gaol-safe-specials)
-      ;; use nconc to affect existing environments
-      (setq gaol-safe-specials (nconc gaol-safe-specials (list var)))))
+      ;; use append! to affect existing environments
+      (setq gaol-safe-specials (append! gaol-safe-specials (list var)))))
 
   (define (gaol-define-file-handler name fun)
     (build-structure)
     (let ((cell (assq name file-handler-env)))
       (if cell
-	  (rplacd cell fun)
-	(setq file-handler-env (nconc file-handler-env
+	  (set-cdr! cell fun)
+	(setq file-handler-env (append! file-handler-env
 				      (list (cons name fun)))))))
 
   ;; only works properly for gaols created after calling this function

@@ -23,7 +23,7 @@
 (open-structures '(rep.lang.math))
 
 ;;;###autoload
-(defun sort (lst #!optional pred)
+(defun sort! (lst #!optional pred)
   "Sort LST destructively, but stably, returning the sorted list.
 
 If PRED is defined it is used to compare two objects, it should return t
@@ -33,19 +33,19 @@ function (`<') is used.
 The fact that the sort is stable means that sort keys which are equal will
 preserve their original position in relation to each other."
   (let
-      ((len (length lst)))
+      ((len (list-length lst)))
   (if (< len 2)
       lst
     ;; default to sorting smaller to greater
     (unless pred (setq pred <))
     (let
-	((mid (nthcdr (1- (quotient len 2)) lst)))
+	((mid (list-tail lst (1- (quotient len 2)))))
       (setq mid (prog1
 		    (cdr mid)
-		  (rplacd mid nil)))
+		  (set-cdr! mid nil)))
       ;; Now we have two separate lists, LST and MID; sort them..
-      (setq lst (sort lst pred)
-	    mid (sort mid pred))
+      (setq lst (sort! lst pred)
+	    mid (sort! mid pred))
       ;; ..then merge them back together
       (let
 	  ((out-head nil)		;Start of the list being built
@@ -62,13 +62,18 @@ preserve their original position in relation to each other."
 			(setq lst (cdr lst)))))
 	  (if out
 	      (progn
-		(rplacd out tem)
+		(set-cdr! out tem)
 		(setq out tem))
 	    (setq out-head tem
 		  out tem)))
 	;; If either has elements left just append them
 	(when (or lst mid)
 	  (if out
-	      (rplacd out (or lst mid))
+	      (set-cdr! out (or lst mid))
 	    (setq out-head (or lst mid))))
 	out-head)))))
+
+;;;###autoload
+(defun sort (lst #!optional pred)
+  "Returns a sorted copy of LST."
+  (sort! (copy-sequence lst) pred))

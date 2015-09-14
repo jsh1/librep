@@ -87,10 +87,10 @@ Return the function value associated with the closure CLOSURE.
   return rep_CLOSURE(closure)->fun;
 }
 
-DEFUN("set-closure-function", Fset_closure_function,
+DEFUN("set-closure-function!", Fset_closure_function,
       Sset_closure_function, (repv closure, repv fun), rep_Subr2) /*
-::doc:rep.lang.interpreter#set-closure-function::
-set-closure-function CLOSURE FUNCTION
+::doc:rep.lang.interpreter#set-closure-function!::
+set-closure-function! CLOSURE FUNCTION
 
 Set the function value in the closure CLOSURE to FUNCTION.
 ::end:: */
@@ -114,7 +114,7 @@ Return the structure associated with the closure CLOSURE.
   return rep_CLOSURE(closure)->structure;
 }
 
-DEFUN("set-closure-structure", Fset_closure_structure,
+DEFUN("set-closure-structure!", Fset_closure_structure,
       Sset_closure_structure, (repv closure, repv structure), rep_Subr2)
 {
   rep_DECLARE1(closure, rep_CLOSUREP);
@@ -137,7 +137,7 @@ Return the name associated with the closure CLOSURE.
   return rep_CLOSURE(closure)->name;
 }
 
-DEFUN("set-closure-name", Fset_closure_name,
+DEFUN("set-closure-name!", Fset_closure_name,
       Sset_closure_name, (repv closure, repv name), rep_Subr2)
 {
   rep_DECLARE1(closure, rep_CLOSUREP);

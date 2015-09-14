@@ -39,7 +39,7 @@ an autoload definition."
 
       (lambda args
 	(or (table-ref cache args)
-	    (table-set cache args (apply f args))))))
+	    (table-set! cache args (apply f args))))))
 
   ;; backwards compatibility
   (define memoize-function memoize))

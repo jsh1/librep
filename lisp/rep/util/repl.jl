@@ -45,8 +45,8 @@
 
   (define repl-struct car)
   (define repl-pending cdr)
-  (define repl-set-struct rplaca)
-  (define repl-set-pending rplacd)
+  (define repl-set-struct set-car!)
+  (define repl-set-pending set-cdr!)
 
   (define (repl-eval form)
     (eval form (intern-structure (repl-struct (fluid current-repl)))))
@@ -75,7 +75,7 @@
 		    (condition-case nil
 			(while t
 			  (setq sexps (cons (read stream) sexps)))
-		      (end-of-stream (setq sexps (nreverse sexps))))
+		      (end-of-stream (setq sexps (reverse! sexps))))
 		    (let ((command (repl-command (car sexps))))
 		      (and command (apply command (cdr sexps))))))
 
@@ -127,11 +127,11 @@
 	  (loop)))))
   
   (define (print-list data #!optional (f identity))
-    (let* ((count (length data))
+    (let* ((count (list-length data))
 	   (mid (inexact->exact (ceiling (/ count 2)))))
       (do ((i 0 (1+ i))
 	   (left data (cdr left))
-	   (right (nthcdr mid data) (cdr right)))
+	   (right (list-tail data mid) (cdr right)))
 	  ((null? left))
 	(when (< i mid)
 	  (format *standard-output* "  %-30s"
@@ -177,7 +177,7 @@
   (define (define-repl-command name function #!optional doc)
     (let ((cell (assq name repl-commands)))
       (if cell
-	  (rplacd cell (list function doc))
+	  (set-cdr! cell (list function doc))
 	(setq repl-commands (cons (list name function doc) repl-commands)))))
 
   (define (find-command name)
@@ -274,7 +274,7 @@
 			 (when value
 			   (setq structures (cons var structures))))
 		       (get-structure '%structures))
-       (print-list (sort structures)))))
+       (print-list (sort! structures)))))
 
   (define-repl-command
    'interfaces
@@ -284,7 +284,7 @@
 			 (declare (unused value))
 			 (setq interfaces (cons var interfaces)))
 		       (get-structure '%interfaces))
-       (print-list (sort interfaces)))))
+       (print-list (sort! interfaces)))))
 
   (define-repl-command
    'bindings
@@ -318,12 +318,14 @@
    (lambda ()
      (let ((stats (garbage-collect t)))
        (format *standard-output* "Used %d/%d cons, %d/%d tuples, %d strings, %d vector slots, %d/%d closures\n"
-	       (car (nth 0 stats)) (+ (car (nth 0 stats)) (cdr (nth 0 stats)))
-	       (car (nth 1 stats)) (+ (car (nth 1 stats)) (cdr (nth 1 stats)))
-	       (car (nth 2 stats))
-	       (nth 3 stats)
-	       (car (nth 4 stats)) (+ (car (nth 4 stats))
-				      (cdr (nth 4 stats)))))))
+	       (car (list-ref stats 0))
+	       (+ (car (list-ref stats 0)) (cdr (list-ref stats 0)))
+	       (car (list-ref stats 1))
+	       (+ (car (list-ref stats 1)) (cdr (list-ref stats 1)))
+	       (car (list-ref stats 2))
+	       (list-ref stats 3)
+	       (car (list-ref stats 4))
+	       (+ (car (list-ref stats 4)) (cdr (list-ref stats 4)))))))
 
   (define-repl-command
    'disassemble
@@ -392,7 +394,7 @@
 Either enter lisp forms to be evaluated, and their result printed, or
 enter a meta-command prefixed by a `,' character. Names of meta-
 commands may be abbreviated to their unique leading characters.\n\n")
-     (print-list (sort (map car repl-commands))
+     (print-list (sort! (map car repl-commands))
 		 (lambda (x)
 		   (format nil ",%s %s" x (or (repl-documentation x) ""))))))
 
@@ -442,7 +444,7 @@ commands may be abbreviated to their unique leading characters.\n\n")
 		       (get-structure '%structures))
        (if out
 	   (format *standard-output* "%s is exported by: %s.\n"
-		   var (mapconcat symbol-name (sort out) ", "))
+		   var (mapconcat symbol-name (sort! out) ", "))
 	 (format *standard-output* "No module exports %s.\n" var))))
    "SYMBOL")
 

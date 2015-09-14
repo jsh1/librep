@@ -50,7 +50,7 @@
 
 (defun remote-rcp-filename (split)
   (concat (and (car split) (concat (car split) #\@))
-	  (nth 1 split) #\: (nth 2 split)))
+	  (list-ref split 1) #\: (list-ref split 2)))
 
 (defun remote-rcp-handler (split-name op args)
   (cond

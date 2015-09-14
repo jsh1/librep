@@ -96,9 +96,9 @@
     (test (equal? '(a 7 c) (list 'a (+ 3 4) 'c)))
     (test (equal? '() (list)))
 
-    (test (= 3 (length '(a b c))))
-    (test (= 3 (length '(a (b) (c d e)))))
-    (test (= 0 (length '())))
+    (test (= 3 (list-length '(a b c))))
+    (test (= 3 (list-length '(a (b) (c d e)))))
+    (test (= 0 (list-length '())))
 
     (test (equal? '(x y) (append '(x) '(y))))
     (test (equal? '(a b c d) (append '(a) '(b c d))))
@@ -110,14 +110,15 @@
     (test (equal? '(c b a) (reverse '(a b c))))
     (test (equal? '((e (f)) d (b c) a) (reverse '(a (b c) d (e (f))))))
 
-    (test (equal? 'c (nth 2 '(a b c d))))
+    (test (equal? 'c (list-ref '(a b c d) 2)))
+    (test (equal? '(c d) (list-tail '(a b c d) 2)))
 
     (test (equal? '(a b c) (memq 'a '(a b c))))
     (test (equal? '(b c) (memq 'b '(a b c))))
     (test (null? (memq 'a '(b c d))))
     (test (null? (memq (list 'a) '(b (a) c))))
     (test (equal? '((a) c) (member (list 'a) '(b (a) c))))
-    (test (equal? '(101 102) (memql 101 '(100 101 102))))
+    (test (equal? '(101 102) (memv 101 '(100 101 102))))
 
     (let ((e '((a 1) (b 2) (c 3))))
       (test (equal? '(a 1) (assq 'a e)))

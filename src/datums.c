@@ -123,10 +123,10 @@ signal an error.
   return DATUM_VALUE(obj);
 }
 
-DEFUN("datum-set", Fdatum_set, Sdatum_set,
+DEFUN("datum-set!", Fdatum_set, Sdatum_set,
       (repv obj, repv id, repv value), rep_Subr3) /*
-::doc:rep.data.datums#datum-set::
-datum-set DATUM ID VALUE
+::doc:rep.data.datums#datum-set!::
+datum-set! DATUM ID VALUE
 
 If data object DATUM has type ID, modify its associated value to be
 VALUE, else signal an error.

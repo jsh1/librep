@@ -39,17 +39,17 @@ DEFUN("gettext", Fgettext, Sgettext, (repv in), rep_Subr1)
 DEFUN("bindtextdomain", Fbindtextdomain,
       Sbindtextdomain, (repv dom, repv dir), rep_Subr2)
 {
-  char *domainname = NULL;
+  const char *domainname = NULL;
   if (rep_STRINGP(dom)) {
     domainname = rep_STR(dom);
   }
 
-  char *dirname = NULL;
+  const char *dirname = NULL;
   if (rep_STRINGP(dir)) {
     dirname = rep_STR(dir);
   }
 
-  char *out = bindtextdomain(domainname, dirname);
+  const char *out = bindtextdomain(domainname, dirname);
 
   return out ? rep_string_copy(out) : rep_nil;
 }
@@ -57,29 +57,29 @@ DEFUN("bindtextdomain", Fbindtextdomain,
 DEFUN("bindtextdomaincodeset", Fbindtextdomaincodeset,
       Sbindtextdomaincodeset, (repv dom, repv cod), rep_Subr2)
 {
-  char *domainname = NULL;
+  const char *domainname = NULL;
   if (rep_STRINGP(dom)) {
     domainname = rep_STR(dom);
   }
 
-  char *codeset = NULL;
+  const char *codeset = NULL;
   if (rep_STRINGP(cod)) {
     codeset = rep_STR(cod);
   }
 
-  char *out = bind_textdomain_codeset(domainname, codeset);
+  const char *out = bind_textdomain_codeset(domainname, codeset);
 
   return out ? rep_string_copy(out) : rep_nil;
 }
 
 DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 {
-  char *domainname = NULL;
+  const char *domainname = NULL;
   if (rep_STRINGP(dom)) {
     domainname = rep_STR(dom);
   }
 
-  char *out = textdomain(domainname);
+  const char *out = textdomain(domainname);
 
   return out ? rep_string_copy(out) : rep_nil;
 }

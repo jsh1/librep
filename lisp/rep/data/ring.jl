@@ -56,24 +56,24 @@
 
   (define (ring-capacity ring)
     "Returns the number of slots in the ring buffer RING."
-    (- (length (datum-ref ring key)) 2))
+    (- (vector-length (datum-ref ring key)) 2))
 
   (define (ring-size ring)
     "Returns the number of filled slots in the ring buffer RING."
-    (aref (datum-ref ring key) 0))
+    (vector-ref (datum-ref ring key) 0))
 
-  (define (set-size ring size)
-    (aset (datum-ref ring key) 0 size))
+  (define (set-size! ring size)
+    (vector-set! (datum-ref ring key) 0 size))
 
   (define (get-pos ring)
-    (aref (datum-ref ring key) 1))
-  (define (set-pos ring pos)
-    (aset (datum-ref ring key) 1 pos))
+    (vector-ref (datum-ref ring key) 1))
+  (define (set-pos! ring pos)
+    (vector-set! (datum-ref ring key) 1 pos))
 
   (define (get-item ring pos)
-    (aref (datum-ref ring key) (+ pos 2)))
+    (vector-ref (datum-ref ring key) (+ pos 2)))
   (define (set-item ring pos val)
-    (aset (datum-ref ring key) (+ pos 2) val))
+    (vector-set! (datum-ref ring key) (+ pos 2) val))
 
 ;;; higher level public api
 
@@ -82,8 +82,8 @@
 specified the default capacity `ring-default-size' is used."
     (unless size (setq size default-size))
     (let ((ring (make-datum (make-vector (+ size 2)) key)))
-      (set-size ring 0)
-      (set-pos ring 0)
+      (set-size! ring 0)
+      (set-pos! ring 0)
       ring))
 
   (define (ring? arg)
@@ -96,8 +96,8 @@ added object."
     (set-item ring (get-pos ring) object)
     (let ((new-pos (mod (1+ (get-pos ring)) (ring-capacity ring))))
       (unless (= (ring-size ring) (ring-capacity ring))
-	(set-size ring (1+ (ring-size ring))))
-      (set-pos ring new-pos)))
+	(set-size! ring (1+ (ring-size ring))))
+      (set-pos! ring new-pos)))
 
   (define (ring-ref ring #!optional depth)
     "Read an object from the ring buffer RING. If DEPTH is true it
@@ -122,7 +122,7 @@ If RING contains no items, add OBJECT as the first."
     (let ((size (ring-size ring))
 	  (contents '()))
       (do ((i 0 (1+ i)))
-	  ((= i size) (nreverse contents))
+	  ((= i size) (reverse! contents))
 	(setq contents (cons (ring-ref ring i) contents)))))
 
 ;;; compatibility api

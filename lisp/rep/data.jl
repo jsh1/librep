@@ -34,9 +34,6 @@ string INPUT."
 		(when (string-match (car cell) input nil fold-case)
 		  (throw 'return cell))) alist)))
 
-(defun setcar (cell x) (rplaca cell x) x)
-(defun setcdr (cell x) (rplacd cell x) x)
-
 (defun member-if (fun lst)
   "Similar to the `member' function, except that the function FUN is
 called to test the elements for matches. If `(FUN ELT)' returns true,
@@ -45,30 +42,30 @@ then the sublist starting with ELT is returned."
 	((fun (car lst)) lst)
 	(t (member-if fun (cdr lst)))))
 
-(defun remove-if (pred lst)
+(defun delete-if (pred lst)
   "Returns a new copy of LST with any elements removed for which (PRED ELT)
 returns true."
   (let loop ((rest lst)
 	     (out '()))
-    (cond ((null? rest) (nreverse out))
+    (cond ((null? rest) (reverse! out))
 	  ((pred (car rest)) (loop (cdr rest) out))
 	  (t (loop (cdr rest) (cons (car rest) out))))))
 
-(defun remove-if-not (fun lst)
+(defun delete-if-not (fun lst)
   "Returns a new copy of LST with any elements removed for which (PRED ELT)
 returns false."
-  (remove-if (lambda (x) (not (fun x))) lst))
+  (delete-if (lambda (x) (not (fun x))) lst))
 
-(defun remove (elt lst)
+(defun delete (elt lst)
   "Returns a new copy of LST with all elements `equal?' to ELT discarded."
-  (remove-if (lambda (x) (equal? x elt)) lst))
+  (delete-if (lambda (x) (equal? x elt)) lst))
 
-(defun remq (elt lst)
+(defun delq (elt lst)
   "Returns a new copy of LST with all elements `eq?' to ELT discarded."
-  (remove-if (lambda (x) (eq? x elt)) lst))
+  (delete-if (lambda (x) (eq? x elt)) lst))
 
-(export-bindings '(assoc-regexp setcar setcdr member-if remove-if
-		   remove-if-not remove remq))
+(export-bindings '(assoc-regexp member-if delete-if
+		   delete-if-not delete delq))
 
 
 ;; cons accessors
@@ -140,8 +137,10 @@ exist that have not already been returned."
 (autoload 'string-downcase "rep/data/string-util")
 (autoload 'capitalize-string "rep/data/string-util")
 (autoload 'mapconcat "rep/data/string-util")
+(autoload 'sort! "rep/data/sort")
 (autoload 'sort "rep/data/sort")
 
 (export-bindings '(string-upper-case? string-lower-case? string-capitalized?
 		   string-upcase string-downcase capitalize-string
-		   mapconcat sort upcase-table downcase-table flatten-table))
+		   mapconcat sort! sort upcase-table downcase-table
+		   flatten-table))

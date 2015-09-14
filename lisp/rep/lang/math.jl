@@ -66,11 +66,9 @@
       1
     (quotient (apply * (map abs args)) (apply gcd args))))
 
-(%define % remainder)
 (%define modulo mod)
-(%define lsh ash)
 
 ;; exports
 
 (export-bindings '(real? rational? positive? negative?
-		   odd? even? complex? abs lcm % modulo lsh))
+		   odd? even? complex? abs lcm modulo))

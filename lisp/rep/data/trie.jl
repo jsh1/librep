@@ -49,8 +49,8 @@
   (define (node-set! node key v)
     (let ((cell (assq key (cdr node))))
       (if cell
-	  (rplacd cell v)
-	(rplacd node (cons (cons key v) (cdr node))))))
+	  (set-cdr! cell v)
+	(set-cdr! node (cons (cons key v) (cdr node))))))
 
 
 ;; trees of tokens

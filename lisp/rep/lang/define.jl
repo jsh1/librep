@@ -59,7 +59,7 @@
     (if defs
 	(list* 'letrec
 	       (map (lambda (def)
-		      (list (car def) (cadr def))) (nreverse defs))
+		      (list (car def) (cadr def))) (reverse! defs))
 	       (define-scan-body body))
       (let ((new-body (define-scan-body body)))
 	(if (null? (cdr new-body))
@@ -79,7 +79,7 @@
 ;; This needs to handle all special forms. It also needs to handle any
 ;; macros that the compiler wants to see without being expanded..
 (defun define-scan-form (form)
-  (if (atom form)
+  (if (atom? form)
       form
     (case (if (memq (car form) (fluid define-bound-vars)) '() (car form))
       ((let)
@@ -90,9 +90,9 @@
 		    (vars '())
 		    (clauses '()))
 	   (cond ((null? rest)
-		  (list 'let (nreverse clauses)
+		  (list 'let (reverse! clauses)
 			(let-fluids ((define-bound-vars
-				      (nconc vars (fluid define-bound-vars))))
+				      (append! vars (fluid define-bound-vars))))
 			  (define-scan-internals (cddr form)))))
 		 ((pair? (car rest))
 		  (loop (cdr rest)
@@ -108,7 +108,7 @@
 	 (let loop ((rest (cadr form))
 		    (clauses '()))
 	   (cond ((null? rest)
-		  (list 'let* (nreverse clauses)
+		  (list 'let* (reverse! clauses)
 			(define-scan-internals (cddr form))))
 		 ((pair? (car rest))
 		  (fluid-set define-bound-vars
@@ -124,7 +124,7 @@
 
       ((letrec)
        (let-fluids ((define-bound-vars
-		     (nconc (map (lambda (x) (or (car x) x)) (cadr form))
+		     (append! (map (lambda (x) (or (car x) x)) (cadr form))
 			    (fluid define-bound-vars))))
 	 (list 'letrec
 	       (map (lambda (x)
@@ -150,7 +150,7 @@
 	     (loop (cddr rest)
 		   (cons (list (car rest)
 			       (define-scan-form (cadr rest))) out))
-	   (cons (car form) (apply nconc (nreverse out))))))
+	   (cons (car form) (apply append! (reverse! out))))))
 
       ((cond)
        (cons 'cond (map (lambda (clause)
@@ -159,10 +159,10 @@
 
       ((case)
        (list* 'case
-	      (define-scan-form (nth 1 form))
+	      (define-scan-form (list-ref form 1))
 	      (map (lambda (clause)
 		     (cons (car clause) (define-scan-body (cdr clause))))
-		   (nthcdr 2 form))))
+		   (list-tail form 2))))
 
       ((condition-case)
        (let ((var (if (eq? (cadr form) 'nil) nil (cadr form))))
@@ -184,21 +184,21 @@
 			    (loop (cdr rest) vars))
 			   (t (loop (cdr rest) (cons (or (caar rest)
 							 (car rest)) vars))))))
-	     (body (nthcdr 2 form))
+	     (body (list-tail form 2))
 	     (header nil))
 	 ;; skip doc strings and interactive decls..
 	 (while (or (string? (car body)) (eq? (caar body) 'interactive))
 	   (setq header (cons (car body) header))
 	   (setq body (cdr body)))
 	 `(lambda ,(cadr form)
-	    ,@(nreverse header)
+	    ,@(reverse! header)
 	    ,(let-fluids ((define-bound-vars
-			   (nconc vars (fluid define-bound-vars))))
+			   (append! vars (fluid define-bound-vars))))
 	       (define-scan-internals body)))))
 
       ((defvar)
-       (list* 'defvar (nth 1 form) (define-scan-form (nth 2 form))
-	      (nthcdr 3 form)))
+       (list* 'defvar (list-ref form 1) (define-scan-form (list-ref form 2))
+	      (list-tail form 3)))
 
       ((structure define-structure declare) form)
 

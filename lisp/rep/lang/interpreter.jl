@@ -151,7 +151,7 @@ This means that `letrec' may be used to define mutually recursive
 functions."
 
   ((lambda (vars setters)
-     (list* 'let vars (nconc setters body)))
+     (list* 'let vars (append! setters body)))
    (map (lambda (x)
 	  (cond ((pair? x) (car x))
 		(t x)))
@@ -204,14 +204,14 @@ undefined."
 	    (loop (cons (cond
 			 ((eq? (car this) t) (cons 't (cdr this)))
 			 ((cdar this)
-			  (cons (list 'memql tem (list 'quote (car this)))
+			  (cons (list 'memv tem (list 'quote (car this)))
 				(cdr this)))
 			 (t (cons (list 'eqv? tem (list 'quote (caar this)))
 				  (cdr this))))
 			body)
 		  (cdr rest)))
 	(list 'let (list (list tem key))
-	      (cons 'cond (nreverse body)))))))
+	      (cons 'cond (reverse! body)))))))
 
 (defmacro when (condition #!rest forms)
   "Evaluates CONDITION, if it is true an implicit progn is performed
@@ -245,7 +245,7 @@ none of the ARGS are false the computed value of the last member of ARGS
 is returned from the `and' form."
   (if (null? args)
       't
-    (let loop ((rest (nreverse args))
+    (let loop ((rest (reverse! args))
 	       (body nil))
       (cond ((null? rest) body)
 	    (t (loop (cdr rest) (if body 
@@ -267,10 +267,10 @@ See also `setq'. Returns the value of the last FORM."
   (let loop ((rest args)
 	     (body nil))
     (if (null? rest)
-	(cons 'progn (nreverse body))
+	(cons 'progn (reverse! body))
       (loop (cddr rest)
 	    (cons (list 'set-default
-			(list 'quote (car rest)) (nth 1 rest)) body)))))
+			(list 'quote (car rest)) (list-ref rest 1)) body)))))
 
 ;; XXX it would be nice to do the same for setq.. might stress the
 ;; XXX interpreter somewhat..? :-(
@@ -321,11 +321,11 @@ form evaluated.
 (do ((vec (make-vector 5))
      (i 0 (1+ i)))
     ((= i 5) vec)
-  (aset vec i i)) => [0 1 2 3 4]"
+  (vector-set! vec i i)) => [0 1 2 3 4]"
 
   (let ((tem (gensym)))
     (list 'let tem (map (lambda (var)
-			  (list (car var) (nth 1 var))) vars)
+			  (list (car var) (list-ref var 1))) vars)
 	  (list* 'if (car test)
 		 (cons 'progn (cdr test))
 		 (append body (list (cons tem (map (lambda (var)
@@ -416,7 +416,7 @@ of the possible declaration types.")
    (lambda (data)
      (if (not (eq? (car data) 'error))
 	 (raise-exception data)
-       (let ((type (nth 1 data)))
+       (let ((type (list-ref data 1)))
 	 (let loop ((rest handlers))
 	   (if (null? rest)
 	       (raise-exception data)
@@ -503,13 +503,13 @@ DATA)' while the handler is evaluated (these are the arguments given to
 (defmacro autoload (symbol-form file #!rest extra)
   "Tell the evaluator that the value of SYMBOL will be initialised
 by loading FILE."
-  (list '%define (nth 1 symbol-form)
+  (list '%define (list-ref symbol-form 1)
 	(list* 'make-autoload symbol-form file extra)))
 
 (defmacro autoload-macro (symbol-form file #!rest extra)
   "Tell the evaluator that the value of the macro SYMBOL will be initialised
 by loading FILE."
-  (list '%define (nth 1 symbol-form)
+  (list '%define (list-ref symbol-form 1)
 	(list 'cons ''macro
 	      (list* 'make-autoload symbol-form file extra))))
 

@@ -69,7 +69,7 @@
       (let loop ((result '())
 		 (first (car forms))
 		 (rest (cdr forms)))
-	(cond ((null? rest) (nreverse (cons first result)))
+	(cond ((null? rest) (reverse! (cons first result)))
 	      ((and (compiler-constant? first)
 		    rest (compiler-constant? (car rest)))
 	       (loop result

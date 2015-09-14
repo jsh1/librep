@@ -94,7 +94,7 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	 (second 0)
 	 (timezone 0)
 	 total-days total-seconds tem)
-      (while (< point (length string))
+      (while (< point (string-length string))
 	(cond
 	 ((string-looking-at "[\t ]*([0-9]+)([\t ]+|$)" string point)
 	  (let*
@@ -132,7 +132,7 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	      (setq timezone (cdr tem))
 	    ;; Try +-HHMM
 	    (if (string-looking-at "[+-]([0-9][0-9])([0-9][0-9])" timezone)
-		(setq timezone (* (if (= (aref timezone 0) #\+) 1 -1)
+		(setq timezone (* (if (= (string-ref timezone 0) #\+) 1 -1)
 				  (+ (* 60 (string->number
 					    (substring timezone
 						       (match-start 1)
@@ -172,7 +172,7 @@ character in the string. This will parse dates in RFC-822 mail messages."
 	 
 	 (t
 	  ;; Garbage in -- garbage out
-	  (setq point (length string)))))
+	  (setq point (string-length string)))))
       
       (when (< year 0)
 	(setq year (string->number (current-time-string nil "%Y"))))
@@ -213,11 +213,11 @@ character in the string. This will parse dates in RFC-822 mail messages."
       
       (when (and (string=? day-abbrev "") total-days)
 	;; January 1, 1970 was a Thursday
-	(let ((dow (% (+ total-days 4) 7)))
+	(let ((dow (remainder (+ total-days 4) 7)))
 	  (when (< dow 0)
 	    (setq dow (+ dow 7)))
 	  (setq day-abbrev
-		(aref ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"] dow))))
+		(vector-ref ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"] dow))))
       
       (vector day-abbrev day month-abbrev month
 	      year hour minute second timezone

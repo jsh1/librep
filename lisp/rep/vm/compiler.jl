@@ -255,7 +255,7 @@ we would like. This is due to the view of folded functions as
 			      (setq body (cons (read src-file) body)))
 			  (end-of-stream))))
 		   (close-file src-file))
-		 (setq body (compile-module-body (nreverse body) t t))
+		 (setq body (compile-module-body (reverse! body) t t))
 		 (when (setq dst-file (open-file temp-file 'write))
 		   (condition-case error-info
 		       (unwind-protect
@@ -298,7 +298,7 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
   (interactive "DDirectory of Lisp files to compile:\nP")
   (for-each (lambda (file)
 	      (unless (or (and exclude-re (string-match exclude-re file))
-			  (eq? (aref file 0) #\.))
+			  (eq? (string-ref file 0) #\.))
 		(let ((abs-file (expand-file-name file dir-name)))
 		  (cond ((file-directory? abs-file)
 			 (compile-directory abs-file force-p exclude-re))

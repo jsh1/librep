@@ -33,10 +33,10 @@ int rep_used_vector_slots;
 repv
 rep_make_vector(int size)
 {
-  int len = rep_VECT_SIZE(size);
+  int len = rep_VECT_SIZEOF(size);
   rep_vector *v = rep_alloc(len);
   if (v) {
-    rep_SET_VECT_LEN(rep_VAL(v), size);
+    v->car = rep_Vector | (size << rep_VECTOR_LEN_SHIFT);
     v->next = vector_list;
     vector_list = v;
     rep_used_vector_slots += size;
@@ -60,7 +60,7 @@ rep_vector_sweep(void)
     } else {
       ptr->next = vector_list;
       vector_list = ptr;
-      rep_used_vector_slots += rep_VECT_LEN(ptr);
+      rep_used_vector_slots += rep_VECTOR_LEN(ptr);
       rep_GC_CLR_CELL(rep_VAL(ptr));
     }
     ptr = next;
@@ -70,11 +70,11 @@ rep_vector_sweep(void)
 int
 rep_vector_cmp(repv v1, repv v2)
 {
-  if (rep_TYPE(v1) != rep_TYPE(v2) || rep_VECT_LEN(v1) != rep_VECT_LEN(v2)) {
+  if (rep_TYPE(v1) != rep_TYPE(v2) || rep_VECTOR_LEN(v1) != rep_VECTOR_LEN(v2)) {
     return 1;
   }
 
-  int len = rep_VECT_LEN(v1);
+  int len = rep_VECTOR_LEN(v1);
 
   int ret = 0;
 
@@ -123,6 +123,76 @@ will be set to that value, else they will all be nil.
   return vec;
 }
 
+DEFUN("vector-length", Fvector_length,
+      Svector_length, (repv vec), rep_Subr1) /*
+::doc:rep.data#vector-length::
+vector-length VECTOR
+
+Returns the number of elements in VECTOR.
+::end:: */
+{
+  rep_DECLARE1(vec, rep_VECTOR_OR_BYTECODE_P);
+
+  return rep_MAKE_INT(rep_VECTOR_LEN(vec));
+}
+
+DEFUN("vector-ref", Fvector_ref,
+      Svector_ref, (repv vec, repv idx), rep_Subr2) /*
+::doc:rep.data#vector-ref::
+vector-ref VECTOR INDEX
+
+Returns the INDEX'th elemnt of VECTOR.
+::end:: */
+{
+  rep_DECLARE1(vec, rep_VECTOR_OR_BYTECODE_P);
+  rep_DECLARE2(idx, rep_NON_NEG_INT_P);
+
+  if (rep_INT(idx) >= rep_VECTOR_LEN(vec)) { 
+    return rep_signal_arg_error (idx, 2);
+  }
+
+  return rep_VECTI(vec, rep_INT(idx));
+}
+
+DEFUN("vector-set!", Fvector_set,
+      Svector_set, (repv vec, repv idx, repv value), rep_Subr3) /*
+::doc:rep.data#vector-set!::
+vector-set! VECTOR INDEX VALUE
+
+Sets the INDEX'th element of VECTOR to VALUE.
+::end:: */
+{
+  rep_DECLARE1(vec, rep_VECTOR_OR_BYTECODE_P);
+  rep_DECLARE2(idx, rep_NON_NEG_INT_P);
+
+  if (!rep_VECTOR_WRITABLE_P(vec)) {
+    return Fsignal(Qsetting_constant, rep_LIST_1(vec));
+  }
+
+  if (rep_INT(idx) >= rep_VECTOR_LEN(vec)) { 
+    return rep_signal_arg_error (idx, 2);
+  }
+
+  rep_VECTI(vec, rep_INT(idx)) = value;
+
+  return rep_undefined_value;
+}
+
+DEFUN("make-vector-immutable!", Fmake_vector_immutable,
+      Smake_vector_immutable, (repv vec), rep_Subr1) /*
+::doc:rep.data#make-vector-immutable!::
+make-vector-immutable! VECTOR
+
+Marks that the contents of VECTOR may no longer be modified.
+::end:: */
+{
+  rep_DECLARE1(vec, rep_VECTORP);
+
+  rep_VECT(vec)->car |= rep_VECTOR_IMMUTABLE;
+
+  return rep_undefined_value;
+}
+
 DEFUN("list->vector", Flist_to_vector,
       Slist_to_vector, (repv lst), rep_Subr1) /*
 ::doc:rep.data#list->vector::
@@ -160,7 +230,7 @@ Creates a new list with elements from VECTOR.
 {
   rep_DECLARE1(vec, rep_VECTORP);
 
-  int count  = rep_VECT_LEN(vec);
+  int count = rep_VECTOR_LEN(vec);
 
   repv ret = rep_nil;
   repv *tail = &ret;
@@ -190,6 +260,10 @@ rep_vectors_init(void)
   repv tem = rep_push_structure("rep.data");
   rep_ADD_SUBR(Svector);
   rep_ADD_SUBR(Smake_vector);
+  rep_ADD_SUBR(Svector_length);
+  rep_ADD_SUBR(Svector_ref);
+  rep_ADD_SUBR(Svector_set);
+  rep_ADD_SUBR(Smake_vector_immutable);
   rep_ADD_SUBR(Slist_to_vector);
   rep_ADD_SUBR(Svector_to_list);
   rep_ADD_SUBR(Svectorp);

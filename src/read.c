@@ -216,6 +216,8 @@ end:
     rep_record_origin(result, strm, start_line);
   }
 
+  /* FIXME: need a way to make pairs immutable. */
+
   return result;
 }
 
@@ -245,7 +247,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
     rep_mark_static(&buffer);
   }
 
-  char *buf = rep_STR(buffer);
+  char *buf = rep_MUTABLE_STR(buffer);
   int buf_i = 0;
 
   int c = *c_p;
@@ -255,8 +257,8 @@ read_symbol(repv strm, int *c_p, repv obarray)
       repv new;
       buflen = buflen * 2;
       new = rep_allocate_string(buflen + 2);
-      memcpy(rep_STR(new), buf, buflen / 2);
-      buf = rep_STR(new);
+      memcpy(rep_MUTABLE_STR(new), buf, buflen / 2);
+      buf = rep_MUTABLE_STR(new);
     }
 
     switch (c) {
@@ -432,7 +434,9 @@ done:
     rep_string_set_len(buffer, buf_i);
     result = Ffind_symbol(rep_VAL(buffer), obarray);
     if (result != 0 && result == rep_nil) {
-      result = Fmake_symbol(rep_string_copy_n(buf, buf_i));
+      repv name = rep_string_copy_n(buf, buf_i);
+      rep_STRING(name)->car |= rep_STRING_IMMUTABLE;
+      result = Fmake_symbol(name);
       if (result != 0) {
 	result = Fintern_symbol(result, obarray);
       }
@@ -471,6 +475,7 @@ read_vector(repv strm, int *c_p)
     list = next;
   }
 
+  rep_VECT(vec)->car |= rep_VECTOR_IMMUTABLE;
   return vec;
 }
 
@@ -522,6 +527,7 @@ read_str(repv strm, int *c_p)
   } else {
     *c_p = rep_stream_getc(strm);
     ret = rep_string_copy_n(buf, buf_i);
+    rep_STRING(ret)->car |= rep_STRING_IMMUTABLE;
   }
 
   if (buf != static_buffer) {
@@ -771,7 +777,7 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	if (!vec) {
 	  return 0;
 	}
-	if (rep_VECT_LEN(vec) >= rep_BYTECODE_MIN_SLOTS
+	if (rep_VECTOR_LEN(vec) >= rep_BYTECODE_MIN_SLOTS
 	    && rep_STRINGP(rep_BYTECODE_CODE(vec))
 	    && rep_VECTORP(rep_BYTECODE_CONSTANTS(vec))
 	    && rep_INTP(rep_BYTECODE_STACK(vec)))

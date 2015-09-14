@@ -283,17 +283,19 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_ENCLOSE), &&TAG(OP_INIT_BIND), &&TAG(OP_UNBIND),		\
   &&TAG(OP_DUP), &&TAG(OP_SWAP), &&TAG(OP_POP), &&TAG(OP_NIL),		\
   &&TAG(OP_T), &&TAG(OP_CONS), &&TAG(OP_CAR), &&TAG(OP_CDR),		\
-  &&TAG(OP_RPLACA), &&TAG(OP_RPLACD),					\
+  &&TAG(OP_SET_CAR), &&TAG(OP_SET_CDR),					\
   /* 0x50 */								\
-  &&TAG(OP_NTH), &&TAG(OP_NTHCDR), &&TAG(OP_ASET), &&TAG(OP_AREF),	\
+  &&TAG(OP_LIST_REF), &&TAG(OP_LIST_TAIL),				\
+  &&TAG(OP_ARRAY_SET), &&TAG(OP_ARRAY_REF),					\
   &&TAG(OP_LENGTH), &&TAG(OP_BIND), &&TAG(OP_ADD), &&TAG(OP_NEG),	\
   &&TAG(OP_SUB), &&TAG(OP_MUL), &&TAG(OP_DIV), &&TAG(OP_REM),		\
   &&TAG(OP_LNOT), &&TAG(OP_NOT), &&TAG(OP_LOR), &&TAG(OP_LAND),		\
   /* 0x60 */								\
-  &&TAG(OP_EQUAL), &&TAG(OP_EQ), &&TAG(OP_STRUCT_REF), &&TAG_DEFAULT,	\
-  &&TAG(OP_GT), &&TAG(OP_GE), &&TAG(OP_LT), &&TAG(OP_LE),		\
-  &&TAG(OP_INC), &&TAG(OP_DEC), &&TAG(OP_ASH), &&TAG(OP_ZEROP),		\
-  &&TAG(OP_NULL), &&TAG(OP_ATOM), &&TAG(OP_CONSP), &&TAG(OP_LISTP),	\
+  &&TAG(OP_EQUAL), &&TAG(OP_EQ), &&TAG(OP_STRUCT_REF),			\
+  &&TAG(OP_LIST_LENGTH), &&TAG(OP_GT), &&TAG(OP_GE), &&TAG(OP_LT),	\
+  &&TAG(OP_LE), &&TAG(OP_INC), &&TAG(OP_DEC), &&TAG(OP_ASH),		\
+  &&TAG(OP_ZEROP), &&TAG(OP_NULL), &&TAG(OP_ATOM), &&TAG(OP_CONSP),	\
+  &&TAG(OP_LISTP),							\
   /* 0x70 */								\
   &&TAG(OP_NUMBERP), &&TAG(OP_STRINGP), &&TAG(OP_VECTORP),		\
   &&TAG(OP_CATCH), &&TAG(OP_THROW), &&TAG(OP_BINDERR),			\
@@ -322,13 +324,13 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_CADDDDDDDR), &&TAG(OP_FLOOR), &&TAG(OP_CEILING),		\
   &&TAG(OP_TRUNCATE), &&TAG(OP_ROUND),					\
   /* 0xb0 */								\
-  &&TAG(OP_APPLY), &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG(OP_EXP),		\
-  &&TAG(OP_LOG), &&TAG(OP_SIN), &&TAG(OP_COS), &&TAG(OP_TAN),		\
-  &&TAG(OP_SQRT), &&TAG(OP_EXPT), &&TAG(OP_SWAP2), &&TAG(OP_MOD),	\
-  &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0),			\
+  &&TAG(OP_APPLY), &&TAG(OP_ARRAY_LENGTH), &&TAG(OP_VECTOR_LENGTH),	\
+  &&TAG(OP_EXP), &&TAG(OP_LOG), &&TAG(OP_SIN), &&TAG(OP_COS),		\
+  &&TAG(OP_TAN), &&TAG(OP_SQRT), &&TAG(OP_EXPT), &&TAG(OP_SWAP2),	\
+  &&TAG(OP_MOD), &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0),		\
   &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),				\
   /* 0xc0 */								\
-  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMQL),		\
+  &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMV),		\
   &&TAG(OP_NUM_EQ), &&TAG_DEFAULT, &&TAG_DEFAULT,			\
   &&TAG(OP__DEFINE), &&TAG(OP_SPEC_BIND), &&TAG(OP_SET),		\
   &&TAG(OP_REQUIRED_ARG), &&TAG(OP_OPTIONAL_ARG),			\
@@ -336,10 +338,11 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_KEYWORD_ARG), &&TAG(OP_OPTIONAL_ARG_),			\
   &&TAG(OP_KEYWORD_ARG_),						\
   /* 0xd0 */								\
+  &&TAG(OP_VECTOR_REF), &&TAG(OP_VECTOR_SET), &&TAG(OP_STRING_LENGTH),	\
+  &&TAG(OP_STRING_REF), &&TAG(OP_STRING_SET), &&TAG_DEFAULT,		\
   &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
   &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
-  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
-  &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
+  &&TAG_DEFAULT, &&TAG_DEFAULT,						\
   /* 0xe0 */								\
   &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
   &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT, &&TAG_DEFAULT,		\
@@ -707,7 +710,7 @@ again: {
     }
 
     INSN_WITH_ARG(OP_PUSH) {
-      ASSERT(arg < rep_VECT_LEN(consts));
+      ASSERT(arg < rep_VECTOR_LEN(consts));
       PUSH(rep_VECT(consts)->array[arg]);
       SAFE_NEXT;
     }
@@ -791,7 +794,7 @@ again: {
        structures.c */
 
     INSN_WITH_ARG(OP_REFQ) {
-      ASSERT(arg < rep_VECT_LEN(consts));
+      ASSERT(arg < rep_VECTOR_LEN(consts));
       repv var = rep_VECT(consts)->array[arg];
       rep_struct *s = rep_STRUCTURE(rep_structure);
       if (s->total_buckets != 0) {
@@ -815,7 +818,7 @@ again: {
     }
 
     INSN_WITH_ARG(OP_SETQ) {
-      ASSERT(arg < rep_VECT_LEN(consts));
+      ASSERT(arg < rep_VECTOR_LEN(consts));
       repv sym = rep_VECT(consts)->array[arg];
       repv value = POP;
       Fstructure_set(rep_structure, sym, value);
@@ -1023,27 +1026,27 @@ again: {
       SAFE_NEXT;
     }
 
-    INSN(OP_RPLACA) {
-      CALL_2(Frplaca);
+    INSN(OP_SET_CAR) {
+      CALL_2(Fset_car);
     }
 
-    INSN(OP_RPLACD) {
-      CALL_2(Frplacd);
+    INSN(OP_SET_CDR) {
+      CALL_2(Fset_cdr);
     }
 
-    INSN(OP_NTH) {
-      CALL_2(Fnth);
+    INSN(OP_LIST_REF) {
+      CALL_2(Flist_ref);
     }
 
-    INSN(OP_NTHCDR) {
-      CALL_2(Fnthcdr);
+    INSN(OP_LIST_TAIL) {
+      CALL_2(Flist_tail);
     }
 
-    INSN(OP_ASET) {
+    INSN(OP_ARRAY_SET) {
       CALL_3(Faset);
     }
 
-    INSN(OP_AREF) {
+    INSN(OP_ARRAY_REF) {
       CALL_2(Faref);
     }
 
@@ -1155,6 +1158,10 @@ again: {
 
     INSN(OP_STRUCT_REF) {
       CALL_2(Fexternal_structure_ref);
+    }
+
+    INSN(OP_LIST_LENGTH) {
+      CALL_1(Flist_length);
     }
 
     INSN(OP_GT) {
@@ -1705,6 +1712,14 @@ again: {
       NEXT;
     }
 
+    INSN(OP_ARRAY_LENGTH) {
+      CALL_1(Farray_length);
+    }
+
+    INSN(OP_VECTOR_LENGTH) {
+      CALL_1(Fvector_length);
+    }
+
     INSN(OP_EXP) {
       CALL_1(Fexp);
     }
@@ -1784,7 +1799,7 @@ again: {
       SAFE_NEXT;
     }
 
-    INSN(OP_MEMQL) {
+    INSN(OP_MEMV) {
       CALL_2(Fmemql);
     }
 
@@ -1874,6 +1889,26 @@ again: {
       }
       PUSH(rep_nil);
       SAFE_NEXT;
+    }
+
+    INSN(OP_VECTOR_REF) {
+      CALL_2(Fvector_ref);
+    }
+
+    INSN(OP_VECTOR_SET) {
+      CALL_3(Fvector_set);
+    }
+
+    INSN(OP_STRING_LENGTH) {
+      CALL_1(Fstring_length);
+    }
+
+    INSN(OP_STRING_REF) {
+      CALL_2(Fstring_ref);
+    }
+
+    INSN(OP_STRING_SET) {
+      CALL_3(Fstring_set);
     }
 
     /** Jump instructions. **/

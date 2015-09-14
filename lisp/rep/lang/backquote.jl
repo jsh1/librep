@@ -72,22 +72,22 @@ Vectors work just like lists.  Nested backquotes are permitted."
       (if (= (car n) 0)
 	  (cons 0 s)
 	(cons 1 (cond
-		 ((eq? (nth 1 n) 'list)
-		  (cons 'vector (nthcdr 2 n)))
-		 ((eq? (nth 1 n) 'append)
-		  (cons 'vconcat (nthcdr 2 n)))
+		 ((eq? (list-ref n 1) 'list)
+		  (cons 'vector (list-tail n 2)))
+		 ((eq? (list-ref n 1) 'append)
+		  (cons 'vconcat (list-tail n 2)))
 		 (t
 		  (list 'apply '(function vector) (cdr n))))))))
-   ((atom s)
+   ((atom? s)
     (cons 0 (if (not (symbol? s))
 		s
 	      (list 'quote s))))
    ((eq? (car s) 'backquote-unquote)
-    (cons 1 (nth 1 s)))
+    (cons 1 (list-ref s 1)))
    ((eq? (car s) 'backquote-splice)
-    (cons 2 (nth 1 s)))
+    (cons 2 (list-ref s 1)))
    ((eq? (car s) 'backquote)
-    (backquote-process (cdr (backquote-process (nth 1 s)))))
+    (backquote-process (cdr (backquote-process (list-ref s 1)))))
    (t
     (let ((rest s)
 	  item firstlist lst lists expression)
@@ -102,7 +102,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
       (while (pair? rest)
 	;; Turn . (, foo) into (,@ foo).
 	(if (eq? (car rest) 'backquote-unquote)
-	    (setq rest (list (list 'backquote-splice (nth 1 rest)))))
+	    (setq rest (list (list 'backquote-splice (list-ref rest 1)))))
 	(setq item (backquote-process (car rest)))
 	(cond
 	 ((= (car item) 2)
@@ -128,7 +128,7 @@ Vectors work just like lists.  Nested backquotes are permitted."
       (setq expression
 	    (if (or (cdr lists)
 		    (eq? (car (car lists)) 'backquote-splice))
-		(cons 'append (nreverse lists))
+		(cons 'append (reverse! lists))
 	      (car lists)))
       ;; Tack on any initial elements.
       (if firstlist

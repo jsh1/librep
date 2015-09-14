@@ -73,15 +73,15 @@
       (define-datum-printer rt (record-printer rt))
       rt))
 
-  (define (record-type-name rt) (aref rt 0))
-  (define (record-type-fields rt) (aref rt 1))
-  (define (record-type-discloser rt) (aref rt 2))
-  (define (define-record-discloser rt x) (aset rt 2 x))
+  (define (record-type-name rt) (vector-ref rt 0))
+  (define (record-type-fields rt) (vector-ref rt 1))
+  (define (record-type-discloser rt) (vector-ref rt 2))
+  (define (define-record-discloser rt x) (vector-set! rt 2 x))
 
 ;;; record mechanics
 
   (define (make-record rt)
-    (make-datum (make-vector (length (record-type-fields rt))) rt))
+    (make-datum (make-vector (list-length (record-type-fields rt))) rt))
 
   (define make-record-datum make-datum)
 
@@ -93,10 +93,10 @@
 				(record-type-name rt) field))))
   
   (define (field-ref rt record index)
-    (aref (datum-ref record rt) index))
+    (vector-ref (datum-ref record rt) index))
 
-  (define (field-set rt record index value)
-    (aset (datum-ref record rt) index value))
+  (define (field-set! rt record index value)
+    (vector-set! (datum-ref record rt) index value))
 
 ;;; interface implementations
 
@@ -109,7 +109,7 @@
 		     (ids indices))
 	    (if (and rest ids)
 		(progn
-		  (field-set rt record (car ids) (car rest))
+		  (field-set! rt record (car ids) (car rest))
 		  (loop (cdr rest) (cdr ids)))
 	      record))))))
 
@@ -123,7 +123,7 @@
 	       (out '()))
       (if (null? rest)
 	  `(lambda ,args
-	     (make-record-datum (vector ,@(nreverse out)) ,rt))
+	     (make-record-datum (vector ,@(reverse! out)) ,rt))
 	(loop (cdr rest)
 	      (cons (and (has-field-p (car rest)) (car rest)) out)))))
 
@@ -135,7 +135,7 @@
   (define (record-modifier rt field)
     (let ((index (field-index rt field)))
       (lambda (record value)
-	(field-set rt record index value))))
+	(field-set! rt record index value))))
 
   (define (record-predicate rt)
     (lambda (arg)

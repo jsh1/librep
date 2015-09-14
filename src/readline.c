@@ -197,9 +197,9 @@ DEFUN("readline", Freadline, Sreadline,
       add_history(input);
     }
     ret = rep_allocate_string(len + 2);
-    memcpy(rep_STR(ret), input, len);
-    rep_STR(ret)[len] = '\n';
-    rep_STR(ret)[len+1] = 0;
+    memcpy(rep_MUTABLE_STR(ret), input, len);
+    rep_MUTABLE_STR(ret)[len] = '\n';
+    rep_MUTABLE_STR(ret)[len+1] = 0;
     free(input);
   }
 

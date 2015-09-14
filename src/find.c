@@ -97,6 +97,8 @@ rep_compile_regexp(repv re)
   ptr->next = cached_regexps;
   cached_regexps = ptr;
 
+  rep_STRING(re)->car |= rep_STRING_REGEXP;
+
   regexp_misses++;
   return compiled;
 }
@@ -104,11 +106,15 @@ rep_compile_regexp(repv re)
 /* Remove any cached compilation of STRING from the regexp cache */
 
 void
-rep_string_modified(repv string)
+rep_invalidate_string(repv str)
 {
+  if (!(rep_STRING(str)->car & rep_STRING_REGEXP)) {
+    return;
+  }
+
   struct cached_regexp **x;
   for (x = &cached_regexps; *x != 0; x = &((*x)->next)) {
-    if ((*x)->regexp == string) {
+    if ((*x)->regexp == str) {
       struct cached_regexp *ptr = *x;
       *x = ptr->next;
       free(ptr->compiled);
@@ -340,7 +346,7 @@ the following escape sequences,
 
   repv str = rep_allocate_string(len);
   (*rep_regsub_fun)(last_match_type, &last_matches, rep_STR(template),
-		    rep_STR(str), rep_PTR(last_match_data));
+		    rep_MUTABLE_STR(str), rep_PTR(last_match_data));
   return str;
 }
 

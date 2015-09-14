@@ -70,7 +70,7 @@ refill_free_list(void)
 repv
 rep_box_string(char *ptr, size_t len)
 {
-  if (len > rep_MAX_STRING) {
+  if (len > rep_MAX_STRING_LEN) {
     return Fsignal(Qerror, rep_LIST_1(rep_VAL(&string_overflow)));
   }
 
@@ -82,7 +82,7 @@ rep_box_string(char *ptr, size_t len)
     str = refill_free_list();
   }
 
-  str->car = rep_MAKE_STRING_CAR(len);
+  str->car = rep_String | (len << rep_STRING_LEN_SHIFT);
   str->data = ptr;
 
   rep_used_strings++;
@@ -117,8 +117,8 @@ rep_string_copy_n(const char *src, size_t slen)
   rep_string *dst = rep_STRING(rep_allocate_string(slen + 1));
 
   if(dst) {
-    memcpy(rep_STR(dst), src, slen);
-    rep_STR(dst)[slen] = 0;
+    memcpy(rep_MUTABLE_STR(dst), src, slen);
+    rep_MUTABLE_STR(dst)[slen] = 0;
   }
 
   return rep_VAL(dst);
@@ -131,29 +131,29 @@ rep_string_copy(const char *src)
 }
 
 repv
-rep_string_concat2(char *s1, char *s2)
+rep_string_concat2(const char *s1, const char *s2)
 {
   int len = strlen(s1) + strlen(s2);
   repv res = rep_allocate_string(len + 1);
-  stpcpy(stpcpy(rep_STR(res), s1), s2);
+  stpcpy(stpcpy(rep_MUTABLE_STR(res), s1), s2);
   return(res);
 }
 
 repv
-rep_string_concat3(char *s1, char *s2, char *s3)
+rep_string_concat3(const char *s1, const char *s2, const char *s3)
 {
   int len = strlen(s1) + strlen(s2) + strlen(s3);
   repv res = rep_allocate_string(len + 1);
-  stpcpy(stpcpy(stpcpy(rep_STR(res), s1), s2), s3);
+  stpcpy(stpcpy(stpcpy(rep_MUTABLE_STR(res), s1), s2), s3);
   return(res);
 }
 
 repv
-rep_string_concat4(char *s1, char *s2, char *s3, char *s4)
+rep_string_concat4(const char *s1, const char *s2, const char *s3, const char *s4)
 {
   int len = strlen(s1) + strlen(s2) + strlen(s3) + strlen(s4);
   repv res = rep_allocate_string(len + 1);
-  stpcpy(stpcpy(stpcpy(stpcpy(rep_STR(res), s1), s2), s3), s4);
+  stpcpy(stpcpy(stpcpy(stpcpy(rep_MUTABLE_STR(res), s1), s2), s3), s4);
   return(res);
 }
 
@@ -180,7 +180,7 @@ void
 rep_string_print(repv strm, repv obj)
 {
   intptr_t len = rep_STRING_LEN(obj);
-  char *s = rep_STR(obj);
+  const char *s = rep_STR(obj);
 
   bool escape_all = false, escape_newlines = false;
   repv tem = Fsymbol_value(Qprint_escape, Qt);
@@ -204,7 +204,7 @@ rep_string_print(repv strm, repv obj)
       i = 0;
     }
 
-    unsigned int c = *s++;
+    uint8_t c = *s++;
 
     switch (c) {
     case '\t':
@@ -314,16 +314,20 @@ rep_string_set_len(repv str, size_t len)
     return false;
   }
 
-  rep_STRING(str)->car = rep_MAKE_STRING_CAR(len);
+  uintptr_t len_mask = (~((uintptr_t)0)) << rep_STRING_LEN_SHIFT;
+
+  rep_STRING(str)->car = ((rep_STRING(str)->car & ~len_mask)
+			  | (len << rep_STRING_LEN_SHIFT));
   return true;
 }
 
-DEFUN("make-string", Fmake_string, Smake_string, (repv len, repv init), rep_Subr2) /*
+DEFUN("make-string", Fmake_string,
+      Smake_string, (repv len, repv init), rep_Subr2) /*
 ::doc:rep.data#make-string::
-make-string LENGTH [INITIAL-VALUE]
+make-string LENGTH [CHARACTER]
 
 Returns a new string of length LENGTH, each character is initialised to
-INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
+CHARACTER, or to space if CHARACTER is undefined.
 ::end:: */
 {
   rep_DECLARE1(len, rep_NON_NEG_INT_P);
@@ -331,8 +335,8 @@ INITIAL-VALUE, or to space if INITIAL-VALUE is not given.
   intptr_t l = rep_INT(len);
   repv s = rep_allocate_string(l + 1);
   if (s) {
-    memset(rep_STR(s), rep_INTP(init) ? (char)rep_INT(init) : ' ', l);
-    rep_STR(s)[l] = 0;
+    memset(rep_MUTABLE_STR(s), rep_INTP(init) ? (char)rep_INT(init) : ' ', l);
+    rep_MUTABLE_STR(s)[l] = 0;
   }
   return s;
 }
@@ -345,6 +349,105 @@ Returns t is ARG is a string.
 ::end:: */
 {
   return rep_STRINGP(arg) ? Qt : rep_nil;
+}
+
+DEFUN("string-length", Fstring_length,
+      Sstring_length, (repv str), rep_Subr1) /*
+::doc:rep.data#string-length::
+string-length STRING
+
+Returns the number of characters in STRING.
+::end:: */
+{
+  rep_DECLARE1(str, rep_STRINGP);
+
+  return rep_MAKE_INT(rep_STRING_LEN(str));
+}
+
+DEFUN("string-ref", Fstring_ref,
+      Sstring_ref, (repv str, repv idx), rep_Subr2) /*
+::doc:rep.data#string-ref::
+string-ref STRING INDEX
+
+Returns the INDEX'th character in STRING.
+::end:: */
+{
+  rep_DECLARE1(str, rep_STRINGP);
+  rep_DECLARE1(idx, rep_NON_NEG_INT_P);
+
+  if (rep_INT(idx) >= rep_STRING_LEN(str)) { 
+    return rep_signal_arg_error(idx, 2);
+  }
+
+  return rep_MAKE_INT((uint8_t)(rep_STR(str)[rep_INT(idx)]));
+}
+
+DEFUN("string-set!", Fstring_set,
+      Sstring_set, (repv str, repv idx, repv value), rep_Subr3) /*
+::doc:rep.data#string-set!::
+string-set! STRING INDEX CHARACTER
+
+Sets the INDEX'th element of STRING to CHARACTER.
+::end:: */
+{
+  rep_DECLARE1(str, rep_STRINGP);
+  rep_DECLARE2(idx, rep_NON_NEG_INT_P);
+  rep_DECLARE3(value, rep_NON_NEG_INT_P);
+
+  if (!rep_STRING_WRITABLE_P(str)) {
+    return Fsignal(Qsetting_constant, rep_LIST_1(str));
+  }
+
+  if (rep_INT(idx) >= rep_STRING_LEN(str)) { 
+    return rep_signal_arg_error(idx, 2);
+  }
+  if (rep_INT(value) > 255) { 
+    return rep_signal_arg_error(value, 3);
+  }
+
+  rep_MUTABLE_STR(str)[rep_INT(idx)] = (uint8_t)rep_INT(value);
+  rep_invalidate_string(str);
+
+  return rep_undefined_value;
+}
+
+DEFUN("make-string-immutable!", Fmake_string_immutable,
+      Smake_string_immutable, (repv str), rep_Subr1) /*
+::doc:rep.data#make-string-immutable!::
+make-string-immutable! STRING
+
+Marks that the contents of STRING may no longer be modified.
+::end:: */
+{
+  rep_DECLARE1(str, rep_STRINGP);
+
+  rep_STRING(str)->car |= rep_STRING_IMMUTABLE;
+
+  return rep_undefined_value;
+}
+
+DEFUN("string->immutable-string", Fstring_to_immutable_string,
+      Sstring_to_immutable_string, (repv str), rep_Subr1) /*
+::doc:rep.data#string->immutable-string::
+string->immutable-string STRING
+
+Returns STRING if it's already marked as immutable, else returns a new
+copy of STRING that is marked immutable.
+::end:: */
+{
+  rep_DECLARE1(str, rep_STRINGP);
+
+  if (!rep_STRING_WRITABLE_P(str)) {
+    return str;
+  }
+
+  repv copy = rep_string_copy_n(rep_STR(str), rep_STRING_LEN(str));
+
+  if (copy) {
+    rep_STRING(copy)->car |= rep_STRING_IMMUTABLE;
+  }
+
+  return copy;
 }
 
 DEFUN("substring", Fsubstring, Ssubstring, (repv string, repv start, repv end), rep_Subr3) /*
@@ -383,7 +486,7 @@ concat ARGS...
 
 Concatenates all ARGS... into a single string, each argument can be a string,
 a character or a list or vector of characters.
-::end:: */
+::end:: */                    
 {
   /* Pass 1. calculate the length of the new string. */
 
@@ -404,7 +507,7 @@ a character or a list or vector of characters.
 	length += rep_STRING_LEN(elt);
 	break;
       case rep_Vector:
-	length += rep_VECT_LEN(elt);
+	length += rep_VECTOR_LEN(elt);
 	break;
       }
     }
@@ -421,7 +524,7 @@ a character or a list or vector of characters.
     return 0;
   }
 
-  char *ptr = rep_STR(string);
+  char *ptr = rep_MUTABLE_STR(string);
 
   for (intptr_t i = 0; i < argc; i++) {
     repv elt = argv[i];
@@ -443,7 +546,7 @@ a character or a list or vector of characters.
 	ptr += rep_STRING_LEN(elt);
 	break;
       case rep_Vector:
-	for (intptr_t i = 0; i < rep_VECT_LEN(elt); i++) {
+	for (intptr_t i = 0; i < rep_VECTOR_LEN(elt); i++) {
 	  repv c = rep_VECTI(elt, i);
 	  if (rep_INTP(c)) {
 	    *ptr++ = rep_INT(c);
@@ -694,10 +797,10 @@ case.
   return ret;
 }
 
-DEFUN("translate-string", Ftranslate_string,
+DEFUN("translate-string!", Ftranslate_string,
       Stranslate_string, (repv string, repv table), rep_Subr2) /*
-::doc:rep.data#translate-string:
-translate-string STRING TRANSLATION-TABLE
+::doc:rep.data#translate-string!:
+translate-string! STRING TRANSLATION-TABLE
 
 Applies the TRANSLATION-TABLE to each character in the string STRING.
 TRANSLATION-TABLE is a string, each character represents the translation
@@ -714,10 +817,10 @@ Note that the STRING really is modified, no copy is made!
     return(rep_signal_arg_error(string, 1));
   }
 
-  char *tab = rep_STR(table);
+  const char *tab = rep_STR(table);
   size_t tablen = rep_STRING_LEN(table);
 
-  char *str = rep_STR(string);
+  char *str = rep_MUTABLE_STR(string);
   size_t slen = rep_STRING_LEN(string);
 
   for (size_t i = 0; i < slen; i++) {
@@ -727,7 +830,7 @@ Note that the STRING really is modified, no copy is made!
     }
   }
 
-  rep_string_modified(string);
+  rep_invalidate_string(string);
   return string;
 }
 
@@ -744,10 +847,10 @@ is t, all matching ignores character case.
   rep_DECLARE1(existing, rep_STRINGP);
   rep_DECLARE2(arg_list, rep_LISTP);
 
-  char *orig = rep_STR(existing);
+  const char *orig = rep_STR(existing);
   size_t origlen = rep_STRING_LEN(existing);
 
-  char *match = NULL;
+  const char *match = NULL;
   size_t matchlen = 0;
 
   while (rep_CONSP(arg_list)) {
@@ -758,13 +861,13 @@ is t, all matching ignores character case.
       continue;
     }
 
-    char *tmp = rep_STR(arg);
+    const char *tmp = rep_STR(arg);
     if ((fold == rep_nil
 	 ? strncmp(orig, tmp, origlen)
 	 : strncasecmp(orig, tmp, origlen)) == 0)
     {
       if (match) {
-	char *tmp2 = match + origlen;
+	const char *tmp2 = match + origlen;
 	tmp += origlen;
 	while (*tmp2 && *tmp) {
 	  if(fold == rep_nil
@@ -799,6 +902,11 @@ rep_strings_init(void)
   repv tem = rep_push_structure("rep.data");
   rep_ADD_SUBR(Smake_string);
   rep_ADD_SUBR(Sstringp);
+  rep_ADD_SUBR(Sstring_length);
+  rep_ADD_SUBR(Sstring_ref);
+  rep_ADD_SUBR(Sstring_set);
+  rep_ADD_SUBR(Smake_string_immutable);
+  rep_ADD_SUBR(Sstring_to_immutable_string);
   rep_ADD_SUBR(Ssubstring);
   rep_ADD_SUBR(Sconcat);
   rep_ADD_SUBR(Sstring_head_eq);

@@ -97,7 +97,7 @@ rep_lisp_prin(repv strm, repv obj)
     /* fall through */
 
   case rep_Vector: {
-    int len = rep_VECT_LEN(obj);
+    int len = rep_VECTOR_LEN(obj);
     rep_stream_putc(strm, '[');
     for (int j = 0; j < len; j++) {
       if (rep_VECT(obj)->array[j]) {

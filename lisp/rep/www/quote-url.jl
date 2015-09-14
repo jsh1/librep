@@ -46,7 +46,7 @@ internet drafts directory for a copy.")
     (string-replace url-meta-re
 		    (lambda (s)
 		      (string-upcase
-		       (format nil "%%%02x" (aref s (match-start)))))
+		       (format nil "%%%02x" (string-ref s (match-start)))))
 		    string))
 
   (define (unquote-url string)

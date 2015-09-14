@@ -160,7 +160,7 @@ table_type(void)
 }
 
 static inline repv
-hash_string(register char *ptr)
+hash_string(const char *ptr)
 {
   uintptr_t value = 5381;
 
@@ -226,7 +226,7 @@ equal_hash(repv x, unsigned int n)
     return hash;
   } else if (rep_VECTORP(x) || rep_BYTECODEP(x)) {
     uintptr_t hash = 5381 * rep_Vector;
-    int i = MIN(n, rep_VECT_LEN(x));
+    int i = MIN(n, rep_VECTOR_LEN(x));
     while (i-- > 0) {
       hash = hash * 33 + equal_hash(rep_VECTI(x, i), n / 2);
     }
@@ -406,10 +406,10 @@ KEY.
   return n ? Qt : rep_nil;
 }
 
-DEFUN("table-set", Ftable_set, Stable_set,
+DEFUN("table-set!", Ftable_set, Stable_set,
       (repv tab, repv key, repv value), rep_Subr3) /*
-::doc:rep.data.tables#table-set::
-table-set TABLE KEY VALUE
+::doc:rep.data.tables#table-set!::
+table-set! TABLE KEY VALUE
 
 Associate VALUE with KEY in hash table TABLE. Returns VALUE.
 ::end:: */
@@ -478,10 +478,10 @@ Associate VALUE with KEY in hash table TABLE. Returns VALUE.
   return value;
 }
 
-DEFUN("table-unset", Ftable_unset, Stable_unset,
+DEFUN("table-delete!", Ftable_unset, Stable_unset,
       (repv tab, repv key), rep_Subr2) /*
-::doc:rep.data.tables#table-unset::
-table-unset TABLE KEY
+::doc:rep.data.tables#table-delete!::
+table-delete! TABLE KEY
 
 Remove any value stored in TABLE associated with KEY.
 ::end:: */

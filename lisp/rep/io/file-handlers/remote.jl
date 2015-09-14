@@ -48,9 +48,8 @@ accessed on specific hosts.")
 	;; A previously opened file handle. The backend should have stashed
 	;; it's handler function in the first slot the file's handler-data
 	;; (a vector)
-	(let
-	    ((split (remote-split-filename (file-binding (car args)))))
-	  ((aref (file-handler-data (car args)) 0) split op args)))
+	(let ((split (remote-split-filename (file-binding (car args)))))
+	  ((vector-ref (file-handler-data (car args)) 0) split op args)))
 
        ((eq? op 'file-name-absolute?))	;remote files are absolute?
 
@@ -63,38 +62,39 @@ accessed on specific hosts.")
 	    ;; Chop up the file name
 	    ((split (remote-split-filename (if (eq? op 'copy-file-from-local-fs)
 					       ;; remote file is 2nd arg
-					       (nth 1 args)
+					       (list-ref args 1)
 					     (car args)))))
 	  (cond
 	   ;; Handle all file name manipulations
 	   ;; XXX This isn't such a good idea since it presumes that remote
 	   ;; XXX systems use the same file naming conventions as locally.
 	   ((eq? op 'expand-file-name)
-	    (remote-join-filename (car split) (nth 1 split)
-				  (expand-file-name (nth 2 split) ".")))
+	    (remote-join-filename (car split) (list-ref split 1)
+				  (expand-file-name (list-ref split 2) ".")))
 
 	   ((eq? op 'file-name-nondirectory)
-	    (file-name-nondirectory (nth 2 split)))
+	    (file-name-nondirectory (list-ref split 2)))
 
 	   ((eq? op 'file-name-directory)
-	    (remote-join-filename (car split) (nth 1 split)
-				  (file-name-directory (nth 2 split))))
+	    (remote-join-filename (car split) (list-ref split 1)
+				  (file-name-directory (list-ref split 2))))
 
 	   ((eq? op 'file-name-as-directory)
-	    (remote-join-filename (car split) (nth 1 split)
-				  (if (string=? (nth 2 split) "")
+	    (remote-join-filename (car split) (list-ref split 1)
+				  (if (string=? (list-ref split 2) "")
 				      ""
-				    (file-name-as-directory (nth 2 split)))))
+				    (file-name-as-directory
+				     (list-ref split 2)))))
 
 	   ((eq? op 'directory-file-name)
-	    (remote-join-filename (car split) (nth 1 split)
-				  (directory-file-name (nth 2 split))))
+	    (remote-join-filename (car split) (list-ref split 1)
+				  (directory-file-name (list-ref split 2))))
 
 	   (t
 	    ;; Anything else, pass off to a backend
 	    (let
 		((backend (get (or (cdr (assoc-regexp
-					 (nth 1 split)
+					 (list-ref split 1)
 					 remote-auto-backend-alist t))
 				   remote-default-backend)
 			       'remote-backend)))

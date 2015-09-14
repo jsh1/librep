@@ -35,17 +35,13 @@ INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h rep_gh.h
 
 OBJS = $(SRCS:.c=.lo)
 
-SDBM_SRCS = sdbm.c sdbm_pair.c sdbm_hash.c
-SDBM_OBJS = $(SDBM_SRCS:.c=.o)
-SDBM_LOBJS = $(SDBM_SRCS:.c=.lo)
-
-DL_SRCS = rep-sdbm.c timers.c gettext.c readline.c rep-gdbm.c \
-	  record-profile.c md5.c ffi.c
-DL_OBJS = sdbm.la timers.la gettext.la readline.la gdbm.la \
-	  record-profile.la md5.la ffi.la
-DL_DSTS = rep/io/db/sdbm.la rep/io/timers.la rep/i18n/gettext.la \
-	  rep/io/readline.la rep/io/db/gdbm.la rep/ffi.la \
-	  rep/lang/record-profile.la rep/util/md5.la
+DL_SRCS = timers.c gettext.c readline.c rep-gdbm.c record-profile.c \
+	md5.c ffi.c
+DL_OBJS = timers.la gettext.la readline.la gdbm.la record-profile.la \
+	md5.la ffi.la
+DL_DSTS = rep/io/timers.la rep/i18n/gettext.la rep/io/readline.la \
+	rep/io/db/gdbm.la rep/ffi.la rep/lang/record-profile.la \
+	rep/util/md5.la
 DL_DIRS = rep rep/io rep/io/db rep/i18n rep/lang rep/vm rep/util
 
 REP_SRCS = rep.c
@@ -134,9 +130,6 @@ rep-config : rep-config.sh Makefile
 
 repdoc : repdoc.o
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)
-
-sdbm.la : $(SDBM_LOBJS) rep-sdbm.lo
-	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
 
 gdbm.la : rep-gdbm.lo
 	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(GDBM_LIBS)

@@ -896,7 +896,7 @@ parse_integer_to_float(char *buf, size_t len, int radix,
   } while (0)
 
 repv
-rep_parse_number(char *buf, size_t len, int radix,
+rep_parse_number(const char *buf, size_t len, int radix,
 		 int sign, unsigned int type)
 {
   if (len == 0) {
@@ -2876,7 +2876,7 @@ number is parsed from that base, otherwise base 10 is assumed.
 
   rep_DECLARE(2, radix_, rep_INTP(radix_) && rep_INT(radix_) > 0);
 
-  char *ptr = rep_STR(string);
+  const char *ptr = rep_STR(string);
   int radix = rep_INT(radix_);
   int force_exactness = 0;
   int sign = 1;

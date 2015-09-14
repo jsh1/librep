@@ -215,13 +215,13 @@ rep_stream_putc(repv stream, int c)
 	if (!new) {
 	  break;
 	}
-	memcpy(rep_STR(new), rep_STR(str), len);
+	memcpy(rep_MUTABLE_STR(new), rep_STR(str), len);
 	rep_CAR(stream) = new;
 	rep_CDR(stream) = rep_MAKE_INT(new_capacity);
 	str = new;
       }
-      rep_STR(str)[len] = c;
-      rep_STR(str)[len + 1] = 0;
+      rep_MUTABLE_STR(str)[len] = c;
+      rep_MUTABLE_STR(str)[len + 1] = 0;
       rep_string_set_len(str, len + 1);
       rc = 1;
     } else {
@@ -323,13 +323,13 @@ rep_stream_puts(repv stream, const void *data,
 	if (!new) {
 	  break;
 	}
-	memcpy(rep_STR(new), rep_STR(str), len);
+	memcpy(rep_MUTABLE_STR(new), rep_STR(str), len);
 	rep_CAR(stream) = new;
 	rep_CDR(stream) = rep_MAKE_INT(new_capacity);
 	str = new;
       }
-      memcpy(rep_STR(str) + len, buf, data_len);
-      rep_STR(str)[len + data_len] = 0;
+      memcpy(rep_MUTABLE_STR(str) + len, buf, data_len);
+      rep_MUTABLE_STR(str)[len + data_len] = 0;
       rep_string_set_len(str, len + data_len);
       rc = data_len;
       break;
@@ -508,7 +508,7 @@ a string LENGTH can define how many characters to write.
 
   switch (rep_TYPE(data)) {
     bool lisp_string;
-    void *arg;
+    const void *arg;
 
   case rep_Int:
     written = rep_stream_putc(stream, rep_INT(data));
@@ -967,7 +967,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
       rep_stream_putc(stream, '%');
     } else {
       repv fun;
-      repv val = Fnth(rep_MAKE_INT(arg_idx), args);
+      repv val = Flist_ref(args, rep_MAKE_INT(arg_idx));
       bool free_str = false;
 
       if (!val) {
@@ -977,7 +977,8 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
       switch (c) {
 	int radix;
 	intptr_t len, actual_len;
-	char buf[256], *ptr;
+	char buf[256];
+	const char *ptr;
 
       case 'c':
 	rep_stream_putc(stream, rep_INT(val));
@@ -1044,7 +1045,7 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	  }
 	}
 	if (free_str) {
-	  free(ptr);
+	  free((char *)ptr);
 	}
 	break;
 

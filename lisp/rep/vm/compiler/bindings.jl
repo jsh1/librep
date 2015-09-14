@@ -68,7 +68,7 @@
   (define (cell-tagged? tag cell) (memq tag (cdr cell)))
   (define (tag-cell tag cell)
     (unless (cell-tagged? tag cell)
-      (rplacd cell (cons tag (cdr cell)))))
+      (set-cdr! cell (cons tag (cdr cell)))))
 
   ;; note that the outermost binding of symbol VAR has state TAG
   (define (tag-binding var tag)
@@ -81,7 +81,7 @@
     (let ((cell (lexical-binding var)))
       (when cell
 	(when (cell-tagged? tag cell)
-	  (rplacd cell (delq tag (cdr cell)))))))
+	  (set-cdr! cell (delq! tag (cdr cell)))))))
 
   ;; return t if outermost binding of symbol VAR has state TAG
   (define (binding-tagged? var tag)
@@ -91,12 +91,12 @@
   ;; install a new binding contour, such that THUNK can add any bindings
   ;; (lexical and special), then when THUNK exits, the bindings are removed
   (define (call-with-frame thunk)
-    (let ((old-d (length (fluid lex-bindings))))
+    (let ((old-d (list-length (fluid lex-bindings))))
       (let-fluids ((spec-bindings (fluid spec-bindings))
 		   (lexically-pure (fluid lexically-pure)))
 	(prog1 (thunk)
 	  ;; check for unused variables
-	  (do ((new-d (length (fluid lex-bindings)) (1- new-d))
+	  (do ((new-d (list-length (fluid lex-bindings)) (1- new-d))
 	       (new (fluid lex-bindings) (cdr new)))
 	      ((= new-d old-d)
 	       (fluid-set lex-bindings new))
@@ -230,11 +230,12 @@
     (for-each (lambda (insn)
 		(case (car insn)
 		  ((lex-ref lex-set)
-		   (let ((cell (assq (nth 1 insn) lex-env)))
+		   (let ((cell (assq (list-ref insn 1) lex-env)))
 		     (when cell
 		       (tag-cell 'captured cell))))
 		  ((push-bytecode)
-		   (identify-captured-bindings (nth 1 insn) (nth 2 insn)))))
+		   (identify-captured-bindings
+		    (list-ref insn 1) (list-ref insn 2)))))
 	      (assembly-code asm)))
 
   ;; Extra pass over the output pseudo-assembly code; converts
@@ -246,11 +247,11 @@
 	(when rest
 	  (case (caar rest)
 	    ((lex-bind lex-ref lex-set)
-	     (let* ((var (nth 1 (car rest)))
-		    (bindings (nth 2 (car rest)))
+	     (let* ((var (list-ref (car rest) 1))
+		    (bindings (list-ref (car rest) 2))
 		    (cell (assq var bindings)))
 	       (if (heap-binding? cell)
-		   (rplaca rest (case (caar rest)
+		   (set-car! rest (case (caar rest)
 				  ((lex-bind) (list 'bind))
 				  ((lex-ref)
 				   (list 'env-ref (heap-address var bindings)))
@@ -258,18 +259,18 @@
 				   (list 'env-set (heap-address var bindings)))))
 		 (let ((register (register-address var bindings base-env)))
 		   (setq max-register (max max-register (1+ register)))
-		   (rplaca rest (case (caar rest)
+		   (set-car! rest (case (caar rest)
 				  ((lex-bind lex-set)
 				   (list 'reg-set register))
 				  ((lex-ref)
 				   (list 'reg-ref register))))))))
 	    ((push-bytecode)
-	     (let ((asm (nth 1 (car rest)))
-		   (env (nth 2 (car rest)))
-		   (doc (nth 3 (car rest)))
-		   (interactive (nth 4 (car rest))))
+	     (let ((asm (list-ref (car rest) 1))
+		   (env (list-ref (car rest) 2))
+		   (doc (list-ref (car rest) 3))
+		   (interactive (list-ref (car rest) 4)))
 	       (allocate-bindings-1 asm env)
-	       (rplaca rest (list 'push (assemble-assembly-to-subr
+	       (set-car! rest (list 'push (assemble-assembly-to-subr
 					 asm doc interactive))))))
 	  (loop (cdr rest))))
       (assembly-registers-set asm max-register)

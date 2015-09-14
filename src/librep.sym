@@ -207,8 +207,8 @@ Fmod
 Fname_structure
 Fnot
 Fnreverse
-Fnth
-Fnthcdr
+Flist_ref
+Flist_tail
 Fnull
 Fnum_eq
 Fnum_noteq
@@ -266,8 +266,8 @@ Frename_file
 Frequire
 Freverse
 Fround
-Frplaca
-Frplacd
+Fset_car
+Fset_cdr
 Frun_byte_code
 Fseek_file
 Fsequencep
@@ -675,7 +675,6 @@ rep_string_copy_n
 rep_string_concat2
 rep_string_concat3
 rep_string_concat4
-rep_string_modified
 rep_string_set_len
 rep_structure
 rep_structure_exports_all

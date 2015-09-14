@@ -758,13 +758,13 @@ gh_reverse(repv ls)
 repv
 gh_list_tail(repv ls, repv k)
 {
-  return Fnthcdr(k, ls);
+  return Flist_tail(ls, k);
 }
 
 repv
 gh_list_ref(repv ls, repv k)
 {
-  return Fnth(k, ls);
+  return Flist_ref(ls, k);
 }
 
 repv
@@ -891,13 +891,13 @@ gh_cdddr(repv x)
 repv
 gh_set_car_x(repv pair, repv value)
 {
-  return Frplaca(pair, value) ? value : rep_undefined_value;
+  return Fset_car(pair, value) ? value : rep_undefined_value;
 }
 
 repv
 gh_set_cdr_x(repv pair, repv value)
 {
-  return Frplacd(pair, value) ? value : rep_undefined_value;
+  return Fset_cdr(pair, value) ? value : rep_undefined_value;
 }
 
 /* Calling Scheme functions from C.  */

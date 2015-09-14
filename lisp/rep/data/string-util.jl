@@ -29,9 +29,9 @@
 at least one upper-case character)."
   (let iter ((point 0)
 	     (seen-upper nil))
-    (if (>= point (length x))
+    (if (>= point (string-length x))
 	seen-upper
-      (let ((char (aref x point)))
+      (let ((char (string-ref x point)))
 	(if (char-lower-case? char)
 	    nil
 	  (iter (1+ point) (or seen-upper (char-upper-case? char))))))))
@@ -42,9 +42,9 @@ at least one upper-case character)."
 at least one lower-case character)."
   (let iter ((point 0)
 	     (seen-lower nil))
-    (if (>= point (length x))
+    (if (>= point (string-length x))
 	seen-lower
-      (let ((char (aref x point)))
+      (let ((char (string-ref x point)))
 	(if (char-upper-case? char)
 	    nil
 	  (iter (1+ point) (or seen-lower (char-lower-case? char))))))))
@@ -52,25 +52,25 @@ at least one lower-case character)."
 ;;;###autoload
 (defun string-capitalized? (x)
   "Returns t if string X is capitalized (first character is upper case)."
-  (and (> (length x) 0) (char-upper-case? (aref x 0))))
+  (and (> (string-length x) 0) (char-upper-case? (string-ref x 0))))
 
 ;;;###autoload
 (defun string-upcase (x)
   "Return a new string, an upper case copy of string X."
-  (translate-string (copy-sequence x) upcase-table))
+  (translate-string! (copy-sequence x) upcase-table))
 
 ;;;###autoload
 (defun string-downcase (x)
   "Return a new string, a lower case copy of string X."
-  (translate-string (copy-sequence x) downcase-table))
+  (translate-string! (copy-sequence x) downcase-table))
 
 ;;;###autoload
 (defun capitalize-string (x)
   "Return a new string, a copy of X with its first character in upper case."
-  (if (zero? (length x))
+  (if (zero? (string-length x))
       x
     (let ((new (copy-sequence x)))
-      (aset new 0 (char-upcase (aref new 0)))
+      (string-set! new 0 (char-upcase (string-ref new 0)))
       new)))
 
 ;;;###autoload
@@ -83,7 +83,7 @@ each pair of results, insert SEPARATOR. Return the resulting string."
 	 (let loop ((rest (cdr sequence))
 		    (frags (list (fun (car sequence)))))
 	   (if (null? rest)
-	       (apply concat (nreverse frags))
+	       (apply concat (reverse! frags))
 	     (loop (cdr rest)
 		   (cons (fun (car rest)) (cons separator frags))))))
 	(t ;; use general sequence operations
@@ -93,6 +93,6 @@ each pair of results, insert SEPARATOR. Return the resulting string."
 	     (let loop ((i 1)
 			(frags (list (fun (elt sequence 0)))))
 	       (if (= i len)
-		   (apply concat (nreverse frags))
+		   (apply concat (reverse! frags))
 		 (loop (1+ i) (cons (fun (elt sequence i))
 				    (cons separator frags))))))))))

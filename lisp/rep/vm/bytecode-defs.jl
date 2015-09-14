@@ -75,12 +75,12 @@
       (cons . #x4b)
       (car . #x4c)
       (cdr . #x4d)
-      (rplaca . #x4e)
-      (rplacd . #x4f)
-      (nth . #x50)
-      (nthcdr . #x51)
-      (aset . #x52)
-      (aref . #x53)
+      (set-car! . #x4e)
+      (set-cdr! . #x4f)
+      (list-ref . #x50)
+      (list-tail . #x51)
+      (array-set! . #x52)
+      (array-ref . #x53)
       (length . #x54)
       (bind . #x55)
       (add . #x56)			;adds the top two values
@@ -96,6 +96,7 @@
       (equal . #x60)
       (eq . #x61)
       (structure-ref . #x62)
+      (list-length . #x63)
       (gt . #x64)
       (ge . #x65)
       (lt . #x66)
@@ -179,6 +180,9 @@
 
       (apply . #xb0)
 
+      (array-length . #xb1)
+      (vector-length . #xb2)
+
       (exp . #xb3)
       (log . #xb4)
       (sin . #xb5)
@@ -196,7 +200,7 @@
       (pop-all . #xbf)
       (fluid-set . #xc0)
       (fluid-bind . #xc1)
-      (memql . #xc2)
+      (memv . #xc2)
       (num-eq . #xc3)
 
       (%define . #xc6)
@@ -212,6 +216,12 @@
       (keyword-arg . #xcd)
       (optional-arg* . #xce)
       (keyword-arg* . #xcf)
+
+      (vector-ref . #xd0)
+      (vector-set! . #xd1)
+      (string-length . #xd2)
+      (string-ref . #xd3)
+      (string-set! . #xd4)
 
       (last-before-jmps . #xf7)
 
@@ -246,7 +256,7 @@
      +1  nil nil nil nil nil nil nil
      0   -1  0   0   0   0   +1  0	;#x40
      -1  +1  +1  -1  0   0   -1  -1
-     -1  -1  -1  -1  0   -1  -1  0	;#x50
+     -1  -1  -2  -1  0   -1  -1  0	;#x50
      -1  -1  -1  -1  0   0   -1  -1
      -1  -1  -1  0   -1  -1  -1  -1	;#x60
      0   0   -1  0   0   0   0   0
@@ -258,11 +268,11 @@
      0   0   +1  +1  +1  +1  +1  +1
      +1  +1  0   0   0   0   0   0	;#xa0
      0   0   0   0   0   0   0   0
-     -1  0   0   0   0   0   0   0	;#xb0
+     0  0   0   0   0   0   0   0	;#xb0
      0   -1  0   -1  -1  0   0   nil
      -1  -2  -1  -1  0   0   -1  -2	;#xc0
      -1  +1  +1  +1  0   0   nil nil
-     nil nil nil nil nil nil nil nil	;#xd0
+     -1 -2 0 -1 -2 nil nil nil		;#xd0
      nil nil nil nil nil nil nil nil
      -1  nil nil nil nil nil nil nil	;#xe0
      -1  nil nil nil nil nil nil nil

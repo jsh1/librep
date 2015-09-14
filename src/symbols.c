@@ -181,7 +181,13 @@ Returns a new, uninterned, symbol with print-name NAME. It's value and
 function definition are both void and it has a nil property-list.
 ::end:: */
 {
-  rep_DECLARE1(name, rep_STRINGP);
+  /* Create an immutable copy of the name (if necessary). Prevents its
+     hash value changing after it's been interned. */
+
+  name = Fstring_to_immutable_string(name);
+  if (!name) {
+    return 0;
+  }
 
   return rep_make_tuple(rep_Symbol, 0, name);
 }
@@ -204,7 +210,10 @@ Returns a new (non-interned) symbol with a unique print name.
   sprintf(buf, "G%04d", counter);
 #endif
 
-  return Fmake_symbol(rep_string_copy(buf));
+  repv name = rep_string_copy(buf);
+  Fmake_string_immutable(name);		/* avoids another copy */
+
+  return Fmake_symbol(name);
 }
 
 DEFUN("symbol-name", Fsymbol_name, Ssymbol_name, (repv sym), rep_Subr1) /*
@@ -244,10 +253,11 @@ signalled if SYMBOL is itself a keyword.
   int name_len = rep_STRING_LEN(name);
 
   repv str = rep_allocate_string(name_len + 3);
-  rep_STR(str)[0] = '#';
-  rep_STR(str)[1] = ':';
-  memcpy(rep_STR(str) + 2, rep_STR(name), name_len);
-  rep_STR(str)[name_len+2] = 0;
+  rep_MUTABLE_STR(str)[0] = '#';
+  rep_MUTABLE_STR(str)[1] = ':';
+  memcpy(rep_MUTABLE_STR(str) + 2, rep_STR(name), name_len);
+  rep_MUTABLE_STR(str)[name_len+2] = 0;
+  Fmake_string_immutable(str);
 
   repv key = Fintern(str, rep_keyword_obarray);
   rep_SYM(key)->car |= rep_SF_KEYWORD;
@@ -268,8 +278,9 @@ DEFUN("make-obarray", Fmake_obarray, Smake_obarray, (repv size), rep_Subr1) /*
 ::doc:rep.lang.symbols#make-obarray::
 make-obarray SIZE
 
-Creates a new structure for storing symbols in. This is basically a vector
-with a few slight differences (all elements initialised to a special value).
+Creates a new structure for storing symbols in. This is basically a
+vector with a few slight differences (all elements initialised to a
+special value).
 ::end:: */
 {
   rep_DECLARE1(size, rep_INTP);
@@ -292,7 +303,7 @@ the default `rep_obarray' if nil), or nil if no such symbol exists.
     ob = rep_obarray;
   }
 
-  uintptr_t vsize = rep_VECT_LEN(ob);
+  uintptr_t vsize = rep_VECTOR_LEN(ob);
   if (vsize == 0) {
     return rep_signal_arg_error(ob, 2);
   }
@@ -313,12 +324,13 @@ the default `rep_obarray' if nil), or nil if no such symbol exists.
 
 DEFSTRING(already_interned, "Symbol is already interned");
 
-DEFUN("intern-symbol", Fintern_symbol, Sintern_symbol, (repv sym, repv ob), rep_Subr2) /*
+DEFUN("intern-symbol", Fintern_symbol,
+      Sintern_symbol, (repv sym, repv ob), rep_Subr2) /*
 ::doc:rep.lang.symbols#intern-symbol::
 intern-symbol SYMBOL [OBARRAY]
 
-Stores SYMBOL in OBARRAY (or the default). If SYMBOL has already been interned
-somewhere an error is signalled.
+Stores SYMBOL in OBARRAY (or the default). If SYMBOL has already been
+interned somewhere an error is signalled.
 ::end:: */
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
@@ -332,7 +344,7 @@ somewhere an error is signalled.
     ob = rep_obarray;
   }
 
-  uintptr_t vsize = rep_VECT_LEN(ob);
+  uintptr_t vsize = rep_VECTOR_LEN(ob);
   if (vsize == 0) {
     return rep_signal_arg_error(ob, 2);
   }
@@ -349,9 +361,9 @@ DEFUN("intern", Fintern, Sintern, (repv name, repv ob), rep_Subr2) /*
 ::doc:rep.lang.symbols#intern::
 intern NAME [OBARRAY]
 
-If a symbol with print-name exists in OBARRAY (or the default) return it.
-Else use `(make-symbol NAME)' to create a new symbol, intern that into the
-OBARRAY, then return it.
+If a symbol with print-name exists in OBARRAY (or the default) return
+it. Else use `(make-symbol NAME)' to create a new symbol, intern that
+into the OBARRAY, then return it.
 ::end:: */
 {
   rep_DECLARE1(name, rep_STRINGP);
@@ -383,7 +395,7 @@ Removes SYMBOL from OBARRAY (or the default). Use this with caution.
     ob = rep_obarray;
   }
 
-  uintptr_t vsize = rep_VECT_LEN(ob);
+  uintptr_t vsize = rep_VECTOR_LEN(ob);
   if (vsize == 0) {
     return rep_signal_arg_error(ob, 2);
   }
@@ -411,10 +423,10 @@ DEFUN("apropos", Fapropos, Sapropos,
 ::doc:rep.lang.symbols#apropos::
 apropos REGEXP [PREDICATE] [OBARRAY]
 
-Returns a list of symbols from OBARRAY (or the default) whose print-name
-matches the regular-expression REGEXP. If PREDICATE is given and non-nil,
-each symbol which matches is applied to the function PREDICATE, if the value
-is non-nil it is considered a match.
+Returns a list of symbols from OBARRAY (or the default) whose
+print-name matches the regular-expression REGEXP. If PREDICATE is given
+and non-nil, each symbol which matches is applied to the function
+PREDICATE, if the value is non-nil it is considered a match.
 ::end:: */
 {
   rep_DECLARE1(re, rep_STRINGP);
@@ -429,7 +441,7 @@ is non-nil it is considered a match.
   }
 
   repv ret = rep_nil;
-  int len = rep_VECT_LEN(ob);
+  int len = rep_VECTOR_LEN(ob);
 
   rep_GC_root gc_ret, gc_ob, gc_pred;
   rep_PUSHGC(gc_ret, ret);
@@ -464,8 +476,8 @@ DEFUN_INT("trace", Ftrace, Strace, (repv sym),
 ::doc:rep.lang.debug#trace::
 trace SYMBOL
 
-Flag that whenever SYMBOL is evaluated (as a variable or a function) the
-debugger is entered.
+Flag that whenever SYMBOL is evaluated (as a variable or a function)
+the debugger is entered.
 ::end:: */
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
@@ -474,7 +486,8 @@ debugger is entered.
   return(sym);
 }
 
-DEFUN_INT("untrace", Funtrace, Suntrace, (repv sym), rep_Subr1, "aFunction to untrace") /*
+DEFUN_INT("untrace", Funtrace, Suntrace,
+	  (repv sym), rep_Subr1, "aFunction to untrace") /*
 ::doc:rep.lang.debug#untrace::
 untrace SYMBOL
 

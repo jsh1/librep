@@ -128,7 +128,7 @@ gdbm-fetch DBM KEY
   rep_DECLARE2(key, rep_STRINGP);
 
   datum dkey;
-  dkey.dptr = rep_STR(key);
+  dkey.dptr = (char *)rep_STR(key);
   dkey.dsize = rep_STRING_LEN(key);
 
   datum dvalue = gdbm_fetch(rep_DBM(dbm)->dbm, dkey);
@@ -155,11 +155,11 @@ gdbm-store DBM KEY VALUE [FLAGS]
   rep_DECLARE3(val, rep_STRINGP);
 
   datum dkey;
-  dkey.dptr = rep_STR(key);
+  dkey.dptr = (char *)rep_STR(key);
   dkey.dsize = rep_STRING_LEN(key);
 
   datum dvalue;
-  dvalue.dptr = rep_STR(val);
+  dvalue.dptr = (char *)rep_STR(val);
   dvalue.dsize = rep_STRING_LEN(val);
 
   int dflags = flags == Qinsert ? GDBM_INSERT : GDBM_REPLACE;
@@ -177,7 +177,7 @@ gdbm-delete DBM KEY
   rep_DECLARE2(key, rep_STRINGP);
 
   datum dkey;
-  dkey.dptr = rep_STR(key);
+  dkey.dptr = (char *)rep_STR(key);
   dkey.dsize = rep_STRING_LEN(key);
 
   return gdbm_delete(rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : rep_nil;

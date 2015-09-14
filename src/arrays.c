@@ -30,47 +30,25 @@ Returns t when ARG is an array.
   return rep_VECTORP(arg) || rep_STRINGP(arg) || rep_BYTECODEP(arg) ? Qt : rep_nil;
 }
 
-DEFUN("aset", Faset, Saset, (repv array, repv index, repv new), rep_Subr3) /*
-::doc:rep.data#aset::
-aset ARRAY INDEX NEW-VALUE
+DEFUN("array-length", Farray_length, Sarray_length, (repv array), rep_Subr1) /*
+::doc:rep.data#array-length::
+array-length ARRAY
 
-Sets element number INDEX (a positive integer) of ARRAY (can be a vector
-or a string) to NEW-VALUE, returning NEW-VALUE. Note that strings
-can only contain characters (ie, integers).
+Returns the number of elements in ARRAY (a vector or string).
 ::end:: */
 {
-  rep_DECLARE2(index, rep_NON_NEG_INT_P);
-
   if (rep_STRINGP(array)) {
-    if (!rep_STRING_WRITABLE_P(array)) {
-      return Fsignal(Qsetting_constant, rep_LIST_1(array));
-    }
-    if (rep_INT(index) < rep_STRING_LEN(array)) {
-      rep_DECLARE3(new, rep_INTP);
-      ((unsigned char *)rep_STR(array))[rep_INT(index)] = rep_INT(new);
-      rep_string_modified(array);
-      return new;
-    } else {
-      return rep_signal_arg_error(index, 2);
-    }
+    return rep_MAKE_INT(rep_STRING_LEN(array));
   } else if (rep_VECTORP(array) || rep_BYTECODEP(array)) {
-    if (!rep_VECTOR_WRITABLE_P(array)) {
-      return Fsignal(Qsetting_constant, rep_LIST_1(array));
-    }
-    if (rep_INT(index) < rep_VECT_LEN(array)) {
-      rep_VECTI(array, rep_INT(index)) = new;
-      return new;
-    } else {
-      return rep_signal_arg_error(index, 2);
-    }
+    return rep_MAKE_INT(rep_VECTOR_LEN(array));
   } else {
     return rep_signal_arg_error(array, 1);
   }
 }
 
-DEFUN("aref", Faref, Saref, (repv array, repv index), rep_Subr2) /*
-::doc:rep.data#aref::
-aref ARRAY INDEX
+DEFUN("array-ref", Faref, Saref, (repv array, repv index), rep_Subr2) /*
+::doc:rep.data#array-ref::
+array-ref ARRAY INDEX
 
 Returns the INDEXth (a non-negative integer) element of ARRAY, which
 can be a vector or a string. INDEX starts at zero.
@@ -85,11 +63,29 @@ can be a vector or a string. INDEX starts at zero.
       return rep_signal_arg_error (index, 2);
     }
   } else if (rep_VECTORP(array) || rep_BYTECODEP(array)) {
-    if (rep_INT(index) < rep_VECT_LEN(array)) {
+    if (rep_INT(index) < rep_VECTOR_LEN(array)) {
       return rep_VECTI(array, rep_INT(index));
     } else {
       return rep_signal_arg_error(index, 2);
     }
+  } else {
+    return rep_signal_arg_error(array, 1);
+  }
+}
+
+DEFUN("array-set!", Faset, Saset,
+      (repv array, repv index, repv new), rep_Subr3) /*
+::doc:rep.data#array-set!::
+array-set! ARRAY INDEX VALUE
+
+Sets element number INDEX of ARRAY (a vector or string) to VALUE. Note
+that strings can only contain characters (i.e. non-negative fixnums).
+::end:: */
+{
+  if (rep_STRINGP(array)) {
+    return Fstring_set(array, index, new);
+  } else if (rep_VECTORP(array) || rep_BYTECODEP(array)) {
+    return Fvector_set(array, index, new);
   } else {
     return rep_signal_arg_error(array, 1);
   }
@@ -100,6 +96,7 @@ rep_arrays_init(void)
 {
   repv tem = rep_push_structure("rep.data");
   rep_ADD_SUBR(Sarrayp);
+  rep_ADD_SUBR(Sarray_length);
   rep_ADD_SUBR(Saset);
   rep_ADD_SUBR(Saref);
   rep_pop_structure(tem);

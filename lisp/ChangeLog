@@ -1,3 +1,8 @@
+2015-09-13  John Harper  <jsh@unfactored.org>
+
+	* functions renamed, added and removed. See src/ChangeLog for
+	details. Updated all code to match.
+
 2015-09-12  John Harper  <jsh@unfactored.org>
 
 	* rep/util/repl.jl: new repl command ",expand-once FORM" --

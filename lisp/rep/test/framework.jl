@@ -80,7 +80,7 @@
   (define (set-self-test-action type action)
     (let ((cell (assq type action-alist)))
       (if cell
-	  (rplacd cell action)
+	  (set-cdr! cell action)
 	(setq action-alist (cons (cons type action) action-alist)))))
 
   (define (disable-self-tests type)
@@ -91,7 +91,7 @@
 ;;; test management
 
   (define (ref-1 x) (symbol-table-ref self-tests x))
-  (define (set-1 x y) (symbol-table-set self-tests x y))
+  (define (set-1 x y) (symbol-table-set! self-tests x y))
   (define (walk f) (symbol-table-walk f self-tests))
 
   ;; initialize autoloading

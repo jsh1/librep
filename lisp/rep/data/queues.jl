@@ -56,11 +56,11 @@
       (if (null? (cdr cell))
 	  ;; empty queue
 	  (progn
-	    (rplacd cell new)
-	    (rplaca cell new))
+	    (set-cdr! cell new)
+	    (set-car! cell new))
 	;; tail pointer is set
-	(rplacd (car cell) new)
-	(rplaca cell new))))
+	(set-cdr! (car cell) new)
+	(set-car! cell new))))
 
   (define (dequeue q)
     (let ((cell (datum-ref q type-id)))
@@ -69,10 +69,10 @@
 	(prog1 (car (cdr cell))
 	  (if (not (eq? (car cell) (cdr cell)))
 	      ;; at least one element left
-	      (rplacd cell (cdr (cdr cell)))
+	      (set-cdr! cell (cdr (cdr cell)))
 	    ;; queue needs to be empty now
-	    (rplacd cell '())
-	    (rplaca cell '()))))))
+	    (set-cdr! cell '())
+	    (set-car! cell '()))))))
 
   (define (queue-empty? q)
     (null? (cdr (datum-ref q type-id))))
@@ -84,7 +84,7 @@
     (cdr (datum-ref q type-id)))
 
   (define (queue-length q)
-    (length (queue->list q)))
+    (list-length (queue->list q)))
 
   (define (delete-from-queue q x)
     (let ((cell (datum-ref q type-id)))
@@ -92,11 +92,11 @@
 	(if (null? (cdr ptr))
 	    ;; avoid pointing tail to itself..
 	    (if (null? (cdr cell))
-		(rplaca cell '())
-	      (rplaca cell ptr))
+		(set-car! cell '())
+	      (set-car! cell ptr))
 	  (if (eq? (cadr ptr) x)
 	      (progn
-		(rplacd ptr (cddr ptr))
+		(set-cdr! ptr (cddr ptr))
 		(loop ptr))
 	    (loop (cdr ptr)))))))
 

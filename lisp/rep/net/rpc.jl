@@ -153,21 +153,21 @@ CLOSABLE is true, then the socket could be closed and reopened simply
 by knowing its address and port number."
     (let ((server (socket-peer-address socket))
 	  (port (socket-peer-port socket)))
-      (table-set socket-cache (cons server port) socket)
-      (table-set socket-data-table socket (make-socket-data closable))))
+      (table-set! socket-cache (cons server port) socket)
+      (table-set! socket-data-table socket (make-socket-data closable))))
 
   (define (deregister-rpc-server socket)
     "Remove SOCKET from the table of rpc connections."
     (let ((server (socket-peer-address socket))
 	  (port (socket-peer-port socket)))
       (when (eq? (table-ref socket-cache (cons server port)) socket)
-	(table-unset socket-cache (cons server port)))
+	(table-delete! socket-cache (cons server port)))
       (let ((data (socket-data socket)))
 	(if (not data)
 	    (close-socket socket)
 	  (when (socket-closable? data)
 	    (close-socket socket))
-	  (table-unset socket-data-table socket)
+	  (table-delete! socket-data-table socket)
 	  ;; fail-out any pending calls on this socket
 	  (for-each (lambda (id)
 		      (dispatch-pending-call
@@ -190,16 +190,16 @@ by knowing its address and port number."
 	(setq counter (1+ counter)))))
 
   (define (record-pending-call socket id callback)
-    (table-set pending-calls id callback)
+    (table-set! pending-calls id callback)
     (let ((data (socket-data socket)))
       (socket-pending-calls-set! data (cons id (socket-pending-calls data)))))
 
   (define (dispatch-pending-call socket id succeeded value)
     (let ((data (socket-data socket)))
-      (socket-pending-calls-set! data (delq id (socket-pending-calls data))))
+      (socket-pending-calls-set! data (delq! id (socket-pending-calls data))))
     (let ((callback (table-ref pending-calls id)))
       (when callback
-	(table-unset pending-calls id)
+	(table-delete! pending-calls id)
 	(callback succeeded value))))
 
   (define (rpc-socket-listener master-socket)
@@ -255,16 +255,16 @@ server sockets."
 	    (case (car form)
 	      ((result)
 	       ;; (result CALL-ID RETURNED? VALUE-OR-EXCEPTION)
-	       (let ((id (nth 1 form))
-		     (succeeded (nth 2 form))
-		     (value (nth 3 form)))
+	       (let ((id (list-ref form 1))
+		     (succeeded (list-ref form 2))
+		     (value (list-ref form 3)))
 		 (dispatch-pending-call socket id succeeded value)))
 
 	      ((call)
 	       ;; (call CALL-ID SERVANT-ID ARGS...)
-	       (let ((id (nth 1 form))
-		     (servant-id (nth 2 form))
-		     (args (nthcdr 3 form)))
+	       (let ((id (list-ref form 1))
+		     (servant-id (list-ref form 2))
+		     (args (list-tail form 3)))
 		 (let ((result (call-with-exception-handler
 				(lambda ()
 				  (let ((impl (servant-ref servant-id)))
@@ -341,12 +341,12 @@ server sockets."
     "Register the function IMPL as an rpc servant, and return the created
 servant-id."
     (let ((id (make-servant-id)))
-      (table-set servant-table id impl)
+      (table-set! servant-table id impl)
       id))
 
   (define (destroy-rpc-servant id)
     "Remove the servant with servant-id ID from the table of servants."
-    (table-unset servant-table id))
+    (table-delete! servant-table id))
 
   (define (call-with-rpc-servant impl callback)
     "Call the function CALLBACK with a single argument, the servant-id that
@@ -396,10 +396,10 @@ becomes invalid."
 	(if ref
 	    (or (weak-ref ref)
 		(let ((p (proxy)))
-		  (weak-ref-set ref p)
+		  (weak-ref-set! ref p)
 		  p))
 	  (let ((p (proxy)))
-	    (table-set proxy-table global-id (make-weak-ref p))
+	    (table-set! proxy-table global-id (make-weak-ref p))
 	    p)))))
 
   (define (async-rpc-call proxy #!key callback . args)

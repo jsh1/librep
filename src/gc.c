@@ -110,12 +110,10 @@ again:
   switch (rep_CELL8_TYPE(val)) {
   case rep_Vector:
   case rep_Bytecode:
-    if (rep_VECTOR_WRITABLE_P(val)) {
-      rep_GC_SET_CELL(val);
-      int len = rep_VECT_LEN(val);
-      for (int i = 0; i < len; i++) {
-	rep_MARKVAL(rep_VECTI(val, i));
-      }
+    rep_GC_SET_CELL(val);
+    int len = rep_VECTOR_LEN(val);
+    for (int i = 0; i < len; i++) {
+      rep_MARKVAL(rep_VECTI(val, i));
     }
     break;
 
@@ -129,7 +127,7 @@ again:
     break;
 
   case rep_String:
-    if (rep_STRING_WRITABLE_P(val)) {
+    if (!rep_CELL_STATIC_P(val)) {
       rep_GC_SET_CELL(val);
     }
     break;
@@ -139,15 +137,13 @@ again:
     break;
 
   case rep_Closure:
-    if (rep_CLOSURE_WRITABLE_P(val)) {
-      rep_GC_SET_CELL(val);
-      rep_MARKVAL(rep_CLOSURE(val)->name);
-      rep_MARKVAL(rep_CLOSURE(val)->env);
-      rep_MARKVAL(rep_CLOSURE(val)->structure);
-      val = rep_CLOSURE(val)->fun;
-      if (val && !rep_INTP(val) && !rep_GC_MARKEDP(val)) {
-	goto again;
-      }
+    rep_GC_SET_CELL(val);
+    rep_MARKVAL(rep_CLOSURE(val)->name);
+    rep_MARKVAL(rep_CLOSURE(val)->env);
+    rep_MARKVAL(rep_CLOSURE(val)->structure);
+    val = rep_CLOSURE(val)->fun;
+    if (val && !rep_INTP(val) && !rep_GC_MARKEDP(val)) {
+      goto again;
     }
     break;
 

@@ -64,7 +64,7 @@ extern void rep_files_kill(void);
 
 /* from find.c */
 extern struct rep_saved_regexp_data *rep_saved_matches;
-extern void rep_string_modified (repv string);
+extern void rep_invalidate_string(repv string);
 extern void rep_mark_regexp_data(void);
 extern void rep_find_init(void);
 extern void rep_find_kill(void);
@@ -151,7 +151,7 @@ extern int strncasecmp (const char *s1, const char *s2, size_t n);
 extern void rep_misc_init(void);
 
 /* from numbers.c */
-extern repv rep_parse_number (char *buf, size_t len, int radix,
+extern repv rep_parse_number (const char *buf, size_t len, int radix,
 			      int sign, unsigned int type);
 extern repv Fplus(int, repv *);
 extern repv Fminus(int, repv *);
@@ -328,7 +328,7 @@ extern void rep_signals_init(void);
 extern void rep_input_init(void);
 
 /* from unix_processes.c */
-extern repv rep_system(char *command);
+extern repv rep_system(const char *command);
 extern void rep_processes_init(void);
 extern void rep_processes_kill(void);
 

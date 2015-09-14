@@ -78,7 +78,7 @@ DEFSTRING(noarg, "No argument for option");
    the option isn't given return false, else return true. */
 
 bool
-rep_get_option(char *option, repv *argp)
+rep_get_option(const char *option, repv *argp)
 {
   rep_TEST_INT_LOOP_COUNTER;
 

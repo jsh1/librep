@@ -49,9 +49,9 @@
     (let loop ((p1 (domain-parts d1))
 	       (p2 (domain-parts d2))
 	       (ret 0))
-      (cond ((> (length p1) (length p2))
+      (cond ((> (list-length p1) (list-length p2))
 	     (loop (cdr p1) p2 (1+ ret)))
-	    ((< (length p1) (length p2))
+	    ((< (list-length p1) (list-length p2))
 	     (loop p1 (cdr p2) (1- ret)))
 	    ((and p1 p2)
 	     (if (string=? (car p1) (car p2))
@@ -81,7 +81,7 @@
 
   (define (map-domains-downwards fun domain)
     "Call (FUN NAME) for each sub-domain of DOMAIN (ending with DOMAIN)."
-    (let ((parts (nreverse (domain-parts domain))))
+    (let ((parts (reverse! (domain-parts domain))))
       (let loop ((current (car parts))
 		 (todo (cdr parts)))
 	(fun current)

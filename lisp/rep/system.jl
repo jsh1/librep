@@ -37,12 +37,12 @@ is true in which case it is added at the end."
     (make-variable-special hook-symbol)
     (set hook-symbol nil))
   (if at-end
-      (set hook-symbol (nconc (symbol-value hook-symbol) (cons new-func nil)))
+      (set hook-symbol (append! (symbol-value hook-symbol) (cons new-func nil)))
     (set hook-symbol (cons new-func (symbol-value hook-symbol)))))
 
 (defun remove-hook (hook-symbol old-func)
   "Remove FUNCTION-NAME from the hook HOOK-SYMBOL."
-  (set hook-symbol (delete old-func (symbol-value hook-symbol))))
+  (set hook-symbol (delete! old-func (symbol-value hook-symbol))))
 
 (defun in-hook-p (hook-symbol fun)
   "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."

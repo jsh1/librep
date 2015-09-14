@@ -48,7 +48,7 @@
     (let ((cell (assoc string (fluid found-strings))))
       (if cell
 	  (unless (member (fluid current-file) (cdr cell))
-	    (rplacd cell (cons (fluid current-file) (cdr cell))))
+	    (set-cdr! cell (cons (fluid current-file) (cdr cell))))
 	(fluid-set found-strings (cons (list string (fluid current-file))
 				       (fluid found-strings))))))
 
@@ -58,8 +58,8 @@
 
   (define (scan form)
 
-    (if (and (pair? form) (eq? (car form) '_) (string? (nth 1 form)))
-	(register (nth 1 form))
+    (if (and (pair? form) (eq? (car form) '_) (string? (list-ref form 1)))
+	(register (list-ref form 1))
 
       (when (and (car form) (macro? (car form)))
 	(setq form (macroexpand form)))
@@ -93,19 +93,19 @@
 
 	  ((defun defmacro defsubst defvar defconst)
 	   (when (includedp (car form))
-	     (let ((doc (nth 3 form)))
+	     (let ((doc (list-ref form 3)))
 	       (when (string? doc)
 		 (register doc))))
 	   (if (memq (car form) '(defun defmacro defsubst))
-	       (scan-list (nthcdr 3 form))
-	     (scan-list (nthcdr 2 form))))
+	       (scan-list (list-tail form 3))
+	     (scan-list (list-tail form 2))))
 
 	  ((define-structure)
-	   (let-fluids ((current-module (nth 1 form)))
-	     (scan-list (nthcdr 4 form))))
+	   (let-fluids ((current-module (list-ref form 1)))
+	     (scan-list (list-tail form 4))))
 
 	  ((structure)
-	   (scan-list (nthcdr 3 form)))
+	   (scan-list (list-tail form 3)))
 
 	  (t (if (fluid helper)
 		 ((fluid helper) form)
@@ -140,13 +140,13 @@
 		(point 0))
 	   (if c-mode
 	       (format *standard-output* "  _(%s);\n\n" out)
-	     (while (and (< point (length out))
+	     (while (and (< point (string-length out))
 			 (string-match "\\\\n" out point))
 	       (setq out (concat (substring out 0 (match-start)) "\\n\"\n\""
 				 (substring out (match-end))))
 	       (setq point (+ (match-end) 3)))
 	     (format *standard-output* "msgid %s\nmsgstr \"\"\n\n" out)))))
-     (nreverse (fluid found-strings))))
+     (reverse! (fluid found-strings))))
 
   (define (output-c-file)
     (write *standard-output* "\

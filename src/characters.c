@@ -150,11 +150,11 @@ rep_characters_init(void)
   repv down = rep_allocate_string(257);
 
   for(int i = 0; i < 256; i++) {
-    rep_STR(up)[i] = rep_toupper(i);
-    rep_STR(down)[i] = rep_tolower(i);
+    rep_MUTABLE_STR(up)[i] = rep_toupper(i);
+    rep_MUTABLE_STR(down)[i] = rep_tolower(i);
   }
-  rep_STR(up)[256] = 0;
-  rep_STR(down)[256] = 0;
+  rep_MUTABLE_STR(up)[256] = 0;
+  rep_MUTABLE_STR(down)[256] = 0;
 
   rep_INTERN(upcase_table);
   rep_INTERN(downcase_table);
@@ -164,10 +164,10 @@ rep_characters_init(void)
   repv flatten = rep_allocate_string(12);
 
   for(int i = 0; i < 10; i++) {
-    rep_STR(flatten)[i] = i;
+    rep_MUTABLE_STR(flatten)[i] = i;
   }
-  rep_STR(flatten)[10] = ' ';
-  rep_STR(flatten)[11] = 0;
+  rep_MUTABLE_STR(flatten)[10] = ' ';
+  rep_MUTABLE_STR(flatten)[11] = 0;
 
   rep_INTERN(flatten_table);
   Fset(Qflatten_table, flatten);

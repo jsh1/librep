@@ -33,9 +33,9 @@
   (define unquote-plus-map (let ((map (make-string (1+ #\+)))
 				 (i 0))
 			     (while (< i #\+)
-			       (aset map i i)
+			       (string-set! map i i)
 			       (setq i (1+ i)))
-			     (aset map #\+ #\space)
+			     (string-set! map #\+ #\space)
 			     map))
 
   (defun cgi-get-params (#!optional query-string)
@@ -55,7 +55,7 @@
 	(when (string=? value "")
 	  (setq value nil))
 	(setq params (cons (cons name value) params)))
-      (nreverse params)))
+      (reverse! params)))
 
   (defsubst hexdigit (char)
     (if (and (>= char #\0) (<= char #\9))
@@ -66,16 +66,16 @@
     (let
 	((frags nil)
 	 (point 0))
-      (setq string (translate-string string unquote-plus-map))
+      (setq string (translate-string! string unquote-plus-map))
       (while (string-match "%.." string point)
 	(setq frags (cons (substring string point (match-start)) frags))
 	(setq point (match-end))
-	(setq frags (cons (+ (* (hexdigit (aref string (- point 2))) 16)
-			     (hexdigit (aref string (1- point)))) frags)))
+	(setq frags (cons (+ (* (hexdigit (string-ref string (- point 2))) 16)
+			     (hexdigit (string-ref string (1- point)))) frags)))
       (if (zero? point)
 	  string
 	(setq frags (cons (substring string point) frags))
-	(apply concat (nreverse frags)))))
+	(apply concat (reverse! frags)))))
 
 
 ;; Tests

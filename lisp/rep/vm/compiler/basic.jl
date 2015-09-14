@@ -182,7 +182,7 @@ their position in that file.")
 
 	       (t
 		;; Expand macros
-		(test-function-call (car form) (length (cdr form)))
+		(test-function-call (car form) (list-length (cdr form)))
 		(if (not (eq? (setq fun (compiler-macroexpand
 					form macroexpand-pred)) form))
 		    ;; The macro did something, so start again
@@ -258,7 +258,7 @@ their position in that file.")
       (thunk)))
 
   (define (get-assembly)
-    (let ((asm (make-assembly (nreverse (fluid intermediate-code))
+    (let ((asm (make-assembly (reverse! (fluid intermediate-code))
 			      (fluid max-stack) (fluid max-b-stack) 0)))
       asm))
 
@@ -331,8 +331,8 @@ their position in that file.")
 
   ;; From LST, `(lambda (ARGS) BODY ...)' returns an assembly code object
   (defun compile-lambda-to-asm (lst #!optional name)
-    (let ((args (nth 1 lst))
-	  (body (nthcdr 2 lst)))
+    (let ((args (list-ref lst 1))
+	  (body (list-tail lst 2)))
       (call-with-initial-env
        (lambda ()
 	 (call-with-lambda-record name args +1
@@ -388,8 +388,8 @@ their position in that file.")
   ;; From LST, `(lambda (ARGS) [DOC-STRING] BODY ...)' returns a byte-code
   ;; vector
   (defun compile-lambda (lst #!optional name)
-    (let ((args (nth 1 lst))
-	  (body (nthcdr 2 lst))
+    (let ((args (list-ref lst 1))
+	  (body (list-tail lst 2))
 	  doc interactive)
       (when (string? (car body))
 	(setq doc (car body))
@@ -411,8 +411,8 @@ their position in that file.")
 	(assemble-assembly-to-subr asm doc interactive))))
 
   (defun compile-lambda-constant (lst #!optional name)
-    (let ((args (nth 1 lst))
-	  (body (nthcdr 2 lst))
+    (let ((args (list-ref lst 1))
+	  (body (list-tail lst 2))
 	  doc interactive)
       (when (string? (car body))
 	(setq doc (car body))

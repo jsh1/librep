@@ -64,7 +64,7 @@
       (define (get-label name)
 	(or (table-ref labels name)
 	    (let ((l (make-label name)))
-	      (table-set labels name l)
+	      (table-set! labels name l)
 	      l)))
 
       (define (get-const-id value)
@@ -205,9 +205,9 @@
 	    (const-vec (make-vector next-const-id)))
 	(do ((rest code (cdr rest)))
 	    ((null? rest))
-	  (aset byte-vec (cdar rest) (caar rest)))
+	  (string-set! byte-vec (cdar rest) (caar rest)))
 	(do ((rest constants (cdr rest)))
 	    ((null? rest))
-	  (aset const-vec (cdar rest) (caar rest)))
+	  (vector-set! const-vec (cdar rest) (caar rest)))
 
 	(cons byte-vec const-vec)))))

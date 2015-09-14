@@ -197,9 +197,9 @@
       (setq entry (tarfh-parse-list string point))
       (setq point next)
       (when entry
-	(aset cache tarfh-cache-entries
-	      (cons entry (aref cache tarfh-cache-entries)))))
-    (when (< point (length string))
+	(vector-set! cache tarfh-cache-entries
+	      (cons entry (vector-ref cache tarfh-cache-entries)))))
+    (when (< point (string-length string))
       (setq tarfh-pending-output (substring string point)))))
 
 (defun tarfh-parse-list (string point)
@@ -218,52 +218,52 @@
 	(setq name (substring name 0 (match-start))))
       (setq file-name (expand-file-name name ""))
       (vector name file-name size modtime
-	      (cdr (assq (aref mode-string 0) tarfh-list-type-alist))
+	      (cdr (assq (string-ref mode-string 0) tarfh-list-type-alist))
 	      nil mode-string user group symlink))))
 
 (defun tarfh-file-get-modtime (file-struct)
-  (when (string? (aref file-struct tarfh-file-modtime))
+  (when (string? (vector-ref file-struct tarfh-file-modtime))
     (require 'date)
     (let
-	((date (parse-date (aref file-struct tarfh-file-modtime))))
+	((date (parse-date (vector-ref file-struct tarfh-file-modtime))))
       (when date
-	(aset file-struct tarfh-file-modtime
-	      (aref date date-vec-epoch-time)))))
-  (aref file-struct tarfh-file-modtime))
+	(vector-set! file-struct tarfh-file-modtime
+	      (vector-ref date date-vec-epoch-time)))))
+  (vector-ref file-struct tarfh-file-modtime))
 
 (defun tarfh-file-get-modes (file-struct)
-  (unless (aref file-struct tarfh-file-modes)
+  (unless (vector-ref file-struct tarfh-file-modes)
     (let*
-	((string (aref file-struct tarfh-file-modes-string))
+	((string (vector-ref file-struct tarfh-file-modes-string))
 	 (tuple-function
 	  (lambda (point tuple)
-	    (+ (ash (+ (if (/= (aref string point) #\-) 4 0)
-		       (if (/= (aref string (1+ point)) #\-) 2 0)
-		       (if (char-lower-case? (aref string (+ point 2))) 1 0))
+	    (+ (ash (+ (if (/= (string-ref string point) #\-) 4 0)
+		       (if (/= (string-ref string (1+ point)) #\-) 2 0)
+		       (if (char-lower-case? (string-ref string (+ point 2))) 1 0))
 		    (* tuple 3))
-	       (if (memq (aref string (+ point 2)) '(#\s #\S #\t #\T))
+	       (if (memq (string-ref string (+ point 2)) '(#\s #\S #\t #\T))
 		   (ash #o1000 tuple)
 		 0)))))
-      (aset file-struct tarfh-file-modes
-	    (+ (tuple-function 1 2)
-	       (tuple-function 4 1)
-	       (tuple-function 7 0)))))
-  (aref file-struct tarfh-file-modes))
+      (vector-set! file-struct tarfh-file-modes
+		   (+ (tuple-function 1 2)
+		      (tuple-function 4 1)
+		      (tuple-function 7 0)))))
+  (vector-ref file-struct tarfh-file-modes))
 
 (defun tarfh-directory-files (tarfile dir)
   (let
       ((entry (tarfh-lookup-file tarfile dir))
        re files tem)
     (when entry
-      (setq dir (aref entry tarfh-file-name)))
+      (setq dir (vector-ref entry tarfh-file-name)))
     (setq dir (file-name-as-directory dir))
     (setq re (concat (quote-regexp dir) "([^/]+)"))
     (for-each (lambda (e)
-		(when (string-looking-at re (aref e tarfh-file-name))
+		(when (string-looking-at re (vector-ref e tarfh-file-name))
 		  (setq tem (expand-last-match "\\1"))
 		  (unless (member tem files)
 		    (setq files (cons tem files)))))
-	      (aref (car tarfh-dir-cache) tarfh-cache-entries))
+	      (vector-ref (car tarfh-dir-cache) tarfh-cache-entries))
     files))
 
 (defun tarfh-directory-exists-p (tarfile name)
@@ -273,20 +273,20 @@
       (setq name (expand-file-name (file-name-as-directory name) ""))
       (when cache
 	(for-each (lambda (entry)
-		    (when (string-prefix? (aref entry tarfh-file-name) name)
+		    (when (string-prefix? (vector-ref entry tarfh-file-name) name)
 		      (throw 'out t)))
-		  (aref cache tarfh-cache-entries))
+		  (vector-ref cache tarfh-cache-entries))
 	nil))))
 
 (defun tarfh-file-owner-p (file)
   ;; XXX maybe just return t always?
-  (string=? (user-login-name) (aref file tarfh-file-user)))
+  (string=? (user-login-name) (vector-ref file tarfh-file-user)))
 
 (defun tarfh-tarfile-cached-p (tarfile)
   (setq tarfile (canonical-file-name tarfile))
   (catch 'exit
     (for-each (lambda (dir-entry)
-		(when (string=? tarfile (aref dir-entry tarfh-cache-tarfile))
+		(when (string=? tarfile (vector-ref dir-entry tarfh-cache-tarfile))
 		  (throw 'exit dir-entry)))
 	      tarfh-dir-cache)))
 
@@ -296,42 +296,42 @@
     (setq tarfile (canonical-file-name tarfile))
     (setq filename (expand-file-name filename ""))
     (setq entry (tarfh-tarfile-cached-p tarfile))
-    (if (not (and entry (equal? (aref entry tarfh-cache-modtime)
+    (if (not (and entry (equal? (vector-ref entry tarfh-cache-modtime)
 			       (file-modtime tarfile))))
 	(progn
 	  ;; Cache TARFILE
 	  (when entry
-	    (setq tarfh-dir-cache (delq entry tarfh-dir-cache))
+	    (setq tarfh-dir-cache (delq! entry tarfh-dir-cache))
 	    (setq entry nil))
-	  (when (>= (length tarfh-dir-cache) tarfh-max-cached-dirs)
+	  (when (>= (list-length tarfh-dir-cache) tarfh-max-cached-dirs)
 	    ;; delete the least-recently-used entry
-	    (setcdr (nthcdr (1- (length tarfh-dir-cache))
-			    tarfh-dir-cache) nil))
+	    (set-cdr! (list-tail tarfh-dir-cache
+			       (1- (list-length tarfh-dir-cache))) nil))
 	  ;; add the new (empty) entry for the directory to be read.
 	  (setq entry (vector tarfile (file-modtime tarfile) nil))
 	  (setq tarfh-dir-cache (cons entry tarfh-dir-cache))
 	  (tarfh-call-tar nil (lambda (o)
 				(tarfh-output-function o entry))
 			  "--list" tarfile "--verbose")
-	  (aset entry tarfh-cache-entries
-		(nreverse (aref entry tarfh-cache-entries))))
+	  (vector-set! entry tarfh-cache-entries
+		(reverse! (vector-ref entry tarfh-cache-entries))))
       ;; entry is still valid, move it to the front of the list
-      (setq tarfh-dir-cache (cons entry (delq entry tarfh-dir-cache))))
+      (setq tarfh-dir-cache (cons entry (delq! entry tarfh-dir-cache))))
     ;; ENTRY now has the valid dircache directory structure
     (catch 'return
       (for-each (lambda (f)
-		  (when (string=? (aref f tarfh-file-name) filename)
+		  (when (string=? (vector-ref f tarfh-file-name) filename)
 		    (throw 'return f)))
-		(aref entry tarfh-cache-entries)))))
+		(vector-ref entry tarfh-cache-entries)))))
 
 ;; similar to remote-ftp-get-file, but symbolic links are followed
 (defun tarfh-lookup-file (tarfile file)
   (let
       ((file-struct (tarfh-get-file tarfile file)))
     (while (and file-struct
-		(eq? (aref file-struct tarfh-file-type) 'symlink))
+		(eq? (vector-ref file-struct tarfh-file-type) 'symlink))
       (let
-	  ((link (aref file-struct tarfh-file-symlink)))
+	  ((link (vector-ref file-struct tarfh-file-symlink)))
 	(setq file (expand-file-name link (file-name-directory file)))
 	(setq file-struct (tarfh-get-file tarfile file))))
     file-struct))
@@ -341,7 +341,7 @@
   (let
       ((entry (tarfh-tarfile-cached-p tarfile)))
     (when entry
-      (setq tarfh-dir-cache (delq entry tarfh-dir-cache)))))
+      (setq tarfh-dir-cache (delq! entry tarfh-dir-cache)))))
 
 (defun tarfh-empty-cache ()
   "Discard all cached TAR directory entries."
@@ -436,10 +436,10 @@
 	;; Need to get the file to the local fs
 	(let
 	    ((local-name (if (eq? op 'copy-file-to-local-fs)
-			     (nth 1 args)
+			     (list-ref args 1)
 			   (make-temp-name))))
 	  (or file (signal 'file-error (list "Unknown file:" (car args))))
-	  (tarfh-copy-out tarfile (aref file tarfh-file-full-name) local-name)
+	  (tarfh-copy-out tarfile (vector-ref file tarfh-file-full-name) local-name)
 	  (unless (eq? op 'copy-file-to-local-fs)
 	    (unwind-protect
 		((symbol-value op) local-name)
@@ -447,13 +447,13 @@
 	  t))
        ((eq? op 'open-file)
 	(let
-	    ((type (nth 1 args))
+	    ((type (list-ref args 1))
 	     (local-file (make-temp-name))
 	     local-fh)
 	  (when (memq type '(read append))
 	    ;; Need to transfer the file initially
 	    (tarfh-copy-out
-	     tarfile (aref file tarfh-file-full-name) local-file))
+	     tarfile (vector-ref file tarfh-file-full-name) local-file))
 	  ;; Open the local file
 	  (setq local-fh (make-file-from-stream (car args)
 						(open-file local-file type)
@@ -464,19 +464,19 @@
        ((eq? op 'file-exists?)
 	(or file (tarfh-directory-exists-p tarfile rel-file)))
        ((eq? op 'file-regular?)
-	(and file (eq? (aref file tarfh-file-type) 'file)))
+	(and file (eq? (vector-ref file tarfh-file-type) 'file)))
        ((eq? op 'file-directory?)
 	(if file
-	    (eq? (aref file tarfh-file-type) 'directory)
+	    (eq? (vector-ref file tarfh-file-type) 'directory)
 	  (tarfh-directory-exists-p tarfile rel-file)))
        ((eq? op 'file-symlink?)
-	(and file (eq? (aref file tarfh-file-type) 'symlink)))
+	(and file (eq? (vector-ref file tarfh-file-type) 'symlink)))
        ((eq? op 'file-size)
-	(and file (aref file tarfh-file-size)))
+	(and file (vector-ref file tarfh-file-size)))
        ((eq? op 'file-modes)
 	(and file (tarfh-file-get-modes file)))
        ((eq? op 'file-modes-as-string)
-	(and file (aref file tarfh-file-modes-string)))
+	(and file (vector-ref file tarfh-file-modes-string)))
        ((eq? op 'file-nlinks)
 	1)
        ((eq? op 'file-modtime)
@@ -490,7 +490,7 @@
        ((eq? op 'file-writable?)
 	nil)
        ((eq? op 'read-symlink)
-	(and file (or (aref file tarfh-file-symlink)
+	(and file (or (vector-ref file tarfh-file-symlink)
 		      (signal 'file-error
 			      (list "File isn't a symlink:" (car args))))))
        (t

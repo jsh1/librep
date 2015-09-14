@@ -48,11 +48,11 @@
 
 ;;; stack frame accessors
 
-  (define (stack-frame-function x) (nth 0 x))
-  (define (stack-frame-args x) (nth 1 x))
-  (define (stack-frame-current-form x) (nth 2 x))
-  (define (stack-frame-environment x) (nth 3 x))
-  (define (stack-frame-structure x) (nth 4 x))
+  (define (stack-frame-function x) (list-ref x 0))
+  (define (stack-frame-args x) (list-ref x 1))
+  (define (stack-frame-current-form x) (list-ref x 2))
+  (define (stack-frame-environment x) (list-ref x 3))
+  (define (stack-frame-structure x) (list-ref x 4))
 
 ;;; the debugger repl
 

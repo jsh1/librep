@@ -45,7 +45,8 @@ DEFUN("weak-ref", Fweak_ref, Sweak_ref, (repv weak), rep_Subr1)
   return WEAK_REF(weak);
 }
     
-DEFUN("weak-ref-set", Fweak_ref_set, Sweak_ref_set, (repv weak, repv value), rep_Subr2)
+DEFUN("weak-ref-set!", Fweak_ref_set, Sweak_ref_set,
+      (repv weak, repv value), rep_Subr2)
 {
   rep_DECLARE1(weak, WEAKP);
 

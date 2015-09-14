@@ -250,32 +250,32 @@ is nil.
   return rep_CONSP(cons) ? rep_CDR(cons) : rep_nil;
 }
 
-DEFUN("rplaca", Frplaca, Srplaca, (repv cons, repv car), rep_Subr2) /*
-::doc:rep.data#rplaca::
-rplaca CONS-CELL NEW-CAR
+DEFUN("set-car!", Fset_car, Sset_car, (repv cons, repv car), rep_Subr2) /*
+::doc:rep.data#set-car!::
+set-car! PAIR VALUE
 
-Sets the value of the car slot in CONS-CELL to NEW-CAR.
-Returns the CONS-CELL.
+Sets the value of the car slot in PAIR to VALUE.
 ::end:: */
 {
   rep_DECLARE1(cons, rep_CONSP);
 
   rep_CAR(cons) = car;
-  return cons;
+
+  return rep_undefined_value;
 }
 
-DEFUN("rplacd", Frplacd, Srplacd, (repv cons, repv cdr), rep_Subr2) /*
-::doc:rep.data#rplacd::
-rplacd CONS-CELL NEW-CDR
+DEFUN("set-cdr!", Fset_cdr, Sset_cdr, (repv cons, repv cdr), rep_Subr2) /*
+::doc:rep.data#set-cdr!::
+set-cdr! PAIR VALUE
 
-Sets the value of the cdr slot in CONS-CELL to NEW-CDR.
-Returns the CONS-CELL.
+Sets the value of the cdr slot in PAIR to VALUE-CDR.
 ::end:: */
 {
   rep_DECLARE1(cons, rep_CONSP);
 
   rep_CDR(cons) = cdr;
-  return cons;
+
+  return rep_undefined_value;
 }
 
 DEFUN("list", Flist, Slist, (int argc, repv *argv), rep_SubrV) /*
@@ -364,9 +364,9 @@ new list which is returned.
   return res;
 }
 
-DEFUN("nconc", Fnconc, Snconc, (int argc, repv *argv), rep_SubrV) /*
-::doc:rep.data#nconc::
-nconc LISTS...
+DEFUN("append!", Fnconc, Snconc, (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.data#append!::
+append! LISTS...
 
 Destructively concatenates each of it's argument LISTS... into one new
 list. Every LIST but the last is modified so that it's last cdr points
@@ -401,8 +401,8 @@ DEFUN("reverse", Freverse, Sreverse, (repv head), rep_Subr1) /*
 ::doc:rep.data#reverse::
 reverse LIST
 
-Returns a new list which is a copy of LIST except that the members are in
-reverse order.
+Returns a new list which is a copy of LIST except that the members are
+in reverse order.
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
@@ -424,12 +424,12 @@ reverse order.
   return ret;
 }
 
-DEFUN("nreverse", Fnreverse, Snreverse, (repv head), rep_Subr1) /*
-::doc:rep.data#nreverse::
-nreverse LIST
+DEFUN("reverse!", Fnreverse, Snreverse, (repv head), rep_Subr1) /*
+::doc:rep.data#reverse!::
+reverse! LIST
 
-Returns LIST altered so that it's members are in reverse order to what they
-were. This function is destructive towards it's argument.
+Returns LIST altered so that it's members are in reverse order to what
+they were. This function is destructive towards it's argument.
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
@@ -462,9 +462,11 @@ DEFUN("assoc", Fassoc, Sassoc, (repv elt, repv list), rep_Subr2) /*
 assoc ELT ASSOC-LIST
 
 Searches ASSOC-LIST for a list whose first element is ELT. `assoc' uses
-`equal?' to compare elements. Returns the sub-list starting from the first 
-matching association.
-For example,
+`equal?' to compare elements. Returns the sub-list starting from the
+first  matching association.
+
+For example:
+
     (assoc 'three '((one . 1) (two . 2) (three . 3) (four . 4)))
      => (three . 3)
 ::end:: */
@@ -494,9 +496,9 @@ DEFUN("assq", Fassq, Sassq, (repv elt, repv list), rep_Subr2) /*
 ::doc:rep.data#assq::
 assq ELT ASSOC-LIST
 
-Searches ASSOC-LIST for a list whose first element is ELT. `assq' uses `eq?'
-to compare elements. Returns the sub-list starting from the first matching
-association.
+Searches ASSOC-LIST for a list whose first element is ELT. `assq' uses
+`eq?' to compare elements. Returns the sub-list starting from the first
+matching association.
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
@@ -509,6 +511,39 @@ association.
 
     if (rep_CONSP(car) && elt == rep_CAR(car)) {
       return car;
+    }
+
+    rep_TEST_INT;
+    if (rep_INTERRUPTP) {
+      return 0;
+    }
+  }
+
+  return rep_nil;
+}
+
+DEFUN("assv", Fassv, Sassv, (repv elt, repv list), rep_Subr2) /*
+::doc:rep.data#assv::
+assv ELT ASSOC-LIST
+
+Searches ASSOC-LIST for a list whose first element is ELT. `assq' uses
+`eqv?' to compare elements. Returns the sub-list starting from the
+first matching association.
+::end:: */
+{
+  rep_TEST_INT_LOOP_COUNTER;
+
+  rep_DECLARE2(list, rep_LISTP);
+
+  while (rep_CONSP(list)) {
+    repv car = rep_CAR(list);
+    list = rep_CDR(list);
+
+    if (rep_CONSP(car)) {
+      repv tem = Feql(elt, rep_CAR(car));
+      if (tem && tem != rep_nil) {
+	return car;
+      }
     }
 
     rep_TEST_INT;
@@ -581,17 +616,63 @@ Returns the first matching cons-cell, else nil.
   return rep_nil;
 }
 
-DEFUN("nth", Fnth, Snth, (repv index, repv list), rep_Subr2) /*
-::doc:rep.data#nth::
-nth INDEX LIST
+DEFUN("rassv", Frassv, Srassv, (repv elt, repv list), rep_Subr2) /*
+::doc:rep.data#rassv::
+rassv ELT ASSOC-LIST
 
-Returns the INDEXth element of LIST. The first element has an INDEX of zero.
+Searches ASSOC-LIST for a cons-cell whose cdr is `eqv?' to ELT.
+Returns the first matching cons-cell, else nil.
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
 
-  rep_DECLARE1(index, rep_NON_NEG_INT_P);
   rep_DECLARE2(list, rep_LISTP);
+
+  while (rep_CONSP(list)) {
+    repv car = rep_CAR(list);
+    list = rep_CDR(list);
+
+    if (rep_CONSP(car)) {
+      repv tem = Feql(elt, rep_CDR(car));
+      if (tem && tem != rep_nil) {
+	return car;
+      }
+    }
+
+    rep_TEST_INT;
+    if (rep_INTERRUPTP) {
+      return 0;
+    }
+  }
+
+  return rep_nil;
+}
+
+DEFUN("list-length", Flist_length, Slist_length, (repv list), rep_Subr1) /*
+::doc:rep.data#list-length::
+list-length LIST
+
+Returns the number of elements in LIST.
+::end:: */
+{
+  rep_DECLARE1(list, rep_LISTP);
+
+  intptr_t len = rep_list_length(list);
+
+  return len >= 0 ? rep_MAKE_INT(len) : 0;
+}
+
+DEFUN("list-ref", Flist_ref, Slist_ref, (repv list, repv index), rep_Subr2) /*
+::doc:rep.data#list-ref::
+list-ref LIST INDEX
+
+Returns the INDEX'th element of LIST (counting from zero).
+::end:: */
+{
+  rep_TEST_INT_LOOP_COUNTER;
+
+  rep_DECLARE1(list, rep_LISTP);
+  rep_DECLARE2(index, rep_NON_NEG_INT_P);
 
   intptr_t i = rep_INT(index);
   while (i-- > 0 && rep_CONSP(list)) {
@@ -606,17 +687,18 @@ Returns the INDEXth element of LIST. The first element has an INDEX of zero.
   return i <= 0 && rep_CONSP(list) ? rep_CAR(list) : rep_nil;
 }
 
-DEFUN("nthcdr", Fnthcdr, Snthcdr, (repv index, repv list), rep_Subr2) /*
-::doc:rep.data#nthcdr::
-nthcdr INDEX LIST
+DEFUN("list-tail", Flist_tail, Slist_tail,
+      (repv list, repv index), rep_Subr2) /*
+::doc:rep.data#list-tail::
+list-tail LIST INDEX
 
 Returns the INDEXth cdr of LIST. The first is INDEX zero.
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
 
-  rep_DECLARE1(index, rep_NON_NEG_INT_P);
-  rep_DECLARE2(list, rep_LISTP);
+  rep_DECLARE1(list, rep_LISTP);
+  rep_DECLARE2(index, rep_NON_NEG_INT_P);
 
   intptr_t i = rep_INT(index);
   while (i-- > 0 && rep_CONSP(list)) {
@@ -908,12 +990,12 @@ from the matched ELT, ie,
   return rep_nil;
 }
 
-DEFUN("memql", Fmemql, Smemql, (repv elt, repv list), rep_Subr2) /*
-::doc:rep.data#memql::
-memql ELT LIST
+DEFUN("memv", Fmemql, Smemql, (repv elt, repv list), rep_Subr2) /*
+::doc:rep.data#memv::
+memv ELT LIST
 
 If ELT is a member of list LIST then return the tail of the list starting
-from the matched ELT. `memql' uses `eqv?' to compare list items.
+from the matched ELT. `memv' uses `eqv?' to compare list items.
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
@@ -938,9 +1020,9 @@ from the matched ELT. `memql' uses `eqv?' to compare list items.
   return rep_nil;
 }
 
-DEFUN("delete", Fdelete, Sdelete, (repv elt, repv list), rep_Subr2) /*
-::doc:rep.data#delete::
-delete ELT LIST
+DEFUN("delete!", Fdelete, Sdelete, (repv elt, repv list), rep_Subr2) /*
+::doc:rep.data#delete!::
+delete! ELT LIST
 
 Returns LIST with any members `equal?' to ELT destructively removed.
 ::end:: */
@@ -966,9 +1048,9 @@ Returns LIST with any members `equal?' to ELT destructively removed.
   return list;
 }
 
-DEFUN("delq", Fdelq, Sdelq, (repv elt, repv list), rep_Subr2) /*
-::doc:rep.data#delq::
-delq ELT LIST
+DEFUN("delq!", Fdelq, Sdelq, (repv elt, repv list), rep_Subr2) /*
+::doc:rep.data#delq!::
+delq! ELT LIST
 
 Returns LIST with any members `eq?' to ELT destructively removed.
 ::end:: */
@@ -994,9 +1076,10 @@ Returns LIST with any members `eq?' to ELT destructively removed.
   return list;
 }
 
-DEFUN("delete-if", Fdelete_if, Sdelete_if, (repv pred, repv list), rep_Subr2) /*
-::doc:rep.data#delete-if::
-delete-if FUNCTION LIST
+DEFUN("delete-if!", Fdelete_if, Sdelete_if,
+      (repv pred, repv list), rep_Subr2) /*
+::doc:rep.data#delete-if!::
+delete-if! FUNCTION LIST
 
 Similar to `delete' except that a predicate function, FUNCTION-NAME, is
 used to decide which elements to delete (remove destructively).
@@ -1033,9 +1116,10 @@ applied to that element, ie,
   return list;
 }
 
-DEFUN("delete-if-not", Fdelete_if_not, Sdelete_if_not, (repv pred, repv list), rep_Subr2) /*
-::doc:rep.data#delete-if-not::
-delete-if-not FUNCTION LIST
+DEFUN("delete-if-not!", Fdelete_if_not, Sdelete_if_not,
+      (repv pred, repv list), rep_Subr2) /*
+::doc:rep.data#delete-if-not!::
+delete-if-not! FUNCTION LIST
 
 Similar to `delete' except that a predicate function, FUNCTION-NAME, is
 used to decide which elements to delete (remove destructively).
@@ -1082,9 +1166,9 @@ Returns t if ARG is nil.
   return rep_NILP(arg) ? Qt : rep_nil;
 }
 
-DEFUN("atom", Fatom, Satom, (repv arg), rep_Subr1) /*
-::doc:rep.data#atom::
-atom ARG
+DEFUN("atom?", Fatom, Satom, (repv arg), rep_Subr1) /*
+::doc:rep.data#atom?::
+atom? ARG
 
 Returns t if ARG is not a cons-cell.
 ::end:: */
@@ -1124,16 +1208,19 @@ rep_lists_init(void)
   rep_ADD_SUBR(Smake_list);
   rep_ADD_SUBR(Sappend);
   rep_ADD_SUBR(Snconc);
-  rep_ADD_SUBR(Srplaca);
-  rep_ADD_SUBR(Srplacd);
+  rep_ADD_SUBR(Sset_car);
+  rep_ADD_SUBR(Sset_cdr);
   rep_ADD_SUBR(Sreverse);
   rep_ADD_SUBR(Snreverse);
   rep_ADD_SUBR(Sassoc);
   rep_ADD_SUBR(Sassq);
+  rep_ADD_SUBR(Sassv);
   rep_ADD_SUBR(Srassoc);
   rep_ADD_SUBR(Srassq);
-  rep_ADD_SUBR(Snth);
-  rep_ADD_SUBR(Snthcdr);
+  rep_ADD_SUBR(Srassv);
+  rep_ADD_SUBR(Slist_length);
+  rep_ADD_SUBR(Slist_ref);
+  rep_ADD_SUBR(Slist_tail);
   rep_ADD_SUBR(Slast);
   rep_ADD_SUBR(Smap);
   rep_ADD_SUBR(Sfor_each);

@@ -73,7 +73,7 @@
 #endif
 
 #ifdef ENVIRON_UNDECLARED
-extern char **environ;
+extern const char **environ;
 #endif
 
 void (*rep_sigchld_fun)(void) = 0;
@@ -527,12 +527,12 @@ set_child_environ(void)
     return;
   }
 
-  char **array = rep_alloc(sizeof(char *) * (rep_INT(len) + 1));
+  const char **array = rep_alloc(sizeof(char *) * (rep_INT(len) + 1));
   if (!array) {
     return;
   }
 
-  char **ptr = array;
+  const char **ptr = array;
 
   while (rep_CONSP(lst)) {
     *ptr++ = rep_STR(rep_CAR(lst));
@@ -656,7 +656,7 @@ read_synchronous_output(rep_process *pr)
    immediately after starting the process. */
 
 static bool
-run_process(rep_process *pr, char **argv, const char *sync_input)
+run_process(rep_process *pr, const char *const *argv, const char *sync_input)
 {
   if (!PR_DEAD_P(pr)) {
     DEFSTRING(already_running, "Already running");
@@ -815,7 +815,7 @@ run_process(rep_process *pr, char **argv, const char *sync_input)
       }
     }
     signal(SIGPIPE, SIG_DFL);
-    execvp(argv[0], argv);
+    execvp(argv[0], (char **)argv);
     perror("child subprocess can't exec");
     _exit(255);
     /* not reached */
@@ -1111,7 +1111,7 @@ set in the PROCESS prior to calling this function.
     return 0;
   }
 
-  char **argv = rep_alloc(sizeof(char *) * (argc + 1));
+  const char **argv = rep_alloc(sizeof(char *) * (argc + 1));
   if (!argv) {
     return rep_mem_error();
   }
@@ -1234,7 +1234,7 @@ set in the PROCESS prior to calling this function.
     return 0;
   }
 
-  char **argv = rep_alloc(sizeof(char *) * (argc + 1));
+  const char **argv = rep_alloc(sizeof(char *) * (argc + 1));
   if (!argv) {
     return rep_mem_error();
   }
@@ -1476,7 +1476,7 @@ i.e. the symbol `INT' for the UNIX SIGINT signal.
   if (rep_INTP(sig)) {
     signal = rep_INT(sig);
   } else {
-    char *s = rep_STR(rep_SYM(sig)->name);
+    const char *s = rep_STR(rep_SYM(sig)->name);
     for (int i = 0; signals[i].name != 0; i++) {
       if (strcmp(s, signals[i].name) == 0) {
 	signal = signals[i].sig;
@@ -1623,9 +1623,10 @@ Return t is ARG is a process-object.
   return PROCESSP(arg) ? Qt : rep_nil;
 }
 
-DEFUN("process-prog", Fprocess_prog, Sprocess_prog, (repv proc), rep_Subr1) /*
-::doc:rep.io.processes#process-prog::
-process-prog PROCESS
+DEFUN("process-program", Fprocess_prog,
+      Sprocess_prog, (repv proc), rep_Subr1) /*
+::doc:rep.io.processes#process-program::
+process-program PROCESS
 
 Return the name of the program in PROCESS.
 ::end:: */
@@ -1635,9 +1636,10 @@ Return the name of the program in PROCESS.
   return PROC(proc)->program;
 }
 
-DEFUN("set-process-prog", Fset_process_prog, Sset_process_prog, (repv proc, repv prog), rep_Subr2) /*
-::doc:rep.io.processes#set-process-prog::
-set-process-prog PROCESS PROGRAM
+DEFUN("set-process-program!", Fset_process_prog,
+      Sset_process_prog, (repv proc, repv prog), rep_Subr2) /*
+::doc:rep.io.processes#set-process-program!::
+set-process-program! PROCESS PROGRAM
 
 Sets the name of the program to run on PROCESS to FILE.
 ::end:: */
@@ -1661,10 +1663,10 @@ Return the list of arguments to PROCESS.
   return PROC(proc)->args;
 }
 
-DEFUN("set-process-args", Fset_process_args,
+DEFUN("set-process-args!", Fset_process_args,
       Sset_process_args, (repv proc, repv args), rep_Subr2) /*
-::doc:rep.io.processes#set-process-args::
-set-process-args PROCESS ARG-LIST
+::doc:rep.io.processes#set-process-args!::
+set-process-args! PROCESS ARG-LIST
 
 Set the arguments to PROCESS.
 ::end:: */
@@ -1689,10 +1691,10 @@ Return the stream to which all output from PROCESS is sent.
   return PROC(proc)->output_stream;
 }
 
-DEFUN("set-process-output-stream", Fset_process_output_stream,
+DEFUN("set-process-output-stream!", Fset_process_output_stream,
       Sset_process_output_stream, (repv proc, repv stream), rep_Subr2) /*
-::doc:rep.io.processes#set-process-output-stream::
-set-process-output-stream PROCESS STREAM
+::doc:rep.io.processes#set-process-output-stream!::
+set-process-output-stream! PROCESS STREAM
 
 Set the output-stream of PROCESS to STREAM. nil means discard all
 output.
@@ -1718,10 +1720,10 @@ sent.
   return PROC(proc)->error_stream;
 }
 
-DEFUN("set-process-error-stream", Fset_process_error_stream,
+DEFUN("set-process-error-stream!", Fset_process_error_stream,
       Sset_process_error_stream, (repv proc, repv stream), rep_Subr2) /*
-::doc:rep.io.processes#set-process-error-stream::
-set-process-error-stream PROCESS STREAM
+::doc:rep.io.processes#set-process-error-stream!::
+set-process-error-stream! PROCESS STREAM
 
 Set the error-stream of PROCESS to STREAM. nil means discard all
 output.
@@ -1749,10 +1751,10 @@ exits or is stopped).
   return PROC(proc)->notify_function;
 }
 
-DEFUN("set-process-function", Fset_process_function,
+DEFUN("set-process-function!", Fset_process_function,
       Sset_process_function, (repv proc, repv fn), rep_Subr2) /*
-::doc:rep.io.processes#set-process-function::
-set-process-function PROCESS FUNCTION
+::doc:rep.io.processes#set-process-function!::
+set-process-function! PROCESS FUNCTION
 
 Set the function which is called when PROCESS changes state to
 FUNCTION.
@@ -1764,9 +1766,10 @@ FUNCTION.
   return fn;
 }
 
-DEFUN("process-dir", Fprocess_dir, Sprocess_dir, (repv proc), rep_Subr1) /*
-::doc:rep.io.processes#process-dir::
-process-dir PROCESS
+DEFUN("process-directory", Fprocess_dir,
+      Sprocess_dir, (repv proc), rep_Subr1) /*
+::doc:rep.io.processes#process-directory::
+process-directory PROCESS
 
 Return the name of the directory which becomes the working directory of
 PROCESS when it is started.
@@ -1777,10 +1780,10 @@ PROCESS when it is started.
   return PROC(proc)->directory;
 }
 
-DEFUN("set-process-dir", Fset_process_dir,
+DEFUN("set-process-directory!", Fset_process_dir,
       Sset_process_dir, (repv proc, repv dir), rep_Subr2) /*
-::doc:rep.io.processes#set-process-dir::
-set-process-dir PROCESS DIR
+::doc:rep.io.processes#set-process-directory!::
+set-process-directory! PROCESS DIR
 
 Set the directory of PROCESS to DIR.
 ::end:: */
@@ -1820,10 +1823,10 @@ socketpair) used to connect PROCESS with its physical process.
   return PROC(proc)->connection_type;
 }
 
-DEFUN("set-process-connection-type", Fset_process_connection_type,
+DEFUN("set-process-connection-type!", Fset_process_connection_type,
       Sset_process_connection_type, (repv proc, repv type), rep_Subr2) /*
-::doc:rep.io.processes#set-process-connection-type::
-set-process-connection-type PROCESS TYPE
+::doc:rep.io.processes#set-process-connection-type!::
+set-process-connection-type! PROCESS TYPE
 
 Define how PROCESS communicates with it's child process, TYPE may be
 one of the following symbols:
@@ -1964,7 +1967,7 @@ Note that output includes notification of process termination.
 /* Don't use libc system(), since it blocks signals. */
 
 repv
-rep_system(char *command)
+rep_system(const char *command)
 {
   int pid = fork();
 
@@ -1976,13 +1979,13 @@ rep_system(char *command)
 
   case 0: {
     set_child_environ(); 
-    char *argv[4];
+    const char *argv[4];
     argv[0] = "sh";
     argv[1] = "-c";
     argv[2] = command;
     argv[3] = 0;
     signal(SIGPIPE, SIG_DFL);
-    execve("/bin/sh", argv, environ);
+    execve("/bin/sh", (char **)argv, (char **)environ);
     perror("can't exec /bin/sh");
     _exit(255); }
 

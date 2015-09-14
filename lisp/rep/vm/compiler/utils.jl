@@ -100,7 +100,7 @@
 		 (canonical-file-name *default-directory*)))
 	  (c-file (canonical-file-name file)))
       (if (string-prefix? c-file c-dd)
-	  (substring c-file (length c-dd))
+	  (substring c-file (string-length c-dd))
 	file)))
 
   (define (file-prefix #!optional form)
@@ -155,7 +155,7 @@
       (let ((cell (assq name (fluid inline-env))))
 	;; a function previously declared inline
 	(when (and cell (not (cdr cell)))
-	  (rplacd cell (list* 'lambda args body)))))
+	  (set-cdr! cell (list* 'lambda args body)))))
     (if (assq name (fluid defuns))
 	(compiler-warning
 	 'misc "function or macro `%s' defined more than once" name)
@@ -168,28 +168,29 @@
 	(while args
 	  (if (symbol? args)
 	      ;; (foo . bar)
-	      (aset count 2 t)
+	      (vector-set! count 2 t)
 	    (if (memq (car args) '(&optional &rest #!optional #!key #!rest))
 		(case (car args)
 		  ((&optional #!optional)
 		   (setq state 1)
-		   (aset count 1 0))
+		   (vector-set! count 1 0))
 		  ((#!key)
 		   (setq state 'key))
 		  ((&rest #!rest)
 		   (setq args nil)
-		   (aset count 2 t)))
+		   (vector-set! count 2 t)))
 	      (if (number? state)
-		  (aset count state (1+ (aref count state)))
+		  (vector-set! count state (1+ (vector-ref count state)))
 		(setq keys (cons (or (caar args) (car args)) keys)))))
 	  (setq args (cdr args)))
-	(fluid-set defuns (cons (list name (aref count 0)
-				      (aref count 1) (aref count 2) keys)
+	(fluid-set defuns (cons (list name (vector-ref count 0)
+				      (vector-ref count 1)
+				      (vector-ref count 2) keys)
 				(fluid defuns))))))
 
   (defun forget-function (name)
     (let ((cell (assq name (fluid defuns))))
-      (fluid-set defuns (delq cell (fluid defuns)))))
+      (fluid-set defuns (delq! cell (fluid defuns)))))
 
   ;; Similar for variables
   (defun remember-variable (name)
@@ -256,7 +257,7 @@
 	    (when (closure? decl)
 	      (setq decl (closure-function decl)))
 	    (unless (bytecode? decl)
-	      (remember-function name (nth 1 decl)))
+	      (remember-function name (list-ref decl 1)))
 	    (setq decl (assq name (fluid defuns))))
 	  (if (null? decl)
 	      (unless (or (has-local-binding? name)
@@ -266,10 +267,10 @@
 		(compiler-warning
 		 'misc "calling undeclared function `%s'" name))
 	    (let
-		((required (nth 1 decl))
-		 (optional (nth 2 decl))
-		 (rest (nth 3 decl))
-		 (keys (nth 4 decl)))
+		((required (list-ref decl 1))
+		 (optional (list-ref decl 2))
+		 (rest (list-ref decl 3))
+		 (keys (list-ref decl 4)))
 	      (if (< nargs required)
 		  (compiler-warning
 		   'parameters "%d %s required by `%s'; %d supplied"
@@ -322,7 +323,7 @@
 	  (unless (memq (car args) '(#!optional #!key #!rest &optional &rest))
 	    (setq vars (cons (or (caar args) (car args)) vars))))
 	(setq args (cdr args)))
-      (nreverse vars)))
+      (reverse! vars)))
 
 
 ;;; constant forms
@@ -345,7 +346,7 @@
   (cond
    ((pair? form)
     ;; only quote
-    (nth 1 form))
+    (list-ref form 1))
    ((symbol? form)
     (cond ((keyword? form) form)
 	  ((compiler-binding-immutable? form)
@@ -364,7 +365,7 @@
   (cond ((eq? (car form) 'lambda)
 	 form)
 	((eq? (car form) 'function)
-	 (nth 1 form))))
+	 (list-ref form 1))))
 
 
 ;;; declarations

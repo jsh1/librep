@@ -105,8 +105,10 @@ int		strcspn(char *, char *);
  * structure of the compiled regexp.
  */
 rep_regexp *
-rep_regcomp(char *exp)
+rep_regcomp(const char *exp_)
 {
+    char *exp = (char *)exp_;		/* cast away const-ness */
+
     register rep_regexp *r;
     register char  *scan;
     register char  *longest;
@@ -684,8 +686,10 @@ char		*regprop(char *);
  * flags are REG_NOTBOL and REG_NOCASE.
  */
 int
-rep_regexec2(rep_regexp *prog, char *string, int eflags)
+rep_regexec2(rep_regexp *prog, const char *string_, int eflags)
 {
+    char *string = (char *)string_;	/* cast away const-ness */
+
     register char  *s;
     /* For REG_NOCASE and strpbrk()  */
     static char mat[3] = "xX";
@@ -782,7 +786,7 @@ rep_regexec2(rep_regexp *prog, char *string, int eflags)
  *   No searching
  */
 int
-rep_regmatch_string(rep_regexp *prog, char *string, int eflags)
+rep_regmatch_string(rep_regexp *prog, const char *string, int eflags)
 {
     /* Check for REG_NOCASE, means ignore case in string matches.  */
     regnocase = ((eflags & rep_REG_NOCASE) != 0);
@@ -790,9 +794,9 @@ rep_regmatch_string(rep_regexp *prog, char *string, int eflags)
     /* Mark beginning of line for ^ . */
     /* jsh -- if REG_NOTBOL is set then set regbol to something absurd
        to guarantee ^ doesn't match */
-    regbol = (eflags & rep_REG_NOTBOL) ? "" : string;
+    regbol = (eflags & rep_REG_NOTBOL) ? "" : (char *)string;
 
-    return regtry(prog, string);
+    return regtry(prog, (char *)string);
 }
 
 /*

@@ -90,13 +90,13 @@ results have been received.")
   (define (ispell-start)
     (unless process
       (setq process (make-process output-filter))
-      (set-process-function process (lambda ()
+      (set-process-function! process (lambda ()
 				      (setq process nil)
 				      (setq id-string nil)))
       ;; Use a pty if possible. This allow EOF to be sent via ^D
-      (set-process-connection-type process 'pty)
+      (set-process-connection-type! process 'pty)
       (apply start-process process *ispell-program* "-a"
-	     (nconc (and *ispell-dictionary*
+	     (append! (and *ispell-dictionary*
 			 (list "-d" *ispell-dictionary*))
 		    *ispell-options*))
       (setq pending-output nil)
@@ -162,12 +162,12 @@ results have been received.")
 	  (progn
 	    (format process "%s\n" word)
 	    (setq response (ispell-read-line))
-	    (if (eq? (aref response 0) #\newline)
+	    (if (eq? (string-ref response 0) #\newline)
 		;; This shouldn't happen
 		(error "Null output from Ispell")
 	      ;; Gobble following blank line
 	      (setq tem (ispell-read-line))
-	      (unless (eq? (aref tem 0) #\newline)
+	      (unless (eq? (string-ref tem 0) #\newline)
 		(error "Non-null trailing line from Ispell"))))
 	(mutex nil))
       response))

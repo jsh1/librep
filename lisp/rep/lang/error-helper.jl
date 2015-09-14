@@ -35,7 +35,7 @@
 
   (define output-stream (make-fluid *standard-error*))
 
-  (define (define-helper name function) (table-set helper-table name function))
+  (define (define-helper name function) (table-set! helper-table name function))
   (define (helper-ref name) (table-ref helper-table name))
 
   (define (for-each-structure fun)
@@ -78,7 +78,7 @@ in the wrong position."))
 		 (t (output "You probably need to open one of the modules %s"
 			    (mapconcat (lambda (x)
 					 (format nil "`%s'" x))
-				       (nreverse structs) ", "))))))))
+				       (reverse! structs) ", "))))))))
 
   (define-helper 'void-value void-value-helper)
 

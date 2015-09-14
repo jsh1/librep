@@ -45,7 +45,7 @@ TEMPLATE is called."
 		    (cons (substring string point (match-start)) out)))
       (if (null? out)
 	  string
-	(apply concat (nreverse (cons (substring string point) out)))))))
+	(apply concat (reverse! (cons (substring string point) out)))))))
 
 (defun string-split (regexp string)
   "Return a list of substrings of STRING, each delimited by REGEXP."
@@ -54,6 +54,6 @@ TEMPLATE is called."
     (if (string-match regexp string point)
 	(loop (match-end)
 	      (cons (substring string point (match-start)) parts))
-      (nreverse (cons (substring string point) parts)))))
+      (reverse! (cons (substring string point) parts)))))
 
 (export-bindings '(string-replace string-split))

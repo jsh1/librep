@@ -61,7 +61,7 @@ LIBRARY has been read by the `load' function. Note that LIBRARY must exactly
 match the FILE argument to `load'."
   (let ((tem (assoc library *after-load-alist*)))
     (if tem
-	(rplacd tem (cons thunk (cdr tem)))
+	(set-cdr! tem (cons thunk (cdr tem)))
       (setq *after-load-alist* (cons (cons library (list thunk))
 				     *after-load-alist*)))))
 

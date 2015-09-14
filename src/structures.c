@@ -842,10 +842,10 @@ Return `t' if symbol VAR has a non-void binding in STRUCTURE.
   return tem;
 }
 
-DEFUN("structure-set", Fstructure_set, Sstructure_set,
+DEFUN("structure-set!", Fstructure_set, Sstructure_set,
        (repv structure, repv var, repv value), rep_Subr3) /*
-::doc:rep.structures#structure-set::
-structure-set STRUCTURE VAR VALUE
+::doc:rep.structures#structure-set!::
+structure-set! STRUCTURE VAR VALUE
 
 Set the value of the binding of symbol VAR in structure object
 STRUCTURE to VALUE. If no such binding exists, an error is signalled.
@@ -1032,10 +1032,10 @@ STRUCTURE.
   return rep_STRUCTURE(structure)->accessible;
 }
 
-DEFUN("set-interface", Fset_interface,
-       Sset_interface, (repv structure, repv sig), rep_Subr2) /*
-::doc:rep.structures#set-interface::
-set-interface STRUCTURE INTERFACE
+DEFUN("structure-set-interface!", Fstructure_set_interface,
+       Sstructure_set_interface, (repv structure, repv sig), rep_Subr2) /*
+::doc:rep.structures#structure-set-interface!::
+structure-set-interface! STRUCTURE INTERFACE
 
 Set the interface of structure object STRUCTURE to INTERFACE.
 ::end:: */
@@ -1086,7 +1086,7 @@ symbol).
 
   repv copy = rep_string_copy_n(rep_STR(name), rep_STRING_LEN(name));
 
-  for (char *ptr = rep_STR(copy); *ptr != 0; ptr++) {
+  for (char *ptr = rep_MUTABLE_STR(copy); *ptr != 0; ptr++) {
     if (*ptr == '.') {
       *ptr = '/';
     }
@@ -1693,7 +1693,7 @@ invalid_apply_bytecode(repv subr, int nargs, repv *args)
   return Fsignal(Qinvalid_function, rep_LIST_1(subr));
 }
 
-DEFUN("structure-install-vm", Fstructure_install_vm,
+DEFUN("set-bytecode-interpreter!", Fstructure_install_vm,
       Sstructure_install_vm, (repv structure, repv vm), rep_Subr2)
 {
   rep_DECLARE1(structure, rep_STRUCTUREP);
@@ -1710,16 +1710,17 @@ DEFUN("structure-install-vm", Fstructure_install_vm,
   return rep_call_lisp1(vm, structure);
 }
 
-DEFUN("set-special-variables", Fset_special_variables,
+DEFUN("set-special-variables!", Fset_special_variables,
       Sset_special_variables, (repv env, repv structure), rep_Subr2) /*
-::doc:rep.structures#set-special-variables::
-set-special-environment ENV STRUCTURE
+::doc:rep.structures#set-special-variables!::
+set-special-environment! ENV STRUCTURE
 ::end:: */
 {
   rep_DECLARE2(structure, rep_STRUCTUREP);
 
   rep_STRUCTURE(structure)->special_variables = env;
-  return Qt;
+
+  return rep_undefined_value;
 }
 
 /* This is a horrible kludge :-(
@@ -1775,9 +1776,9 @@ rep_documentation_property(repv structure)
     return rep_nil;
   }
 
-  strcpy(rep_STR(buf), doc_str);
-  memcpy(rep_STR(buf) + doc_len, rep_STR(name), name_len);
-  rep_STR(buf)[doc_len + name_len] = 0;
+  strcpy(rep_MUTABLE_STR(buf), doc_str);
+  memcpy(rep_MUTABLE_STR(buf) + doc_len, rep_STR(name), name_len);
+  rep_MUTABLE_STR(buf)[doc_len + name_len] = 0;
 
   return Fintern(buf, rep_nil);
 }
@@ -1820,7 +1821,7 @@ rep_structures_init(void)
   rep_ADD_SUBR(Sstructure_exports_p);
   rep_ADD_SUBR(Sstructure_imports);
   rep_ADD_SUBR(Sstructure_accessible);
-  rep_ADD_SUBR(Sset_interface);
+  rep_ADD_SUBR(Sstructure_set_interface);
   rep_ADD_SUBR(Sget_structure);
   rep_ADD_SUBR(Sname_structure);
   rep_ADD_SUBR(Sstructure_file);

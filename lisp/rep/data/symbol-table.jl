@@ -35,7 +35,7 @@
 
     (export make-symbol-table
 	    symbol-table-ref
-	    symbol-table-set
+	    symbol-table-set!
 	    symbol-table-bound?
 	    symbol-table-walk)
 
@@ -51,7 +51,7 @@
     (and (structure-bound? table var)
 	 (%structure-ref table var)))
 
-  (define (symbol-table-set table var value)
+  (define (symbol-table-set! table var value)
     (structure-define table var value))
 
   (define (symbol-table-bound? table var)

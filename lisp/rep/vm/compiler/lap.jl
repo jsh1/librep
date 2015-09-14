@@ -62,7 +62,7 @@
   (define fix-label emit-insn)
 
   (define (prefix-label label)
-    (fluid-set intermediate-code (nconc (list label)
+    (fluid-set intermediate-code (append! (list label)
 					(fluid intermediate-code))))
 
   (define (push-state)
@@ -90,7 +90,7 @@
 	    (do ((old rest (cdr old))
 		 (new saved (cdr new)))
 		((null? old))
-	      (rplacd (car old) (cdr (car new)))))
+	      (set-cdr! (car old) (cdr (car new)))))
 	(loop (cdr rest)))))
 
   (define (reload-state)

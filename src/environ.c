@@ -169,8 +169,8 @@ the directory of the user who executed Jade is found.
   repv dir;
   if (src[len] != '/') {
     dir = rep_string_copy_n(src, len + 1);
-    rep_STR(dir)[len] = '/';
-    rep_STR(dir)[len+1] = 0;
+    rep_MUTABLE_STR(dir)[len] = '/';
+    rep_MUTABLE_STR(dir)[len+1] = 0;
   } else {
     dir = rep_string_copy(src);
   }

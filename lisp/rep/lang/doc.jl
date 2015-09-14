@@ -156,7 +156,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 	    (setq tem (cdr tem)))
 	  (when (and (closure? tem)
 		     (eq? (car (closure-function tem)) 'lambda))
-	    (setq tem (nth 2 (closure-function tem)))
+	    (setq tem (list-ref (closure-function tem) 2))
 	    (when (string? tem)
 	      (throw 'exit tem)))))
 

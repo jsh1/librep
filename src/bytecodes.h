@@ -115,12 +115,12 @@
 #define OP_CONS 0x4b			/* push (cons pop[1] pop[2]) */
 #define OP_CAR 0x4c			/* push (car pop[1]) */
 #define OP_CDR 0x4d			/* push (cdr pop[2])  */
-#define OP_RPLACA 0x4e			/* call-2 rplaca */
-#define OP_RPLACD 0x4f			/* call-2 rplacd */
-#define OP_NTH 0x50			/* call-2 nth */
-#define OP_NTHCDR 0x51			/* call-2 nthcdr */
-#define OP_ASET 0x52			/* call-3 aset */
-#define OP_AREF 0x53			/* call-2 aref */
+#define OP_SET_CAR 0x4e			/* call-2 set-car! */
+#define OP_SET_CDR 0x4f			/* call-2 set-cdr! */
+#define OP_LIST_REF 0x50		/* call-2 list-ref */
+#define OP_LIST_TAIL 0x51		/* call-2 list-tail */
+#define OP_ARRAY_SET 0x52		/* call-3 array-set! */
+#define OP_ARRAY_REF 0x53		/* call-2 array-ref */
 #define OP_LENGTH 0x54			/* call-1 length */
 #define OP_BIND 0x55
 #define OP_ADD 0x56			/* push (+ pop[1] pop[2]) */
@@ -136,6 +136,7 @@
 #define OP_EQUAL 0x60			/* push (equal? pop[1] pop[2]) */
 #define OP_EQ 0x61			/* push (eq? pop[1] pop[2]) */
 #define OP_STRUCT_REF 0x62		/* push (structure-ref pop[1] pop[2])*/
+#define OP_LIST_LENGTH 0x63		/* push (list-length pop[1]) */
 #define OP_GT 0x64			/* push (> pop[1] pop[2]) */
 #define OP_GE 0x65			/* push (>= pop[1] pop[2]) */
 #define OP_LT 0x66			/* push (< pop[1] pop[2]) */
@@ -225,6 +226,9 @@
 
 #define OP_APPLY 0xb0
 
+#define OP_ARRAY_LENGTH 0xb1
+#define OP_VECTOR_LENGTH 0xb2
+
 #define OP_EXP 0xb3
 #define OP_LOG 0xb4
 #define OP_SIN 0xb5
@@ -246,7 +250,7 @@
 #define OP_FLUID_SET 0xc0
 #define OP_FLUID_BIND 0xc1
 
-#define OP_MEMQL 0xc2			/* call-2 memql */
+#define OP_MEMV 0xc2			/* call-2 memv */
 #define OP_NUM_EQ 0xc3
 #define OP__DEFINE 0xc6
 #define OP_SPEC_BIND 0xc7
@@ -261,6 +265,12 @@
 #define OP_KEYWORD_ARG 0xcd
 #define OP_OPTIONAL_ARG_ 0xce
 #define OP_KEYWORD_ARG_ 0xcf
+
+#define OP_VECTOR_REF 0xd0
+#define OP_VECTOR_SET 0xd1
+#define OP_STRING_LENGTH 0xd2
+#define OP_STRING_REF 0xd3
+#define OP_STRING_SET 0xd4
 
 
 /* Jump opcodes */

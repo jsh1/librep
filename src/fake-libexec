@@ -5,7 +5,7 @@
 libdir="`pwd`/.libs"
 libexecdir="./.libexec"
 
-libs="rep.io.db.gdbm rep.io.db.sdbm rep.i18n.gettext rep.io.readline \
+libs="rep.io.db.gdbm rep.i18n.gettext rep.io.readline \
  rep.lang.record-profile rep.io.timers rep.util.md5 rep.ffi"
 
 rm -rf $libexecdir

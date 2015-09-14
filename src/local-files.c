@@ -297,8 +297,8 @@ rep_file_name_as_directory(repv file)
   repv ret = rep_string_copy_n(rep_STR(file), len + 1);
 
   if (ret) {
-    rep_STR(ret)[len] = '/';
-    rep_STR(ret)[len+1] = 0;
+    rep_MUTABLE_STR(ret)[len] = '/';
+    rep_MUTABLE_STR(ret)[len+1] = 0;
   }
 
   return ret;
@@ -539,14 +539,14 @@ rep_file_modes_as_string(repv file)
     } else if (S_ISSOCK(perms)) {
       c = 's';
     }
-    rep_STR(string)[0] = c;
+    rep_MUTABLE_STR(string)[0] = c;
     for(int i = 0; i < 3; i++) {
       unsigned int xperms = perms >> ((2 - i) * 3);
       if (xperms & 4) {
-	rep_STR(string)[1+i*3] = 'r';
+	rep_MUTABLE_STR(string)[1+i*3] = 'r';
       }
       if (xperms & 2) {
-	rep_STR(string)[2+i*3] = 'w';
+	rep_MUTABLE_STR(string)[2+i*3] = 'w';
       }
       c = (xperms & 1) ? 'x' : 0;
       if (perms & (04000 >> i)) {
@@ -555,7 +555,7 @@ rep_file_modes_as_string(repv file)
 	c = extra_bits[i] | (c & 0x20);
       }
       if (c != 0) {
-	rep_STR(string)[3+i*3] = c;
+	rep_MUTABLE_STR(string)[3+i*3] = c;
       }
     }
   }

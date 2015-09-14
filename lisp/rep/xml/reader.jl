@@ -56,7 +56,7 @@
 
   (define (next stream)
     (let ((c (read-char (car stream))))
-      (rplacd stream c)
+      (set-cdr! stream c)
       c))
 
   (define-macro (current stream) `(cdr ,stream))
@@ -69,7 +69,7 @@
     (let loop ((this (current stream))
 	       (chars '()))
       (if (or (null? this) (memq this endings))
-	  (apply concat (nreverse chars))
+	  (apply concat (reverse! chars))
 	(loop (next stream) (cons this chars)))))
 
   (define (substitute-entities string)
@@ -104,7 +104,7 @@
       (let loop ((params '()))
 	(eat-whitespace stream)
 	(if (memq (current stream) '(#\? #\/ #\>))
-	    (nreverse params)
+	    (reverse! params)
 	  (let ((name (read-token stream)))
 	    (eat-whitespace stream)
 	    (or (= (current stream) #\=)
@@ -148,7 +148,7 @@
 					       stream 'list-ended) items))))))
 		   (or (string=? ended name)
 		       (error "Unmatched items: %s, %s" name ended)))
-		 (list* name params (nreverse items)))))))
+		 (list* name params (reverse! items)))))))
 
   (define (read-xml-item stream #!optional catcher)
     (cond

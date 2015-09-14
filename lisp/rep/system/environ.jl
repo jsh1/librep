@@ -47,7 +47,7 @@ The `*process-environment*' variable is destructively modified."
 	     (setq *process-environment* (cons (concat name #\= value)
 					       *process-environment*)))
 	    ((string-looking-at regexp (car rest))
-	     (rplaca rest (concat name #\= value)))
+	     (set-car! rest (concat name #\= value)))
 	    (t (loop (cdr rest)))))))
 
 ;;;###autoload
@@ -55,5 +55,5 @@ The `*process-environment*' variable is destructively modified."
   "Delete the environment variable called NAME."
   (let ((re (concat (quote-regexp name) #\=)))
     (setq *process-environment*
-	  (delete-if (lambda (x)
+	  (delete-if! (lambda (x)
 		       (string-looking-at re x)) *process-environment*))))

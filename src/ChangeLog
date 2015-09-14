@@ -1,3 +1,87 @@
+2015-09-13  John Harper  <jsh@unfactored.org>
+
+	* More function renaming:
+
+	rplaca -> set-car!
+	rplacd -> set-cdr!
+	nth -> list-ref
+	nthcdr -> list-tail
+	nconc -> append!
+	nreverse -> reverse!
+	sort -> sort!
+	memql -> memv
+	delete -> delete!
+	delq -> delq!
+	delete-if -> delete-if!
+	delete-if-not -> delete-if-not!
+	remove -> delete
+	remq -> delq
+	remove-if -> delete-if
+	remove-if-not -> delete-if-not
+	atom -> atom?
+	aset -> array-set!
+	aref -> array-ref
+	datum-set -> datum-set!
+	set-closure-name -> set-closure-name!
+	set-closure-function -> set-closure-function!
+	set-closure-structure -> set-closure-structure!
+	table-set -> table-set!
+	table-unset -> table-delete!
+	weak-ref-set -> weak-ref-set!
+	process-prog -> process-program
+	set-process-prog -> set-process-program!
+	set-process-args -> set-progrcess-args!
+	set-process-output-stream -> set-progrcess-output-stream!
+	set-process-error-stream -> set-progrcess-error-stream!
+	set-process-function -> set-progrcess-function!
+	process-dir -> process-directory
+	set-process-dir -> set-process-directory!
+	set-process-connection-type -> set-progrcess-connection-type!
+	vector-heapify -> vector-heapify!
+	vector-sort -> vector-sort!
+	symbol-table-set -> symbol-table-set!
+
+	* Functions added:
+
+	assv
+	sort
+	list-length
+	array-length
+	vector-length
+	vector-ref
+	vector-set!
+	string-length
+	string-ref
+	string-set!
+
+	* Functions removed:
+
+	setcar
+	setcdr
+	%
+	lsh
+
+	* Deleted rep.sdbm module.
+
+	* Added immutability flags to string and vector types, set by
+	reader and by make-{string,vector}-immutable! and indirectly by
+	string->immutable-string
+
+	* Added flag to strings marking that they may be compiled
+	regexp cache, removes invalidation overhead when modifying a
+	non-regexp string.
+
+	* rep_STR() now returns a constant string. rep_MUTABLE_STR()
+	gives the writable bytes
+
+	* make-symbol now uses an immutable copy of the string as the
+	name of the created symbol, to ensure it can't subsequently
+	change.
+
+	* New bytecode instructions: list-length, array-length,
+	vector-length, vector-ref, vector-set!, string-length,
+	string-ref, string-set!
+
 2015-09-12  John Harper  <jsh@unfactored.org>
 
 	* variables.c, subr-utils.c, structures.c, streams.c,

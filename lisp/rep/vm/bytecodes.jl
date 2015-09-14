@@ -31,7 +31,7 @@
 	    byte-conditional-jmp-insns byte-jmp-insns
 	    byte-opcodes-with-constants byte-varref-insns
 	    byte-varset-insns byte-varbind-insns
-	    byte-nth-insns byte-nthcdr-insns)
+	    byte-list-ref-insns byte-list-tail-insns)
 
     (open rep rep.vm.bytecode-defs)
 
@@ -65,11 +65,13 @@
   ;; list of instructions that can be safely deleted if their result
   ;; isn't actually required
   (define byte-side-effect-free-insns
-    (append '(env-ref refq reg-ref ref nth nthcdr aref length add neg
-	      sub mul div rem lnot not lor land gt ge lt le inc dec ash
-	      boundp get reverse assoc assq rassoc rassq last copy-sequence
-	      lxor max min mod make-closure enclose quotient floor ceiling
-	      truncate round exp log sin cos tan sqrt expt structure-ref)
+    (append '(env-ref refq reg-ref ref list-length list-ref list-tail array-ref
+	      length array-length add neg sub mul div rem lnot not lor land
+	      gt ge lt le inc dec ash boundp get reverse assoc assq rassoc
+	      rassq last copy-sequence lxor max min mod make-closure enclose
+	      quotient floor ceiling truncate round exp log sin cos tan
+	      sqrt expt structure-ref vector-length vector-ref string-length
+	      string-ref)
            byte-varref-free-insns))
 
   ;; list of all conditional jumps
@@ -87,18 +89,18 @@
   ;; list of all varbind instructions
   (define byte-varbind-insns '(bind))
 
-  (define byte-nth-insns '((0 . car)
-                          (1 . cadr)
-                          (2 . caddr)
-                          (3 . cadddr)
-                          (4 . caddddr)
-                          (5 . cadddddr)
-                          (6 . caddddddr)
-                          (7 . cadddddddr)))
+  (define byte-list-ref-insns '((0 . car)
+				(1 . cadr)
+				(2 . caddr)
+				(3 . cadddr)
+				(4 . caddddr)
+				(5 . cadddddr)
+				(6 . caddddddr)
+				(7 . cadddddddr)))
 
-  (define byte-nthcdr-insns '((0 . ())
-                             (1 . cdr)
-                             (2 . cddr)))
+  (define byte-list-tail-insns '((0 . ())
+				 (1 . cdr)
+				 (2 . cddr)))
 
   ;; list of instructions that reference the vector of constants
   (define byte-opcodes-with-constants

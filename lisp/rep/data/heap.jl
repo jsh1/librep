@@ -23,8 +23,8 @@
 
 (define-structure rep.data.heap
 
-    (export vector-heapify
-	    vector-heapsort
+    (export vector-heapify!
+	    vector-sort!
 	    make-heap
 	    heap?
 	    heap-size
@@ -36,9 +36,9 @@
 	  rep.data.records
 	  rep.test.framework)
 
-  (defsubst aswap (vec i j)
-    (aset vec i (prog1 (aref vec j)
-		  (aset vec j (aref vec i)))))
+  (defsubst vector-swap! (vec i j)
+    (vector-set! vec i (prog1 (vector-ref vec j)
+			 (vector-set! vec j (vector-ref vec i)))))
 
   (define (sift-down vec less i size)
     (let loop-1 ((i i))
@@ -47,35 +47,37 @@
 		     (min-i i))
 	  (cond ((and (< ci (+ child 2)) (< ci size))
 		 (loop-2 (1+ ci)
-			 (if (less (aref vec ci) (aref vec min-i)) ci min-i)))
+			 (if (less (vector-ref vec ci) (vector-ref vec min-i))
+			     ci
+			   min-i)))
 		((/= min-i i)
-		  (aswap vec i min-i)
+		  (vector-swap! vec i min-i)
 		  (loop-1 min-i)))))))
 
   (define (sift-up vec less i)
     (let loop ((i i))
       (let ((pi (1- (quotient (1+ i) 2))))
-	(when (and (>= pi 0) (less (aref vec i) (aref vec pi)))
-	  (aswap vec i pi)
+	(when (and (>= pi 0) (less (vector-ref vec i) (vector-ref vec pi)))
+	  (vector-swap! vec i pi)
 	  (loop pi)))))
 
-  (define (vector-heapify vec #!key (less <))
+  (define (vector-heapify! vec #!key (less <))
     "Order the contents of VEC as a binary minimum heap, with (LESS a b)
 defining the comparison function."
-    (let loop ((i (1- (quotient (length vec) 2))))
+    (let loop ((i (1- (quotient (vector-length vec) 2))))
       (when (>= i 0)
-	(sift-down vec less i (length vec))
+	(sift-down vec less i (vector-length vec))
 	(loop (1- i)))))
 
-  (define (vector-sort vec #!key (less <))
+  (define (vector-sort! vec #!key (less <))
     "Sort the contents of VEC using the heap-sort algorithm, using (LESS a b)
 as the comparison function."
     (let ((more (lambda (x y)
 		  (not (less x y)))))
-      (vector-heapify vec #:less more)
-      (let loop ((i (1- (length vec))))
+      (vector-heapify! vec #:less more)
+      (let loop ((i (1- (vector-length vec))))
 	(when (> i 0)
-	  (aswap vec 0 i)
+	  (vector-swap! vec 0 i)
 	  (sift-down vec more 0 i)
 	  (loop (1- i))))))
 
@@ -94,20 +96,20 @@ as the comparison function."
   (define (heap-resize heap delta)
     (let* ((size (+ (heap-size heap) delta))
 	   (old-vec (heap-data heap))
-	   (old-size (if old-vec (length old-vec) 0)))
+	   (old-size (if old-vec (vector-length old-vec) 0)))
       (when (< old-size size)
 	(let* ((new-size (max (* old-size 2) 16))
 	       (new-vec (make-vector new-size)))
 	  (do ((i 0 (1+ i)))
 	      ((= i old-size))
-	    (aset new-vec i (aref old-vec i)))
+	    (vector-set! new-vec i (vector-ref old-vec i)))
 	  (heap-data-set! heap new-vec)))))
 
   (define (heap-add heap value)
     (heap-resize heap 1)
     (let ((i (heap-size heap)))
       (heap-size-set! heap (1+ (heap-size heap)))
-      (aset (heap-data heap) i value)
+      (vector-set! (heap-data heap) i value)
       (sift-up (heap-data heap) (heap-less heap) i)))
 
   (define (heap-remove heap)
@@ -115,9 +117,9 @@ as the comparison function."
 	nil
       (let ((vec (heap-data heap))
 	    (i (1- (heap-size heap))))
-	(prog1 (aref vec 0)
-	  (aset vec 0 (aref vec i))
-	  (aset vec i nil)
+	(prog1 (vector-ref vec 0)
+	  (vector-set! vec 0 (vector-ref vec i))
+	  (vector-set! vec i nil)
 	  (heap-size-set! heap i)
 	  (sift-down (heap-data heap) (heap-less heap) 0 (heap-size heap))
 	  (heap-resize heap -1)))))
@@ -134,10 +136,10 @@ as the comparison function."
 	(test (= (heap-size heap) 0))
 
 	(for-each (lambda (x) (heap-add heap x)) data)
-	(test (= (heap-size heap) (length data)))
+	(test (= (heap-size heap) (list-length data)))
 
 	(for-each (lambda (x)
 		    (test (= (heap-remove heap) x)))
-		  (sort (copy-sequence data)))
+		  (sort data))
 
 	(test (= (heap-size heap) 0))))))

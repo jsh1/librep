@@ -105,7 +105,7 @@
   ;; structure, or nil
   (defun locate-variable (var)
     (if (structure-ref? var)
-	(nth 1 var)
+	(list-ref var 1)
       (let loop ((rest (fluid open-modules)))
 	(if rest
 	    (if (module-exports? (car rest) var)
@@ -121,7 +121,7 @@
 
   (defun variable-stem (var)
     (if (pair? var)
-	(nth 2 var)			;structure-ref
+	(list-ref var 2)		;structure-ref
       var))
 
   (defun symbol-value-1 (var)
@@ -155,7 +155,7 @@
   ;; return t if the binding of VAR comes from the rep (built-ins) module
   (defun compiler-binding-from-rep? (var)
     (if (structure-ref? var)
-	(eq? (nth 1 var) 'rep)
+	(eq? (list-ref var 1) 'rep)
       (and (not (has-local-binding? var))
 	   (eq? (locate-variable var) 'rep))))
 
@@ -278,7 +278,7 @@
     (fluid-set macro-env
 	       (cons (cons name
 			   (let ((closure (make-closure body name)))
-			     (set-closure-structure
+			     (set-closure-structure!
 			      closure (get-structure *user-structure*))
 			     closure))
 		     (fluid macro-env))))
@@ -355,16 +355,16 @@
       (for-each (lambda (clause)
 		  (case (car clause)
 		    ((open)
-		     (setq opened (nconc (reverse (cdr clause)) opened))
+		     (setq opened (append! (reverse (cdr clause)) opened))
 		     (setq header (cons clause header)))
 
 		    ((access)
-		     (setq accessed (nconc (reverse (cdr clause)) accessed))
+		     (setq accessed (append! (reverse (cdr clause)) accessed))
 		     (setq header (cons clause header)))
 
 		    (t (setq header (cons clause header)))))
 		config)
-      (setq header (cons '(open rep.module-system) (nreverse header)))
+      (setq header (cons '(open rep.module-system) (reverse! header)))
 
       (let-fluids ((current-structure nil)
 		   (current-module name))
@@ -396,8 +396,8 @@
 
   (defun compile-structure-ref (form)
     (let
-	((struct (nth 1 form))
-	 (var (nth 2 form)))
+	((struct (list-ref form 1))
+	 (var (list-ref form 2)))
       (or (memq struct (fluid accessed-modules))
 	  (memq struct (fluid open-modules))
 	  (compiler-error
@@ -425,7 +425,7 @@
 	(unless (bytecode? body)
 	  (call-with-structure
 	   (lambda ()
-	     (set-closure-function function (compile-lambda body name)))
+	     (set-closure-function! function (compile-lambda body name)))
 	   (closure-structure function)))
 	function)))
 

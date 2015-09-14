@@ -357,20 +357,20 @@ typedef rep_cell rep_number;
 /* Strings */
 
 typedef struct rep_string_struct {
-  /* Bits 0->7 are standard cell8 defines. Bits 8->31 store the length
-     of the string. This means that strings can't contain more than
-     2^24-1 bytes (thats about 16.7MB) */
-
   repv car;
-
-  /* Pointer to the (zero-terminated) characters */
-
-  char *data;
-
+  char *data;				/* always NUL terminated. */
 } rep_string;
 
-#define rep_STRING_LEN_SHIFT	8
-#define rep_MAX_STRING \
+/* String contents are immutable. */
+#define rep_STRING_IMMUTABLE	(1 << (rep_CELL8_TYPE_BITS + 0))
+
+/* String may be in regexp cache. */
+#define rep_STRING_REGEXP	(1 << (rep_CELL8_TYPE_BITS + 1))
+
+/* Length is in high bits of car. */
+#define rep_STRING_LEN_SHIFT	(rep_CELL8_TYPE_BITS + 2)
+
+#define rep_MAX_STRING_LEN \
     ((((size_t)1) << (rep_VALUE_BITS - rep_STRING_LEN_SHIFT)) - 1)
 
 #define rep_STRINGP(v)		rep_CELL8_TYPEP(v, rep_String)
@@ -378,22 +378,22 @@ typedef struct rep_string_struct {
 
 #define rep_STRING_LEN(v)	(rep_STRING(v)->car >> rep_STRING_LEN_SHIFT)
 
-#define rep_MAKE_STRING_CAR(len) (((len) << rep_STRING_LEN_SHIFT) | rep_String)
-
 /* True if this string may be written to; generally static strings
    are made from C string-constants and usually in read-only storage. */
-#define rep_STRING_WRITABLE_P(s) (!rep_CELL_STATIC_P(s))
+#define rep_STRING_WRITABLE_P(v) (!(rep_STRING(v)->car & rep_STRING_IMMUTABLE))
 
 /* Define a variable V, containing a static string S. This must be cast
    to a repv via the rep_VAL() macro when using. */
 #define DEFSTRING(v, s)				\
   rep_ALIGN_CELL(static const rep_string v) = {	\
     ((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
+    | rep_STRING_IMMUTABLE			\
     | rep_CELL_STATIC_BIT | rep_String,		\
     (char *)s					\
   }
 
-#define rep_STR(v)	(rep_STRING(v)->data)
+#define rep_MUTABLE_STR(v)	(rep_STRING(v)->data)
+#define rep_STR(v)		((const char *)rep_MUTABLE_STR(v))
 
 
 /* Symbols */
@@ -452,22 +452,30 @@ typedef struct {
 /* Vectors */
 
 typedef struct rep_vector_struct {
-  repv car;				/* size is bits 8->31 */
+  repv car;
   struct rep_vector_struct *next;
   repv array[1];
 } rep_vector;
 
 /* Bytes to allocate for S objects */
-#define rep_VECT_SIZE(s)	((sizeof(repv) * ((s)-1)) + sizeof(rep_vector))
+#define rep_VECT_SIZEOF(s)	((sizeof(repv) * ((s)-1)) + sizeof(rep_vector))
+
+/* Vector contents are immutable. */
+#define rep_VECTOR_IMMUTABLE	(1 << (rep_CELL8_TYPE_BITS + 0))
+
+/* Length is in high bits of car. */
+#define rep_VECTOR_LEN_SHIFT	(rep_CELL8_TYPE_BITS + 1)
+#define rep_VECTOR_LEN(v)	(rep_VECT(v)->car >> rep_VECTOR_LEN_SHIFT)
 
 #define rep_VECT(v)		((rep_vector *)rep_PTR(v))
 #define rep_VECTI(v,i)		(rep_VECT(v)->array[(i)])
 
-#define rep_VECT_LEN(v)		(rep_VECT(v)->car >> 8)
-#define rep_SET_VECT_LEN(v,l)	(rep_VECT(v)->car = ((l) << 8 | rep_Vector))
-
 #define rep_VECTORP(v)		rep_CELL8_TYPEP(v, rep_Vector)
-#define rep_VECTOR_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
+#define rep_VECTOR_WRITABLE_P(v) (!(rep_VECT(v)->car & rep_VECTOR_IMMUTABLE))
+
+/* adaptation of rep_CELL8_TYPEP(). */
+#define rep_VECTOR_OR_BYTECODE_P(v) (rep_CELLP(v) \
+  && (rep_CELL8_TYPE(v) == rep_Vector || rep_CELL8_TYPE(v) == rep_Bytecode))
 
 
 /* Compiled Lisp functions; this is a vector. Some of these definitions
@@ -488,11 +496,11 @@ typedef struct rep_vector_struct {
 #define rep_BYTECODE_MIN_SLOTS	3
 
 /* Optional fifth element is documentation. */
-#define rep_BYTECODE_DOC(v)	((rep_VECT_LEN(v) >= 4) \
+#define rep_BYTECODE_DOC(v)	((rep_VECTOR_LEN(v) >= 4) \
 				 ? rep_VECTI(v, 3) : rep_nil)
 
 /* Optional sixth element is interactive specification. */
-#define rep_BYTECODE_INTERACTIVE(v) ((rep_VECT_LEN(v) >= 5) \
+#define rep_BYTECODE_INTERACTIVE(v) ((rep_VECTOR_LEN(v) >= 5) \
 				     ? rep_VECTI(v, 4) : rep_nil)
 
 
@@ -619,7 +627,6 @@ typedef struct rep_closure_struct {
 
 #define rep_CLOSURE(v) ((rep_closure *)rep_PTR(v))
 #define rep_CLOSUREP(v) (rep_CELL8_TYPEP(v, rep_Closure))
-#define rep_CLOSURE_WRITABLE_P(v) (!rep_CELL_STATIC_P(v))
 
 
 /* Guardians */

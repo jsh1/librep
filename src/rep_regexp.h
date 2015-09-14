@@ -55,9 +55,9 @@ struct rep_saved_regexp_data {
 
 #define rep_regexec(p,s) rep_regexec2(p,s,0)
 
-extern rep_regexp *rep_regcomp(char *);
-extern int rep_regexec2(rep_regexp *, char *, int);
-extern int rep_regmatch_string(rep_regexp *, char *, int);
+extern rep_regexp *rep_regcomp(const char *);
+extern int rep_regexec2(rep_regexp *, const char *, int);
+extern int rep_regmatch_string(rep_regexp *, const char *, int);
 
 extern int rep_regexp_max_depth;
 

@@ -131,8 +131,8 @@
       (compiler-error "can't inline more than %d nested functions"
 		      max-inline-depth))
     (let*
-	((lambda-list (nth 1 fun))
-	 (body (nthcdr 2 fun))
+	((lambda-list (list-ref fun 1))
+	 (body (list-tail fun 2))
 	 (out (push-inline-args
 	       lambda-list args pushed-args-already test-variable-bind))
 	 (args-left (car out))
