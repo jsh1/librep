@@ -414,6 +414,7 @@
 	    (unless (symbol? sym)
 	      (compiler-error "trying to set value of a non-symbol: %s" sym))
 	    (compile-form-1 val)
+	    ;; FIXME: wrong, but needed for setq
 	    (emit-insn '(dup))
 	    (increment-stack)
 	    (emit-varset sym)
@@ -431,6 +432,8 @@
 	  (val (list-ref form 2)))
       (unless (symbol? sym)
 	(compiler-error "trying to set value of a non-symbol: %s" sym))
+      (unless (null? (list-tail form 3))
+	(compiler-error "too many parameters to set!: %S" form))
       (compile-form-1 val)
       (emit-varset sym)
       (note-binding-modified sym)

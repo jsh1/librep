@@ -158,7 +158,7 @@ struct rep_struct_node_struct {
 /* If set, all (local) bindings are exported by default. */
 #define rep_STF_EXPORT_ALL	(1 << (rep_CELL16_TYPE_BITS + 1))
 
-/* If set, bindings can be created by setq et al. */
+/* If set, bindings can be created by set! et al. */
 #define rep_STF_SET_BINDS	(1 << (rep_CELL16_TYPE_BITS + 2))
 
 #define rep_STRUCT_HASH(x,n)	(((x) >> 3) % (n))

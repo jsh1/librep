@@ -40,19 +40,21 @@ where OPTIONS are any of:
   (throw 'quit 0))
 
 (when (or (get-command-line-option "-c") (get-command-line-option "--c"))
-  (setq *write-c-file* t))
+  (set! *write-c-file* t))
 (when (or (get-command-line-option "-p") (get-command-line-option "--pot"))
-  (setq *write-c-file* nil))
+  (set! *write-c-file* nil))
 
-(let ((included '()) tem)
-  (while (setq tem (get-command-line-option "--include" t))
-    (setq included (cons (intern tem) included)))
+(let loop ((included '()) tem)
+  (set! tem (get-command-line-option "--include" t))
+  (when tem
+    (set! included (cons (intern tem) included))
+    (loop))
   (when included
     (set-included-definers included)))
 
 (while *command-line-args*
   (let ((file (car *command-line-args*)))
-    (setq *command-line-args* (cdr *command-line-args*))
+    (set! *command-line-args* (cdr *command-line-args*))
     (scan-file file)))
 
 (if *write-c-file*

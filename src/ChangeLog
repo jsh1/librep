@@ -1,3 +1,7 @@
+2015-09-14  John Harper  <jsh@unfactored.org>
+
+	* variables.c: added set! special form
+
 2015-09-13  John Harper  <jsh@unfactored.org>
 
 	* More function renaming:

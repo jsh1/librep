@@ -422,7 +422,7 @@ For example:
     ((string? foo)
       (title "foo is a string"))
     ((number? foo)
-      (setq bar foo)
+      (set! bar foo)
       (title "foo is a number"))
     (t
       (title "foo is something else...")))
