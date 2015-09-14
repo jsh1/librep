@@ -1,5 +1,8 @@
 2015-09-14  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/rep.jl: compile `setq` directly, means we
+	don't need to depend on definition of `set`
+
 	* updated for fluid naming changes
 
 	* rep/lang/interpreter.jl: added setq macro

@@ -251,18 +251,6 @@
   (defun foldablep (name)
     (memq name constant-functions))
 
-  (defun trans-setq (form)
-    (let
-	(lst)
-      (set! form (cdr form))
-      (while form
-	(unless (pair? (cdr form))
-	  (compiler-error "odd number of args to setq"))
-	(set! lst (cons `(set ',(car form) ,(list-ref form 1)) lst))
-	(set! form (list-tail form 2)))
-      (cons 'progn (reverse! lst))))
-  (put 'setq 'rep-compile-transform trans-setq)
-
   (defun trans-defvar (form)
     (let
 	((name (list-ref form 1))
@@ -404,29 +392,28 @@
     (decrement-stack))
   (put 'prog1 'rep-compile-fun compile-prog1)
 
-  (defun compile-set (form)
-    (let ((sym (list-ref form 1))
-	  (val (list-ref form 2)))
-      (if (compiler-constant? sym)
-	  ;; use setq
-	  (progn
-	    (set! sym (compiler-constant-value sym))
-	    (unless (symbol? sym)
-	      (compiler-error "trying to set value of a non-symbol: %s" sym))
-	    (compile-form-1 val)
-	    ;; FIXME: wrong, but needed for setq
+  (defun compile-setq (form)
+    (if (null? (cdr form))
+	(progn
+	  (emit-insn '(push nil))
+	  (increment-stack))
+      (let loop ((lst (cdr form)))
+	(let ((sym (car lst))
+	      (val (cadr lst))
+	      (next-lst (cddr lst)))
+	  (unless (symbol? sym)
+	    (compiler-error "trying to set value of a non-symbol: %s" sym))
+	  (compile-form-1 val)
+	  (when (null? next-lst)
 	    (emit-insn '(dup))
-	    (increment-stack)
-	    (emit-varset sym)
-	    (note-binding-modified sym)
-	    (decrement-stack))
-	;; need to preserve left-right evaluation order
-	(compile-form-1 sym)
-	(compile-form-1 val)
-	(emit-insn '(set))
-	(decrement-stack))))
-  (put 'set 'rep-compile-fun compile-set)
-
+	    (increment-stack))
+	  (emit-varset sym)
+	  (note-binding-modified sym)
+	  (decrement-stack)
+	  (unless (null? next-lst)
+	    (loop next-lst))))))
+  (put 'setq 'rep-compile-fun compile-setq)
+	  
   (defun compile-set! (form)
     (let ((sym (list-ref form 1))
 	  (val (list-ref form 2)))
@@ -1195,6 +1182,8 @@
     (put 'vector-set! 'rep-compile-opcode 'vector-set!)
     (put 'throw 'rep-compile-fun compile-2-args)
     (put 'throw 'rep-compile-opcode 'throw)
+    (put 'set 'rep-compile-fun compile-2-args)
+    (put 'set 'rep-compile-opcode 'set)
     (put 'bound? 'rep-compile-fun compile-1-args)
     (put 'bound? 'rep-compile-opcode 'boundp)
     (put 'symbol? 'rep-compile-fun compile-1-args)
