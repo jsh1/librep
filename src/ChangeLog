@@ -1,5 +1,8 @@
 2015-09-14  John Harper  <jsh@unfactored.org>
 
+	* lispmach.h: better assertions for checking for binding stack
+	overflow or underflow
+
 	* variables.c: added set! special form
 
 2015-09-13  John Harper  <jsh@unfactored.org>

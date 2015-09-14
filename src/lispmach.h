@@ -119,7 +119,6 @@ unbind_n(repv *ptr, int n)
 #define CHECK_NEXT	 						\
   do {									\
     ASSERT(STACK_USAGE <= stack_size);					\
-    ASSERT(BIND_USAGE <= bindings_size + 1);				\
     ASSERT(((char *)pc - rep_STR(code)) < rep_STRING_LEN(code));	\
   } while (0)
 
@@ -964,11 +963,13 @@ again: {
     }
 
     INSN(OP_INIT_BIND) {
+      ASSERT(BIND_USAGE < bindings_size + 1);
       BIND_PUSH(rep_EMPTY_BINDING_FRAME);
       SAFE_NEXT;
     }
 
     INSN(OP_UNBIND) {
+      ASSERT(bp > bindings);
       impurity -= unbind(BIND_RET_POP);
       SAFE_NEXT;
     }
@@ -1362,6 +1363,7 @@ again: {
 
     INSN(OP_BINDERR) {
       repv handler = POP;
+      ASSERT(BIND_USAGE < bindings_size + 1);
       BIND_PUSH(Fcons(Qerror, Fcons(handler, rep_MAKE_INT(STACK_USAGE))));
       impurity++;
       SAFE_NEXT;
@@ -1416,6 +1418,7 @@ again: {
 	/* The handler matches the error. */
 	tem = rep_CDR(TOP);	/* the error data */
 	rep_env = Fcons(tem, rep_env);
+	ASSERT(BIND_USAGE < bindings_size + 1);
 	BIND_PUSH(rep_MARK_LEX_BINDING(rep_EMPTY_BINDING_FRAME));
 	TOP = rep_nil;
       }
