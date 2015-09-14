@@ -700,7 +700,7 @@ Assign the name NAME(a symbol) to structure object STRUCTURE.
   }
 
   cache_flush();
-  return name;
+  return rep_undefined_value;
 }
 
 /* The environment of the thunks are modified! */
@@ -876,7 +876,7 @@ STRUCTURE to VALUE. If no such binding exists, an error is signalled.
 
   n->binding = value;
 
-  return value;
+  return rep_undefined_value;
 }
 
 DEFUN("structure-define", Fstructure_define, Sstructure_define,
@@ -906,7 +906,7 @@ STRUCTURE to VALUE. If no such binding exists, one is created.
 
   n->binding = value;
 
-  return value;
+  return rep_undefined_value;
 }
 
 DEFUN("external-structure-ref", Fexternal_structure_ref,
@@ -1060,7 +1060,7 @@ Set the interface of structure object STRUCTURE to INTERFACE.
   }
 
   cache_flush();
-  return Qt;
+  return rep_undefined_value;
 }
 
 DEFUN("structure-file", Fstructure_file,
@@ -1333,7 +1333,7 @@ value.
 out:
   rep_POPGC; rep_POPGC;
 
-  return ret;
+  return ret ? rep_undefined_value : 0;
 }
 
 #ifdef VERBOSE
@@ -1381,7 +1381,7 @@ changed.
 
   n->is_constant = true;
 
-  return var;
+  return rep_undefined_value;
 }
 
 DEFUN("binding-immutable?", Fbinding_immutable_p,
@@ -1492,7 +1492,7 @@ structure.
 
   Fstructure_define(rep_structure, Q_features, value);
 
-  return feature;
+  return rep_undefined_value;
 }
 
 DEFUN_INT("require", Frequire, Srequire, (repv feature), rep_Subr1,
@@ -1508,7 +1508,7 @@ loaded is either FILE(if given), or the print name of FEATURE.
 
   repv tem = Ffeaturep(feature);
   if (tem != rep_nil) {
-    return tem;
+    return rep_undefined_value;
   }
 
   rep_struct *dst = rep_STRUCTURE(rep_structure);
@@ -1548,7 +1548,7 @@ loaded is either FILE(if given), or the print name of FEATURE.
     }
   }
 
-  return Qt;
+  return rep_undefined_value;
 }
 
 
@@ -1658,7 +1658,7 @@ DEFUN("structure-exports-all", Fstructure_exports_all,
     rep_STRUCTURE(s)->car &= ~rep_STF_EXPORT_ALL;
   }
 
-  return s;
+  return rep_undefined_value;
 }
 
 DEFUN("structure-set-binds", Fstructure_set_binds,
@@ -1672,7 +1672,7 @@ DEFUN("structure-set-binds", Fstructure_set_binds,
     rep_STRUCTURE(s)->car &= ~rep_STF_SET_BINDS;
   }
 
-  return s;
+  return rep_undefined_value;
 }
 
 void
@@ -1725,7 +1725,7 @@ set-special-environment! ENV STRUCTURE
 
 /* This is a horrible kludge :-(
 
-   The problem is that we are used to doing (setq foo-special 42) in rc
+   The problem is that we are used to doing (set! foo-special 42) in rc
    files, even though foo-special is yet to be marked special. So the
    binding gets made in the current structure, and is then ignored when
    the variable finally gets defvar'd.

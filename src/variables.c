@@ -284,7 +284,7 @@ variable will be set (if necessary) not the local value.)
 	   (defvar special-var "ls")
 
 	   [back in restricted environment]
-	   (setq special-var "/bin/rm")
+	   (set! special-var "/bin/rm")
 	     --> error
 
        Setting the variable the first time (since it's unbound) adds it
@@ -301,7 +301,7 @@ variable will be set (if necessary) not the local value.)
     }
   }
 
-  return sym;
+  return rep_undefined_value;
 }
 
 static repv
@@ -358,7 +358,7 @@ set_symbol_special_value(repv sym, repv val, bool only_default)
     repv tem = search_environment(sym, rep_special_env);
     if (tem != rep_nil) {
       rep_CDR(tem) = val;
-      return val;
+      return rep_undefined_value;
     }
   }
 
@@ -398,30 +398,6 @@ rep_symbol_value(repv sym, bool no_error_if_void, bool allow_lexical)
   return val;
 }
 
-static repv
-set_symbol_value(repv sym, repv val, bool allow_lexical,
-		 repv (*setter)(repv st, repv var, repv val))
-{
-  rep_DECLARE1(sym, rep_SYMBOLP);
-
-  if (rep_SYM(sym)->car & rep_SF_SPECIAL) {
-    return set_symbol_special_value(sym, val, false);
-  }
-
-  /* For non-special variables, only scan lexical bindings when being
-     called from setq, i.e. interpreted code. */
-
-  if (allow_lexical) {
-    repv tem = search_environment(sym, rep_env);
-    if (tem != rep_nil) {
-      rep_CDR(tem) = val;
-      return val;
-    }
-  }
-
-  return setter(rep_structure, sym, val);
-}
-
 /* Second arg true means don't signal an error if the value is void. */
 
 DEFUN("symbol-value", Fsymbol_value, Ssymbol_value,
@@ -429,8 +405,9 @@ DEFUN("symbol-value", Fsymbol_value, Ssymbol_value,
 ::doc:rep.lang.symbols#symbol-value::
 symbol-value SYMBOL
 
-Returns the value of SYMBOL, if SYMBOL is flagged as having buffer-local
-values look for one of those first.
+Returns the value of the top-level or special binding of SYMBOL, if
+SYMBOL is flagged as having buffer-local values look for one of those
+first.
 ::end:: */
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
@@ -443,8 +420,9 @@ DEFUN("default-value", Fdefault_value, Sdefault_value,
 ::doc:rep.lang.symbols#default-value::
 default-value SYMBOL
 
-Returns the default value of the symbol SYMBOL. This will be the value of
-SYMBOL in buffers or windows which do not have their own local value.
+Returns the default value of the top-level or special binding of
+SYMBOL. This will be the value of SYMBOL in buffers or windows which do
+not have their own local value.
 ::end:: */
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
@@ -466,21 +444,37 @@ SYMBOL in buffers or windows which do not have their own local value.
 
 /* Backwards compatibility for C callers. */
 
-repv Fset(repv s, repv v) {
-  return set_symbol_value(s, v, false, Fstructure_define);
+repv
+Fset(repv sym, repv val)
+{
+  rep_DECLARE1(sym, rep_SYMBOLP);
+
+  if (rep_SYM(sym)->car & rep_SF_SPECIAL) {
+    return set_symbol_special_value(sym, val, false);
+  } else {
+    return Fstructure_define(rep_structure, sym, val);
+  }
 }
 
-DEFUN_INT("set", Freal_set, Sset, (repv s, repv v), rep_Subr2,
+DEFUN_INT("set", Freal_set, Sset, (repv sym, repv val), rep_Subr2,
 	  "vVariable:\nxNew value of %s:") /*
 ::doc:rep.lang.symbols#set::
 set SYMBOL VALUE
 
-Sets the value of SYMBOL to VALUE. If SYMBOL has a buffer-local binding
-in the current buffer or `make-variable-buffer-local' has been called on
-SYMBOL the buffer-local value in the current buffer is set. Returns VALUE.
+Sets the value of the top-level or special binding of SYMBOL to VALUE.
+
+If SYMBOL has a buffer-local binding in the current buffer or
+`make-variable-buffer-local' has been called on SYMBOL the buffer-local
+value in the current buffer is set.
 ::end:: */
 {
-  return set_symbol_value(s, v, false, Fstructure_set);
+  rep_DECLARE1(sym, rep_SYMBOLP);
+
+  if (rep_SYM(sym)->car & rep_SF_SPECIAL) {
+    return set_symbol_special_value(sym, val, false);
+  } else {
+    return Fstructure_set(rep_structure, sym, val);
+  }
 }
 
 DEFUN("set-default", Fset_default, Sset_default,
@@ -488,7 +482,8 @@ DEFUN("set-default", Fset_default, Sset_default,
 ::doc:rep.lang.symbols#set-default::
 set-default SYMBOL VALUE
 
-Sets the default value of SYMBOL to VALUE, then returns VALUE.
+Sets the default value of SYMBOL's top-level or special binding to
+VALUE.
 ::end:: */
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
@@ -496,10 +491,8 @@ Sets the default value of SYMBOL to VALUE, then returns VALUE.
   if (rep_SYM(sym)->car & rep_SF_SPECIAL) {
     return set_symbol_special_value(sym, val, true);
   } else {
-    Fstructure_set(rep_structure, sym, val);
+    return Fstructure_set(rep_structure, sym, val);
   }
-
-  return val;
 }
 
 DEFUN("default-bound?", Fdefault_boundp,
@@ -507,7 +500,7 @@ DEFUN("default-bound?", Fdefault_boundp,
 ::doc:rep.lang.symbols#default-bound?::
 default-bound? SYMBOL
 
-Returns t if SYMBOL has a default value.
+Returns t if SYMBOL has a default top-level or special binding.
 ::end:: */
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
@@ -524,7 +517,7 @@ DEFUN("bound?", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
 ::doc:rep.lang.symbols#bound?::
 bound? SYMBOL
 
-Returns t if SYMBOL has a value as a variable.
+Returns t if SYMBOL has a top-level or special binding.
 ::end:: */
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
@@ -533,11 +526,12 @@ Returns t if SYMBOL has a value as a variable.
 }
 
 DEFUN("set!", Fset_, Sset_, (repv args, bool tail_posn), rep_SF) /*
-::doc:rep.lang.interpter#set!::
+::doc:rep.lang.interpreter#set!::
 set! SYMBOL FORM
 
-Set the value of SYMBOL to the result of evaluating FORM.
-::end */
+Set the value of the current binding of SYMBOL to the result of
+evaluating FORM.
+::end:: */
 {
   if (!rep_CONSP(args)) {
     return rep_signal_missing_arg(1);
@@ -551,6 +545,8 @@ Set the value of SYMBOL to the result of evaluating FORM.
   if (!rep_CONSP(args)) {
     return rep_signal_missing_arg(2);
   }
+
+  /* FIXME: protection against incorrect conversion from `setq`. */
 
   if (rep_CDR(args) != rep_nil) {
     DEFSTRING(too_many, "too many args to set!");
@@ -568,45 +564,23 @@ Set the value of SYMBOL to the result of evaluating FORM.
     return 0;
   }
 
-  if (!set_symbol_value(sym, value, true, Fstructure_set)) {
-    return 0;
+  if (rep_SYM(sym)->car & rep_SF_SPECIAL) {
+    return set_symbol_special_value(sym, value, false);
   }
 
-  return rep_undefined_value;
-}
+  /* Only scan lexical bindings when being called from set!, i.e.
+     interpreted code. (Compiled code doesn't create named lexical
+     bindings, so if we found a binding it would be one from outer
+     interpreted code -- which by definition of lexical scope would be
+     incorrect.) */
 
-DEFUN("setq", Fsetq, Ssetq, (repv args, bool tail_posn), rep_SF) /*
-::doc:rep.lang.interpreter#setq::
-setq [SYMBOL FORM] ...
-
-Sets the value of each SYMBOL to the value of its corresponding FORM
-evaluated, returns the value of the last evaluation.
-::end:: */
-{
-  repv value = rep_nil;
-  rep_GC_root gc_args;
-  rep_PUSHGC(gc_args, args);
-
-  while (rep_CONSP(args)
-	 && rep_CONSP(rep_CDR(args))
-	 && rep_SYMBOLP(rep_CAR(args)))
-  {
-    value = Feval(rep_CAR(rep_CDR(args)));
-
-    if (!value) {
-      break;
-    }
-
-    if (!set_symbol_value(rep_CAR(args), value, true, Fstructure_set)) {
-      value = 0;
-      break;
-    }
-
-    args = rep_CDR(rep_CDR(args));
+  repv tem = search_environment(sym, rep_env);
+  if (tem != rep_nil) {
+    rep_CDR(tem) = value;
+    return rep_undefined_value;
   }
 
-  rep_POPGC;
-  return value;
+  return Fstructure_set(rep_structure, sym, value);
 }
 
 DEFUN("%define", F_define, S_define, (repv args, bool tail_posn), rep_SF) /*
@@ -618,28 +592,49 @@ the result of the evaluation. If such a binding already exists, it will
 be overwritten.
 ::end:: */
 {
-  repv var, value, doc = rep_nil;
-  if (!rep_assign_args(args, 2, 3, &var, &value, &doc)) {
-    return 0;
+  if (!rep_CONSP(args)) {
+    return rep_signal_missing_arg(1);
   }
 
-  rep_GC_root gc_var, gc_doc;
-  rep_PUSHGC(gc_var, var);
-  rep_PUSHGC(gc_doc, doc);
+  repv sym = rep_CAR(args);
+  args = rep_CDR(args);
+
+  rep_DECLARE1(sym, rep_SYMBOLP);
+
+  /* Don't allow special variables to have lexical bindings as well. */
+
+  if (rep_SYM(sym)->car & rep_SF_SPECIAL) {
+    return rep_signal_arg_error(sym, 1);
+  }
+
+  if (!rep_CONSP(args)) {
+    return rep_signal_missing_arg(2);
+  }
+
+  repv value = rep_CAR(args);
+  args = rep_CDR(args);
+
+  rep_GC_root gc_sym, gc_args;
+  rep_PUSHGC(gc_sym, sym);
+  rep_PUSHGC(gc_args, args);
 
   value = Feval(value);
 
   rep_POPGC; rep_POPGC;
+
   if (!value) {
     return 0;
   }
 
-  value = Fstructure_define(rep_structure, var, value);
+  if (!Fstructure_define(rep_structure, sym, value)) {
+    return 0;
+  }
 
-  if (value && doc != rep_nil) {
-    repv prop = rep_documentation_property(rep_structure);
-    if (prop != rep_nil) {
-      if (!Fput(var, prop, doc)) {
+  if (rep_CONSP(args)) {
+    repv doc = rep_CAR(args);
+    if (doc != rep_nil) {
+      repv prop = rep_documentation_property(rep_structure);
+      if (prop != rep_nil && !Fput(sym, prop, doc)) {
 	return 0;
       }
     }
@@ -652,7 +647,7 @@ DEFUN("makunbound", Fmakunbound, Smakunbound, (repv sym), rep_Subr1) /*
 ::doc:rep.lang.symbols#makunbound::
 makunbound SYMBOL
 
-Make SYMBOL have no value as a variable.
+Removes the top-level variable binding of SYMBOL.
 ::end:: */
 {
   return Freal_set(sym, rep_void);
@@ -681,7 +676,7 @@ Mark SYMBOL as being a special (dynamically-bound) variable.
     rep_SYM(sym)->car |= rep_SF_SPECIAL;
   }
 
-  return sym;
+  return rep_undefined_value;
 }
 
 DEFUN("special-variable?", Fspecial_variable_p, Sspecial_variable_p,
@@ -725,7 +720,6 @@ rep_variables_init(void)
   
   tem = rep_push_structure("rep.lang.interpreter");
   rep_ADD_SUBR(Sset_);
-  rep_ADD_SUBR(Ssetq);
   rep_ADD_SUBR(S_define);
   rep_ADD_SUBR(Sdefvar);
   rep_pop_structure(tem);

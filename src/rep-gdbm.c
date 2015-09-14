@@ -115,13 +115,13 @@ gdbm-close DBM
   rep_DBM(dbm)->access = rep_nil;
   rep_DBM(dbm)->mode = rep_nil;
 
-  return Qt;
+  return rep_undefined_value;
 }
 
-DEFUN("gdbm-fetch", Fgdbm_fetch, Sgdbm_fetch,
+DEFUN("gdbm-ref", Fgdbm_fetch, Sgdbm_fetch,
       (repv dbm, repv key), rep_Subr2) /*
-::doc:rep.io.db.gdbm#gdbm-fetch::
-gdbm-fetch DBM KEY
+::doc:rep.io.db.gdbm#gdbm-ref::
+gdbm-ref DBM KEY
 ::end:: */
 {
   rep_DECLARE1(dbm, rep_DBMP);
@@ -144,10 +144,10 @@ gdbm-fetch DBM KEY
   return out;
 }
 
-DEFUN("gdbm-store", Fgdbm_store, Sgdbm_store,
+DEFUN("gdbm-set!", Fgdbm_store, Sgdbm_store,
       (repv dbm, repv key, repv val, repv flags), rep_Subr4) /*
-::doc:rep.io.db.gdbm#gdbm-store::
-gdbm-store DBM KEY VALUE [FLAGS]
+::doc:rep.io.db.gdbm#gdbm-store!::
+gdbm-set! DBM KEY VALUE [FLAGS]
 ::end:: */
 {
   rep_DECLARE1(dbm, rep_DBMP);
@@ -164,13 +164,15 @@ gdbm-store DBM KEY VALUE [FLAGS]
 
   int dflags = flags == Qinsert ? GDBM_INSERT : GDBM_REPLACE;
 
-  return !gdbm_store(rep_DBM(dbm)->dbm, dkey, dvalue, dflags) ? Qt : rep_nil;
+  gdbm_store(rep_DBM(dbm)->dbm, dkey, dvalue, dflags);
+
+  return rep_undefined_value;
 }
 
-DEFUN("gdbm-delete", Fgdbm_delete, Sgdbm_delete,
+DEFUN("gdbm-delete!", Fgdbm_delete, Sgdbm_delete,
       (repv dbm, repv key), rep_Subr2) /*
-::doc:rep.io.db.gdbm#gdbm-delete::
-gdbm-delete DBM KEY
+::doc:rep.io.db.gdbm#gdbm-delete!::
+gdbm-delete! DBM KEY
 ::end:: */
 {
   rep_DECLARE1(dbm, rep_DBMP);
@@ -180,7 +182,9 @@ gdbm-delete DBM KEY
   dkey.dptr = (char *)rep_STR(key);
   dkey.dsize = rep_STRING_LEN(key);
 
-  return gdbm_delete(rep_DBM(dbm)->dbm, dkey) == 0 ? Qt : rep_nil;
+  gdbm_delete(rep_DBM(dbm)->dbm, dkey);
+
+  return rep_undefined_value;
 }
 
 DEFUN("gdbm-walk", Fgdbm_walk, Sgdbm_walk,
@@ -213,7 +217,8 @@ gdbm-walk FUN DBM
   }
 
   rep_POPGC; rep_POPGC;
-  return ret;
+
+  return ret ? rep_undefined_value : 0;
 }
 
 DEFUN("gdbm?", Fgdbmp, Sgdbmp, (repv arg), rep_Subr1) /*

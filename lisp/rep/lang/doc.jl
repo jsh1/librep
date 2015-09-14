@@ -117,7 +117,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 		  (let ((db (gdbm-open file 'read nil '(no-lock))))
 		    (when db
 		      (unwind-protect
-			  (let ((value (gdbm-fetch db key)))
+			  (let ((value (gdbm-ref db key)))
 			    (when value
 			      (throw 'done value)))
 			(gdbm-close db)))))
@@ -130,7 +130,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
     (let ((db (gdbm-open *documentation-file* 'append nil '(no-lock))))
       (when db
 	(unwind-protect
-	    (gdbm-store db key value 'replace)
+	    (gdbm-set! db key value 'replace)
 	  (gdbm-close db)))))
 
 

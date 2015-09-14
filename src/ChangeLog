@@ -1,5 +1,11 @@
 2015-09-14  John Harper  <jsh@unfactored.org>
 
+	* closures.c, datums.c, processes.c, rep-gdbm.c, tables.c
+	variables.c, structures.c: most setters now return #undefined
+	instead of the value being set
+
+	* variables.c: removed setq (now a macro); 
+
 	* lispmach.h: better assertions for checking for binding stack
 	overflow or underflow
 

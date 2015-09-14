@@ -475,7 +475,8 @@ Associate VALUE with KEY in hash table TABLE. Returns VALUE.
   }
 
   n->value = value;
-  return value;
+
+  return rep_undefined_value;
 }
 
 DEFUN("table-delete!", Ftable_unset, Stable_unset,
@@ -499,12 +500,12 @@ Remove any value stored in TABLE associated with KEY.
 	*ptr = n->next;
 	rep_free(n);
 	TABLE(tab)->total_nodes--;
-	return Qt;
+	break;
       }
     }
   }
 
-  return rep_nil;
+  return rep_undefined_value;
 }
 
 DEFUN("table-walk", Ftable_walk, Stable_walk,
@@ -532,7 +533,7 @@ each pair, the function is called with arguments `(KEY VALUE)'.
 
   rep_POPGC; rep_POPGC;
 
-  return rep_throw_value ? 0 : rep_nil;
+  return rep_throw_value ? 0 : rep_undefined_value;
 }
 
 DEFUN("table-size", Ftable_size, Stable_size, (repv tab), rep_Subr1) /*

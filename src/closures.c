@@ -98,7 +98,8 @@ Set the function value in the closure CLOSURE to FUNCTION.
   rep_DECLARE1(closure, rep_CLOSUREP);
 
   rep_CLOSURE(closure)->fun = fun;
-  return fun;
+
+  return rep_undefined_value;
 }
 
 DEFUN("closure-structure", Fclosure_structure,
@@ -121,7 +122,8 @@ DEFUN("set-closure-structure!", Fset_closure_structure,
   rep_DECLARE2(structure, rep_STRUCTUREP);
 
   rep_CLOSURE(closure)->structure = structure;
-  return rep_nil;
+
+  return rep_undefined_value;
 }
 
 DEFUN("closure-name", Fclosure_name,
@@ -143,7 +145,8 @@ DEFUN("set-closure-name!", Fset_closure_name,
   rep_DECLARE1(closure, rep_CLOSUREP);
 
   rep_CLOSURE(closure)->name = name;
-  return rep_nil;
+
+  return rep_undefined_value;
 }
 
 DEFUN("closure?", Fclosurep, Sclosurep, (repv arg), rep_Subr1) /*

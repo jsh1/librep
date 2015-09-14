@@ -1,5 +1,7 @@
 2015-09-14  John Harper  <jsh@unfactored.org>
 
+	* rep/lang/interpreter.jl: added setq macro
+
 	* converted all code to use set! instead of setq
 
 2015-09-13  John Harper  <jsh@unfactored.org>

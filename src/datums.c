@@ -135,7 +135,8 @@ VALUE, else signal an error.
   rep_DECLARE(1, obj, DATUMP(obj) && DATUM_ID(obj) == id);
 
   DATUM_VALUE(obj) = value;
-  return value;
+
+  return rep_undefined_value;
 }
 
 DEFUN("datum?", Fhas_type_p,

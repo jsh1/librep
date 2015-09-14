@@ -1648,7 +1648,8 @@ Sets the name of the program to run on PROCESS to FILE.
   rep_DECLARE2(prog, rep_STRINGP);
 
   PROC(proc)->program = prog;
-  return prog;
+
+  return rep_undefined_value;
 }
 
 DEFUN("process-args", Fprocess_args, Sprocess_args, (repv proc), rep_Subr1) /*
@@ -1675,7 +1676,8 @@ Set the arguments to PROCESS.
   rep_DECLARE2(args, rep_LISTP);
 
   PROC(proc)->args = args;
-  return args;
+
+  return rep_undefined_value;
 }
 
 DEFUN("process-output-stream", Fprocess_output_stream,
@@ -1703,7 +1705,8 @@ output.
   rep_DECLARE1(proc, PROCESSP);
 
   PROC(proc)->output_stream = stream;
-  return stream;
+
+  return rep_undefined_value;
 }
 
 DEFUN("process-error-stream", Fprocess_error_stream,
@@ -1734,7 +1737,8 @@ Note that this currently only works correctly with pipe connections.
   rep_DECLARE1(proc, PROCESSP);
 
   PROC(proc)->error_stream = stream;
-  return stream;
+
+  return rep_undefined_value;
 }
 
 DEFUN("process-function", Fprocess_function,
@@ -1763,7 +1767,8 @@ FUNCTION.
   rep_DECLARE1(proc, PROCESSP);
 
   PROC(proc)->notify_function = fn;
-  return fn;
+
+  return rep_undefined_value;
 }
 
 DEFUN("process-directory", Fprocess_dir,
@@ -1806,7 +1811,7 @@ Set the directory of PROCESS to DIR.
     PROC(proc)->directory = rep_nil;
   }
 
-  return PROC(proc)->directory;;
+  return rep_undefined_value;;
 }
 
 DEFUN("process-connection-type", Fprocess_connection_type,
@@ -1848,7 +1853,8 @@ process error output to be differentiated.
   }
 
   PROC(proc)->connection_type = type;
-  return type;
+
+  return rep_undefined_value;
 }
 
 DEFUN("active-processes", Factive_processes,
