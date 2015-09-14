@@ -321,8 +321,8 @@
 		    (t (error "Unhandled contional jump case")))
 	      (set! keep-going t)))
 
-	   ;; <varref-and-error-free-op>; unbind ---> unbind; op
-	   ((and (eq? (car insn1) 'unbind)
+	   ;; <varref-and-error-free-op>; pop-frame --> pop-frame; op
+	   ((and (eq? (car insn1) 'pop-frame)
 		 (memq (car insn0) byte-varref-free-insns))
 	    (let
 		((op (car insn0))
@@ -333,26 +333,27 @@
 	      (set-cdr! insn1 arg)
 	      (set! keep-going t)))
 
-	   ;; <varbind> X; unbind --> pop; unbind
+	   ;; <varbind> X; pop-frame --> pop; pop-frame
 	   ((and (memq (car insn0) byte-varbind-insns)
-		 (eq? (car insn1) 'unbind))
+		 (eq? (car insn1) 'pop-frame))
 	    (set-car! insn0 'pop)
 	    (set-cdr! insn0 nil)
 	    (set! keep-going t))
 
-	   ;; init-bind; unbind --> deleted
-	   ((and (eq? (car insn0) 'init-bind) (eq? (car insn1) 'unbind))
+	   ;; push-frame; pop-frame --> deleted
+	   ((and (eq? (car insn0) 'push-frame) (eq? (car insn1) 'pop-frame))
 	    (del-0-1)
 	    (set! keep-going t))
 
-	   ;; init-bind; {return,unbindall} --> {return,unbindall}
-	   ((and (eq? (car insn0) 'init-bind)
-		 (memq (car insn1) '(return unbindall)))
+	   ;; push-frame; {return,pop-frames,reset-frames}
+	   ;;   --> {return,pop-frames,reset-frames}
+	   ((and (eq? (car insn0) 'push-frame)
+		 (memq (car insn1) '(return pop-frames reset-frames)))
 	    (del-0)
 	    (set! keep-going t))
 
-	   ;; unbind; return --> return
-	   ((and (eq? (car insn0) 'unbind) (eq? (car insn1) 'return))
+	   ;; pop-frame; return --> return
+	   ((and (eq? (car insn0) 'pop-frame) (eq? (car insn1) 'return))
 	    (del-0)
 	    (set! keep-going t))
 

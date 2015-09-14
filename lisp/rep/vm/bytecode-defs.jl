@@ -64,8 +64,8 @@
       (%set . #x41)
       (fluid-ref . #x42)
       (enclose . #x43)
-      (init-bind . #x44)		;initialise a new set of bindings
-      (unbind . #x45)			;unbind all bindings in the top set
+      (push-frame . #x44)		;push a new binding frame
+      (pop-frame . #x45)		;pop the current binding frame
       (dup . #x46)			;duplicate top of stack
       (swap . #x47)			;swap top two values on stack
       (pop . #x48)			;pops the stack
@@ -116,7 +116,7 @@
       (throw . #x74)
       (binderr . #x75)
       (return . #x76)
-      (unbindall . #x77)
+      (pop-frames . #x77)		;pop all added frames
       (boundp . #x78)
       (symbolp . #x79)
       (get . #x7a)
@@ -195,7 +195,7 @@
       (mod . #xbb)
 
       (make-closure . #xbc)
-      (unbindall-0 . #xbd)
+      (reset-frames . #xbd)		;pop all frames including function's
       (closurep . #xbe)
       (pop-all . #xbf)
       (fluid-set! . #xc0)

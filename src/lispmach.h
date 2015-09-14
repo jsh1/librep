@@ -279,13 +279,13 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_ENV_REF_7),							\
   /* 0x40 */								\
   &&TAG(OP_REF), &&TAG(OP__SET), &&TAG(OP_FLUID_REF),			\
-  &&TAG(OP_ENCLOSE), &&TAG(OP_INIT_BIND), &&TAG(OP_UNBIND),		\
+  &&TAG(OP_ENCLOSE), &&TAG(OP_PUSH_FRAME), &&TAG(OP_POP_FRAME),		\
   &&TAG(OP_DUP), &&TAG(OP_SWAP), &&TAG(OP_POP), &&TAG(OP_NIL),		\
   &&TAG(OP_T), &&TAG(OP_CONS), &&TAG(OP_CAR), &&TAG(OP_CDR),		\
   &&TAG(OP_SET_CAR), &&TAG(OP_SET_CDR),					\
   /* 0x50 */								\
   &&TAG(OP_LIST_REF), &&TAG(OP_LIST_TAIL),				\
-  &&TAG(OP_ARRAY_SET), &&TAG(OP_ARRAY_REF),					\
+  &&TAG(OP_ARRAY_SET), &&TAG(OP_ARRAY_REF),				\
   &&TAG(OP_LENGTH), &&TAG(OP_BIND), &&TAG(OP_ADD), &&TAG(OP_NEG),	\
   &&TAG(OP_SUB), &&TAG(OP_MUL), &&TAG(OP_DIV), &&TAG(OP_REM),		\
   &&TAG(OP_LNOT), &&TAG(OP_NOT), &&TAG(OP_LOR), &&TAG(OP_LAND),		\
@@ -298,7 +298,7 @@ unbind_n(repv *ptr, int n)
   /* 0x70 */								\
   &&TAG(OP_NUMBERP), &&TAG(OP_STRINGP), &&TAG(OP_VECTORP),		\
   &&TAG(OP_CATCH), &&TAG(OP_THROW), &&TAG(OP_BINDERR),			\
-  &&TAG(OP_RETURN), &&TAG(OP_UNBINDALL), &&TAG(OP_BOUNDP),		\
+  &&TAG(OP_RETURN), &&TAG(OP_POP_FRAMES), &&TAG(OP_BOUNDP),		\
   &&TAG(OP_SYMBOLP), &&TAG(OP_GET), &&TAG(OP_PUT),			\
   &&TAG(OP_ERRORPRO), &&TAG(OP_SIGNAL), &&TAG(OP_QUOTIENT),		\
   &&TAG(OP_REVERSE),							\
@@ -326,7 +326,7 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_APPLY), &&TAG(OP_ARRAY_LENGTH), &&TAG(OP_VECTOR_LENGTH),	\
   &&TAG(OP_EXP), &&TAG(OP_LOG), &&TAG(OP_SIN), &&TAG(OP_COS),		\
   &&TAG(OP_TAN), &&TAG(OP_SQRT), &&TAG(OP_EXPT), &&TAG(OP_SWAP2),	\
-  &&TAG(OP_MOD), &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_UNBINDALL_0),		\
+  &&TAG(OP_MOD), &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_RESET_FRAMES),	\
   &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),				\
   /* 0xc0 */								\
   &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMV),		\
@@ -962,13 +962,13 @@ again: {
       INLINE_NEXT;
     }
 
-    INSN(OP_INIT_BIND) {
+    INSN(OP_PUSH_FRAME) {
       ASSERT(BIND_USAGE < bindings_size + 1);
       BIND_PUSH(rep_EMPTY_BINDING_FRAME);
       SAFE_NEXT;
     }
 
-    INSN(OP_UNBIND) {
+    INSN(OP_POP_FRAME) {
       ASSERT(bp > bindings);
       impurity -= unbind(BIND_RET_POP);
       SAFE_NEXT;
@@ -1374,7 +1374,7 @@ again: {
       RETURN;
     }
 
-    INSN(OP_UNBINDALL) {
+    INSN(OP_POP_FRAMES) {
       unbind_n(bindings + 1, BIND_USAGE - 1);
       bp = bindings;
       impurity = rep_SPEC_BINDINGS(BIND_TOP);
@@ -1768,7 +1768,7 @@ again: {
       CALL_2(Fmake_closure);
     }
 
-    INSN(OP_UNBINDALL_0) {
+    INSN(OP_RESET_FRAMES) {
       unbind_n(bindings, BIND_USAGE);
       bp = bindings - 1;
       impurity = 0;

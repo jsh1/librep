@@ -41,7 +41,7 @@
      "reg-set" nil nil nil nil nil nil nil	; #x30
      "env-ref" nil nil nil nil nil nil nil
      "ref" "%set" "fluid-ref" "enclose"
-     "init-bind" "unbind" "dup" "swap"	; #x40
+     "push-frame" "pop-frame" "dup" "swap"	; #x40
      "pop" "push ()" "push " "cons"
      "car" "cdr" "set-car!" "set-cdr!"
      "list-ref" "list-tail" "array-set!" "array-ref"
@@ -51,7 +51,7 @@
      "gt" "ge" "lt" "le"		; #x60
      "inc" "dec" "ash" "zero?" "null" "atom?" "pair?" "list?"
      "number?" "string?" "vector?" "catch"
-     "throw" "binderr" "return" "unbindall"	; #x70
+     "throw" "binderr" "return" "pop-frames"	; #x70
      "bound?" "symbol?" "get" "put"
      "errorpro" "signal" "quotient" "reverse"
      "nreverse" "assoc" "assq" "rassoc"
@@ -69,7 +69,7 @@
      "apply" "array-length" "vector-length" "exp"
      "log" "sin" "cos" "tan"		; #xb0
      "sqrt" "expt" "swap2" "mod"
-     "make-closure" "unbindall-0" "closure?" "pop-all"
+     "make-closure" "reset-frames" "closure?" "pop-all"
      "fluid-set!" "fluid-bind" "memv" "num-eq"
      nil nil "%define" "spec-bind"	; #xc0
      "set" "required-arg" "optional-arg" "rest-arg"

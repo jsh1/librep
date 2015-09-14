@@ -104,8 +104,8 @@
 #define OP__SET 0x41			/* (set stk[1] stk[0]); pop; pop */
 #define OP_FLUID_REF 0x42		/* call-1 fluid-ref */
 #define OP_ENCLOSE 0x43			/* push (make-closure pop[1] nil) */
-#define OP_INIT_BIND 0x44		/* new-binding-set */
-#define OP_UNBIND 0x45			/* rewind-binding-set */
+#define OP_PUSH_FRAME 0x44		/* new-binding-set */
+#define OP_POP_FRAME 0x45		/* rewind-binding-set */
 #define OP_DUP	0x46			/* push stk[0] */
 #define OP_SWAP 0x47			/* stk[0] = stk[1], stk[1] = stk[0] */
 #define OP_POP	0x48			/* pop[1] */
@@ -159,7 +159,7 @@
 					   goto error-handler */
 #define OP_BINDERR 0x75			/* bind (cons pop[1] SP) */
 #define OP_RETURN 0x76
-#define OP_UNBINDALL 0x77
+#define OP_POP_FRAMES 0x77
 #define OP_BOUNDP 0x78			/* call-1 bound? */
 #define OP_SYMBOLP 0x79			/* push (symbol? pop[1]) */
 #define OP_GET 0x7a			/* call-2 get */
@@ -243,7 +243,7 @@
 #define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
 
 #define OP_MAKE_CLOSURE 0xbc		/* push (make-closure pop[1] pop[2]) */
-#define OP_UNBINDALL_0 0xbd
+#define OP_CLEAR_FRAMES 0xbd
 #define OP_CLOSUREP 0xbe		/* push (closure? pop[1]) */
 #define OP_POP_ALL 0xbf
 

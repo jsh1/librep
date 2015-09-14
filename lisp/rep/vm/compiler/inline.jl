@@ -156,7 +156,7 @@
 	 ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
 	 (if bind-stack
 	     (progn
-	       (emit-insn '(init-bind))
+	       (emit-insn '(push-frame))
 	       (increment-b-stack)
 	       (pop-inline-args bind-stack args-left (lambda (x)
 						       (note-binding x)
@@ -166,7 +166,7 @@
 		  (fix-label (lambda-label (current-lambda)))
 		  (set-lambda-inlined (current-lambda) t)
 		  (compile-body body return-follows)))
-	       (emit-insn '(unbind))
+	       (emit-insn '(pop-frame))
 	       (decrement-b-stack))
 	   ;; Nothing to bind to. Just pop the evaluated args and
 	   ;; evaluate the body
@@ -193,13 +193,13 @@
 	  (emit-insn '(pop))))))
 
   (define (unbind-between top bottom)
-    (cond ((= bottom -1) (emit-insn '(unbindall-0)))
+    (cond ((= bottom -1) (emit-insn '(reset-frames)))
 	  ((= bottom 0)
 	   (unless (<= top bottom)
-	     (emit-insn '(unbindall))))
+	     (emit-insn '(pop-frames))))
 	  (t (do ((bp top (1- bp)))
 		 ((<= bp bottom))
-	       (emit-insn '(unbind))))))
+	       (emit-insn '(pop-frame))))))
 
   (defun compile-tail-call (lambda-record args)
     (let* ((out (push-inline-args (lambda-args lambda-record)
@@ -221,7 +221,7 @@
 			       ;; the 1- is so that the frame of
 			       ;; the function itself is also removed
 			       (1- (lambda-bp lambda-record)))
-	       (emit-insn '(init-bind))
+	       (emit-insn '(push-frame))
 	       (pop-inline-args bind-stack args-left emit-binding))
 	   ;; none of the bindings are captured, so just modify them
 	   (pop-inline-args bind-stack args-left emit-varset)

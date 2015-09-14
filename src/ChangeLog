@@ -1,5 +1,8 @@
 2015-09-14  John Harper  <jsh@unfactored.org>
 
+	* lispmach.h, bytecodes.h: rename binding stack bytecode
+	instructions to something more meaningful
+
 	* fluids.c: renamed fluid as fluid-ref and fluid-set as
 	fluid-set!
 
