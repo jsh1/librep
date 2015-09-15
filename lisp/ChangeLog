@@ -1,5 +1,7 @@
 2015-09-15  John Harper  <jsh@unfactored.org>
 
+	* rep/lang/debugger.jl: misc fixes and improvements
+
 	* rep/util/quoted-printable.jl, rep/util/base64.jl: scavenged
 	quoted-printable functions from jade before deleting them,
 	renamed base64 functions

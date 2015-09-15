@@ -32,6 +32,8 @@ DEFSTRING(dot, ".");
 
 static repv default_suffixes;
 
+extern rep_xsubr Sload;
+
 DEFSYM(load_path, "*load-path*");
 DEFSYM(dl_load_path, "*dl-load-path*");
 DEFSYM(after_load_alist, "*after-load-alist*");
@@ -117,8 +119,8 @@ load_lisp_file(repv name, repv structure)
   /* Create the lexical environment for the file. */
 
   rep_stack_frame lc;
-  lc.fun = rep_nil;
-  lc.args = rep_nil;
+  lc.fun = rep_VAL(&Sload);
+  lc.args = name;
   rep_PUSH_CALL(lc);
   rep_env = rep_nil;
   rep_structure = structure;
@@ -171,8 +173,8 @@ load_dl_file(repv name, repv structure)
   /* Create the lexical environment for the file. */
 
   rep_stack_frame lc;
-  lc.fun = rep_nil;
-  lc.args = rep_nil;
+  lc.fun = rep_VAL(&Sload);
+  lc.args = name;
   rep_PUSH_CALL(lc);
   rep_env = rep_nil;
   rep_structure = structure;

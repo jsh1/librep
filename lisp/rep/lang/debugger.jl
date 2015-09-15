@@ -116,13 +116,16 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 
 ;;; local functions
 
-  (defun print-frame (id)
+  (defun print-frame (id #!key always show-current)
     (let ((frame (stack-frame-ref id)))
+      (when show-current
+	(write *standard-error* (if (= (fluid-ref frame-id) id) "* " "  ")))
       (if (null? frame)
 	  (format *standard-error* "#%-3d #undefined\n" id)
-	(unless (equal? frame last-printed-frame)
+	(unless (and (not always) (equal? frame last-printed-frame))
 	  (let ((fun (stack-frame-function frame))
 		(args (stack-frame-args frame))
+		(struct (stack-frame-structure frame))
 		(location (lexical-origin (stack-frame-current-form frame))))
 	    (if (null? fun)
 		(format *standard-error* "#%-3d #undefined\n" id)
@@ -135,17 +138,20 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 			      (eq? args #undefined))
 			  '...
 			args)
-		      (if location
-			  (format nil " at %s:%d"
-				  (file-name-nondirectory (car location))
-				  (cdr location))
-			""))))))
+		      (cond (location
+			     (format nil " at %s:%d"
+				     (file-name-nondirectory (car location))
+				     (cdr location)))
+			    ((and struct (structure-name struct))
+			     (format nil " in %s"
+				     (structure-name struct)))
+			    (t "")))))))
       (set! last-printed-frame frame)))
 
   (defun print-backtrace ()
     (do ((i (fluid-ref bottom-frame-id) (1- i)))
-	((< i 0))
-      (print-frame i)))
+	((= i 0))
+      (print-frame i #:always t #:show-current t)))
 
   (defun print-form ()
     (let* ((form (if (= (fluid-ref frame-id) (fluid-ref bottom-frame-id))
@@ -233,7 +239,8 @@ commands: `n[ext]', `s[tep]', `c[ontinue]', `r[eturn] FORM', `b[acktrace]',
 
   (defun do-down ()
     (when (fluid-ref frame-id)
-      (fluid-set! frame-id (1+ (fluid-ref frame-id)))
+      (fluid-set! frame-id (min (1+ (fluid-ref frame-id))
+				(fluid-ref bottom-frame-id)))
       (print-frame (fluid-ref frame-id))
       (print-emacs-frame (fluid-ref frame-id))))
 

@@ -354,35 +354,20 @@ Returns t if ARG is a function.
 repv
 rep_current_function(void)
 {
-  return rep_call_stack != 0 ? rep_call_stack->fun : rep_nil;
+  return rep_call_stack->fun;
 }
 
 int
 rep_current_frame_index(void)
 {
-  int i = 0;
-  for (const rep_stack_frame *lc = rep_call_stack; lc != 0; lc = lc->next) {
-    i++;
-  }
-
-  return i - 1;
+  return rep_call_stack->frame_index;
 }
 
 static const rep_stack_frame *
 stack_frame_ref(int idx)
 {
-  int total = 0;
   for (const rep_stack_frame *lc = rep_call_stack; lc != 0; lc = lc->next) {
-    total++;
-  }
-
-  int wanted = (total - 1) - idx;
-  if (wanted < 0) {
-    return 0;
-  }
-
-  for (const rep_stack_frame *lc = rep_call_stack; lc != 0; lc = lc->next) {
-    if (wanted-- == 0) {
+    if (lc->frame_index == idx) {
       return lc;
     }
   }
@@ -410,14 +395,7 @@ ARGLIST had been evaluated or not before being put into the stack.
   repv old_print_escape = Fsymbol_value(Qprint_escape, Qt);
   Fset(Qprint_escape, Qt);
 
-  int total_frames = rep_current_frame_index() + 1;
-
-  for (int i = total_frames - 1; i >= 0; i--) {
-    const rep_stack_frame *lc = stack_frame_ref(i);
-    if (!lc) {
-      continue;
-    }
-
+  for (const rep_stack_frame *lc = rep_call_stack; lc->frame_index > 0; lc = lc->next) {
     repv function_name = rep_nil;
     if (rep_CLOSUREP(lc->fun) && rep_CLOSURE(lc->fun)->name) {
       function_name = rep_CLOSURE(lc->fun)->name;
@@ -432,7 +410,7 @@ ARGLIST had been evaluated or not before being put into the stack.
 
     if (function_name != rep_nil) {
       char buf[32];
-      sprintf(buf, "#%-3d ", i);
+      sprintf(buf, "#%-3d ", lc->frame_index);
       rep_stream_puts(strm, buf, -1, false);
 
       rep_princ_val(strm, function_name);
@@ -475,7 +453,12 @@ DEFUN("stack-frame-ref", Fstack_frame_ref,
 {
   rep_DECLARE1(idx, rep_INTP);
 
-  const rep_stack_frame *lc = stack_frame_ref(rep_INT(idx));
+  /* We want to return the environment of frame IDX. But that's
+     actually saved into frame IDX + 1, so find both those frames
+     and use the necessary values from each. */
+
+  const rep_stack_frame *lc_pred = stack_frame_ref(rep_INT(idx) + 1);
+  const rep_stack_frame *lc = lc_pred ? lc_pred->next : NULL;
 
   if (!lc) {
     return rep_nil;
@@ -484,7 +467,7 @@ DEFUN("stack-frame-ref", Fstack_frame_ref,
   return rep_list_5(lc->fun, rep_VOIDP(lc->args)
 		    ? rep_undefined_value : lc->args,
 		    lc->current_form ? lc->current_form : rep_nil,
-		    lc->saved_env, lc->saved_structure);
+		    lc_pred->saved_env, lc_pred->saved_structure);
 }
 
 DEFUN("max-lisp-depth", Fmax_lisp_depth,
@@ -588,6 +571,15 @@ void
 rep_apply_init(void)
 {
   repv tem;
+
+  /* Ensure the stack is never empty. */
+
+  static rep_stack_frame top_frame;
+  top_frame.saved_env = rep_nil;
+  top_frame.saved_structure = rep_nil;
+  top_frame.fun = rep_nil;
+  top_frame.args = rep_nil;
+  rep_call_stack = &top_frame;
 
   tem = rep_push_structure("rep.lang.interpreter");
   rep_ADD_SUBR(Slambda);

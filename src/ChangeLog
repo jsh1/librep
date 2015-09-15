@@ -1,3 +1,10 @@
+2015-09-15  John Harper  <jsh@unfactored.org>
+
+	* repint.h, load.c, apply.c: made stack-frame accessors more
+	efficient (store stack depth in each item). Fixed frame
+	accessor to pull environment from following frame (which will
+	have saved the values current during the frame being queried)
+
 2015-09-14  John Harper  <jsh@unfactored.org>
 
 	* lispmach.h, bytecodes.h: rename binding stack bytecode

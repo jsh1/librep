@@ -192,15 +192,17 @@ struct rep_stack_frame_struct {
   repv current_form;			/* used for debugging, set by progn */
   repv saved_env;
   repv saved_structure;
+  int frame_index;
 };
 
-#define rep_PUSH_CALL(lc)		\
-  do {					\
-    (lc).current_form = 0;		\
-    (lc).saved_env = rep_env;		\
-    (lc).saved_structure = rep_structure; \
-    (lc).next = rep_call_stack;		\
-    rep_call_stack = &(lc);		\
+#define rep_PUSH_CALL(lc)				\
+  do {							\
+    (lc).current_form = 0;				\
+    (lc).saved_env = rep_env;				\
+    (lc).saved_structure = rep_structure; 		\
+    (lc).frame_index = rep_call_stack->frame_index + 1;	\
+    (lc).next = rep_call_stack;				\
+    rep_call_stack = &(lc);				\
   } while (0)
 
 #define rep_POP_CALL(lc)		\
