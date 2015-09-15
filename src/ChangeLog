@@ -1,5 +1,8 @@
 2015-09-15  John Harper  <jsh@unfactored.org>
 
+	* weak-refs.c, repint_subrs.h, librep.sym: make-weak-ref ->
+	make-weak, weak-ref-set! -> weak-set!
+
 	* repint.h, load.c, apply.c: made stack-frame accessors more
 	efficient (store stack depth in each item). Fixed frame
 	accessor to pull environment from following frame (which will

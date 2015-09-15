@@ -189,7 +189,6 @@ Fmake_temp_name
 Fmake_thread
 Fmake_variable_special
 Fmake_vector
-Fmake_weak_ref
 Fmakunbound
 Fmapc
 Fmapcar
@@ -361,8 +360,6 @@ Fuser_login_name
 Fvalidate_byte_code
 Fvector
 Fvectorp
-Fweak_ref
-Fweak_ref_set
 Fwith_fluids
 Fwrite
 Fzerop

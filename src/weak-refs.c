@@ -27,7 +27,7 @@
 
 static repv weak_refs;
 
-DEFUN("make-weak-ref", Fmake_weak_ref, Smake_weak_ref, (repv ref), rep_Subr1)
+DEFUN("make-weak", Fmake_weak, Smake_weak, (repv ref), rep_Subr1)
 {
   repv weak_ref = rep_make_tuple(rep_Weak_Ref, 0, 0);
 
@@ -45,8 +45,7 @@ DEFUN("weak-ref", Fweak_ref, Sweak_ref, (repv weak), rep_Subr1)
   return WEAK_REF(weak);
 }
     
-DEFUN("weak-ref-set!", Fweak_ref_set, Sweak_ref_set,
-      (repv weak, repv value), rep_Subr2)
+DEFUN("weak-set!", Fweak_set, Sweak_set, (repv weak, repv value), rep_Subr2)
 {
   rep_DECLARE1(weak, WEAKP);
 
@@ -86,7 +85,7 @@ rep_scan_weak_refs(void)
 static void
 weak_ref_print(repv stream, repv arg)
 {
-  rep_stream_puts(stream, "#<weak-reference>", -1, false);
+  rep_stream_puts(stream, "#<weak>", -1, false);
 }
 
 void
@@ -101,8 +100,8 @@ rep_weak_refs_init(void)
   rep_define_type(&weak_ref);
 
   repv tem = rep_push_structure("rep.data");
-  rep_ADD_SUBR(Smake_weak_ref);
+  rep_ADD_SUBR(Smake_weak);
   rep_ADD_SUBR(Sweak_ref);
-  rep_ADD_SUBR(Sweak_ref_set);
+  rep_ADD_SUBR(Sweak_set);
   rep_pop_structure(tem);
 }

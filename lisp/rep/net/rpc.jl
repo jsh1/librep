@@ -396,10 +396,10 @@ becomes invalid."
 	(if ref
 	    (or (weak-ref ref)
 		(let ((p (proxy)))
-		  (weak-ref-set! ref p)
+		  (weak-set! ref p)
 		  p))
 	  (let ((p (proxy)))
-	    (table-set! proxy-table global-id (make-weak-ref p))
+	    (table-set! proxy-table global-id (make-weak p))
 	    p)))))
 
   (define (async-rpc-call proxy #!key callback . args)

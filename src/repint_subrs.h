@@ -279,9 +279,9 @@ extern void rep_vectors_init(void);
 extern void rep_vectors_kill(void);
 
 /* from weak-refs.c */
-extern repv Fmake_weak_ref (repv value);
+extern repv Fmake_weak (repv value);
 extern repv Fweak_ref (repv ref);
-extern repv Fweak_ref_set (repv ref, repv value);
+extern repv Fweak_set (repv ref, repv value);
 extern void rep_scan_weak_refs (void);
 extern void rep_weak_refs_init (void);
 
