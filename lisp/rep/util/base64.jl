@@ -23,8 +23,8 @@
 
 (define-structure rep.util.base64
 
-    (export base64-encode
-	    base64-decode)
+    (export encode-base64
+	    decode-base64)
 
     (open rep)
 
@@ -33,7 +33,7 @@
   (defconst mime-base64-alphabet
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
 
-  (define (base64-encode input output)
+  (define (encode-base64 input output)
     (let ((col 0)
 	  reg reg1 reg2 reg3)
       (catch 'done
@@ -79,7 +79,7 @@
 	    (throw 'done t)))))
       (write output #\newline)))
 
-  (define (base64-decode input output)
+  (define (decode-base64 input output)
     (let ((reg 0)
 	  (bits 0)
 	  char)
