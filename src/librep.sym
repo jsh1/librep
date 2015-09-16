@@ -573,6 +573,7 @@ rep_input_timeout_secs
 rep_int_cell
 rep_integer_foldl
 rep_integer_gcd
+rep_intern_char
 rep_intern_static
 rep_keyword_obarray
 rep_kill

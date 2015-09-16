@@ -26,16 +26,18 @@
     (open rep
 	  rep.system
 	  rep.regexp
-	  rep.test.framework)
+	  rep.test.framework
+	  rep.www.quote-url)
 
   (define-structure-alias cgi-get rep.www.cgi-get)
 
-  (define unquote-plus-map (let ((map (make-string (1+ #\+)))
-				 (i 0))
-			     (while (< i #\+)
-			       (string-set! map i i)
+  (define unquote-plus-map (let ((map (make-string (1+ (char->integer #\+))))
+				 (i 0)
+				 (top (char->integer #\+)))
+			     (while (< i top)
+			       (string-set! map i (integer->char i))
 			       (set! i (1+ i)))
-			     (string-set! map #\+ #\space)
+			     (string-set! map (char->integer #\+) #\space)
 			     map))
 
   (defun cgi-get-params (#!optional query-string)
@@ -56,25 +58,8 @@
 	(set! params (cons (cons name value) params)))
       (reverse! params)))
 
-  (defsubst hexdigit (char)
-    (if (and (>= char #\0) (<= char #\9))
-	(- char #\0)
-      (+ (- (char-upcase char) #\A) 10)))
-
   (defun unquote (string)
-    (let
-	((frags nil)
-	 (point 0))
-      (set! string (translate-string! string unquote-plus-map))
-      (while (string-match "%.." string point)
-	(set! frags (cons (substring string point (match-start)) frags))
-	(set! point (match-end))
-	(set! frags (cons (+ (* (hexdigit (string-ref string (- point 2))) 16)
-			     (hexdigit (string-ref string (1- point)))) frags)))
-      (if (zero? point)
-	  string
-	(set! frags (cons (substring string point) frags))
-	(apply concat (reverse! frags)))))
+    (unquote-url (translate-string! string unquote-plus-map)))
 
 
 ;; Tests

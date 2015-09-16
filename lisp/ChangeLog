@@ -1,3 +1,11 @@
+2015-09-16  John Harper  <jsh@unfactored.org>
+
+	* rep/io/file-handlers/remote/rep.jl, rep/lang/doc.jl,
+	rep/util/base64.jl, rep/vm/assembler.jl,
+	rep/vm/compiler/rep.jl, rep/vm/disassembler.jl,
+	rep/www/quote-url.jl, rep/www/cgi-get.jl: fixed for characters
+	no longer being integers
+
 2015-09-15  John Harper  <jsh@unfactored.org>
 
 	* rep/net/rpc.jl: updated weak-ref function names

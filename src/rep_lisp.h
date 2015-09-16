@@ -281,7 +281,7 @@ typedef struct rep_type_struct {
 #define rep_Closure	0x17
 #define rep_Process	0x19
 #define rep_Weak_Ref	0x1b
-#define rep_Unused1	0x1d
+#define rep_Char	0x1d
 #define rep_Unused2	0x1f
 
 /* Assuming that V is a cell, return the type code */
@@ -476,6 +476,21 @@ typedef struct rep_vector_struct {
 /* adaptation of rep_CELL8_TYPEP(). */
 #define rep_VECTOR_OR_BYTECODE_P(v) (rep_CELLP(v) \
   && (rep_CELL8_TYPE(v) == rep_Vector || rep_CELL8_TYPE(v) == rep_Bytecode))
+
+
+/* Characters */
+
+/* allocated as a tuple. */
+typedef struct {
+  repv car;
+  repv next;				/* next in table */
+  repv value;				/* fixnum */
+} rep_char;
+
+#define rep_CHARP(v)		rep_CELL8_TYPEP(v, rep_Char)
+#define rep_CHAR(v)		((rep_char *)rep_PTR(v))
+#define rep_CHAR_VALUE(v)	((uint32_t)rep_INT(rep_CHAR(v)->value))
+#define rep_CHAR_8BIT_P(v)	(rep_CHARP(v) && rep_CHAR_VALUE(v) < 256)
 
 
 /* Compiled Lisp functions; this is a vector. Some of these definitions

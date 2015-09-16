@@ -93,8 +93,8 @@ debugger is entered.
 ::doc:*backtrace-on-error*::
 When an error is signalled this variable controls whether or not to
 print a backtrace immediately. If the variable's value is t or a list
-of symbols--one of which is the signalled error symbol--the debugger is
-entered.
+of symbols--one of which is the signalled error symbol--the current
+backtrace is printed to *standard-error*.
 ::end::
 ::doc:*debug-macros*::
 When nil, the debugger isn't entered while expanding macro definitions.

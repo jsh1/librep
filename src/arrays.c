@@ -58,7 +58,7 @@ can be a vector or a string. INDEX starts at zero.
 
   if (rep_STRINGP(array)) {
     if (rep_INT(index) < rep_STRING_LEN(array)) {
-      return rep_MAKE_INT(((unsigned char *)rep_STR(array))[rep_INT(index)]);
+      return rep_intern_char((uint8_t)rep_STR(array)[rep_INT(index)]);
     } else {
       return rep_signal_arg_error (index, 2);
     }

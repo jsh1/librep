@@ -67,21 +67,6 @@
 
 (defconst remote-rep-required-protocol 1)
 
-(define remote-rep-hex-map (let
-			       ((map (make-string 128 0))
-				i)
-			     (set! i #\0)
-			     (while (<= i #\9)
-			       (string-set! map i (- i #\0))
-			       (set! i (1+ i)))
-			     (set! i #\a)
-			     (while (<= i #\f)
-			       (string-set! map i (+ (- i #\a) 10))
-			       (string-set! map (+ i (- #\A #\a))
-					    (string-ref map i))
-			       (set! i (1+ i)))
-			     map))
-
 (defconst remote-rep-success #\001)
 (defconst remote-rep-failure #\177)
 
@@ -236,15 +221,7 @@
 
 (defun remote-rep-read-length (string point)
   (when (>= (string-length string) (+ point 8))
-    ;; unrolled eight-digit hex decoder
-    (+ (string-ref remote-rep-hex-map (string-ref string (+ point 7)))
-       (ash (string-ref remote-rep-hex-map (string-ref string (+ point 6))) 4)
-       (ash (string-ref remote-rep-hex-map (string-ref string (+ point 5))) 8)
-       (ash (string-ref remote-rep-hex-map (string-ref string (+ point 4))) 12)
-       (ash (string-ref remote-rep-hex-map (string-ref string (+ point 3))) 16)
-       (ash (string-ref remote-rep-hex-map (string-ref string (+ point 2))) 20)
-       (ash (string-ref remote-rep-hex-map (string-ref string (+ point 1))) 24)
-       (ash (string-ref remote-rep-hex-map (string-ref string point)) 28))))
+    (string->number (substring point (+ point 8)) 16)))
 
 ;; returns nil or STRING
 (defun remote-rep-read-string (string point)

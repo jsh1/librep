@@ -1,3 +1,10 @@
+2015-09-16  John Harper  <jsh@unfactored.org>
+
+	* strings.c, streams.c, rep_subrs.h, rep_lisp.h, read.c,
+	librep.sym, gc.c, errors.c, characters.c, arrays.c: added a
+	real character type. Defined to store unicode characters, but
+	strings still only support raw 8-bit values
+
 2015-09-15  John Harper  <jsh@unfactored.org>
 
 	* weak-refs.c, repint_subrs.h, librep.sym: make-weak-ref ->

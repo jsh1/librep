@@ -499,22 +499,21 @@ DEFUN("write", Fwrite, Swrite,
 ::doc:rep.io.streams#write::
 write STREAM DATA [LENGTH]
 
-Writes DATA, which can either be a string or a character, to the stream
-STREAM, returning the number of characters actually written. If DATA is
-a string LENGTH can define how many characters to write.
+Writes DATA, which can either be a character, an integer byte value, or
+a string, to the stream STREAM, returning the number of characters
+actually written. If DATA is a string LENGTH can define how many
+characters to write.
 ::end:: */
 {
   int written;
 
-  switch (rep_TYPE(data)) {
+  if (rep_CHARP(data)) {
+    written = rep_stream_putc(stream, rep_CHAR_VALUE(data));
+  } else if (rep_INTP(data)) {
+    written = rep_stream_putc(stream, rep_INT(data));
+  } else if (rep_STRINGP(data)) {
     bool lisp_string;
     const void *arg;
-
-  case rep_Int:
-    written = rep_stream_putc(stream, rep_INT(data));
-    break;
-
-  case rep_String:
     if (rep_INTP(len)) {
       written = rep_INT(len);
       if (written > rep_STRING_LEN(data)) {
@@ -533,13 +532,47 @@ a string LENGTH can define how many characters to write.
       arg = rep_PTR(data);
     }
     written = rep_stream_puts(stream, arg, written, lisp_string);
-    break;
-
-  default:
+  } else {
     return rep_signal_arg_error(data, 2);
   }
 
   return !rep_INTERRUPTP ? rep_MAKE_INT(written) : 0;
+}
+
+DEFUN("read-byte", Fread_byte, Sread_byte, (repv stream), rep_Subr1) /*
+::doc:rep.io.streams#read-byte::
+read-char STREAM
+
+Reads the next byte from the input-stream STREAM, if no more bytes
+are available returns nil.
+::end:: */
+{
+  int c = rep_stream_getc(stream);
+
+  if (c != EOF) {
+    return rep_MAKE_INT(c);
+  } else {
+    return rep_nil;
+  }
+}
+
+DEFUN("peek-byte", Fpeek_byte, Speek_byte, (repv stream), rep_Subr1) /*
+::doc:rep.io.streams#peek-byte::
+peek-byte STREAM
+
+Returns the next byte from the input-stream STREAM, *without* removing
+that byte from the head of the stream. If no more byte are available
+returns nil.
+::end:: */
+{
+  int c = rep_stream_getc(stream);
+
+  if (c != EOF) {
+    rep_stream_ungetc(stream, c);
+    return rep_MAKE_INT(c);
+  } else {
+    return rep_nil;
+  }
 }
 
 DEFUN("read-char", Fread_char, Sread_char, (repv stream), rep_Subr1) /*
@@ -553,7 +586,7 @@ are available returns nil.
   int c = rep_stream_getc(stream);
 
   if (c != EOF) {
-    return rep_MAKE_INT(c);
+    return rep_intern_char(c);
   } else {
     return rep_nil;
   }
@@ -572,7 +605,7 @@ characters are available returns nil.
 
   if (c != EOF) {
     rep_stream_ungetc(stream, c);
-    return rep_MAKE_INT(c);
+    return rep_intern_char(c);
   } else {
     return rep_nil;
   }
@@ -981,7 +1014,12 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 	const char *ptr;
 
       case 'c':
-	rep_stream_putc(stream, rep_INT(val));
+	if (rep_CHARP(val)) {
+	  rep_stream_putc(stream, rep_CHAR_VALUE(val));
+	} else {
+	  rep_signal_arg_error(val, arg_idx);
+	  goto exit;
+	}
 	break;
 
       case 'x': case 'X':
@@ -1253,6 +1291,8 @@ rep_streams_init(void)
   repv tem = rep_push_structure("rep.io.streams");
   rep_INTERN_SPECIAL(format_hooks_alist);
   rep_ADD_SUBR(Swrite);
+  rep_ADD_SUBR(Sread_byte);
+  rep_ADD_SUBR(Speek_byte);
   rep_ADD_SUBR(Sread_char);
   rep_ADD_SUBR(Speek_char);
   rep_ADD_SUBR(Sread_chars);

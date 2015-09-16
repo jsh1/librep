@@ -335,7 +335,8 @@ CHARACTER, or to space if CHARACTER is undefined.
   intptr_t l = rep_INT(len);
   repv s = rep_allocate_string(l + 1);
   if (s) {
-    memset(rep_MUTABLE_STR(s), rep_INTP(init) ? (char)rep_INT(init) : ' ', l);
+    char c = rep_CHARP(init) ? (char)rep_CHAR_VALUE(init) : ' ';
+    memset(rep_MUTABLE_STR(s), c, l);
     rep_MUTABLE_STR(s)[l] = 0;
   }
   return s;
@@ -379,7 +380,7 @@ Returns the INDEX'th character in STRING.
     return rep_signal_arg_error(idx, 2);
   }
 
-  return rep_MAKE_INT((uint8_t)(rep_STR(str)[rep_INT(idx)]));
+  return rep_intern_char((uint8_t)(rep_STR(str)[rep_INT(idx)]));
 }
 
 DEFUN("string-set!", Fstring_set,
@@ -392,7 +393,7 @@ Sets the INDEX'th element of STRING to CHARACTER.
 {
   rep_DECLARE1(str, rep_STRINGP);
   rep_DECLARE2(idx, rep_NON_NEG_INT_P);
-  rep_DECLARE3(value, rep_NON_NEG_INT_P);
+  rep_DECLARE3(value, rep_CHAR_8BIT_P);
 
   if (!rep_STRING_WRITABLE_P(str)) {
     return Fsignal(Qsetting_constant, rep_LIST_1(str));
@@ -401,11 +402,8 @@ Sets the INDEX'th element of STRING to CHARACTER.
   if (rep_INT(idx) >= rep_STRING_LEN(str)) { 
     return rep_signal_arg_error(idx, 2);
   }
-  if (rep_INT(value) > 255) { 
-    return rep_signal_arg_error(value, 3);
-  }
 
-  rep_MUTABLE_STR(str)[rep_INT(idx)] = (uint8_t)rep_INT(value);
+  rep_MUTABLE_STR(str)[rep_INT(idx)] = (uint8_t)rep_CHAR_VALUE(value);
   rep_invalidate_string(str);
 
   return rep_undefined_value;
@@ -492,24 +490,21 @@ a character or a list or vector of characters.
 
   size_t length = 0;
   for (intptr_t i = 0; i < argc; i++) {
-    repv elt = argv[i];
-    if (rep_INTP(elt)) {
+    repv arg = argv[i];
+    if (rep_CHARP(arg)) {
       length++;
-    } else if (rep_CONSP(elt)) {
-      int len = rep_list_length(elt);
+    } else if (rep_LISTP(arg)) {
+      int len = rep_list_length(arg);
       if (len < 0) {
 	return 0;
       }
       length += len;
+    } else if (rep_STRINGP(arg)) {
+      length += rep_STRING_LEN(arg);
+    } else if (rep_VECTORP(arg)) {
+      length += rep_VECTOR_LEN(arg);
     } else {
-      switch (rep_CELL8_TYPE(elt)) {
-      case rep_String:
-	length += rep_STRING_LEN(elt);
-	break;
-      case rep_Vector:
-	length += rep_VECTOR_LEN(elt);
-	break;
-      }
+      return rep_signal_arg_error(arg, i + 1);
     }
   }
 
@@ -527,32 +522,29 @@ a character or a list or vector of characters.
   char *ptr = rep_MUTABLE_STR(string);
 
   for (intptr_t i = 0; i < argc; i++) {
-    repv elt = argv[i];
-    if (rep_INTP(elt)) {
-      *ptr++ = rep_INT(elt);
-    } else if (rep_CONSP(elt)) {
-      repv tem = elt, c;
-      while (rep_CONSP(tem)) {
-	c = rep_CAR(tem);
-	if (rep_INTP(c)) {
-	  *ptr++ = rep_INT(c);
+    repv arg = argv[i];
+    if (rep_CHARP(arg)) {
+      *ptr++ = (char)rep_CHAR_VALUE(arg);
+    } else if (rep_CONSP(arg)) {
+      repv lst = arg, c;
+      while (rep_CONSP(lst)) {
+	c = rep_CAR(lst);
+	if (rep_CHARP(c)) {
+	  *ptr++ = (char)rep_CHAR_VALUE(c);
 	}
-	tem = rep_CDR(tem);
+	lst = rep_CDR(lst);
       }
-    } else {
-      switch (rep_CELL8_TYPE(elt)) {
-      case rep_String:
-	memcpy(ptr, rep_STR(elt), rep_STRING_LEN(elt));
-	ptr += rep_STRING_LEN(elt);
-	break;
-      case rep_Vector:
-	for (intptr_t i = 0; i < rep_VECTOR_LEN(elt); i++) {
-	  repv c = rep_VECTI(elt, i);
-	  if (rep_INTP(c)) {
-	    *ptr++ = rep_INT(c);
-	  }
+    } else if (rep_STRINGP(arg)) {
+      memcpy(ptr, rep_STR(arg), rep_STRING_LEN(arg));
+      ptr += rep_STRING_LEN(arg);
+    } else if (rep_VECTORP(arg)) {
+      for (intptr_t i = 0; i < rep_VECTOR_LEN(arg); i++) {
+	repv elt = rep_VECTI(arg, i);
+	if (rep_CHARP(elt)) {
+	  *ptr++ = (char)rep_CHAR_VALUE(elt);
+	} else {
+	  return rep_signal_arg_error(arg, i + 1);
 	}
-	break;
       }
     }
   }

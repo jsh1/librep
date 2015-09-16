@@ -105,7 +105,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
   (defun doc-file-value-key (name #!optional structure)
     (make-key nil name structure))
   (defun doc-file-param-key (name #!optional structure)
-    (make-key 0 name structure))
+    (make-key #\nul name structure))
 
   (defun doc-file-ref (key)
     (require 'rep.io.db.gdbm)

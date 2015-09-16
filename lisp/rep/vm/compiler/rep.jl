@@ -51,7 +51,9 @@
       caaar cdaar cadar cddar caadr cdadr caddr cdddr positive? negative?
       odd? even? abs lcm % modulo ash string-upper-case?
       string-lower-case? string-capitalized? list-length vector-length
-      string-length vector-ref string-ref))
+      string-length vector-ref string-ref char->integer integer->char
+      char? char<=? char>? char>=? char-ci=? char-ci<? char-ci<=?
+      char-ci>? char-ci>=?))
 
   ;; List of symbols, when the name of the function called by a top-level
   ;; form is one of these that form is compiled.

@@ -23,6 +23,17 @@
 
 #include <stdarg.h>
 
+/* from characters.c */
+extern repv rep_intern_char(uint32_t c);
+extern repv Falpha_char_p(repv);
+extern repv Fupper_case_p(repv);
+extern repv Flower_case_p(repv);
+extern repv Fdigit_char_p(repv);
+extern repv Falphanumericp(repv);
+extern repv Fspace_char_p(repv);
+extern repv Fchar_upcase(repv);
+extern repv Fchar_downcase(repv);
+
 /* from datums.c */
 extern repv Qnil;
 extern repv Fmake_datum (repv, repv);
@@ -306,14 +317,6 @@ extern repv Fsystem_name(void);
 extern repv Fmessage(repv string, repv now);
 extern repv Frandom(repv arg);
 extern repv Ftranslate_string(repv string, repv table);
-extern repv Falpha_char_p(repv);
-extern repv Fupper_case_p(repv);
-extern repv Flower_case_p(repv);
-extern repv Fdigit_char_p(repv);
-extern repv Falphanumericp(repv);
-extern repv Fspace_char_p(repv);
-extern repv Fchar_upcase(repv);
-extern repv Fchar_downcase(repv);
 
 /* from numbers.c */
 extern bool rep_long_int_p (repv value);

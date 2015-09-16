@@ -38,9 +38,9 @@
 	  reg reg1 reg2 reg3)
       (catch 'done
 	(while t
-	  (set! reg1 (read-char input))
-	  (set! reg2 (read-char input))
-	  (set! reg3 (read-char input))
+	  (set! reg1 (read-byte input))
+	  (set! reg2 (read-byte input))
+	  (set! reg3 (read-byte input))
 	  (cond
 	   ((and reg1 reg2 reg3)
 	    ;; Got our 24 bits, split into four 6 bit quantities
@@ -87,15 +87,15 @@
 	(set! char (read-char input))
 	(when char
 	  (cond
-	   ((and (>= char #\A) (<= char #\Z))
-	    (set! char (- char #\A)))
-	   ((and (>= char #\a) (<= char #\z))
-	    (set! char (+ 26 (- char #\a))))
-	   ((and (>= char #\0) (<= char #\9))
-	    (set! char (+ 52 (- char #\0))))
-	   ((= char #\+)
+	   ((and (char>=? char #\A) (char<=? char #\Z))
+	    (set! char (- (char->integer char) (char->integer #\A))))
+	   ((and (char>=? char #\a) (char<=? char #\z))
+	    (set! char (+ 26 (- (char->integer char) (char->integer #\a)))))
+	   ((and (char>=? char #\0) (char<=? char #\9))
+	    (set! char (+ 52 (- (char->integer char) (char->integer #\0)))))
+	   ((char=? char #\+)
 	    (set! char 62))
-	   ((= char #\/)
+	   ((char=? char #\/)
 	    (set! char 63))
 	   (t (set! char nil)))
 	  (when char

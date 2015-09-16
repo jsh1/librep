@@ -642,7 +642,7 @@ read_character(repv stream, int *c_p)
     if (c3 >= '0' && c3 <= '7') {
       // three octal digits => numeric ASCII code
       *c_p = rep_stream_getc(stream);
-      return rep_MAKE_INT(((c1 - '0') * 8 + (c2 - '0')) * 8 + (c3 - '0'));
+      return rep_intern_char(((c1 - '0') * 8 + (c2 - '0')) * 8 + (c3 - '0'));
     }
     rep_stream_ungetc(stream, c3);
   }
@@ -651,7 +651,7 @@ read_character(repv stream, int *c_p)
 
   if (!rep_isalpha(c1) || !rep_isalpha(c2) || c2 == EOF) {
     *c_p = c2;
-    return rep_MAKE_INT(c1);
+    return rep_intern_char(c1);
   }
 
   c1 = rep_tolower(c1);
@@ -674,7 +674,7 @@ read_character(repv stream, int *c_p)
 	&& char_names[i].name[1] == c2
 	&& strcmp(char_names[i].name + 2, buf) == 0)
     {
-      return rep_MAKE_INT(char_names[i].value);
+      return rep_intern_char(char_names[i].value);
     }
   }
 

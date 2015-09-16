@@ -147,6 +147,14 @@ again:
     }
     break;
 
+  case rep_Char:
+    rep_GC_SET_CELL(val);
+    val = rep_CHAR(val)->next;
+    if (val && !rep_GC_MARKEDP(val)) {
+      goto again;
+    }
+    break;
+
   case rep_Subr:
   case rep_SF:
     break;

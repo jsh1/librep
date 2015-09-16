@@ -45,15 +45,17 @@ internet drafts directory for a copy.")
     "Escape URL meta-characters in STRING."
     (string-replace url-meta-re
 		    (lambda (s)
-		      (string-upcase
-		       (format nil "%%%02x" (string-ref s (match-start)))))
+		      (let ((c (string-ref s (match-start))))
+			(string-upcase
+			 (format nil "%%%02x" (char->integer c)))))
 		    string))
 
   (define (unquote-url string)
     "Unescape URL meta-characters in STRING."
     (string-replace "%([0-9A-Fa-f][0-9A-Fa-f])"
 		    (lambda ()
-		      (string->number (expand-last-match "\\1") 16))
+		      (let ((match (expand-last-match "\\1")))
+			(integer->char (string->number match 16))))
 		    string))
 
 

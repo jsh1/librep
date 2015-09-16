@@ -206,7 +206,7 @@
 	    (const-vec (make-vector next-const-id)))
 	(do ((rest code (cdr rest)))
 	    ((null? rest))
-	  (string-set! byte-vec (cdar rest) (caar rest)))
+	  (string-set! byte-vec (cdar rest) (integer->char (caar rest))))
 	(do ((rest constants (cdr rest)))
 	    ((null? rest))
 	  (vector-set! const-vec (cdar rest) (caar rest)))
