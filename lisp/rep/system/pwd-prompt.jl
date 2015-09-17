@@ -33,7 +33,7 @@ contents of the prompt will be masked out whilst being entered."
     (unwind-protect
 	(progn
 	  (write *standard-error* prompt)
-	  (unless (string-match "\s$" prompt)
+	  (unless (string-match "\\s$" prompt)
 	    (write *standard-error* #\space ))
 	  (flush-file *standard-error*)
 	  (let ((string (read-line *standard-input*)))

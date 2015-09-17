@@ -47,7 +47,7 @@ DEFSYM(_load_suffixes, "%load-suffixes");
 DEFSYM(load_filename, "*load-filename*");
 
 /* ::doc:*load-path*::
-A list of directory names. When `load' opens a lisp-file it searches each
+A list of directory names. When `load` opens a lisp-file it searches each
 directory named in this list in turn until the file is found or the list
 is exhausted.
 ::end::
@@ -55,9 +55,9 @@ is exhausted.
 List of directories searched for dynamically loaded object files.
 ::end::
 ::doc:*after-load-alist*::
-A list of (LIBRARY FORMS...). Whenever the `load' command reads a file
-of Lisp code LIBRARY, it executes each of FORMS. Note that LIBRARY must
-exactly match the FILE argument given to `load'.
+A list of (FILE FORMS...). Whenever the `load` function reads a file
+of Lisp code FILE, it executes each of FORMS. Note that FILE must
+exactly match the filename parameter to `load`.
 ::end::
 ::doc:rep.system#rep-directory::
 The directory in which all installed data files live.
@@ -78,7 +78,7 @@ The name of the database containing the lisp-library's documentation strings.
 A list of database names containing all documentation strings.
 ::end::
 ::doc:*load-filename*::
-While using the `load' function to load a Lisp library, this variable is
+While using the `load` function to load a Lisp library, this variable is
 set to the name of the file being loaded.
 ::end:: */
 
@@ -144,13 +144,16 @@ load_lisp_file(repv name, repv structure)
     }
   }
 
-  if (rep_throw_value
-      && rep_CAR(rep_throw_value) == Qerror
-      && rep_CONSP(rep_CDR(rep_throw_value))
-      && rep_CAR(rep_CDR(rep_throw_value)) == Qend_of_stream)
-  {
-    /* lose the end-of-stream error. */
-    rep_throw_value = 0;
+  if (rep_throw_value) {
+    if (result && rep_CAR(rep_throw_value) == Qerror
+	&& rep_CONSP(rep_CDR(rep_throw_value))
+	&& rep_CAR(rep_CDR(rep_throw_value)) == Qend_of_stream)
+    {
+      /* lose the end-of-stream error. */
+      rep_throw_value = 0;
+    } else {
+      result = 0;
+    }
   }
 
 out:
@@ -199,14 +202,13 @@ load FILE [NO-ERROR] [NO-PATH] [NO-SUFFIX]
 
 Attempt to open and then read-and-eval the file of Lisp code FILE.
 
-For each directory named in the variable `*load-path*' tries the value
-of FILE with `.jlc' (compiled-lisp) appended to it, then with `.jl'
-appended to it, finally tries FILE without modification.
+For each directory named in the variable *load-path* tries the value of
+FILE with .jlc (compiled-lisp) appended to it, then with .jl appended
+to it, finally tries FILE without modification.
 
 If NO-ERROR is non-nil no error is signalled if FILE can't be found. If
-NO-PATH is non-nil the `*load-path*' variable is not used, just the
-value of FILE. If NO-SUFFIX is non-nil no suffixes are appended to
-FILE.
+NO-PATH is non-nil the *load-path* variable is not used, just the value
+of FILE. If NO-SUFFIX is non-nil no suffixes are appended to FILE.
 
 If the compiled version is older than it's source code, the source code
 is loaded and a warning is displayed.

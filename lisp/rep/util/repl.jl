@@ -63,7 +63,7 @@
     (set! input (concat (repl-pending repl) input))
     (repl-set-pending repl nil)
     (let-fluids ((current-repl repl))
-      (let ((*print-escape* t))
+      (let ((*print-escape* 'control))
 	(catch 'return
 	  (condition-case data
 	      (progn

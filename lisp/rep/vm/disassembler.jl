@@ -89,13 +89,13 @@
 	  (vector-ref consts i)
 	'*invalid-constant*))
     (define (code-ref i)
-      (char->integer (string-ref code-string i)))
+      (byte-string-ref code-string i))
     (unless depth (set! depth 0))
     (let
 	((i 0)
 	 (indent (make-string depth))
 	 c arg op)
-      (while (< i (string-length code-string))
+      (while (< i (byte-string-length code-string))
 	(set! c (code-ref i))
 	(format stream "\n%s%d\t" indent i)
 	(cond
@@ -214,7 +214,7 @@
 	  (set! stack (vector-ref arg 2)))))
       (when (zero? depth)
 	(format stream "%d bytes, %d constants, %d stack slots, %d binding frames and %d registers.\n"
-		(string-length code-string) (vector-length consts)
+		(byte-string-length code-string) (vector-length consts)
 		(logand stack #x3ff) (logand (ash stack -10) #x3ff)
 		(ash stack -20)))
       (disassemble-1 code-string consts stream depth))))

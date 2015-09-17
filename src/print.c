@@ -25,7 +25,6 @@
 DEFSYM(print_escape, "*print-escape*");
 DEFSYM(print_length, "*print-length*");
 DEFSYM(print_level, "*print-level*");
-DEFSYM(newlines, "newlines");
 
 /* ::doc:*print-escape*::
 Defines which control characters `print' should quote. Acceptable values
@@ -33,7 +32,8 @@ are:
 	nil		Only escape double-quote and backslash
 	newlines	Escape double-quote, backslash, newline,
 			 TAB, and formfeed.
-	t		Escape all control codes(characters with a
+        control		Escape double-quote, backslash and control codes.
+	t		Escape all control codes (characters with a
 			 value less than 32), and all characters with
 			 a value greater than 126.
 ::end::
@@ -192,5 +192,4 @@ rep_print_init(void)
   Fset(Qprint_escape, rep_nil);
   Fset(Qprint_length, rep_nil);
   Fset(Qprint_level, rep_nil);
-  rep_INTERN(newlines);
 }

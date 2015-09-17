@@ -38,6 +38,8 @@
 
 #include "repint.h"
 
+#include "utf8-utils.h"
+
 #include <string.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -298,7 +300,7 @@ rep_stream_puts(repv stream, const void *data,
   }
 
   intptr_t rc = -1;
-  const char *buf = lisp_string ? rep_STR(data) : data;
+  const char *buf = lisp_string ? rep_STR((repv)data) : data;
 
   if (data_len < 0) {
     data_len = lisp_string ? rep_STRING_LEN(rep_VAL(data)) : strlen(buf);
@@ -397,101 +399,45 @@ rep_stream_puts(repv stream, const void *data,
   return 0;
 }
 
-/* Read an escape sequence from STREAM. `*c_p` should contain the first
-   character of the escape *not* the escape character. Supported
-   sequences are,
-
-     n   newline
-     r   carriage return
-     f   form feed
-     t   horizontal tab
-     v   vertical tab
-     a   bell
-     ^C  control code of C
-     012 octal character code
-     x12 hex character code
-
-   Otherwise the character is returned as-is.  */
-
-int
-rep_stream_read_esc(repv stream, int *c_p)
+intptr_t
+rep_stream_put_utf32(repv stream, uint32_t c)
 {
-  char c;
-
-  switch (*c_p)
-  {
-  case 'n':
-    c = '\n';
-    break;
-
-  case 'r':
-    c = '\r';
-    break;
-
-  case 'f':
-    c = '\f';
-    break;
-
-  case 't':
-    c = '\t';
-    break;
-
-  case 'v':
-    c = '\v';
-    break;
-
-  case 'a':
-    c = '\a';
-    break;
-
-  case '^':
-    c = rep_toupper(rep_stream_getc(stream)) ^ 0x40;
-    break;
-
-  case '0':
-  case '1':
-  case '2':
-  case '3':
-  case '4':
-  case '5':
-  case '6':
-  case '7':
-    c = *c_p - '0';
-    *c_p = rep_stream_getc(stream);
-    if ((*c_p >= '0') && (*c_p <= '7')) {
-      c = (c * 8) + (*c_p - '0');
-      *c_p = rep_stream_getc(stream);
-      if ((*c_p >= '0') && (*c_p <= '7')) {
-	c = (c * 8) + (*c_p - '0');
-	break;
-      } else {
-	return c;
-      }
-    } else {
-      return c;
-    }
-
-  case 'x':
-    c = 0;
-    while (1) {
-      *c_p = rep_stream_getc(stream);
-      if (!rep_isxdigit(*c_p)) {
-	return c;
-      }
-      if ((*c_p >= '0') && (*c_p <= '9')) {
-	c = (c * 16) + (*c_p - '0');
-      } else {
-	c = (c * 16) + (rep_toupper(*c_p) - 'A') + 10;
-      }
-    }
-    /* not reached */
-
-  default:
-    c = *c_p;
+  if (c < 128) {
+    return rep_stream_putc(stream, c);
   }
 
-  *c_p = rep_stream_getc(stream);
-  return c;
+  uint8_t buf[16];
+  size_t size = utf32_to_utf8_1(buf, c);
+
+  return rep_stream_puts(stream, buf, size, false);
+}
+
+int32_t
+rep_stream_get_utf32(repv stream)
+{
+  int c = rep_stream_getc(stream);
+
+  if (c == EOF) {
+    return EOF;
+  }
+
+  uint32_t u = c;
+
+  if (u > 127) {
+    size_t n = utf8_code_point_size(u);
+    uint8_t buf[n];
+    buf[0] = u;
+    for (size_t i = 1; i < n; i++) {
+      c = rep_stream_getc(stream);
+      if (c == EOF) {
+	return EOF;
+      }
+      buf[i] = (uint8_t)c;
+    }
+    utf8_to_utf32(&u, buf, n);
+  }
+
+  return u;
 }
 
 DEFUN("write", Fwrite, Swrite,
@@ -499,17 +445,41 @@ DEFUN("write", Fwrite, Swrite,
 ::doc:rep.io.streams#write::
 write STREAM DATA [LENGTH]
 
-Writes DATA, which can either be a character, an integer byte value, or
-a string, to the stream STREAM, returning the number of characters
-actually written. If DATA is a string LENGTH can define how many
-characters to write.
+Writes DATA, which can either be a character or a string, to STREAM,
+returning the number of characters actually written. If DATA is a
+string LENGTH can define how many characters to write.
 ::end:: */
 {
   int written;
 
   if (rep_CHARP(data)) {
-    written = rep_stream_putc(stream, rep_CHAR_VALUE(data));
-  } else if (rep_INTP(data)) {
+    uint8_t buf[32];
+    written = utf32_to_utf8_1(buf, rep_CHAR_VALUE(data));
+    written = rep_stream_puts(stream, buf, written, false);
+    written = written > 0 ? 1 : written;
+  } else if (rep_STRINGP(data)) {
+    written = rep_stream_put_utf8(stream, data,
+				  rep_INTP(len) ? rep_INT(len) : -1);
+  } else {
+    return rep_signal_arg_error(data, 2);
+  }
+
+  return !rep_INTERRUPTP ? rep_MAKE_INT(written) : 0;
+}
+
+DEFUN("byte-write", Fbyte_write, Sbyte_write,
+      (repv stream, repv data, repv len), rep_Subr3) /*
+::doc:rep.io.streams#byte-write::
+byte-write STREAM DATA [LENGTH]
+
+Writes DATA, either an integer byte value or a string, to STREAM,
+returning the number of bytes actually written. If DATA is a string
+LENGTH can define how many bytes to write.
+::end:: */
+{
+  int written;
+
+  if (rep_INTP(data)) {
     written = rep_stream_putc(stream, rep_INT(data));
   } else if (rep_STRINGP(data)) {
     bool lisp_string;
@@ -575,52 +545,34 @@ returns nil.
   }
 }
 
+/* FIXME: peek-char? Can't ungetc more than one byte currently.. */
+
 DEFUN("read-char", Fread_char, Sread_char, (repv stream), rep_Subr1) /*
 ::doc:rep.io.streams#read-char::
 read-char STREAM
 
-Reads the next character from the input-stream STREAM, if no more characters
-are available returns nil.
-::end:: */
-{
-  int c = rep_stream_getc(stream);
-
-  if (c != EOF) {
-    return rep_intern_char(c);
-  } else {
-    return rep_nil;
-  }
-}
-
-DEFUN("peek-char", Fpeek_char, Speek_char, (repv stream), rep_Subr1) /*
-::doc:rep.io.streams#peek-char::
-peek-char STREAM
-
-Returns the next character from the input-stream STREAM, *without*
-removing that character from the head of the stream. If no more
+Reads the next character from the input-stream STREAM, if no more
 characters are available returns nil.
 ::end:: */
 {
-  int c = rep_stream_getc(stream);
+  int32_t c = rep_stream_get_utf32(stream);
 
   if (c != EOF) {
-    rep_stream_ungetc(stream, c);
     return rep_intern_char(c);
   } else {
     return rep_nil;
   }
 }
 
-DEFUN("read-chars", Fread_chars, Sread_chars,
+DEFUN("read-bytes", Fread_bytes, Sread_bytes,
       (repv stream, repv count), rep_Subr2) /*
-::doc:rep.io.streams#read-chars::
-read-chars STREAM COUNT
+::doc:rep.io.streams#read-bytes::
+read-bytes STREAM COUNT
 
-Read no more than COUNT characters from the input stream STREAM,
-returning a string containing the characters. If EOF is read before
-reading COUNT characters, the returned string will contain the
-characters read up to that point. If no characters are read, nil will
-be returned.
+Read no more than COUNT bytes from the input stream STREAM, returning a
+string containing the bytes. If EOF is read before reading COUNT bytes,
+the returned string will contain the bytes read up to that point. If
+nothing is read, nil will be returned.
 ::end:: */
 {
   rep_DECLARE2(count, rep_INTP);
@@ -759,7 +711,7 @@ the variable `*standard-input*' if STREAM is nil) and return it.
   }
 
   int c = rep_stream_getc(stream);
-  
+
   if (c == EOF) {
     return Fsignal(Qend_of_stream, rep_LIST_1(stream));
   }
@@ -855,10 +807,12 @@ printing floating point numbers.
 CONVERSION is a character defining how to convert the corresponding ARG
 to text. The default options are:
 
-	d	Output ARG as a decimal integer
-	x, X	Output ARG as a hexadecimal integer
-	o	Output ARG as an octal integer
-	c	Output ARG as a character
+	d	Output number ARG as a decimal integer
+	x, X	Output number ARG as a hexadecimal integer
+	o	Output number ARG as an octal integer
+	b	Output number ARG as a binary integer
+	B	Output integer ARG as a byte
+	c	Output char ARG as a character
 	s	Output the result of `(prin1 ARG)'
 	S	Output the result of `(princ ARG)'
 
@@ -875,7 +829,7 @@ FLAGS is a sequence of zero or more of the following characters,
 
 The list of CONVERSIONS can be extended through the
 *format-hooks-alist* variable; the strings created by these extra
-conversions are formatted as if by the `s' conversion. 
+conversions are formatted as if by the `s' conversion.
 
 Note that the FIELD-WIDTH and all flags currently have no effect on the
 `S' conversion, (or the `s' conversion when the ARG isn't a string).
@@ -1015,12 +969,25 @@ Note that the FIELD-WIDTH and all flags currently have no effect on the
 
       case 'c':
 	if (rep_CHARP(val)) {
-	  rep_stream_putc(stream, rep_CHAR_VALUE(val));
+	  rep_stream_put_utf32(stream, rep_CHAR_VALUE(val));
 	} else {
 	  rep_signal_arg_error(val, arg_idx);
 	  goto exit;
 	}
 	break;
+
+      case 'B':
+	if (rep_INTP(val) && rep_INT(val) >= 0 && rep_INT(val) <= 255) {
+	  rep_stream_putc(stream, (char)rep_INT(val));
+	} else {
+	  rep_signal_arg_error(val, arg_idx);
+	  goto exit;
+	}
+	break;
+
+      case 'b':
+	radix = 2;
+	goto do_number;
 
       case 'x': case 'X':
 	radix = 16;
@@ -1290,12 +1257,12 @@ rep_streams_init(void)
 
   repv tem = rep_push_structure("rep.io.streams");
   rep_INTERN_SPECIAL(format_hooks_alist);
+  rep_ADD_SUBR(Sbyte_write);
   rep_ADD_SUBR(Swrite);
   rep_ADD_SUBR(Sread_byte);
   rep_ADD_SUBR(Speek_byte);
   rep_ADD_SUBR(Sread_char);
-  rep_ADD_SUBR(Speek_char);
-  rep_ADD_SUBR(Sread_chars);
+  rep_ADD_SUBR(Sread_bytes);
   rep_ADD_SUBR(Sread_line);
   rep_ADD_SUBR(Scopy_stream);
   rep_ADD_SUBR(Sread);

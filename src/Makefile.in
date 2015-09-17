@@ -29,7 +29,7 @@ SRCS =	apply.c arrays.c autoload.c call-hook.c characters.c \
 	origin.c plists.c print.c processes.c read.c regexp.c \
 	regsub.c sequences.c signals.c sockets.c streams.c strings.c \
 	structures.c subr-utils.c symbols.c tables.c time.c tuples.c \
-	types.c variables.c vectors.c weak-refs.c
+	types.c utf8-utils.c variables.c vectors.c weak-refs.c
 
 INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h rep_gh.h
 

@@ -530,4 +530,5 @@ rep_main_init(void)
   rep_INTERN_SPECIAL(interrupt_mode);
   Fset(Qinterrupt_mode, rep_nil);
   rep_INTERN_SPECIAL(before_exit_hook);
+  Fset(Qbefore_exit_hook, rep_nil);
 }

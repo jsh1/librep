@@ -149,6 +149,53 @@
     (set-kar! pare 3)
     (test (eqv? (kar pare) 3)))
 
+;;; a few UTF-8 tests
+
+  (define (string-encoding-test)
+    ;; "hello\x2603;world", U+2603 = SNOWMAN
+    (define s1 "hello☃world")
+    (define s2 (make-string 5 #\x2603))
+
+    (test (= (char->integer #\x2603) #x2603))
+    (test (= (integer->char #x2603) #\x2603))
+    (test (char=? (integer->char (char->integer #\x2603)) #\x2603))
+    (test (= (char->integer (integer->char #x2603)) #x2603))
+
+    (test (string=? s1 "hello\x2603;world"))
+    (test (string=? s1 "hello\342\230\203world"))
+    (test (string=? s1 (concat "hello" #\x2603 "world")))
+    (test (string=? s2 "\x2603;\x2603;\x2603;\x2603;\x2603;"))
+
+    (test (= (string-length s1) 11))
+    (test (= (byte-string-length s1) 13))
+    (test (= (string-length s2) 5))
+    (test (= (byte-string-length s2) 15))
+
+    (test (eq? (string-ref s1 0) #\h))
+    (test (= (char->integer (string-ref s1 0)) 104))
+    (test (= (byte-string-ref s1 0) 104))
+    (test (= (char->integer (string-ref s1 5)) #x2603))
+    (test (= (byte-string-ref s1 5) #o342))
+    (test (= (string-ref s2 0) #\x2603))
+
+    (string-set! s2 2 #\a)
+    (test (= (string-ref s2 2) #\a))
+    (test (= (string-length s2) 5))
+    (test (= (byte-string-length s2) 13))
+    (string-set! s2 2 #\x2603)
+    (test (= (string-ref s2 2) #\x2603))
+    (test (= (string-length s2) 5))
+    (test (= (byte-string-length s2) 15))
+    (test (string=? s2 (make-string 5 #\x2603)))
+
+    (let ((sub (substring s1 5 6)))
+      (test (string=? sub (make-string 1 #\x2603)))
+      (test (char=? (string-ref sub 0) #\x2603))
+      (test (= (string-length sub) 1))
+      (test (= (byte-string-length sub) 3)))
+
+    (test (string=? (substring s2 2 4) "\x2603;\x2603;")))
+
 ;;; string-util tests
 
   (define (string-util-self-test)
@@ -193,6 +240,7 @@
     (equality-self-test)
     (cons-self-test)
     (record-self-test)
+    (string-encoding-test)
     (string-util-self-test))
 
   ;;###autoload

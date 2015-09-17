@@ -72,17 +72,18 @@
       match-start max member memq memv message min mod append! nop not
       reverse! list-length list-ref list-tail null? number? or prin1
       prin1-to-string princ print prog1 prog2 progn put quote
-      quote-regexp random rassoc rassq read read-char read-chars
+      quote-regexp random rassoc rassq read read-byte read-char read-bytes
       read-from-string read-line reverse set-car! set-cdr! sequence? set
       set-default set-car! set-cdr! setplist setq set! setq-default
       signal sit-for sleep-for sort! sort char-whitespace? special-form?
       special-variable? stream? string-length string-ref string-set!
+      byte-string-length byte-string-ref byte-string-set!
       string-prefix? string-looking-at string-match string-split
       string-replace string<? string=? string? subr-name subr?
       substring symbol-name symbol-plist symbol-value symbol?
-      system-name throw translate-string! unless unwind-protect
+      system-name throw translate-byte-string! unless unwind-protect
       call-with-unwind-protect char-upper-case? user-full-name
-      user-login-name vector vector? vector-length vector-ref
+      user-login-name vector vector? vector-length vector-ref byte-write
       vector-set! when while with-internal-definitions with-object write
       zero? remainder quotient modulo floor ceiling truncate round exp
       log sin cos tan asin acos atan sqrt expt gcd fixnum? rational?
@@ -101,7 +102,7 @@
       ;; make-table make-weak-table string-hash symbol-hash eq-hash
       ;; equal-hash table? table-ref table-set! table-delete! table-walk
 
-      downcase-table flatten-table upcase-table rep-version))
+      downcase-table upcase-table rep-version))
 
   ;; table containing all variables accessible by gaolled code
   (define gaol-structure nil)

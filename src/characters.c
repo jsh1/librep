@@ -20,6 +20,8 @@
 
 #include "repint.h"
 
+#include "utf8-utils.h"
+
 #include <string.h>
 #include <ctype.h>
 
@@ -74,13 +76,7 @@ char_cmp(repv v1, repv v2)
 static void
 char_princ(repv stream, repv obj)
 {
-  uint32_t c = rep_CHAR_VALUE(obj);
-
-  /* FIXME: UTF-8 conversion? */
-
-  if (c < 256) {
-    rep_stream_putc(stream, c);
-  }
+  rep_stream_put_utf32(stream, rep_CHAR_VALUE(obj));
 }
 
 static void
@@ -88,22 +84,31 @@ char_print(repv stream, repv obj)
 {
   uint32_t c = rep_CHAR_VALUE(obj);
   
-  if (c < 256) {
-    char buf[8];
-    buf[0] = '#';
-    buf[1] = '\\';
-    if (c < 32 || c > 126) {
-      buf[2] = '0' + ((c >> 6) & 7);
-      buf[3] = '0' + ((c >> 3) & 7);
-      buf[4] = '0' + ((c >> 0) & 7);
-      rep_stream_puts(stream, buf, 5, false);
-    } else {
-      buf[2] = (char)c;
-      rep_stream_puts(stream, buf, 3, false);
+  char buf[16];
+  buf[0] = '#';
+  buf[1] = '\\';
+
+  if (c < 32 || c == 127) {
+    buf[2] = '0' + ((c >> 6) & 7);
+    buf[3] = '0' + ((c >> 3) & 7);
+    buf[4] = '0' + ((c >> 0) & 7);
+    rep_stream_puts(stream, buf, 5, false);
+  } else if (c > 127) {
+    int width = 0;
+    for (uint32_t x = c; x != 0; x >>= 4) {
+      width++;
     }
+    static const char alphabet[16] = "0123456789abcdef";
+    buf[2] = 'x';
+    for (int i = width - 1; i >= 0; i--) {
+      buf[3+i] = alphabet[c & 15]; c >>= 4;
+    }
+    rep_stream_puts(stream, buf, 3 + width, false);
+  } else if (c == ' ') {
+    rep_stream_puts(stream, "#\\space", strlen("#\\space"), false);
   } else {
-    /* FIXME: print #\uHEX representation? */
-    rep_stream_puts(stream, "#<char>", strlen("#<char>"), false);
+    size_t size = utf32_to_utf8_1((uint8_t *)buf + 2, c);
+    rep_stream_puts(stream, buf, size + 2, false);
   }
 }
 
@@ -321,18 +326,14 @@ case.
 
 DEFSYM(upcase_table, "upcase-table");
 DEFSYM(downcase_table, "downcase-table");
-DEFSYM(flatten_table, "flatten-table");
 
 /* ::doc:rep.data#upcase-table::
-256-byte string holding translations to turn each character into its
-upper-case equivalent.
+128-byte string holding translations to turn each ASCII character into
+its upper-case equivalent.
 ::end::
 ::doc:rep.data#downcase-table::
-256-byte string holding translations to turn each character into its
-lower-case equivalent.
-::end::
-::doc:rep.data#flatten-table::
-Translation table to convert newline characters to spaces.
+128-byte string holding translations to turn each ASCII character into
+its lower-case equivalent.
 ::end:: */
 
 DEFUN("char-alphabetic?", Falpha_char_p,
@@ -463,31 +464,20 @@ rep_characters_init(void)
   rep_ADD_SUBR(Schar_upcase);
   rep_ADD_SUBR(Schar_downcase);
 
-  repv up = rep_allocate_string(257);
-  repv down = rep_allocate_string(257);
+  repv up = rep_allocate_string(129);
+  repv down = rep_allocate_string(129);
 
-  for(int i = 0; i < 256; i++) {
+  for(int i = 0; i < 128; i++) {
     rep_MUTABLE_STR(up)[i] = rep_toupper(i);
     rep_MUTABLE_STR(down)[i] = rep_tolower(i);
   }
-  rep_MUTABLE_STR(up)[256] = 0;
-  rep_MUTABLE_STR(down)[256] = 0;
+  rep_MUTABLE_STR(up)[128] = 0;
+  rep_MUTABLE_STR(down)[128] = 0;
 
   rep_INTERN(upcase_table);
   rep_INTERN(downcase_table);
   Fset(Qupcase_table, up);
   Fset(Qdowncase_table, down);
-
-  repv flatten = rep_allocate_string(12);
-
-  for(int i = 0; i < 10; i++) {
-    rep_MUTABLE_STR(flatten)[i] = i;
-  }
-  rep_MUTABLE_STR(flatten)[10] = ' ';
-  rep_MUTABLE_STR(flatten)[11] = 0;
-
-  rep_INTERN(flatten_table);
-  Fset(Qflatten_table, flatten);
 
   rep_pop_structure(tem);
 }

@@ -35,9 +35,10 @@
 				 (i 0)
 				 (top (char->integer #\+)))
 			     (while (< i top)
-			       (string-set! map i (integer->char i))
+			       (byte-string-set! map i i)
 			       (set! i (1+ i)))
-			     (string-set! map (char->integer #\+) #\space)
+			     (byte-string-set! map (char->integer #\+)
+					       (char->integer #\space))
 			     map))
 
   (defun cgi-get-params (#!optional query-string)
@@ -59,7 +60,9 @@
       (reverse! params)))
 
   (defun unquote (string)
-    (unquote-url (translate-string! string unquote-plus-map)))
+    (let ((s (copy-sequence string)))
+      (translate-byte-string! s unquote-plus-map)
+      (unquote-url s)))
 
 
 ;; Tests

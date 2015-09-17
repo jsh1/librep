@@ -142,5 +142,4 @@ exist that have not already been returned."
 
 (export-bindings '(string-upper-case? string-lower-case? string-capitalized?
 		   string-upcase string-downcase capitalize-string
-		   mapconcat sort! sort upcase-table downcase-table
-		   flatten-table))
+		   mapconcat sort! sort upcase-table downcase-table))

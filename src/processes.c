@@ -982,7 +982,7 @@ process_putc(repv stream, int c)
 static intptr_t
 process_puts(repv stream, const void *data, intptr_t len, bool lisp_string)
 {
-  const char *buf = lisp_string ? rep_STR(data) : data;
+  const char *buf = lisp_string ? rep_STR((repv)data) : data;
   return write_to_process(stream, buf, len);
 }
 

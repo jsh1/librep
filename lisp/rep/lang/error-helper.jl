@@ -50,7 +50,7 @@
   (define (output fmt . args)
     (write (fluid-ref output-stream) #\()
     (apply format (fluid-ref output-stream) fmt args)
-    (write (fluid-ref output-stream) "\)\n"))
+    (write (fluid-ref output-stream) ")\n"))
 
   (define (void-value-helper symbol)
     (case symbol

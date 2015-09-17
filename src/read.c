@@ -20,6 +20,8 @@
 
 #include "repint.h"
 
+#include "utf8-utils.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -44,7 +46,7 @@ DEFSYM(structure_ref, "structure-ref");
    someone else or unread before exiting... */
 
 static repv readl(repv, register int *, repv);
- 
+
 static repv
 signal_reader_error(repv type, repv stream, char *message)
 {
@@ -65,24 +67,38 @@ signal_reader_error(repv type, repv stream, char *message)
   return Fsignal(type, data);
 }
 
+static int
+hexdigit(int c)
+{
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  } else if (c >= 'a' && c <= 'f') {
+    return 10 + (c - 'a');
+  } else if (c >= 'A' && c <= 'F') {
+    return 10 + (c - 'a');
+  } else {
+    return -1;
+  }
+}
+
 static void
-read_comment(repv strm, int *c_p)
+read_comment(repv stream, int *c_p)
 {
   int terminator = *c_p;
   int depth = 1;
   int c;
 
-  while ((c = rep_stream_getc(strm)) != EOF) {
+  while ((c = rep_stream_getc(stream)) != EOF) {
   again:
     if (c == terminator) {
-      c = rep_stream_getc(strm);
+      c = rep_stream_getc(stream);
       if (c == EOF || (c == '#' && --depth == 0)) {
 	break;
       } else {
 	goto again;
       }
     } else if (c == '#') {
-      c = rep_stream_getc(strm);
+      c = rep_stream_getc(stream);
       if (c == EOF) {
 	break;
       } else if (c == terminator) {
@@ -94,17 +110,17 @@ read_comment(repv strm, int *c_p)
   }
 
   if (c != EOF) {
-    c = rep_stream_getc(strm);
+    c = rep_stream_getc(stream);
   } else {
     signal_reader_error(Qpremature_end_of_stream,
-			strm, "While reading a comment");
+			stream, "while reading a comment");
   }
 
   *c_p = c;
 }
 
 static repv
-read_list(repv strm, register int *c_p)
+read_list(repv stream, register int *c_p)
 {
   repv result = rep_nil;
   repv last = 0;
@@ -113,17 +129,17 @@ read_list(repv strm, register int *c_p)
   rep_PUSHGC(gc_result, result);
 
   int start_line = -1;
-  if (rep_FILEP(strm)) {
-    start_line = rep_FILE(strm)->line_number;
+  if (rep_FILEP(stream)) {
+    start_line = rep_FILE(stream)->line_number;
   }
 
-  *c_p = rep_stream_getc(strm);
+  *c_p = rep_stream_getc(stream);
 
   while (result != 0) {
     switch (*c_p) {
     case EOF:
       result = signal_reader_error(Qpremature_end_of_stream,
-				   strm, "While reading a list");
+				   stream, "while reading a list");
       break;
 
     case ' ':
@@ -131,34 +147,34 @@ read_list(repv strm, register int *c_p)
     case '\n':
     case '\r':
     case '\f':
-      *c_p = rep_stream_getc(strm);
+      *c_p = rep_stream_getc(stream);
       continue;
 
     case ';': {
       int c;
-      while ((c = rep_stream_getc(strm)) != EOF
+      while ((c = rep_stream_getc(stream)) != EOF
 	     && c != '\n' && c != '\f' && c != '\r')
       {
       }
-      *c_p = rep_stream_getc(strm);
+      *c_p = rep_stream_getc(stream);
       continue; }
 
     case ')':
     case ']':
-      *c_p = rep_stream_getc(strm);
+      *c_p = rep_stream_getc(stream);
       goto end;
-	    
+
     case '.':
-      *c_p = rep_stream_getc(strm);
+      *c_p = rep_stream_getc(stream);
       switch (*c_p) {
       case EOF:
 	result = signal_reader_error(Qpremature_end_of_stream,
-				     strm, "After `.' in list");
+				     stream, "after `.' in list");
 	goto end;
 
       case ' ': case '\t': case '\n': case '\f': case '\r':
 	if (last) {
-	  repv this = readl(strm, c_p, Qpremature_end_of_stream);
+	  repv this = readl(stream, c_p, Qpremature_end_of_stream);
 	  if (this != 0) {
 	    rep_CDR(last) = this;
 	  } else {
@@ -167,30 +183,30 @@ read_list(repv strm, register int *c_p)
 	  }
 	} else {
 	  result = signal_reader_error(Qinvalid_read_syntax,
-            strm, "Nothing to dot second element of cons to");
+            stream, "nothing to dot second element of cons to");
 	  goto end;
 	}
 	continue;
 
       default:
-	rep_stream_ungetc(strm, *c_p);
+	rep_stream_ungetc(stream, *c_p);
 	*c_p = '.';
       }
       goto do_default;
 
     case '#': {
-      int c = rep_stream_getc(strm);
+      int c = rep_stream_getc(stream);
       if (c == EOF) {
 	goto end;
       } else if (c == '|') {
 	*c_p = c;
-	read_comment(strm, c_p);
+	read_comment(stream, c_p);
 	if (rep_INTERRUPTP) {
 	  return 0;
 	}
 	continue;
       }
-      rep_stream_ungetc(strm, c);
+      rep_stream_ungetc(stream, c);
       goto do_default; }
 
     default:
@@ -201,7 +217,7 @@ read_list(repv strm, register int *c_p)
       } else {
 	result = this;
       }
-      rep_CAR(this) = readl(strm, c_p, Qpremature_end_of_stream);
+      rep_CAR(this) = readl(stream, c_p, Qpremature_end_of_stream);
       if (!rep_CAR(this)) {
 	result = 0;
       }
@@ -213,7 +229,7 @@ end:
   rep_POPGC;
 
   if (result) {
-    rep_record_origin(result, strm, start_line);
+    rep_record_origin(result, stream, start_line);
   }
 
   /* FIXME: need a way to make pairs immutable. */
@@ -224,7 +240,7 @@ end:
 /* Could be a symbol or a number */
 
 static repv
-read_symbol(repv strm, int *c_p, repv obarray)
+read_symbol(repv stream, int *c_p, repv obarray)
 {
   /* For parsing numbers, while radix != zero, it might still be an
      integer that we're reading. */
@@ -277,24 +293,24 @@ read_symbol(repv strm, int *c_p, repv obarray)
 
     case '\\':
       radix = 0;
-      c = rep_stream_getc(strm);
+      c = rep_stream_getc(stream);
       if (c == EOF) {
 	return signal_reader_error(Qpremature_end_of_stream,
-				   strm, "After `\\' in identifer");
+				   stream, "after `\\' in identifer");
       }
       buf[buf_i++] = c;
       break;
 
     case '|':
       radix = 0;
-      c = rep_stream_getc(strm);
+      c = rep_stream_getc(stream);
       while ((c != EOF) && (c != '|') && (buf_i < buflen)) {
 	buf[buf_i++] = c;
-	c = rep_stream_getc(strm);
+	c = rep_stream_getc(stream);
       }
       if (c == EOF) {
 	return signal_reader_error(Qpremature_end_of_stream,
-				   strm, "After `|' in identifier");
+				   stream, "after `|' in identifier");
       }
       break;
 
@@ -405,7 +421,7 @@ read_symbol(repv strm, int *c_p, repv obarray)
       buf[buf_i++] = c;
     }
 
-    c = rep_stream_getc(strm);
+    c = rep_stream_getc(stream);
   }
 
 done:
@@ -414,8 +430,8 @@ done:
   repv result = 0;
 
   if (buf_i == 0) {
-    result = signal_reader_error(Qinvalid_read_syntax, strm,
-				 "Zero length identifier");
+    result = signal_reader_error(Qinvalid_read_syntax, stream,
+				 "zero length identifier");
   } else if (radix > 0 && nfirst < buf_i) {
     /* It was a number of some sort */
     result = rep_parse_number(buf + nfirst, buf_i - nfirst, radix, sign,
@@ -448,9 +464,9 @@ done:
 }
 
 static repv
-read_vector(repv strm, int *c_p)
+read_vector(repv stream, int *c_p)
 {
-  repv list = read_list(strm, c_p);
+  repv list = read_list(stream, c_p);
   if (!list) {
     return 0;
   }
@@ -479,20 +495,122 @@ read_vector(repv strm, int *c_p)
   return vec;
 }
 
-static repv
-read_str(repv strm, int *c_p)
+static intptr_t
+read_string_escape(repv stream, int *c_p, uint8_t *ptr)
 {
-  char static_buffer[256];
-  size_t buf_len = sizeof(static_buffer);
-  char *buf = static_buffer;
-  size_t buf_i = 0;
+  bool utf32 = false;
+  uint32_t ret = 0;
 
-  int c = rep_stream_getc(strm);
+  int c = *c_p;
+
+  switch (c) {
+  case EOF:
+    return -1;
+
+  case '\n':
+    ret = rep_stream_getc(stream);
+    break;
+
+  case 'a':
+    ret = 7;
+    break;
+  case 'b':
+    ret = 8;
+    break;
+  case 't':
+    ret = 9;
+    break;
+  case 'n':
+    ret = 10;
+    break;
+  case 'v':
+    ret = 11;
+    break;
+  case 'f':
+    ret = 12;
+    break;
+  case 'r':
+    ret = 13;
+    break;
+  case 'e':
+    ret = 27;
+    break;
+  case '"':
+  case '\'':
+  case '\\':
+    ret = c;
+    break;
+
+    /* \OOO -- three digit octal byte */
+
+  case '0': case '1': case '2': case '3':
+  case '4': case '5': case '6': case '7':
+    ret = c - '0';
+    c = rep_stream_getc(stream);
+    if (c >= '0' && c <= '7') {
+      ret = ret * 8 + (c - '0');
+      c = rep_stream_getc(stream);
+      if (c >= '0' && c <= '7') {
+	ret = ret * 8 + (c - '0');
+	break;
+      } else {
+	return -1;
+      }
+    } else {
+      return -1;
+    }
+    break;
+
+    /* \xXX..; -- hexadecimal UTF-32 character */
+
+  case 'x':
+    ret = 0;
+    utf32 = true;
+    for (size_t i = 0;; i++) {
+      c = rep_stream_getc(stream);
+      if (c == ';') {
+	if (i == 0) {
+	  return -1;
+	}
+	break;
+      }
+      int h = hexdigit(c);
+      if (h < 0) {
+	return -1;
+      }
+      ret = ret * 16 + h;
+    }
+    break;
+
+  default:
+    return -1;
+  }
+
+  *c_p = rep_stream_getc(stream);
+
+  if (!utf32) {
+    ptr[0] = ret;
+    return 1;
+  }
+
+  return utf32_to_utf8_1(ptr, ret);
+}
+
+static repv
+read_string(repv stream, int *c_p)
+{
+  uint8_t static_buffer[256];
+  size_t buf_len = sizeof(static_buffer);
+  uint8_t *buf = static_buffer;
+  size_t buf_i = 0;
+  bool all_ascii = true;
+
+  int c = rep_stream_getc(stream);
 
   while ((c != EOF) && (c != '"')) {
-    if (buf_i == buf_len) {
+    if (buf_i + 8 >= buf_len) {
       size_t new_len = buf_len * 2;
-      char *newbuf = rep_alloc(new_len);
+      uint8_t *newbuf = rep_alloc(new_len);
       if (newbuf) {
 	memcpy(newbuf, buf, buf_len);
       }
@@ -506,28 +624,37 @@ read_str(repv strm, int *c_p)
       buf_len = new_len;
     }
 
-    if (c == '\\') {
-      c = rep_stream_getc(strm);
-      if (c == '\n') {
-	/* escaped newline is ignored */
-	c = rep_stream_getc(strm);
-      } else {
-	buf[buf_i++] = (char)rep_stream_read_esc(strm, &c);
-      }
-    } else {
+    if (c != '\\') {
       buf[buf_i++] = c;
-      c = rep_stream_getc(strm);
+      if (all_ascii && c > 127) {
+	all_ascii = false;
+      }
+      c = rep_stream_getc(stream);
+    } else {
+      c = rep_stream_getc(stream);
+      intptr_t size = read_string_escape(stream, &c, buf + buf_i);
+      if (size <= 0) {
+	return signal_reader_error(Qinvalid_read_syntax, stream,
+				   "invalid string escape");
+      }
+      if (all_ascii && buf[buf_i] > 127) {
+	all_ascii = false;
+      }
+      buf_i += size;
     }
   }
 
   repv ret;
   if (c == EOF) {
     ret = signal_reader_error(Qpremature_end_of_stream,
-			      strm, "While reading a string");
+			      stream, "while reading a string");
   } else {
-    *c_p = rep_stream_getc(strm);
-    ret = rep_string_copy_n(buf, buf_i);
+    *c_p = rep_stream_getc(stream);
+    ret = rep_string_copy_n((char *)buf, buf_i);
     rep_STRING(ret)->car |= rep_STRING_IMMUTABLE;
+    if (all_ascii) {
+      rep_string_set_ascii(ret);
+    }
   }
 
   if (buf != static_buffer) {
@@ -549,7 +676,7 @@ skip_chars(repv stream, const char *str, repv ret, int *ptr)
       return signal_reader_error(Qinvalid_read_syntax, stream, buf);
 #else
       return signal_reader_error(Qinvalid_read_syntax, stream,
-				 "While reading a token");
+				 "while reading a token");
 #endif
     }
   }
@@ -568,6 +695,30 @@ skip_chars(repv stream, const char *str, repv ret, int *ptr)
   default:
     return signal_reader_error(Qinvalid_read_syntax, stream,
 			       "expected end of token");
+  }
+}
+
+static bool
+is_delimiter(int c)
+{
+  switch (c) {
+  case EOF:
+  case '\t':
+  case '\n':
+  case '\f':
+  case '\r':
+  case ' ':
+  case 133:
+  case '(':
+  case ')':
+  case '[':
+  case ']':
+  case '"':
+  case ';':
+  case '#':
+    return true;
+  default:
+    return false;
   }
 }
 
@@ -629,57 +780,96 @@ read_character(repv stream, int *c_p)
     {"us",  '\037'},
   };
 
-  int c1 = rep_stream_getc(stream);
-  if (c1 == EOF) {
-    return signal_reader_error(Qpremature_end_of_stream,
-			       stream, "During #\\ syntax");
-  }
+  uint8_t buf[16];
+  size_t size = 0;
 
-  int c2 = rep_stream_getc(stream);
-
-  if (c1 >= '0' && c1 <= '7' && c2 >= '0' && c2 <= '7') {
-    int c3 = rep_stream_getc(stream);
-    if (c3 >= '0' && c3 <= '7') {
-      // three octal digits => numeric ASCII code
-      *c_p = rep_stream_getc(stream);
-      return rep_intern_char(((c1 - '0') * 8 + (c2 - '0')) * 8 + (c3 - '0'));
-    }
-    rep_stream_ungetc(stream, c3);
-  }
-
-  // FIXME: also support #\uHHHH syntax for hex Unicode characters
-
-  if (!rep_isalpha(c1) || !rep_isalpha(c2) || c2 == EOF) {
-    *c_p = c2;
-    return rep_intern_char(c1);
-  }
-
-  c1 = rep_tolower(c1);
-  c2 = rep_tolower(c2);
-
-  char buf[16];
-
-  for (size_t i = 0; i < sizeof(buf) - 1; i++) {
+  while (size < sizeof(buf)) {
     int c = rep_stream_getc(stream);
-    if (c == EOF || !rep_isalpha(c)) {
+    if (is_delimiter(c)) {
+      if (size == 0) {
+	buf[size++] = (uint8_t)c;
+	c = rep_stream_getc(stream);
+      }
+      buf[size] = 0;
       *c_p = c;
-      buf[i] = 0;
       break;
     }
-    buf[i] = rep_tolower(c);
+    buf[size++] = (uint8_t)c;
   }
 
-  for (size_t i = 0; i < sizeof(char_names) / sizeof(char_names[0]); i++) {
-    if (char_names[i].name[0] == c1
-	&& char_names[i].name[1] == c2
-	&& strcmp(char_names[i].name + 2, buf) == 0)
-    {
-      return rep_intern_char(char_names[i].value);
+  switch (buf[0]) {
+  case '0': case '1': case '2':  case '3':
+  case '4': case '5': case '6':  case '7':
+    if (size == 2 || size == 3) {
+      uint32_t u = 0;
+      for (size_t i = 0; i < size; i++) {
+	unsigned int c = buf[i];
+	if (!(c >= '0' && c <= '7')) {
+	  return signal_reader_error(Qinvalid_read_syntax, stream,
+				     "invalid octal character");
+	}
+	u = u * 8 + (c - '0');
+      }
+      return rep_intern_char(u);
     }
+    break;
+
+  case 'x':
+    if (size > 1) {
+      uint32_t u = 0;
+      for (size_t i = 1; i < size; i++) {
+	int h = hexdigit(buf[i]);
+	if (h < 0) {
+	  return signal_reader_error(Qinvalid_read_syntax, stream,
+				     "invalid hexadecimal character");
+	}
+	u = u * 16 + h;
+      }
+      return rep_intern_char(u);
+    }
+    break;
   }
 
-  return signal_reader_error(Qinvalid_read_syntax, stream,
-			     "Unknown character name"); 
+  if (buf[0] < 128) {
+    if (size == 1) {
+      /* Single byte, not an extended UTF-8 sequence. */
+      return rep_intern_char(buf[0]);
+    }
+
+    for (size_t i = 0; i < size; i++) {
+      if (buf[i] >= 128) {
+	return signal_reader_error(Qinvalid_read_syntax, stream,
+				   "invalid character name");
+      }
+      buf[i] = rep_tolower(buf[i]);
+    }
+
+    char c0 = buf[0], c1 = buf[1];
+    for (size_t i = 0; i < sizeof(char_names) / sizeof(char_names[0]); i++) {
+      if (char_names[i].name[0] == c0 && char_names[i].name[1] == c1
+	  && strcmp(char_names[i].name + 2, (char *)buf + 2) == 0)
+      {
+	return rep_intern_char(char_names[i].value);
+      }
+    }
+
+    return signal_reader_error(Qinvalid_read_syntax, stream,
+			       "invalid character name");
+  }
+
+  /* Must be an extended UTF-8 character. */
+
+  size_t len = utf8_code_point_size(buf[0]);
+
+  if (len != size) {
+    return signal_reader_error(Qinvalid_read_syntax, stream,
+			       "invalid UTF-8 character");
+  }
+
+  uint32_t u;
+  utf8_to_utf32(&u, buf, size);
+
+  return rep_intern_char(u);
 }
 
 /* Using the above read_*() functions this classifies each type of
@@ -687,7 +877,7 @@ read_character(repv stream, int *c_p)
    case of error. */
 
 static repv
-readl(repv strm, register int *c_p, repv end_of_stream_error)
+readl(repv stream, register int *c_p, repv end_of_stream_error)
 {
   while (1) {
     switch (*c_p) {
@@ -695,27 +885,27 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
       rep_GC_root gc_form;
 
     case EOF:
-      return signal_reader_error(end_of_stream_error, rep_LIST_1(strm), 0);
+      return signal_reader_error(end_of_stream_error, rep_LIST_1(stream), 0);
 
     case ' ':
     case '\t':
     case '\n':
     case '\f':
     case '\r':
-      *c_p = rep_stream_getc(strm);
+      *c_p = rep_stream_getc(stream);
       continue;
 
     case ';': {
       int c;
-      while ((c = rep_stream_getc(strm)) != EOF
+      while ((c = rep_stream_getc(stream)) != EOF
 	     && c != '\n' && c != '\f' && c != '\r')
       {
       }
-      *c_p = rep_stream_getc(strm);
+      *c_p = rep_stream_getc(stream);
       continue; }
 
     case '(':
-      return read_list(strm, c_p);
+      return read_list(stream, c_p);
 
     case '\'': case '`': 
       /* 'X => (quote X)
@@ -723,12 +913,12 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
       form = Fcons(*c_p == '\'' ? Qquote : Qbackquote,
 		   Fcons(rep_nil, rep_nil));
       rep_PUSHGC(gc_form, form);
-      if ((*c_p = rep_stream_getc(strm)) == EOF) {
+      if ((*c_p = rep_stream_getc(stream)) == EOF) {
 	rep_POPGC;
 	return signal_reader_error(Qpremature_end_of_stream,
-				   strm, "During ` or ' syntax");
+				   stream, "during ` or ' syntax");
       }
-      rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
+      rep_CADR(form) = readl(stream, c_p, Qpremature_end_of_stream);
       rep_POPGC;
       if (!rep_CADR(form)) {
 	return 0;
@@ -740,20 +930,20 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
          ,X  => (backquote-unquote X) */
       form = Fcons(Qbackquote_unquote, Fcons(rep_nil, rep_nil));
       rep_PUSHGC(gc_form, form);
-      switch ((*c_p = rep_stream_getc(strm))) {
+      switch ((*c_p = rep_stream_getc(stream))) {
       case EOF:
 	rep_POPGC;
 	return signal_reader_error(Qpremature_end_of_stream,
-				   strm, "During , syntax");
+				   stream, "during , syntax");
       case '@':
 	rep_CAR(form) = Qbackquote_splice;
-	if ((*c_p = rep_stream_getc(strm)) == EOF) {
+	if ((*c_p = rep_stream_getc(stream)) == EOF) {
 	  rep_POPGC;
 	  return signal_reader_error(Qpremature_end_of_stream,
-				     strm, "During ,@ syntax");
+				     stream, "during ,@ syntax");
 	}
       }
-      rep_CADR(form) = readl(strm, c_p, Qpremature_end_of_stream);
+      rep_CADR(form) = readl(stream, c_p, Qpremature_end_of_stream);
       rep_POPGC;
       if (!rep_CADR(form)) {
 	return 0;
@@ -761,19 +951,19 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
       return form;
 
     case '[':
-      return read_vector(strm, c_p);
+      return read_vector(stream, c_p);
 
     case '"':
-      return read_str(strm, c_p);
+      return read_string(stream, c_p);
 
     case '#':
-      switch (*c_p = rep_stream_getc(strm)) {
+      switch (*c_p = rep_stream_getc(stream)) {
       case EOF:
 	return signal_reader_error(Qpremature_end_of_stream,
-				   strm, "During # syntax");
+				   stream, "during # syntax");
 
       case '[': {
-	repv vec = read_vector(strm, c_p);
+	repv vec = read_vector(stream, c_p);
 	if (!vec) {
 	  return 0;
 	}
@@ -787,51 +977,51 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
 	  return vec;
 	}
 	return signal_reader_error(Qinvalid_read_syntax,
-				   strm, "Invalid bytecode object"); }
+				   stream, "invalid bytecode"); }
 
       case '(':
-	return read_vector(strm, c_p);
+	return read_vector(stream, c_p);
 
       case '|':
 	/* comment delimited by `#| ... |#' */
-	read_comment(strm, c_p);
+	read_comment(stream, c_p);
 	if (rep_INTERRUPTP) {
 	  return 0;
 	}
 	continue;
 
       case '\\':
-	return read_character(strm, c_p);
+	return read_character(stream, c_p);
 
       case '!':
-	if (rep_FILEP(strm)) {
-	  repv pos = Fseek_file(strm, rep_nil, rep_nil);
+	if (rep_FILEP(stream)) {
+	  repv pos = Fseek_file(stream, rep_nil, rep_nil);
 	  if (pos && rep_INTP(pos) && rep_INT(pos) == 2) {
 	    /* #! at the start of the file. Skip until !# */
-	    read_comment(strm, c_p);
+	    read_comment(stream, c_p);
 	    if (rep_INTERRUPTP) {
 	      return 0;
 	    }
 	    continue;
 	  }
 	}
-	switch (rep_stream_getc(strm)) {
+	switch (rep_stream_getc(stream)) {
 	case 'o':
-	  return skip_chars(strm, "ptional", ex_optional, c_p);
+	  return skip_chars(stream, "ptional", ex_optional, c_p);
         case 'r':
-	  return skip_chars(strm, "est", ex_rest, c_p);
+	  return skip_chars(stream, "est", ex_rest, c_p);
 	case 'k':
-	  return skip_chars(strm, "ey", ex_key, c_p);
+	  return skip_chars(stream, "ey", ex_key, c_p);
 	default:
-	  return signal_reader_error(Qinvalid_read_syntax, strm,
-				     "Unknown #! prefixed identifier");
+	  return signal_reader_error(Qinvalid_read_syntax, stream,
+				     "unknown #! prefixed identifier");
 	}
 	// not reached
 
       case ':':
-	rep_stream_ungetc(strm, *c_p);
+	rep_stream_ungetc(stream, *c_p);
 	*c_p = '#';
-	form = read_symbol(strm, c_p, rep_keyword_obarray);
+	form = read_symbol(stream, c_p, rep_keyword_obarray);
 	if (form && rep_SYMBOLP(form)) {
 	  rep_SYM(form)->car |= rep_SF_KEYWORD;
 	}
@@ -840,31 +1030,31 @@ readl(repv strm, register int *c_p, repv end_of_stream_error)
       case 't': case 'T':
       case 'f': case 'F':
 	form = (rep_tolower(*c_p) == 't') ? rep_scm_t : rep_scm_f;
-	*c_p = rep_stream_getc(strm);
+	*c_p = rep_stream_getc(stream);
 	return form;
 
       case 'b': case 'B': case 'o': case 'O':
       case 'd': case 'D': case 'x': case 'X':
       case 'e': case 'E': case 'i': case 'I':
-	rep_stream_ungetc(strm, *c_p);
+	rep_stream_ungetc(stream, *c_p);
 	*c_p = '#';
 	goto identifier;
 
       case 'u':
-	return skip_chars(strm, "ndefined", rep_undefined_value, c_p);
+	return skip_chars(stream, "ndefined", rep_undefined_value, c_p);
 
       default:
 	return signal_reader_error(Qinvalid_read_syntax,
-				   strm, "Invalid token");
+				   stream, "invalid token");
       }
 
     default:
     identifier:
-      form = read_symbol(strm, c_p, rep_obarray);
+      form = read_symbol(stream, c_p, rep_obarray);
       if (form && *c_p == '#' && rep_SYMBOLP(form)) {
 	/* foo#bar expands to (structure-ref foo bar) */
-	*c_p = rep_stream_getc(strm);
-	repv var = read_symbol(strm, c_p, rep_obarray);
+	*c_p = rep_stream_getc(stream);
+	repv var = read_symbol(stream, c_p, rep_obarray);
 	if (var != 0) {
 	  return rep_list_3(Qstructure_ref, form, var);
 	} else {

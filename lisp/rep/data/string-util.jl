@@ -57,21 +57,25 @@ at least one lower-case character)."
 ;;;###autoload
 (defun string-upcase (x)
   "Return a new string, an upper case copy of string X."
-  (translate-string! (copy-sequence x) upcase-table))
+  (let ((s (copy-sequence x)))
+    (translate-byte-string! s upcase-table)
+    s))
 
 ;;;###autoload
 (defun string-downcase (x)
   "Return a new string, a lower case copy of string X."
-  (translate-string! (copy-sequence x) downcase-table))
+  (let ((s (copy-sequence x)))
+    (translate-byte-string! s downcase-table)
+    s))
 
 ;;;###autoload
 (defun capitalize-string (x)
   "Return a new string, a copy of X with its first character in upper case."
   (if (zero? (string-length x))
       x
-    (let ((new (copy-sequence x)))
-      (string-set! new 0 (char-upcase (string-ref new 0)))
-      new)))
+    (let ((s (copy-sequence x)))
+      (string-set! s 0 (char-upcase (string-ref s 0)))
+      s)))
 
 ;;;###autoload
 (defun mapconcat (fun sequence separator)

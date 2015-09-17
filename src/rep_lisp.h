@@ -356,9 +356,24 @@ typedef rep_cell rep_number;
 
 /* Strings */
 
-typedef struct rep_string_struct {
+typedef struct rep_string_utf32_struct rep_string_utf32;
+
+typedef struct {
+  /* Also contains the number of bytes in the string. */
+
   repv car;
-  char *data;				/* always NUL terminated. */
+
+  /* Byte vector, character access assumes UTF-8 encoding. */
+
+  uint8_t *utf8_data;
+
+  /* Either zero, the number of UTF-32 code points in the string
+     encoded as a rep_INT, or a pointer to cached UTF-32 data (not
+     actually a real lisp object). If length is set, and it's the same
+     as the number of bytes, then string is ASCII. */
+
+  repv utf32_data;
+
 } rep_string;
 
 /* String contents are immutable. */
@@ -376,24 +391,26 @@ typedef struct rep_string_struct {
 #define rep_STRINGP(v)		rep_CELL8_TYPEP(v, rep_String)
 #define rep_STRING(v)		((rep_string *) rep_PTR(v))
 
-#define rep_STRING_LEN(v)	(rep_STRING(v)->car >> rep_STRING_LEN_SHIFT)
+/* Size in bytes (not including terminating NUL). */
+#define rep_STRING_LEN(v)	rep_string_ptr_size(v)
 
 /* True if this string may be written to; generally static strings
    are made from C string-constants and usually in read-only storage. */
 #define rep_STRING_WRITABLE_P(v) (!(rep_STRING(v)->car & rep_STRING_IMMUTABLE))
 
+/* Access to plain byte content. */
+#define rep_MUTABLE_STR(v)	rep_string_mutable_ptr(v)
+#define rep_STR(v)		rep_string_ptr(v)
+
 /* Define a variable V, containing a static string S. This must be cast
-   to a repv via the rep_VAL() macro when using. */
+   to a repv via the rep_VAL() macro when using. S must be true ASCII. */
 #define DEFSTRING(v, s)				\
   rep_ALIGN_CELL(static const rep_string v) = {	\
     ((sizeof(s) - 1) << rep_STRING_LEN_SHIFT)	\
     | rep_STRING_IMMUTABLE			\
     | rep_CELL_STATIC_BIT | rep_String,		\
-    (char *)s					\
+    (uint8_t *)s, rep_MAKE_INT(sizeof(s) - 1)	\
   }
-
-#define rep_MUTABLE_STR(v)	(rep_STRING(v)->data)
-#define rep_STR(v)		((const char *)rep_MUTABLE_STR(v))
 
 
 /* Symbols */

@@ -91,7 +91,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 						    name structure)))
 				(doc-file-ref (doc-file-param-key name)))))))
 	(if arg-doc
-	    (format *standard-output* "\(%s%s\)\n" (or name value) arg-doc)
+	    (format *standard-output* "(%s%s)\n" (or name value) arg-doc)
 	  (format *standard-output* "%s\n" (or name value))))))
 
 

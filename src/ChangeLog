@@ -1,3 +1,16 @@
+2015-09-17  John Harper  <jsh@unfactored.org>
+
+	* utf8-utils.h, utf8-utils.c, strings.c, streams.c, sockets.c,
+	repint_subrs.h, rep_subrs.h, rep_lisp.h, read.c, processes.c,
+	print.c, main.c, load.c, librep.sym, characters.c, Makefile.in:
+	initial Unicode support -- anywhere characters have to be
+	considered in strings, we're assuming UTF-8 encoding. Have
+	added various byte- functions to treat strings as raw byte
+	vectors (using integer type rather than char to represent
+	values). Have also cleaned up character and string read syntax
+	as part of this. #\xHEX for Unicode characters, "\xHEX;" in
+	strings. Octal escapes in strings still represent raw bytes.
+
 2015-09-16  John Harper  <jsh@unfactored.org>
 
 	* strings.c, streams.c, rep_subrs.h, rep_lisp.h, read.c,

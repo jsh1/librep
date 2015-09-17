@@ -217,7 +217,7 @@ we would like. This is due to the view of folded functions as
 
 (defun compile-file (file-name)
   "Compiles the file of jade-lisp code FILE-NAME into a new file called
-`(concat FILE-NAME #\c)' (ie, `foo.jl' => `foo.jlc')."
+`(concat FILE-NAME #\\c)' (ie, `foo.jl' => `foo.jlc')."
   (interactive "fLisp file to compile:")
   (let ((temp-file (make-temp-name))
 	src-file dst-file body header)

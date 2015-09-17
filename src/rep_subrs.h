@@ -389,7 +389,6 @@ extern int rep_stream_getc(repv);
 extern void rep_stream_ungetc(repv, int);
 extern int rep_stream_putc(repv, int);
 extern intptr_t rep_stream_puts(repv, const void *, intptr_t, bool);
-extern int rep_stream_read_esc(repv, int *);
 extern repv Fwrite(repv stream, repv data, repv len);
 extern repv Fread_char(repv stream);
 extern repv Fpeek_char(repv stream);
@@ -406,6 +405,8 @@ extern repv Fmake_string_output_stream(void);
 extern repv Fget_output_stream_string(repv strm);
 extern repv Finput_stream_p(repv arg);
 extern repv Foutput_stream_p(repv arg);
+extern intptr_t rep_stream_put_utf32(repv stream, uint32_t c);
+extern int32_t rep_stream_get_utf32(repv stream);
 
 /* from symbols.c */
 extern repv rep_undefined_value;
@@ -518,6 +519,11 @@ extern repv Fvector_set(repv, repv, repv);
 extern repv Fmake_vector_immutable(repv);
 
 /* from strings.c */
+extern intptr_t rep_string_ptr_size(repv s);
+extern const char *rep_string_ptr(repv s);
+extern char *rep_string_mutable_ptr(repv s);
+extern void rep_string_set_ascii(repv s);
+extern intptr_t rep_stream_put_utf8(repv stream, repv str, intptr_t count);
 extern repv Fstringp(repv);
 extern repv Fstring_length(repv);
 extern repv Fstring_ref(repv, repv);

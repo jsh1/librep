@@ -199,6 +199,7 @@ extern void rep_streams_init(void);
 /* from strings.c */
 extern int rep_allocated_strings, rep_used_strings;
 extern size_t rep_allocated_string_bytes;
+extern intptr_t rep_read_string_escape(repv stream, int *c_p, uint8_t *ptr);
 extern int rep_string_cmp(repv v1, repv v2);
 extern void rep_string_sweep(void);
 extern void rep_strings_init(void);
