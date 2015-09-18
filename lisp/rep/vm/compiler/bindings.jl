@@ -122,8 +122,8 @@
 ;      (fluid-set! lambda-name nil))
 )
 
-  (defmacro note-bindings (vars)
-    (list 'for-each 'note-binding vars))
+  (defun note-bindings (vars)
+    (for-each note-binding vars))
 
   ;; note that the outermost binding of VAR has been modified
   (define (note-binding-modified var)

@@ -287,20 +287,14 @@
 
   ;; Increment the current stack size, setting the maximum stack size if
   ;; necessary
-  (defmacro increment-stack (#!optional n)
-    (list 'when (list '> (list 'fluid-set! 'current-stack
-			       (if n
-				   (list '+ '(fluid-ref current-stack) n)
-				 (list '1+ '(fluid-ref current-stack))))
-			 '(fluid-ref max-stack))
-	  '(fluid-set! max-stack (fluid-ref current-stack))))
+  (defun increment-stack (#!optional (n 1))
+    (let ((value (+ (fluid-ref current-stack) n)))
+      (fluid-set! current-stack value)
+      (when (> value (fluid-ref max-stack))
+	(fluid-set! max-stack value))))
 
-  ;; Decrement the current stack usage
-  (defmacro decrement-stack (#!optional n)
-    (list 'fluid-set! 'current-stack 
-	  (if n
-	      (list '- '(fluid-ref current-stack) n)
-	    (list '1- '(fluid-ref current-stack)))))
+  (defun decrement-stack (#!optional (n 1))
+    (fluid-set! current-stack (- (fluid-ref current-stack) n)))
 
   (defun increment-b-stack ()
     (fluid-set! current-b-stack (1+ (fluid-ref current-b-stack)))

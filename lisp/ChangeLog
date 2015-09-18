@@ -1,5 +1,8 @@
 2015-09-18  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/utils.jl, rep/vm/compiler/bindings.jl:
+	convert a few needless macros to functions
+
 	* rep/vm/compiler/rep.jl (compile-mapc): slightly better
 	generated code for single-list for-each
 
