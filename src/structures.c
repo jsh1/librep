@@ -895,7 +895,7 @@ STRUCTURE to VALUE. If no such binding exists, one is created.
 
   if (rep_VOIDP(value)) {
     remove_binding(s, var);
-    return rep_nil;
+    return rep_undefined_value;
   }
 
   rep_struct_node *n = lookup_or_add(s, var);

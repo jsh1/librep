@@ -1,5 +1,8 @@
 2015-09-18  John Harper  <jsh@unfactored.org>
 
+	* structures.c (structure-define): returns #undefined when
+	removing binding
+
 	* fluids.c (fluid-set!): returns #undefined
 
 	* record-profile.c (test_interrupt): fix profiling now closures
