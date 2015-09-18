@@ -108,6 +108,10 @@ test_interrupt(void)
       continue;
     }
 
+    if (rep_SYMBOLP(name)) {
+      name = rep_SYM(name)->name;
+    }
+
     if (!rep_STRINGP(name)) {
       continue;
     }

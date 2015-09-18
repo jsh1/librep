@@ -1,5 +1,8 @@
 2015-09-18  John Harper  <jsh@unfactored.org>
 
+	* record-profile.c (test_interrupt): fix profiling now closures
+	use symbols for names
+
 	* lispmach.h (unbind): fast-path for null frames
 
 2015-09-17  John Harper  <jsh@unfactored.org>
