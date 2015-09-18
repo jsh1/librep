@@ -1,3 +1,7 @@
+2015-09-18  John Harper  <jsh@unfactored.org>
+
+	* lispmach.h (unbind): fast-path for null frames
+
 2015-09-17  John Harper  <jsh@unfactored.org>
 
 	* utf8-utils.h, utf8-utils.c, strings.c, streams.c, sockets.c,

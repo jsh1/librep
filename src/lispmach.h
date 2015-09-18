@@ -83,7 +83,9 @@ list_tail(repv list, int n)
 static int
 unbind(repv item)
 {
-  if (rep_INTP(item)) {
+  if (item == rep_EMPTY_BINDING_FRAME) {
+    return 0;
+  } else if (rep_INTP(item)) {
     /* A variable binding frame. */
     rep_env = list_tail(rep_env, rep_LEX_BINDINGS(item));
     rep_special_env = list_tail(rep_special_env, rep_SPEC_BINDINGS(item));
