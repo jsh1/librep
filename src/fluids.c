@@ -79,7 +79,7 @@ variable object FLUID to VALUE.
     FLUID_GLOBAL_VALUE(f) = v;
   }
 
-  return v;
+  return rep_undefined_value;
 }
 
 DEFUN("with-fluids", Fwith_fluids, Swith_fluids,
