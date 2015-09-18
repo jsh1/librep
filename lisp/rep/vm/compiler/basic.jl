@@ -157,7 +157,7 @@ their position in that file.")
 	  (compile-constant (cdr val)))
 	 ((compiler-binding-immutable? form)
 	  ;; A known constant
-	  (compile-constant (compiler-symbol-value form)))
+	  (compile-constant (compiler-variable-ref form)))
 	 (t
 	  ;; Not a constant
 	  (emit-varref form in-tail-slot)

@@ -267,7 +267,7 @@
       `(progn
 	 ,@(and doc (list `(put ',name 'documentation ,doc)))
 	 (make-variable-special ',name)
-	 (unless (bound? ',name)
+	 (unless (variable-bound? ',name)
 	   (set! ,name ,value)))))
   (put 'defvar 'rep-compile-transform trans-defvar)
 
@@ -1183,10 +1183,10 @@
     (put 'vector-set! 'rep-compile-opcode 'vector-set!)
     (put 'throw 'rep-compile-fun compile-2-args)
     (put 'throw 'rep-compile-opcode 'throw)
-    (put 'set 'rep-compile-fun compile-2-args)
-    (put 'set 'rep-compile-opcode 'set)
-    (put 'bound? 'rep-compile-fun compile-1-args)
-    (put 'bound? 'rep-compile-opcode 'boundp)
+    (put 'variable-set! 'rep-compile-fun compile-2-args)
+    (put 'variable-set! 'rep-compile-opcode 'set)
+    (put 'variable-bound? 'rep-compile-fun compile-1-args)
+    (put 'variable-bound? 'rep-compile-opcode 'boundp)
     (put 'symbol? 'rep-compile-fun compile-1-args)
     (put 'symbol? 'rep-compile-opcode 'symbolp)
     (put 'get 'rep-compile-fun compile-2-args)

@@ -68,7 +68,7 @@
 	(case (car form)
 	  ((quote))
 
-	  ((set! setq-default %define)
+	  ((set! %define)
 	   (do ((tem (cdr form) (cddr tem)))
 	       ((null? (cdr tem)))
 	     (scan (cadr tem))))

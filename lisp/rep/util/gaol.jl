@@ -51,14 +51,14 @@
   (define gaol-safe-functions
     '(nil t % * + - / /= 1+ 1- < <= = > >= add-hook char-alphabetic?
       char-alphanumeric? and append apply array-length array-ref array?
-      array-set! ash assoc assoc-regexp assq atom? backquote beep bound?
+      array-set! ash assoc assoc-regexp assq atom? backquote beep variable-bound?
       bytecode? call-hook car caar cadr caaar cdaar cadar cddar caadr
       cdadr caddr cdddr caaaar cadaar caadar caddar caaadr cadadr
       caaddr cadddr cdaaar cddaar cdadar cdddar cdaadr cddadr cdaddr
       cddddr case catch call-with-catch cdr cdar cddr char-downcase
       char-upcase closure? complete-string concat cond condition-case
       call-with-error-handlers cons pair? copy-sequence copy-stream
-      current-time current-time-string default-bound? default-value
+      current-time current-time-string variable-bound-default? variable-ref-default
       defconst %define define defmacro defsubst defun defvar
       delete delete-if! delete-if-not! delq! char-numeric? do
       elt eq? eqv? equal? error eval eval-when-compile
@@ -73,14 +73,14 @@
       reverse! list-length list-ref list-tail null? number? or prin1
       prin1-to-string princ print prog1 prog2 progn put quote
       quote-regexp random rassoc rassq read read-byte read-char read-bytes
-      read-from-string read-line reverse set-car! set-cdr! sequence? set
-      set-default set-car! set-cdr! setplist setq set! setq-default
+      read-from-string read-line reverse set-car! set-cdr! sequence? variable-set!
+      variable-set-default! set-car! set-cdr! setplist setq set!
       signal sit-for sleep-for sort! sort char-whitespace? special-form?
       special-variable? stream? string-length string-ref string-set!
       byte-string-length byte-string-ref byte-string-set!
       string-prefix? string-looking-at string-match string-split
       string-replace string<? string=? string? subr-name subr?
-      substring symbol-name symbol-plist symbol-value symbol?
+      substring symbol-name symbol-plist variable-ref symbol?
       system-name throw translate-byte-string! unless unwind-protect
       call-with-unwind-protect char-upper-case? user-full-name
       user-login-name vector vector? vector-length vector-ref byte-write

@@ -34,7 +34,7 @@
 #endif
 
 DEFSYM(rl_completion_generator, "rl-completion-generator");
-DEFSYM(boundp, "bound?");
+DEFSYM(boundp, "variable-bound?");
 
 static repv completion_fun;
 static repv completions;

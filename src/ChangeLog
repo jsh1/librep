@@ -1,5 +1,11 @@
 2015-09-18  John Harper  <jsh@unfactored.org>
 
+	* variables.c, readline.c, bytecodes.h: more renaming:
+	symbol-value -> variable-ref, default-value ->
+	variable-ref-default, set -> variable-set!, set-default ->
+	variable-set-default!, bound? -> variable-bound?,
+	default-bound? -> variable-bound-default?
+
 	* structures.c (structure-define): returns #undefined when
 	removing binding
 

@@ -33,20 +33,20 @@
   "Arrange it so that FUNCTION-NAME is added to the hook-list stored in
 symbol, HOOK-SYMBOL. It will added at the head of the list unless AT-END
 is true in which case it is added at the end."
-  (unless (bound? hook-symbol)
+  (unless (variable-bound? hook-symbol)
     (make-variable-special hook-symbol)
-    (set hook-symbol nil))
+    (variable-set! hook-symbol nil))
   (if at-end
-      (set hook-symbol (append! (symbol-value hook-symbol) (cons new-func nil)))
-    (set hook-symbol (cons new-func (symbol-value hook-symbol)))))
+      (variable-set! hook-symbol (append! (variable-ref hook-symbol) (cons new-func nil)))
+    (variable-set! hook-symbol (cons new-func (variable-ref hook-symbol)))))
 
 (defun remove-hook (hook-symbol old-func)
   "Remove FUNCTION-NAME from the hook HOOK-SYMBOL."
-  (set hook-symbol (delete! old-func (symbol-value hook-symbol))))
+  (variable-set! hook-symbol (delete! old-func (variable-ref hook-symbol))))
 
 (defun in-hook-p (hook-symbol fun)
   "Returns t if the function FUN is stored in the hook called HOOK-SYMBOL."
-  (and (bound? hook-symbol) (memq fun (symbol-value hook-symbol))))
+  (and (variable-bound? hook-symbol) (memq fun (variable-ref hook-symbol))))
 
 (export-bindings '(add-hook remove-hook in-hook-p))
 

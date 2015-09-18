@@ -65,7 +65,7 @@
       (remote-rcp-command (remote-rcp-filename split-name) local-name)
       (when (memq op '(read-file-contents insert-file-contents))
 	(unwind-protect
-	    ((symbol-value op) local-name)
+	    ((variable-ref op) local-name)
 	  (delete-file local-name)))
       t))
    ((memq op '(write-buffer-contents copy-from-local-fs))
@@ -75,7 +75,7 @@
 			 (car args)
 		       (make-temp-name))))
       (when (eq? op 'write-buffer-contents)
-	(apply (symbol-value op) local-name (cdr args)))
+	(apply (variable-ref op) local-name (cdr args)))
       (unwind-protect
 	  (remote-rcp-command local-name (remote-rcp-filename split-name))
 	(when (eq? op 'write-buffer-contents)

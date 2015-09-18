@@ -52,7 +52,7 @@
      "inc" "dec" "ash" "zero?" "null" "atom?" "pair?" "list?"
      "number?" "string?" "vector?" "catch"
      "throw" "binderr" "return" "pop-frames"	; #x70
-     "bound?" "symbol?" "get" "put"
+     "variable-bound?" "symbol?" "get" "put"
      "errorpro" "signal" "quotient" "reverse"
      "nreverse" "assoc" "assq" "rassoc"
      "rassq" "last" "mapcar" "mapc"	; #x80
@@ -72,7 +72,7 @@
      "make-closure" "reset-frames" "closure?" "pop-all"
      "fluid-set!" "fluid-bind" "memv" "num-eq"
      nil nil "%define" "spec-bind"	; #xc0
-     "set" "required-arg" "optional-arg" "rest-arg"
+     "variable-set!" "required-arg" "optional-arg" "rest-arg"
      "not-zero?" "keyword-arg" "optional-arg*" "keyword-arg*"
      "vector-ref" "vector-set!" "string-length"
      "string-ref" "string-set!" "undefined" nil nil	; #xd0
@@ -191,7 +191,7 @@
 	(if (symbol? arg)
 	    (progn
 	      (format stream "Disassembly of function %s:\n\n" arg)
-	      (set! arg (symbol-value arg)))
+	      (set! arg (variable-ref arg)))
 	  (format stream "Disassembly of %S:\n\n" arg)))
       (when (closure? arg)
 	(set! arg (closure-function arg)))

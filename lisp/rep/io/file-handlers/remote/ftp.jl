@@ -697,7 +697,7 @@ file types.")
      ((memq op '(seek-file flush-file write-buffer-contents
 		 read-file-contents insert-file-contents))
       ;; Just pass these through to the underlying file
-      (apply (symbol-value op) (file-bound-stream (car args)) (cdr args)))
+      (apply (variable-ref op) (file-bound-stream (car args)) (cdr args)))
      ((eq? op 'close-file)
       ;; Close the file, synchronise with the remote file if required
       (let*
@@ -723,7 +723,7 @@ file types.")
       (remote-ftp-get session (list-ref split-name 2) local-name)
       (unless (eq? op 'copy-file-to-local-fs)
 	(unwind-protect
-	    ((symbol-value op) local-name)
+	    ((variable-ref op) local-name)
 	  (delete-file local-name)))
       t))
    ((memq op '(write-buffer-contents copy-file-from-local-fs))
@@ -735,7 +735,7 @@ file types.")
 	 (session (remote-ftp-open-host
 		   (list-ref split-name 1) (car split-name))))
       (unless (eq? op 'copy-file-from-local-fs)
-	(apply (symbol-value op) local-name (cdr args)))
+	(apply (variable-ref op) local-name (cdr args)))
       (unwind-protect
 	  (remote-ftp-put session local-name (list-ref split-name 2))
 	(unless (eq? op 'copy-file-from-local-fs)

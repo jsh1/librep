@@ -277,24 +277,6 @@ evaluating FORM. Returns the value of the last FORM."
 			  tem)
 		    body))))))
 
-(defmacro setq-default args
-  "setq-default { VARIABLE FORM } ...
-
-Sets the default value of each VARIABLE to the value of its
-corresponding FORM evaluated, returns the value of the last evaluation.
-See also `set!'. Returns the value of the last FORM."
-
-  (let loop ((rest args)
-	     (body nil))
-    (if (null? rest)
-	(cons 'progn (reverse! body))
-      (loop (cddr rest)
-	    (cons (list 'set-default
-			(list 'quote (car rest)) (list-ref rest 1)) body)))))
-
-;; XXX it would be nice to do the same for set!.. might stress the
-;; XXX interpreter somewhat..? :-(
-
 (defmacro define-special-variable (var #!optional value doc)
   "define-special-variable VARIABLE [VALUE [DOC]]
 
@@ -307,7 +289,7 @@ string associated with VARIABLE."
 	(list 'defvar var nil doc)
 	(list 'set! var value)))
 
-(export-bindings '(setq setq-default define-special-variable))
+(export-bindings '(setq define-special-variable))
 
 
 ;; Misc syntax

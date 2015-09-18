@@ -232,7 +232,7 @@
 	   (compiler-warning
 	    'shadowing "binding to `%s' shadows earlier binding" name))
 	  ((and (compiler-bound? name)
-		(function? (compiler-symbol-value name)))
+		(function? (compiler-variable-ref name)))
 	   (compiler-warning
 	    'shadowing "binding to `%s' shadows pre-defined value" name))))
 
@@ -247,7 +247,7 @@
 	  (when (and (null? decl) (or (assq name (fluid-ref inline-env))
 				     (compiler-bound? name)))
 	    (set! decl (or (cdr (assq name (fluid-ref inline-env)))
-			   (compiler-symbol-value name)))
+			   (compiler-variable-ref name)))
 	    (when (or (subr? decl)
 		      (and (closure? decl)
 			   (eq? (car (closure-function decl)) 'autoload)))
@@ -344,7 +344,7 @@
    ((symbol? form)
     (cond ((keyword? form) form)
 	  ((compiler-binding-immutable? form)
-	   (compiler-symbol-value form))
+	   (compiler-variable-ref form))
 	  (t (cdr (assq form (fluid-ref const-env))))))
    (t form)))
 

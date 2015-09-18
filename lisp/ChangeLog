@@ -1,5 +1,19 @@
 2015-09-18  John Harper  <jsh@unfactored.org>
 
+	* rep/lang/interpreter.jl, rep/i18n/xgettext.jl (setq-default):
+	removed
+
+	* rep/io/file-handlers/remote/rep.jl,
+	rep/io/file-handlers/remote/rcp.jl,
+	rep/io/file-handlers/remote/ftp.jl,
+	rep/io/file-handlers/tilde.jl, rep/io/file-handlers/tar.jl,
+	rep/user.jl, rep/system.jl, rep/util/gaol.jl,
+	rep/vm/compiler/utils.jl, rep/vm/compiler/src.jl,
+	rep/vm/compiler/rep.jl, rep/vm/compiler/modules.jl,
+	rep/vm/compiler/inline.jl, rep/vm/compiler/basic.jl,
+	rep/vm/disassembler.jl: updated for variable accessor function
+	name changes
+
 	* rep/vm/compiler/bindings.jl (call-with-frame): simplified
 	unwinding.
 	(untag-binding): unused, deleted

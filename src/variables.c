@@ -351,7 +351,7 @@ set_symbol_special_value(repv sym, repv val, bool only_default)
     if (rep_SYM(sym)->car & rep_SF_LOCAL) {
       repv tem = (*rep_set_local_symbol_fun)(sym, val);
       if (tem) {
-	return tem;
+	return rep_undefined_value;
       }
     }
 
@@ -400,10 +400,10 @@ rep_symbol_value(repv sym, bool no_error_if_void, bool allow_lexical)
 
 /* Second arg true means don't signal an error if the value is void. */
 
-DEFUN("symbol-value", Fsymbol_value, Ssymbol_value,
+DEFUN("variable-ref", Fsymbol_value, Ssymbol_value,
       (repv sym, repv no_err), rep_Subr1) /*
-::doc:rep.lang.symbols#symbol-value::
-symbol-value SYMBOL
+::doc:rep.lang.symbols#variable-ref::
+variable-ref SYMBOL
 
 Returns the value of the top-level or special binding of SYMBOL, if
 SYMBOL is flagged as having buffer-local values look for one of those
@@ -415,10 +415,10 @@ first.
   return rep_symbol_value(sym, no_err != rep_nil, false);
 }
 
-DEFUN("default-value", Fdefault_value, Sdefault_value,
+DEFUN("variable-ref-default", Fdefault_value, Sdefault_value,
       (repv sym, repv no_err), rep_Subr2) /*
-::doc:rep.lang.symbols#default-value::
-default-value SYMBOL
+::doc:rep.lang.symbols#variable-ref-default::
+variable-ref-default SYMBOL
 
 Returns the default value of the top-level or special binding of
 SYMBOL. This will be the value of SYMBOL in buffers or windows which do
@@ -456,10 +456,10 @@ Fset(repv sym, repv val)
   }
 }
 
-DEFUN_INT("set", Freal_set, Sset, (repv sym, repv val), rep_Subr2,
+DEFUN_INT("variable-set!", Freal_set, Sset, (repv sym, repv val), rep_Subr2,
 	  "vVariable:\nxNew value of %s:") /*
-::doc:rep.lang.symbols#set::
-set SYMBOL VALUE
+::doc:rep.lang.symbols#variable-set!::
+variable-set! SYMBOL VALUE
 
 Sets the value of the top-level or special binding of SYMBOL to VALUE.
 
@@ -477,10 +477,10 @@ value in the current buffer is set.
   }
 }
 
-DEFUN("set-default", Fset_default, Sset_default,
+DEFUN("variable-set-default!", Fset_default, Sset_default,
       (repv sym, repv val), rep_Subr2) /*
-::doc:rep.lang.symbols#set-default::
-set-default SYMBOL VALUE
+::doc:rep.lang.symbols#variable-set-default!::
+variable-set-default! SYMBOL VALUE
 
 Sets the default value of SYMBOL's top-level or special binding to
 VALUE.
@@ -495,10 +495,22 @@ VALUE.
   }
 }
 
-DEFUN("default-bound?", Fdefault_boundp,
+DEFUN("variable-bound?", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
+::doc:rep.lang.symbols#variable-bound?::
+variable-bound? SYMBOL
+
+Returns t if SYMBOL has a top-level or special binding.
+::end:: */
+{
+  rep_DECLARE1(sym, rep_SYMBOLP);
+
+  return rep_VOIDP(rep_symbol_value(sym, true, false)) ? rep_nil : Qt;
+}
+
+DEFUN("variable-bound-default?", Fdefault_boundp,
       Sdefault_boundp, (repv sym), rep_Subr1) /*
-::doc:rep.lang.symbols#default-bound?::
-default-bound? SYMBOL
+::doc:rep.lang.symbols#variable-bound-default?::
+variable-bound-default? SYMBOL
 
 Returns t if SYMBOL has a default top-level or special binding.
 ::end:: */
@@ -511,18 +523,6 @@ Returns t if SYMBOL has a default top-level or special binding.
   } else {
     return Fstructure_bound_p(rep_structure, sym);
   }
-}
-
-DEFUN("bound?", Fboundp, Sboundp, (repv sym), rep_Subr1) /*
-::doc:rep.lang.symbols#bound?::
-bound? SYMBOL
-
-Returns t if SYMBOL has a top-level or special binding.
-::end:: */
-{
-  rep_DECLARE1(sym, rep_SYMBOLP);
-
-  return rep_VOIDP(rep_symbol_value(sym, true, false)) ? rep_nil : Qt;
 }
 
 DEFUN("set!", Fset_, Sset_, (repv args, bool tail_posn), rep_SF) /*

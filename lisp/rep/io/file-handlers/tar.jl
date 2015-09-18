@@ -380,7 +380,7 @@
 	 (expand-file-name (car args) ""))
 	((memq op '(file-name-nondirectory file-name-directory
 		    file-name-as-directory directory-file-name))
-	 (apply (symbol-value op) args))
+	 (apply (variable-ref op) args))
 	((memq op '(write-buffer-contents delete-file delete-directory
 		    make-directory set-file-modes make-symlink
 		    copy-file-from-local-fs copy-file))
@@ -409,7 +409,7 @@
      ((memq op '(seek-file flush-file write-buffer-contents
 		 read-file-contents insert-file-contents))
       ;; Just pass these through to the underlying file
-      (apply (symbol-value op) (file-bound-stream (car args)) (cdr args)))
+      (apply (variable-ref op) (file-bound-stream (car args)) (cdr args)))
      ((eq? op 'close-file)
       (let*
 	  ((file (car args))
@@ -442,7 +442,7 @@
 	  (tarfh-copy-out tarfile (vector-ref file tarfh-file-full-name) local-name)
 	  (unless (eq? op 'copy-file-to-local-fs)
 	    (unwind-protect
-		((symbol-value op) local-name)
+		((variable-ref op) local-name)
 	      (delete-file local-name)))
 	  t))
        ((eq? op 'open-file)

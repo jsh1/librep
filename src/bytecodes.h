@@ -100,7 +100,7 @@
 
 /* Opcodes without arguments. */
 
-#define OP_REF 0x40			/* push (symbol-value pop) */
+#define OP_REF 0x40			/* push (variable-ref pop) */
 #define OP__SET 0x41			/* (set stk[1] stk[0]); pop; pop */
 #define OP_FLUID_REF 0x42		/* call-1 fluid-ref */
 #define OP_ENCLOSE 0x43			/* push (make-closure pop[1] nil) */
@@ -160,7 +160,7 @@
 #define OP_BINDERR 0x75			/* bind (cons pop[1] SP) */
 #define OP_RETURN 0x76
 #define OP_POP_FRAMES 0x77
-#define OP_BOUNDP 0x78			/* call-1 bound? */
+#define OP_BOUNDP 0x78			/* call-1 variable-bound? */
 #define OP_SYMBOLP 0x79			/* push (symbol? pop[1]) */
 #define OP_GET 0x7a			/* call-2 get */
 #define OP_PUT 0x7b			/* call-3 put */

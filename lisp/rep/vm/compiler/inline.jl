@@ -128,8 +128,8 @@
   (defun compile-lambda-inline (fun args #!optional pushed-args-already
 				return-follows name)
     (set! fun (compiler-macroexpand fun))
-    (when (>= (fluid-set! inline-depth (1+ (fluid-ref inline-depth)))
-	      max-inline-depth)
+    (fluid-set! inline-depth (1+ (fluid-ref inline-depth)))
+    (when (>= (fluid-ref inline-depth) max-inline-depth)
       (fluid-set! inline-depth 0)
       (compiler-error "can't inline more than %d nested functions"
 		      max-inline-depth))

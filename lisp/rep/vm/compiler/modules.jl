@@ -27,7 +27,7 @@
 	    macro-env
 	    variable-ref?
 	    locate-variable
-	    compiler-symbol-value
+	    compiler-variable-ref
 	    compiler-bound?
 	    compiler-binding-from-rep?
 	    compiler-binding-immutable?
@@ -124,9 +124,9 @@
 	(list-ref var 2)		;structure-ref
       var))
 
-  (defun symbol-value-1 (var)
+  (defun variable-ref-1 (var)
     (cond ((and (symbol? var) (special-variable? var))
-	   (symbol-value var))
+	   (variable-ref var))
 	  ((and (symbol? var) (fluid-ref current-structure)
 		(structure-bound? (fluid-ref current-structure) var))
 	   (%structure-ref (fluid-ref current-structure) var))
@@ -139,8 +139,8 @@
 		  (%structure-ref module (variable-stem var)))))))
 
   ;; if possible, return the value of variable VAR, else return nil
-  (defun compiler-symbol-value (var)
-    (let ((value (symbol-value-1 var)))
+  (defun compiler-variable-ref (var)
+    (let ((value (variable-ref-1 var)))
       ;; if the value is an autoload, try to load it
       (if (and (closure? value)
 	       (eq? (car (closure-function value)) 'autoload))
@@ -150,7 +150,7 @@
   (defun compiler-bound? (var)
     (and (symbol? var)
 	 (or (locate-variable var)
-	     (and (special-variable? var) (bound? var)))))
+	     (and (special-variable? var) (variable-bound? var)))))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
   (defun compiler-binding-from-rep? (var)
@@ -188,7 +188,7 @@
 	     (*macro-environment* compiler-macroexpand-1))
 	(if def
 	    (set! form (apply (cdr def) (cdr form)))
-	  (set! def (compiler-symbol-value (car form)))
+	  (set! def (compiler-variable-ref (car form)))
 	  (when (and (eq? (car def) 'macro) (function? (cdr def)))
 	    (when (and (closure? (cdr def))
 		       (eq? (car (closure-function (cdr def))) 'autoload))

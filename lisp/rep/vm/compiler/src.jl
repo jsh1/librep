@@ -62,7 +62,7 @@
 			  (throw 'exit form)))
 		      (cdr form))))
 	;; Now we have ARGS, the constant [folded] arguments from FORM
-	(quote-constant (apply (compiler-symbol-value (car form)) args)))))
+	(quote-constant (apply (compiler-variable-ref (car form)) args)))))
 
   (defun coalesce-constants (folder forms)
     (when forms

@@ -60,7 +60,7 @@
       ;; Functions of a single file name that we leave alone. By re-calling
       ;; OP the standard action will occur since this handler is now
       ;; blocked for OP.
-      (apply (symbol-value op) args))
+      (apply (variable-ref op) args))
      ((memq op '(local-file-name canonical-file-name open-file
 		 write-buffer-contents read-file-contents insert-file-contents
 		 delete-file delete-directory make-directory file-exists?
@@ -71,7 +71,7 @@
 		 read-symlink make-symlink))
       ;; All functions which only have a single file name (their first
       ;; argument). Expand the tilde expression then re-call OP.
-      (apply (symbol-value op) (tilde-expand (car args)) (cdr args)))
+      (apply (variable-ref op) (tilde-expand (car args)) (cdr args)))
      ((eq? op 'copy-file-to-local-fs)
       (apply copy-file (tilde-expand (car args)) (cdr args)))
      ((eq? op 'copy-file-from-local-fs)
@@ -97,4 +97,4 @@
 				       (user-home-directory)))
 				     "(/(.+))?$")
 			     (canonical-file-name *default-directory*))
-      (setq-default *default-directory* (expand-last-match "~/\\2")))))
+      (variable-set-default! '*default-directory* (expand-last-match "~/\\2")))))
