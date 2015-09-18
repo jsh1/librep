@@ -257,26 +257,6 @@ is returned from the `and' form."
 
 ;; set syntax
 
-;; FIXME: remove these
-
-(defmacro setq args
-  "setq { SYMBOL FORM } ...
-
-Sets the value of the binding of each SYMBOL to the result of
-evaluating FORM. Returns the value of the last FORM."
-
-  (let ((tem (gensym)))
-    (let loop ((rest args)
-	       (body nil))
-      (if (null? rest)
-	  (list* 'let (list tem) (reverse! body))
-	(loop (cddr rest)
-	      (cons (list 'progn
-			  (list 'set! tem (cadr rest))
-			  (list 'set! (car rest) tem)
-			  tem)
-		    body))))))
-
 (defmacro define-special-variable (var #!optional value doc)
   "define-special-variable VARIABLE [VALUE [DOC]]
 
@@ -289,7 +269,7 @@ string associated with VARIABLE."
 	(list 'defvar var nil doc)
 	(list 'set! var value)))
 
-(export-bindings '(setq define-special-variable))
+(export-bindings '(define-special-variable))
 
 
 ;; Misc syntax
