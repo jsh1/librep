@@ -183,32 +183,28 @@
 	    (emit-byte-at (ash pc -8) (car refs))
 	    (emit-byte-at (logand pc 255) (1+ (car refs))))))
 
-      (let loop ((rest insns))
-	(when rest
-	  (let ((insn (car rest)))
-	    (cond ((symbol? insn) (emit-label insn))
-
-		  ((eq? (car insn) 'push) (emit-push (cadr insn)))
-
-		  ((eq? (car insn) 'push-label) (emit-push-label (cadr insn)))
-
-		  ((memq (car insn) '(refq setq))
-		   ;; instruction with constant
-		   (emit-insn (car insn) (get-const-id (cadr insn))))
-
-		  ((memq (car insn) byte-jmp-insns)
-		   (emit-jmp (car insn) (cadr insn)))
-
-		  (t (apply emit-insn insn)))
-	    (loop (cdr rest)))))
+      (for-each (lambda (insn)
+		  (cond ((symbol? insn)
+			 (emit-label insn))
+			((eq? (car insn) 'push)
+			 (emit-push (cadr insn)))
+			((eq? (car insn) 'push-label)
+			 (emit-push-label (cadr insn)))
+			((memq (car insn) '(refq setq))
+			 ;; instruction with constant
+			 (emit-insn (car insn) (get-const-id (cadr insn))))
+			((memq (car insn) byte-jmp-insns)
+			 (emit-jmp (car insn) (cadr insn)))
+			(t (apply emit-insn insn))))
+		insns)
 
       (let ((byte-vec (make-string pc))
 	    (const-vec (make-vector next-const-id)))
-	(do ((rest code (cdr rest)))
-	    ((null? rest))
-	  (byte-string-set! byte-vec (cdar rest) (caar rest)))
-	(do ((rest constants (cdr rest)))
-	    ((null? rest))
-	  (vector-set! const-vec (cdar rest) (caar rest)))
+	(for-each (lambda (pair)
+		    (byte-string-set! byte-vec (cdr pair) (car pair)))
+		  code)
+	(for-each (lambda (pair)
+		    (vector-set! const-vec (cdr pair) (car pair)))
+		  constants)
 
 	(cons byte-vec const-vec)))))

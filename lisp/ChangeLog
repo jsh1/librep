@@ -1,3 +1,8 @@
+2015-09-18  John Harper  <jsh@unfactored.org>
+
+	* rep/vm/assembler.jl (assemble): use for-each instead of named
+	let when creating bytecode vector
+
 2015-09-17  John Harper  <jsh@unfactored.org>
 
 	* rep/data.jl, rep/data/string-util.jl,
