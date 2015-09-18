@@ -248,8 +248,8 @@ ensure_utf32(rep_string *s, bool force)
   }
 
   size_t len;
-  if (s->utf32_data) {
-    len = rep_INT(s->utf32_data);
+  if (v) {
+    len = rep_INT(v);
   } else {
     len = utf8_string_size(s->utf8_data, STRING_LEN(s->car));
     if (!force && len == STRING_LEN(s->car)) {
@@ -342,6 +342,9 @@ rep_string_ptr(repv s)
 char *
 rep_string_mutable_ptr(repv s)
 {
+  /* Have to assume that writer could modify UTF-8 sequences,
+     invalidating cached number of code points. */
+
   if (rep_STRING(s)->utf32_data) {
     flatten_and_free_utf32(rep_STRING(s));
     rep_STRING(s)->utf32_data = 0;
@@ -888,8 +891,6 @@ a character or a list or vector of characters.
     repv arg = argv[i];
     if (rep_CHARP(arg)) {
       length += utf32_to_utf8_size_1(rep_CHAR_VALUE(arg));
-    } else if (rep_INTP(arg) && rep_INT(arg) >= 0 && rep_INT(arg) <= 255) {
-      length++;
     } else if (rep_STRINGP(arg)) {
       length += rep_STRING_LEN(arg);
     } else if (rep_LISTP(arg)) {
@@ -898,8 +899,6 @@ a character or a list or vector of characters.
 	repv c = rep_CAR(lst);
 	if (rep_CHARP(c)) {
 	  length += utf32_to_utf8_size_1((rep_CHAR_VALUE(c)));
-	} else if (rep_INTP(c) && rep_INT(c) >= 0 && rep_INT(c) <= 255) {
-	  length++;
 	} else {
 	  return rep_signal_arg_error(arg, i + 1);
 	}
@@ -910,8 +909,6 @@ a character or a list or vector of characters.
 	repv c = rep_VECTI(arg, i);
 	if (rep_CHARP(c)) {
 	  length += utf32_to_utf8_size_1((rep_CHAR_VALUE(c)));
-	} else if (rep_INTP(c) && rep_INT(c) >= 0 && rep_INT(c) <= 255) {
-	  length++;
 	} else {
 	  return rep_signal_arg_error(arg, i + 1);
 	}
@@ -938,8 +935,6 @@ a character or a list or vector of characters.
     repv arg = argv[i];
     if (rep_CHARP(arg)) {
       ptr += utf32_to_utf8_1(ptr, rep_CHAR_VALUE(arg));
-    } else if (rep_INTP(arg) && rep_INT(arg) >= 0 && rep_INT(arg) <= 255) {
-      *ptr++ = rep_INT(arg);
     } else if (rep_STRINGP(arg)) {
       memcpy(ptr, rep_STR(arg), rep_STRING_LEN(arg));
       ptr += rep_STRING_LEN(arg);
@@ -949,8 +944,6 @@ a character or a list or vector of characters.
 	repv c = rep_CAR(lst);
 	if (rep_CHARP(c)) {
 	  ptr += utf32_to_utf8_1(ptr, rep_CHAR_VALUE(c));
-	} else if (rep_INTP(c)) {
-	  *ptr++ = rep_INT(c);
 	}
 	lst = rep_CDR(lst);
       }
@@ -959,8 +952,6 @@ a character or a list or vector of characters.
 	repv c = rep_VECTI(arg, i);
 	if (rep_CHARP(c)) {
 	  ptr += utf32_to_utf8_1(ptr, rep_CHAR_VALUE(c));
-	} else if (rep_INTP(c)) {
-	  *ptr++ = rep_INT(c);
 	}
       }
     }
