@@ -338,12 +338,11 @@
 	 (lst (list-ref form 2)))
       (if (constant-function? fun)
 	  ;; We can open code the function
-	  (let
-	      ((top-label (make-label))
-	       (test-label (make-label)))
+	  (let ((top-label (make-label))
+		(end-label (make-label)))
 	    (set! fun (constant-function-value fun))
 	    (compile-form-1 lst)
-	    (emit-insn `(jmp ,test-label))
+	    (emit-insn `(jpn ,end-label))
 	    (fix-label top-label)
 	    (emit-insn '(dup))
 	    (increment-stack)
@@ -352,11 +351,11 @@
 	    (emit-insn '(pop))
 	    (decrement-stack)
 	    (emit-insn '(cdr))
-	    (fix-label test-label)
 	    ;; I don't have a jump-if-t-but-never-pop instruction, so
 	    ;; make one out of "jpt TOP; nil". If I ever get a peephole
 	    ;; optimiser working, the nil should be fodder for it..
 	    (emit-insn `(jtp ,top-label))
+	    (fix-label end-label)
 	    (emit-insn '(push ())))
 	;; The function must be called, so just use the mapc opcode
 	(compile-form-1 fun)
