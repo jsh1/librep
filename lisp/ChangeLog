@@ -1,5 +1,9 @@
 2015-09-18  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/bindings.jl (call-with-frame): simplified
+	unwinding.
+	(untag-binding): unused, deleted
+
 	* rep/vm/compiler/utils.jl, rep/vm/compiler/bindings.jl:
 	convert a few needless macros to functions
 

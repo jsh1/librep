@@ -76,13 +76,6 @@
       (when cell
 	(tag-cell tag cell))))
 
-  ;; note that the outermost binding of symbol VAR has state TAG
-  (define (untag-binding var tag)
-    (let ((cell (lexical-binding var)))
-      (when cell
-	(when (cell-tagged? tag cell)
-	  (set-cdr! cell (delq! tag (cdr cell)))))))
-
   ;; return t if outermost binding of symbol VAR has state TAG
   (define (binding-tagged? var tag)
     (let ((cell (lexical-binding var)))
@@ -91,20 +84,19 @@
   ;; install a new binding contour, such that THUNK can add any bindings
   ;; (lexical and special), then when THUNK exits, the bindings are removed
   (define (call-with-frame thunk)
-    (let ((old-d (list-length (fluid-ref lex-bindings))))
-      (let-fluids ((spec-bindings (fluid-ref spec-bindings))
+    (let ((old-env (fluid-ref lex-bindings)))
+      (let-fluids ((lex-bindings (fluid-ref lex-bindings))
+		   (spec-bindings (fluid-ref spec-bindings))
 		   (lexically-pure (fluid-ref lexically-pure)))
 	(prog1 (thunk)
 	  ;; check for unused variables
-	  (do ((new-d (list-length (fluid-ref lex-bindings)) (1- new-d))
-	       (new (fluid-ref lex-bindings) (cdr new)))
-	      ((= new-d old-d)
-	       (fluid-set! lex-bindings new))
-	    (unless (or (cell-tagged? 'referenced (car new))
-			(cell-tagged? 'no-location (car new))
-			(cell-tagged? 'maybe-unused (car new)))
+	  (do ((new-env (fluid-ref lex-bindings) (cdr new-env)))
+	      ((eq? new-env old-env))
+	    (unless (or (cell-tagged? 'referenced (car new-env))
+			(cell-tagged? 'no-location (car new-env))
+			(cell-tagged? 'maybe-unused (car new-env)))
 	      (compiler-warning
-	       'unused "unused variable `%s'" (caar new))))))))
+	       'unused "unused variable `%s'" (caar new-env))))))))
 
   ;; note that symbol VAR has been bound
   (define (note-binding var #!optional without-location)
