@@ -1,5 +1,8 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* lispmach.h: handle uninitialized structures in inlined refq
+	instruction
+
 	* vectors.c, strings.c, lists.c: fixed map and for-each to
 	terminate at the end of the shortest list, rather than throwing
 	an error if all lists aren't the same length. Added vector-map,

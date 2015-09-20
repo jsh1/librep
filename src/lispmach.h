@@ -808,6 +808,9 @@ again: {
 	    SAFE_NEXT;
 	  }
 	}
+      } else if (s->init) {
+	TOP = F_structure_ref(rep_VAL(s), var);
+	NEXT;
       }
       rep_struct_node *n = rep_search_imports(s, var);
       if (n) {
