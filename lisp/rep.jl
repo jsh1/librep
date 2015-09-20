@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(declare (in-module rep))
+(declare (module-bootstrap rep))
 
 ;; The inherited binding implementation has linear performance with the
 ;; number of bindings, i.e. slow when exporting almost all bindings in

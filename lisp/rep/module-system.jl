@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(declare (in-module rep.module-system))
+(declare (module-bootstrap rep.module-system))
 
 (open-structures '(rep.lang.symbols
 		   rep.structures

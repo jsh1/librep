@@ -315,18 +315,31 @@
 
 ;;; declarations
 
-  ;; (declare (in-module STRUCT))
-
-  (defun declare-in-module (form)
-    (fluid-set! current-module (cadr form))
-    (fluid-set! current-structure (intern-structure (fluid-ref current-module))))
-  (put 'in-module 'compiler-decl-fun declare-in-module)
-
   ;; (declare (language LANG))
 
   (defun declare-language (form)
     (fluid-set! current-language (cadr form)))
   (put 'language 'compiler-decl-fun declare-language)
+
+  ;; (declare (in-module STRUCT))
+
+  (defun declare-in-module (form)
+    (fluid-set! current-module (cadr form))
+    (fluid-set! current-structure (intern-structure (cadr form))))
+  (put 'in-module 'compiler-decl-fun declare-in-module)
+
+  ;; (declare (bootstrap-module STRUCT)
+
+  (defun declare-module-bootstrap (form)
+    (let ((module (cadr form)))
+      (fluid-set! current-module module)
+      (fluid-set! current-structure (intern-structure module))
+      ;; FIXME: not entirely correct -- the rep.structures module
+      ;; is only available to top-level forms, unless it's opened
+      ;; explicitly.
+      (fluid-set! open-modules
+		  (cons 'rep.structures (fluid-ref open-modules)))))
+  (put 'module-bootstrap 'compiler-decl-fun declare-module-bootstrap)
 
 
 ;;; module compilers

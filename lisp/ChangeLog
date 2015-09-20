@@ -1,5 +1,15 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/modules.jl: added (module-bootstrap NAME)
+	declaration: similar to (in-module NAME) but also implicitly
+	opens the rep.structures module
+
+	* rep.jl, rep/data.jl, rep/io/streams.jl, rep/io/files.jl,
+	rep/io/file-handlers.jl, rep/lang/math.jl,
+	rep/lang/interpreter.jl, rep/system.jl, rep/structures.jl,
+	rep/regexp.jl, rep/module-system.jl: changed in-module decl to
+	module-bootstrap
+
 	* rep/util/repl.jl: REPL output improvements
 
 	* rep.jl, rep/data.jl, rep/data/string-util.jl,

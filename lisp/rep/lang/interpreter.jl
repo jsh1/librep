@@ -529,4 +529,4 @@ into the compiled program. When interpreted, nil is returned."
 		   define define-macro with-internal-definitions))
 
 ;; do this last since declare is defined in this file
-(declare (in-module rep.lang.interpreter))
+(declare (module-bootstrap rep.lang.interpreter))
