@@ -289,29 +289,35 @@
   (define-repl-command
    'bindings
    (lambda ()
-     (structure-walk (lambda (var value)
-		       (format *standard-output* "  (%s %S)\n" var value))
-		     (intern-structure
-		      (repl-struct (fluid-ref current-repl))))))
+     (let ((lst ()))
+       (structure-walk (lambda (var value)
+			 (set! lst (cons (cons var value) lst)))
+		       (intern-structure
+			(repl-struct (fluid-ref current-repl))))
+       (for-each (lambda (cell)
+		   (format *standard-output*
+			   "%24s  %S\n" (symbol-name (car cell)) (cdr cell)))
+		 (sort! lst)))))
 
   (define-repl-command
    'exports
    (lambda ()
-     (print-list (structure-interface
-		  (intern-structure
-		   (repl-struct (fluid-ref current-repl)))))))
+     (print-list (sort (structure-interface
+			(intern-structure
+			 (repl-struct (fluid-ref current-repl))))))))
 
   (define-repl-command
    'imports
    (lambda ()
-     (print-list (module-imports (repl-struct (fluid-ref current-repl))))))
+     (print-list (sort (module-imports
+			(repl-struct (fluid-ref current-repl)))))))
 
   (define-repl-command
    'accessible
    (lambda ()
-     (print-list (structure-accessible
-		  (intern-structure
-		   (repl-struct (fluid-ref current-repl)))))))
+     (print-list (sort (structure-accessible
+			(intern-structure
+			 (repl-struct (fluid-ref current-repl))))))))
 
   (define-repl-command
    'collect
