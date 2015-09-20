@@ -1,5 +1,9 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* structures.c (Ffeaturep, Fprovide): avoid creating %features
+	binding if feature is an imported module, just use the import
+	list of the current structure
+
 	* structures.c, repint.h: change module bootstrapping --
 	rep.structures module is still implicitly opened, but it's now
 	closed after the bootstrap code runs, UNLESS the file opened it

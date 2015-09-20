@@ -1529,9 +1529,22 @@ structure.
 {
   rep_DECLARE1(feature, rep_SYMBOLP);
 
-  repv value = F_structure_ref(rep_structure, Q_features);
+  repv tem = Fmemq(feature, rep_STRUCTURE(rep_structure)->imports);
+  if (tem && tem != rep_nil) {
+    return Qt;
+  }
 
-  return rep_VOIDP(value) ? rep_nil : Fmemq(feature, value);
+  repv value = F_structure_ref(rep_structure, Q_features);
+  if (rep_VOIDP(value)) {
+    return rep_nil;
+  }
+
+  tem = Fmemq(feature, value);
+  if (tem && tem != rep_nil) {
+    return Qt;
+  }
+
+  return rep_nil;
 }
 
 DEFUN("provide", Fprovide, Sprovide, (repv feature), rep_Subr1) /*
@@ -1544,12 +1557,17 @@ structure.
 {
   rep_DECLARE1(feature, rep_SYMBOLP);
 
+  repv tem = Fmemq(feature, rep_STRUCTURE(rep_structure)->imports);
+  if (tem && tem != rep_nil) {
+    return rep_undefined_value;
+  }
+
   repv value = F_structure_ref(rep_structure, Q_features);
   if (rep_VOIDP(value)) {
     value = rep_nil;
   }
 
-  repv tem = Fmemq(feature, value);
+  tem = Fmemq(feature, value);
   if (tem && tem == rep_nil) {
     value = Fcons(feature, value);
   }
