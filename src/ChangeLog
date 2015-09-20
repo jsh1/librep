@@ -1,5 +1,7 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* structures.c: fixed exports-all structure behavior
+
 	* structures.c: import cache stores unsuccessful lookups as
 	well as successful ones. We now flush the cache on GC -- must
 	remove cached references to collected symbols and this is the

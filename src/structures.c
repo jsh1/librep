@@ -478,6 +478,12 @@ structure_print(repv stream, repv arg)
 
 /* Utility functions. */
 
+static inline bool
+exports_all(rep_struct *s)
+{
+  return (s->car & rep_STF_EXPORT_ALL) != 0;
+}
+
 /* Return true iff structure S exports a binding of symbol VAR that it
    inherits from one of its opened structures */
 
@@ -585,7 +591,7 @@ lookup_or_add(rep_struct *s, repv var)
 
   n->symbol = var;
   n->is_constant = false;
-  n->is_exported = (s->car & rep_STF_EXPORT_ALL) != 0;
+  n->is_exported = false;
 
   unsigned int hash = rep_STRUCT_HASH(var, s->total_buckets);
   n->next = s->buckets[hash];
@@ -645,7 +651,7 @@ lookup_recursively(repv s, repv var)
   rep_struct_node *n = lookup(rep_STRUCTURE(s), var);
 
   if (n) {
-    return n->is_exported ? n : NULL;
+    return n->is_exported || exports_all(rep_STRUCTURE(s)) ? n : NULL;
   }
 
   rep_STRUCTURE(s)->car |= rep_STF_EXCLUSION;
@@ -1002,9 +1008,31 @@ Returns the interface of structure object STRUCTURE.
 
   for (int i = 0; i < s->total_buckets; i++) {
     for (rep_struct_node *n = s->buckets[i]; n; n = n->next) {
-      if (n->is_exported) {
+      if (n->is_exported || exports_all(s)) {
 	list = Fcons(n->symbol, list);
       }
+    }
+  }
+
+  if (exports_all(s)) {
+    for (repv lst = s->imports; rep_CONSP(lst); lst = rep_CDR(lst)) {
+      repv si = rep_CAR(lst);
+      if (rep_SYMBOLP(si)) {
+	si = Fget_structure(si);
+      }
+      if (!si || !rep_STRUCTUREP(si)
+	  || (rep_STRUCTURE(si)->car & rep_STF_EXCLUSION))
+      {
+	continue;
+      }
+      rep_STRUCTURE(si)->car |= rep_STF_EXCLUSION;
+      repv inner = Fstructure_interface(si);
+      rep_STRUCTURE(si)->car &= ~rep_STF_EXCLUSION;
+      if (!inner) {
+	return 0;
+      }
+      repv argv[2] = {inner, list};
+      list = Fappend(2, argv);
     }
   }
 
@@ -1012,7 +1040,7 @@ Returns the interface of structure object STRUCTURE.
 }
 
 DEFUN("structure-exports?", Fstructure_exports_p,
-       Sstructure_exports_p, (repv structure, repv var), rep_Subr2) /*
+       Sstructure_exports_p, (repv s, repv var), rep_Subr2) /*
 ::doc:rep.structures#structure-exports?::
 structure-exports? STRUCTURE VAR
 
@@ -1020,15 +1048,15 @@ Returns true if structure object STRUCTURE exports a binding of symbol
 VAR.
 ::end:: */
 {
-  rep_DECLARE1(structure, rep_STRUCTUREP);
+  rep_DECLARE1(s, rep_STRUCTUREP);
   rep_DECLARE2(var, rep_SYMBOLP);
 
-  rep_struct_node *n = lookup(rep_STRUCTURE(structure), var);
+  rep_struct_node *n = lookup(rep_STRUCTURE(s), var);
 
   if (n) {
-    return n->is_exported ? Qlocal : rep_nil;
+    return n->is_exported || exports_all(rep_STRUCTURE(s)) ? Qlocal : rep_nil;
   } else {
-    return structure_exports_inherited_p(rep_STRUCTURE(structure), var) ?
+    return structure_exports_inherited_p(rep_STRUCTURE(s), var) ?
       Qexternal : rep_nil;
   }
 }
