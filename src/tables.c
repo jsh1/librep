@@ -25,6 +25,8 @@
 
 #include "repint.h"
 
+#include "pointer-hash.h"
+
 #include <string.h>
 
 #ifdef NEED_MEMORY_H
@@ -204,7 +206,7 @@ Return a positive fixnum somehow related to object ARG, such that (eq? X
 Y) implies (= (eq-hash X) (eq-hash Y)).
 ::end:: */
 {
-  uintptr_t hv = value;
+  uintptr_t hv = pointer_hash(value);
   return rep_MAKE_INT(TRUNC(hv));
 }
 

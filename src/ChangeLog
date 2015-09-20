@@ -1,5 +1,8 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* tables.c, pointer-hash.h, origin.c: better pointer hash
+	function for form origins and table's eq-hash function
+
 	* repint_subrs.h, origin.c, gc.c: don't use a guardian to track
 	collected objects whose origin no longer needs to be stored,
 	scan the origin table directly for unmarked forms before

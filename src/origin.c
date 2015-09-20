@@ -20,6 +20,8 @@
 
 #include "repint.h"
 
+#include "pointer-hash.h"
+
 typedef struct origin_item origin_item;
 
 struct origin_item {
@@ -43,8 +45,7 @@ static origin_block *block_list;
 
 bool rep_record_origins;
 
-#define HASH_SIZE 1024
-#define HASH(x) (((x) >> 3) % HASH_SIZE)
+#define HASH_SIZE 64
 
 static origin_item *buckets[HASH_SIZE];
 static size_t item_count;
@@ -89,7 +90,7 @@ rep_record_origin(repv form, repv stream, int start_line)
   item->file = rep_FILE(stream)->name;
   item->line = start_line > 0 ? start_line : rep_FILE(stream)->line_number;
 
-  unsigned int h = HASH(form);
+  unsigned int h = pointer_hash(form) % HASH_SIZE;
 
   item->next = buckets[h];
   buckets[h] = item;
@@ -121,7 +122,7 @@ DEFUN("lexical-origin", Flexical_origin,
     return rep_nil;
   }
 
-  unsigned int h = HASH(form);
+  unsigned int h = pointer_hash(form) % HASH_SIZE;
 
   for (origin_item *item = buckets[h]; item != 0; item = item->next) {
     if (item->form == form) {
