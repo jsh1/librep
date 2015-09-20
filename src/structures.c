@@ -1055,10 +1055,15 @@ VAR.
 
   if (n) {
     return n->is_exported || exports_all(rep_STRUCTURE(s)) ? Qlocal : rep_nil;
-  } else {
+  }
+
+  n = rep_search_imports(rep_STRUCTURE(s), var);
+  if (n) {
     return structure_exports_inherited_p(rep_STRUCTURE(s), var) ?
       Qexternal : rep_nil;
   }
+
+  return rep_nil;
 }
 
 DEFUN("structure-imports", Fstructure_imports,

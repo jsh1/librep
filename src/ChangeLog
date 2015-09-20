@@ -1,5 +1,10 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* structures.c (structure-exports?): fixed this -- external
+	case was returning true for all symbols if export-all flag is
+	set, rather than only returning true if one of the imported
+	modules actually exports a binding for that symbol
+
 	* structures.c (Ffeaturep, Fprovide): avoid creating %features
 	binding if feature is an imported module, just use the import
 	list of the current structure
