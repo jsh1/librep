@@ -739,16 +739,14 @@ Returns the last element of LIST.
   return rep_CAR(list);
 }
 
-DEFSTRING(map_invalid_lists, "lists are different lengths");
-
 DEFUN("map", Fmap, Smap, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#map::
 map FUNCTION LISTS...
 
-Calls FUNCTION with groups of element from LISTS..., i.e. all the first
+Calls FUNCTION with groups of element from LISTS, i.e. all the first
 elements then all the second elements and so on, returning a new list
 made from the result of each function call. If more than one list is
-provided, they must all have the same number of elements.
+provided, the smallest list stops the function.
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
@@ -779,10 +777,7 @@ provided, they must all have the same number of elements.
 	elts_count++;
       }
     }
-    if (elts_count == 0) {
-      break;
-    } else if (elts_count != argc - 1) {
-      ret = Fsignal(Qerror, rep_LIST_1(rep_VAL(&map_invalid_lists)));
+    if (elts_count != argc - 1) {
       break;
     }
 
@@ -813,10 +808,10 @@ DEFUN("for-each", Ffor_each, Sfor_each, (int argc, repv *argv), rep_SubrV) /*
 ::doc:rep.data#for-each::
 for-each FUNCTION LISTS...
 
-Calls FUNCTION with groups of element from LISTS..., i.e. all the first
+Calls FUNCTION with groups of element from LISTS, i.e. all the first
 elements then all the second elements and so on, discarding the
-results. If more than one list is provided, they must all have the same
-number of elements.
+results. If more than one list is provided, the smallest list stops the
+function.
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
@@ -844,11 +839,8 @@ number of elements.
 	elts_count++;
       }
     }
-    if (elts_count == 0) {
+    if (elts_count != argc - 1) {
       ret = rep_undefined_value;
-      break;
-    } else if (elts_count != argc - 1) {
-      ret = Fsignal(Qerror, rep_LIST_1(rep_VAL(&map_invalid_lists)));
       break;
     }
 

@@ -967,6 +967,142 @@ a character or a list or vector of characters.
   return string;
 }
 
+DEFUN("string-map", Fstring_map, Sstring_map,
+      (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.data#string-map::
+string-map FUNCTION STRINGS...
+
+Calls FUNCTION with groups of characters from VECTORS..., returning a
+new string with the results. If more than one string is provided, the
+one with the fewest characters stops the function.
+::end:: */
+{
+  if (argc < 2) {
+    return rep_signal_missing_arg(argc + 1);
+  }
+
+  intptr_t length = INTPTR_MAX;
+
+  for (int i = 1; i < argc; i++) {
+    rep_DECLARE(i + 1, argv[i], rep_STRINGP(argv[i]));
+    int li = length_utf32(rep_STRING(argv[i]));
+    if (li < length) {
+      length = li;
+    }
+  }
+
+  uint32_t *data = rep_stack_alloc(uint32_t, length);
+  if (!data) {
+    return rep_mem_error();
+  }
+
+  bool failed = false;
+
+  rep_GC_n_roots gc_argv;
+  rep_PUSHGCN(gc_argv, argv, argc);
+
+  for (intptr_t j = 0; j < length; j++) {
+    repv chars[argc-1];
+    for (int i = 1; i < argc; i++) {
+      chars[i-1] = Fstring_ref(argv[i], rep_MAKE_INT(j));
+      if (!chars[i-1]) {
+	failed = true;
+	break;
+      }
+    }
+
+    repv tem = rep_call_lispn(argv[0], argc - 1, chars);
+    if (!tem) {
+      failed = true;
+      break;
+    }
+
+    if (!rep_CHARP(tem)) {
+      DEFSTRING(invalid_char, "invalid char result in string-map");
+      Fsignal(Qerror, rep_list_2(rep_VAL(&invalid_char), tem));
+      failed = true;
+      break;
+    }
+
+    data[j] = rep_CHAR_VALUE(tem);
+  }
+
+  rep_POPGCN;
+
+  if (failed) {
+    return false;
+  }
+
+  size_t size = utf32_to_utf8_size(data, length);
+  if (size == 0) {
+    return rep_null_string();
+  }
+
+  repv str = rep_allocate_string(size + 1);
+  if (!str) {
+    return rep_mem_error();
+  }
+
+  utf32_to_utf8(rep_STRING(str)->utf8_data, data, length);
+  rep_STRING(str)->utf8_data[size] = 0;
+
+  assert(!rep_STRING(str)->utf32_data);
+  rep_STRING(str)->utf32_data = rep_MAKE_INT(length);
+
+  return str;
+}
+
+DEFUN("string-for-each", Fstring_for_each, Sstring_for_each,
+      (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.data#string-for-each::
+string-for-each FUNCTION STRINGS...
+
+Calls FUNCTION with groups of characters from VECTORS. If more than one
+string is provided, the one with the fewest characters stops the
+function.
+::end:: */
+{
+  if (argc < 2) {
+    return rep_signal_missing_arg(argc + 1);
+  }
+
+  intptr_t length = INTPTR_MAX;
+
+  for (int i = 1; i < argc; i++) {
+    rep_DECLARE(i + 1, argv[i], rep_STRINGP(argv[i]));
+    int li = length_utf32(rep_STRING(argv[i]));
+    if (li < length) {
+      length = li;
+    }
+  }
+
+  repv ret = rep_undefined_value;
+
+  rep_GC_n_roots gc_argv;
+  rep_PUSHGCN(gc_argv, argv, argc);
+
+  for (intptr_t j = 0; j < length; j++) {
+    repv chars[argc-1];
+    for (int i = 1; i < argc; i++) {
+      chars[i-1] = Fstring_ref(argv[i], rep_MAKE_INT(j));
+      if (!chars[i-1]) {
+	ret = 0;
+	break;
+      }
+    }
+
+    repv tem = rep_call_lispn(argv[0], argc - 1, chars);
+    if (!tem) {
+      ret = 0;
+      break;
+    }
+  }
+
+  rep_POPGCN;
+
+  return ret;
+}
+
 DEFUN("string-prefix?", Fstring_head_eq, Sstring_head_eq,
       (repv str1, repv str2), rep_Subr2) /*
 ::doc:rep.data#string-prefix?::
@@ -1381,6 +1517,8 @@ rep_strings_init(void)
   rep_ADD_SUBR(Sbyte_substring);
   rep_ADD_SUBR(Ssubstring);
   rep_ADD_SUBR(Sconcat);
+  rep_ADD_SUBR(Sstring_map);
+  rep_ADD_SUBR(Sstring_for_each);
   rep_ADD_SUBR(Sstring_head_eq);
   rep_ADD_SUBR(Sstring_equal);
   rep_ADD_SUBR(Sstring_less);

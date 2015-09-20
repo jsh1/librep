@@ -94,9 +94,11 @@ Returns a new vector with ARGS... as its elements.
 {
   repv vec = rep_make_vector(argc);
 
-  if (vec) {
-    memcpy(rep_VECT(vec)->array, argv, argc * sizeof(repv));
+  if (!vec) {
+    return rep_mem_error();
   }
+
+  memcpy(rep_VECT(vec)->array, argv, argc * sizeof(repv));
 
   return vec;
 }
@@ -114,10 +116,12 @@ will be set to that value, else they will all be nil.
 
   repv vec = rep_make_vector(rep_INT(size));
 
-  if (vec) {
-    for (intptr_t i = 0; i < rep_INT(size); i++) {
-      rep_VECTI(vec, i) = init;
-    }
+  if (!vec) {
+    return rep_mem_error();
+  }
+
+  for (intptr_t i = 0; i < rep_INT(size); i++) {
+    rep_VECTI(vec, i) = init;
   }
 
   return vec;
@@ -210,11 +214,13 @@ Creates a new vector with elements from LIST.
 
   repv vec = rep_make_vector(count);
 
-  if (vec) {
-    for (int i = 0; i < count; i++) {
-      rep_VECTI(vec, i) = rep_CAR(lst);
-      lst = rep_CDR(lst);
-    }
+  if (!vec) {
+    return rep_mem_error();
+  }
+
+  for (int i = 0; i < count; i++) {
+    rep_VECTI(vec, i) = rep_CAR(lst);
+    lst = rep_CDR(lst);
   }
 
   return vec;
@@ -244,6 +250,107 @@ Creates a new list with elements from VECTOR.
   return ret;
 }
 
+DEFUN("vector-map", Fvector_map, Svector_map,
+      (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.data#vector-map::
+vector-map FUNCTION VECTORS...
+
+Calls FUNCTION with groups of elements from VECTORS, returning a new
+vector with the results. If more than one vector is provided, the
+smallest vector terminates the function.
+::end:: */
+{
+  if (argc < 2) {
+    return rep_signal_missing_arg(argc + 1);
+  }
+
+  intptr_t length = INTPTR_MAX;
+
+  for (int i = 1; i < argc; i++) {
+    rep_DECLARE(i + 1, argv[i], rep_VECTORP(argv[i]));
+    intptr_t li = rep_VECTOR_LEN(argv[i]);
+    if (li < length) {
+      length = li;
+    }
+  }
+
+  repv ret = rep_make_vector(length);
+
+  if (!ret) {
+    return rep_mem_error();
+  }
+
+  rep_GC_root gc_ret;
+  rep_GC_n_roots gc_argv;
+  rep_PUSHGC(gc_ret, ret);
+  rep_PUSHGCN(gc_argv, argv, argc);
+
+  for (intptr_t j = 0; j < length; j++) {
+    repv elts[argc-1];
+    for (int i = 1; i < argc; i++) {
+      elts[i-1] = rep_VECTI(argv[i], j);
+    }
+
+    repv tem = rep_call_lispn(argv[0], argc - 1, elts);
+    if (!tem) {
+      ret = 0;
+      break;
+    }
+
+    rep_VECTI(ret, j) = tem;
+  }
+
+  rep_POPGCN;
+  rep_POPGC;
+
+  return ret;
+}
+
+DEFUN("vector-for-each", Fvector_for_each, Svector_for_each,
+      (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.data#vector-for-each::
+vector-for-each FUNCTION VECTORS...
+
+Calls FUNCTION with groups of elements from VECTORS. If more than one
+vector is provided, the smallest vector terminates the function.
+::end:: */
+{
+  if (argc < 2) {
+    return rep_signal_missing_arg(argc + 1);
+  }
+
+  intptr_t length = INTPTR_MAX;
+
+  for (int i = 1; i < argc; i++) {
+    rep_DECLARE(i + 1, argv[i], rep_VECTORP(argv[i]));
+    int li = rep_VECTOR_LEN(argv[i]);
+    if (li < length) {
+      length = li;
+    }
+  }
+
+  repv ret = rep_undefined_value;
+
+  rep_GC_n_roots gc_argv;
+  rep_PUSHGCN(gc_argv, argv, argc);
+
+  for (intptr_t j = 0; j < length; j++) {
+    repv elts[argc-1];
+    for (int i = 1; i < argc; i++) {
+      elts[i-1] = rep_VECTI(argv[i], j);
+    }
+
+    if (!rep_call_lispn(argv[0], argc - 1, elts)) {
+      ret = 0;
+      break;
+    }
+  }
+
+  rep_POPGCN;
+
+  return ret;
+}
+
 DEFUN("vector?", Fvectorp, Svectorp, (repv arg), rep_Subr1) /*
 ::doc:rep.data#vector?::
 vector? ARG
@@ -266,6 +373,8 @@ rep_vectors_init(void)
   rep_ADD_SUBR(Smake_vector_immutable);
   rep_ADD_SUBR(Slist_to_vector);
   rep_ADD_SUBR(Svector_to_list);
+  rep_ADD_SUBR(Svector_map);
+  rep_ADD_SUBR(Svector_for_each);
   rep_ADD_SUBR(Svectorp);
   rep_pop_structure(tem);
 }

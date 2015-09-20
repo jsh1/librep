@@ -1,5 +1,10 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* vectors.c, strings.c, lists.c: fixed map and for-each to
+	terminate at the end of the shortest list, rather than throwing
+	an error if all lists aren't the same length. Added vector-map,
+	vector-for-each, string-map and string-for-each
+
 	* structures.c, repint.h, files.c: renamed
 	set-file-handler-environment a set-file-handlers! and moved it
 	to structures.c, it now sets a field of the structure object,
