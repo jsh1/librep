@@ -21,8 +21,6 @@
 
 (declare (in-module rep.data))
 
-(open-structures '(rep.lang.math))
-
 ;;;###autoload
 (defun string-upper-case? (x)
   "Return t if string X is upper case (contains no lower case characters and

@@ -23,8 +23,6 @@
 
 (declare (in-module rep.system))
 
-(open-structures '(rep.regexp rep.io.streams rep.lang.math))
-
 ;;;###autoload
 (defun pwd-prompt (prompt)
   "Prompt for a confidential string, with PROMPT as the title string. The

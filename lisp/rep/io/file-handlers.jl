@@ -26,7 +26,8 @@
 (open-structures '(rep.lang.symbols
 		   rep.io.files
 		   rep.module-system
-		   rep.data))
+		   rep.data
+		   rep.structures))
 
 ;;; file-handler definition
 

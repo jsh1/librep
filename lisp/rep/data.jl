@@ -23,7 +23,8 @@
 
 (declare (in-module rep.data))
 
-(open-structures '(rep.regexp
+(open-structures '(rep.lang.math
+		   rep.regexp
 		   rep.io.files))
 
 (defun assoc-regexp (input alist #!optional fold-case)

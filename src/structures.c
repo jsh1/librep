@@ -1224,9 +1224,10 @@ named in the list STRUCT-NAMES.
   rep_PUSHGC(gc_args, args);
 
   while (rep_CONSP(args)) {
-    repv tem = Fmemq(rep_CAR(args), dst->imports);
+    repv s = rep_CAR(args);
+
+    repv tem = Fmemq(s, dst->imports);
     if (tem == rep_nil) {
-      repv s = rep_CAR(args);
       if (rep_SYMBOLP(s)) {
 	s = Fintern_structure(s);
       }
@@ -1235,7 +1236,13 @@ named in the list STRUCT-NAMES.
 	break;
       }
       dst->imports = Fcons(rep_CAR(args), dst->imports);
+    } else if (s == Qrep_structures && (dst->car & rep_PENDING_CLOSE)) {
+      /* DST had rep.structures opened temporarily during bootstrap,
+         but it's now opened it for real, so don't close that struct
+	 after bootstrap has finished. */
+      dst->car &= ~rep_PENDING_CLOSE;
     }
+
     args = rep_CDR(args);
 
     rep_TEST_INT;
@@ -1670,20 +1677,41 @@ rep_bootstrap_structure(const char *name_str)
 {
   repv name = rep_string_copy(name_str);
   repv old = rep_push_structure_name(name);
-  repv ret;
-
-  /* Allow the bootstrap code to manipulate modules.. */
 
   rep_struct *s = rep_STRUCTURE(rep_structure);
-  if (s->name != Qrep_structures) {
-    s->imports = Fcons(Qrep_structures, s->imports);
-  }
+
+  /* Open rep.lang.interpreter and rep.vm.interpreter. */
+
   if (s->name != Qrep_lang_interpreter) {
     s->imports = Fcons(Qrep_lang_interpreter, s->imports);
   }
+
   s->imports = Fcons(Qrep_vm_interpreter, s->imports);
 
-  ret = Fload(Fstructure_file(name), rep_nil, rep_nil, rep_nil, rep_nil);
+  /* Allow the module to use structure functions, but only while
+     bootstrapping. */
+
+  repv structures_cell = 0;
+  if (s->name != Qrep_structures) {
+    s->imports = Fcons(Qrep_structures, s->imports);
+    structures_cell = s->imports;
+    s->car |= rep_PENDING_CLOSE;
+  }
+
+  repv ret = Fload(Fstructure_file(name), rep_nil, rep_nil, rep_nil, rep_nil);
+
+  if ((s->car & rep_PENDING_CLOSE) && structures_cell) {
+    /* Close the rep.structures module. */
+    repv *ptr = &s->imports, cell;
+    while ((cell = *ptr) && rep_CONSP(cell)) {
+      if (cell == structures_cell) {
+	*ptr = rep_CDR(cell);
+	cache_flush();
+	break;
+      }
+      ptr = rep_CDRLOC(cell);
+    }
+  }
 
   rep_pop_structure(old);
   return ret;
@@ -1942,9 +1970,4 @@ rep_structures_init(void)
 #ifdef VERBOSE
   atexit(print_cache_stats);
 #endif
-
-  /* Allow bootstrap code to work. */
-
-  rep_STRUCTURE(rep_default_structure)->imports = Fcons(Qrep_lang_interpreter,
-    rep_STRUCTURE(rep_default_structure)->imports);
 }

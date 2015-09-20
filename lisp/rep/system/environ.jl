@@ -23,9 +23,6 @@
 
 (declare (in-module rep.system))
 
-(open-structures '(rep.regexp
-		   rep.data))
-
 ;;;###autoload
 (defun getenv (name)
   "Return the value of the environment variable NAME, a string. The variable

@@ -21,7 +21,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(open-structures '(rep.lang.symbols
+(open-structures '(rep.structures
+		   rep.lang.symbols
 		   rep.data
 		   rep.system
 		   rep.io.streams

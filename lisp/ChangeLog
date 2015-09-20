@@ -1,5 +1,19 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* rep.jl, rep/data.jl, rep/data/string-util.jl,
+	rep/data/sort.jl, rep/io/file-handlers.jl,
+	rep/lang/interpreter.jl, rep/system.jl,
+	rep/system/pwd-prompt.jl, rep/system/environ.jl: bootstrap
+	modules must now import rep.structures if they want that module
+	to remain open once load returns. This usually means that
+	autoloaded inner-files are now not able to call
+	open-structures, so any modules required are opened by the
+	outer file. `rep` module now sets export-all flag to avoid
+	creating a long list of exported inherited symbols that have be
+	scanned when looking for uncached bindings. This means that
+	`rep` must not create any bindings (or import any modules) that
+	it doesn't want to export!
+
 	* rep/lang/doc.jl, rep/vm/compiler.jl,
 	rep/vm/compiler/basic.jl: added call-with-batched-doc-updates
 	which compiler uses to open documentation database once per

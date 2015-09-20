@@ -1,5 +1,10 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* structures.c, repint.h: change module bootstrapping --
+	rep.structures module is still implicitly opened, but it's now
+	closed after the bootstrap code runs, UNLESS the file opened it
+	explicitly
+
 	* structures.c: fixed exports-all structure behavior
 
 	* structures.c: import cache stores unsuccessful lookups as

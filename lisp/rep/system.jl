@@ -25,7 +25,8 @@
 
 (open-structures '(rep.lang.symbols
 		   rep.data
-		   rep.io.files))
+		   rep.io.files
+		   rep.regexp))
 
 ;;; Hook manipulation
 

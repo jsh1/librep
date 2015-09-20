@@ -20,8 +20,6 @@
 
 (declare (in-module rep.data))
 
-(open-structures '(rep.lang.math))
-
 ;;;###autoload
 (defun sort! (lst #!optional (pred <))
   "Sort LST destructively, but stably, returning the sorted list.

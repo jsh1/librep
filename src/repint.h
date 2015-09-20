@@ -162,6 +162,8 @@ struct rep_struct_node_struct {
 /* If set, bindings can be created by set! et al. */
 #define rep_STF_SET_BINDS	(1 << (rep_CELL16_TYPE_BITS + 2))
 
+#define rep_PENDING_CLOSE	(1 << (rep_CELL16_TYPE_BITS + 3))
+
 #define rep_STRUCT_HASH(x,n)	(((x) >> 3) % (n))
 
 

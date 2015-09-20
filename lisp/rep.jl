@@ -23,50 +23,42 @@
 
 (declare (in-module rep))
 
+;; The inherited binding implementation has linear performance with the
+;; number of bindings, i.e. slow when exporting almost all bindings in
+;; the large rep module. So be careful to only create bindings that
+;; should be exported, then set the `exports-all` flag.
+
+(structure-exports-all (current-structure) t)
+
 (open-structures '(rep.module-system
-		   rep.lang.interpreter
+		   rep.lang.debug
 		   rep.lang.symbols
 		   rep.lang.math
-		   rep.lang.debug
-		   rep.vm.interpreter
-		   rep.io.streams
-		   rep.io.files
-		   rep.io.processes
-		   rep.io.file-handlers
 		   rep.data
-		   rep.regexp
-		   rep.system))
+		   rep.io.streams))
 
-(defvar *standard-output* (stdout-file)
+(access-structures '(rep.io.files))
+
+(defvar *standard-output* (rep.io.files#stdout-file)
   "Stream that `prin?' writes its output to by default.")
 
-(defvar *standard-input* (stdin-file)
+(defvar *standard-input* (rep.io.files#stdin-file)
   "Stream that `read' takes its input from by default.")
 
-(defvar *standard-error* (stderr-file)
+(defvar *standard-error* (rep.io.files#stderr-file)
   "Standard stream for error output.")
 
-;; null i18n function until gettext is loaded
-(defun _ (arg) arg)
-(export-bindings '(_))
+(%define load rep.io.files#load)
 
-(export-bindings (parse-interface '(compound-interface
-				    (structure-interface rep.lang.interpreter)
-				    (structure-interface rep.lang.debug)
-				    (structure-interface rep.lang.symbols)
-				    (structure-interface rep.lang.math)
-				    (structure-interface rep.lang.debug)
-				    (structure-interface rep.data)
-				    (structure-interface rep.io.streams)
-				    (structure-interface rep.vm.interpreter)
-				    (structure-interface rep.module-system)
-				    (export backquote))))
+;; null i18n function until gettext is loaded
+(%define _ (lambda (x) x))
 
 ;; later changed to 'user
 (set! *user-structure* 'rep)
 
-(require 'rep.lang.backquote)
-(require 'rep.io.file-handlers.tilde)
+(open-structures '(rep.lang.backquote))
+
+(load "rep/io/file-handlers/tilde")
 
 (defvar *debug-entry* (make-autoload '*debug-entry* "rep/lang/debugger"))
 (defvar *debug-exit*)
