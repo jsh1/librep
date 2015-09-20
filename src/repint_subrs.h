@@ -171,6 +171,7 @@ extern bool rep_record_origins;
 extern void rep_record_origin (repv form, repv stream, int start_line);
 extern repv Flexical_origin (repv form);
 extern void rep_mark_origins (void);
+extern void rep_scan_origins(void);
 extern void rep_origin_init (void);
 
 /* from plists.c */

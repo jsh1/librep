@@ -40,7 +40,6 @@ struct origin_block {
 
 static origin_item *free_list;
 static origin_block *block_list;
-static repv guardian;
 
 bool rep_record_origins;
 
@@ -48,6 +47,7 @@ bool rep_record_origins;
 #define HASH(x) (((x) >> 3) % HASH_SIZE)
 
 static origin_item *buckets[HASH_SIZE];
+static size_t item_count;
 
 static void
 new_item_block (void)
@@ -89,10 +89,12 @@ rep_record_origin(repv form, repv stream, int start_line)
   item->file = rep_FILE(stream)->name;
   item->line = start_line > 0 ? start_line : rep_FILE(stream)->line_number;
 
-  item->next = buckets[HASH(form)];
-  buckets[HASH(form)] = item;
+  unsigned int h = HASH(form);
 
-  Fprimitive_guardian_push(guardian, form);
+  item->next = buckets[h];
+  buckets[h] = item;
+
+  item_count++;
 }
 
 DEFUN("call-with-lexical-origins", Fcall_with_lexical_origins,
@@ -119,7 +121,9 @@ DEFUN("lexical-origin", Flexical_origin,
     return rep_nil;
   }
 
-  for (origin_item *item = buckets[HASH(form)]; item != 0; item = item->next) {
+  unsigned int h = HASH(form);
+
+  for (origin_item *item = buckets[h]; item != 0; item = item->next) {
     if (item->form == form) {
       return Fcons(item->file, rep_MAKE_INT(item->line));
     }
@@ -141,7 +145,9 @@ DEFUN("lexical-origin", Flexical_origin,
 void
 rep_mark_origins(void)
 {
-  rep_MARKVAL(guardian);
+  if (item_count == 0) {
+    return;
+  }
 
   for (int i = 0; i < HASH_SIZE; i++) {
     for (origin_item *item = buckets[i]; item != 0; item = item->next) {
@@ -150,40 +156,33 @@ rep_mark_origins(void)
   }
 }
 
-DEFUN("origin-after-gc", Forigin_after_gc, Sorigin_after_gc, (void), rep_Subr0)
+void
+rep_scan_origins(void)
 {
-  repv form;
-  while ((form = Fprimitive_guardian_pop(guardian)) != rep_nil) {
-    origin_item **ptr = buckets + HASH(form);
-    while (*ptr != 0) {
-      if ((*ptr)->form == form) {
-	origin_item *item = *ptr;
+  if (item_count == 0) {
+    return;
+  }
+
+  for (int i = 0; i < HASH_SIZE; i++) {
+    origin_item **ptr = &buckets[i];
+    origin_item *item = *ptr;
+    for (ptr = &buckets[i]; (item = *ptr);) {
+      if (rep_GC_MARKEDP(item->form)) {
+	ptr = &item->next;
+      } else {
 	*ptr = item->next;
 	item->next = free_list;
 	free_list = item;
-      } else {
-	ptr = &(*ptr)->next;
+	item_count--;
       }
     }
   }
-
-  return rep_nil;
 }
 
 void
 rep_origin_init(void)
 {
-  repv tem;
-
-  guardian = Fmake_primitive_guardian();
-
-  tem = Fsymbol_value(Qafter_gc_hook, Qt);
-  if (rep_VOIDP(tem)) {
-    tem = rep_nil;
-  }
-  Fset(Qafter_gc_hook, Fcons(rep_VAL(&Sorigin_after_gc), tem));
-
-  tem = rep_push_structure("rep.lang.debug");
+  repv tem = rep_push_structure("rep.lang.debug");
   rep_ADD_SUBR(Scall_with_lexical_origins);
   rep_ADD_SUBR(Slexical_origin);
   rep_pop_structure(tem);

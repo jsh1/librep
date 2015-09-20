@@ -1,3 +1,10 @@
+2015-09-20  John Harper  <jsh@unfactored.org>
+
+	* repint_subrs.h, origin.c, gc.c: don't use a guardian to track
+	collected objects whose origin no longer needs to be stored,
+	scan the origin table directly for unmarked forms before
+	sweeping.
+
 2015-09-18  John Harper  <jsh@unfactored.org>
 
 	* variables.c, readline.c, bytecodes.h: more renaming:

@@ -244,13 +244,11 @@ last garbage-collection is greater than `garbage-threshold'.
     rep_MARKVAL(lc->saved_structure);
   }
 
-  /* Move and mark any guarded objects that became inaccessible. */
+  /* Handle weak or guarded objects that weren't marked. */
 
   rep_run_guardians ();
-
-  /* Look for dead weak references. */
-
   rep_scan_weak_refs ();
+  rep_scan_origins ();
 
   /* Finished marking, start sweeping. */
 
