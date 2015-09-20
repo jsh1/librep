@@ -395,6 +395,7 @@ structure_mark(repv x)
   rep_MARKVAL(rep_STRUCTURE(x)->imports);
   rep_MARKVAL(rep_STRUCTURE(x)->accessible);
   rep_MARKVAL(rep_STRUCTURE(x)->special_variables);
+  rep_MARKVAL(rep_STRUCTURE(x)->file_handlers);
 }
 
 static void
@@ -745,6 +746,7 @@ BODY-THUNK may be modified by this function!
   s->imports = rep_nil;
   s->accessible = rep_nil;
   s->special_variables = Qt;
+  s->file_handlers = Qt;
   s->apply_bytecode = rep_structure ?
     rep_STRUCTURE(rep_structure)->apply_bytecode : NULL;
   s->init = NULL;
@@ -1694,31 +1696,42 @@ invalid_apply_bytecode(repv subr, int nargs, repv *args)
 }
 
 DEFUN("set-bytecode-interpreter!", Fstructure_install_vm,
-      Sstructure_install_vm, (repv structure, repv vm), rep_Subr2)
+      Sstructure_install_vm, (repv s, repv vm), rep_Subr2)
 {
-  rep_DECLARE1(structure, rep_STRUCTUREP);
-
-  rep_struct *s = rep_STRUCTURE(structure);
+  rep_DECLARE1(s, rep_STRUCTUREP);
 
   if (vm == rep_nil) {
-    s->apply_bytecode = invalid_apply_bytecode;
+    rep_STRUCTURE(s)->apply_bytecode = invalid_apply_bytecode;
     return rep_nil;
   }
 
   rep_DECLARE(2, vm, Ffunctionp(vm) != rep_nil);
 
-  return rep_call_lisp1(vm, structure);
+  return rep_call_lisp1(vm, s);
 }
 
 DEFUN("set-special-variables!", Fset_special_variables,
-      Sset_special_variables, (repv env, repv structure), rep_Subr2) /*
+      Sset_special_variables, (repv s, repv env), rep_Subr2) /*
 ::doc:rep.structures#set-special-variables!::
 set-special-environment! ENV STRUCTURE
 ::end:: */
 {
-  rep_DECLARE2(structure, rep_STRUCTUREP);
+  rep_DECLARE1(s, rep_STRUCTUREP);
 
-  rep_STRUCTURE(structure)->special_variables = env;
+  rep_STRUCTURE(s)->special_variables = env;
+
+  return rep_undefined_value;
+}
+
+DEFUN("set-file-handlers!", Fset_file_handlers,
+      Sset_file_handlers, (repv s, repv env), rep_Subr2) /*
+::doc:rep.structures#set-file-handlers!::
+set-file-handlers! STRUCTURE ENV
+::end:: */
+{
+  rep_DECLARE1(s, rep_STRUCTUREP);
+
+  rep_STRUCTURE(s)->file_handlers = env;
 
   return rep_undefined_value;
 }
@@ -1842,6 +1855,7 @@ rep_structures_init(void)
   rep_ADD_SUBR(Sstructure_set_binds);
   rep_ADD_SUBR(Sstructure_install_vm);
   rep_ADD_SUBR(Sset_special_variables);
+  rep_ADD_SUBR(Sset_file_handlers);
   rep_pop_structure(tem);
 
   tem = rep_push_structure("rep.module-system");

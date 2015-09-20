@@ -144,8 +144,6 @@ DEFSYM(read, "read");
 DEFSYM(write, "write");
 DEFSYM(append, "append");
 
-DEFSYM(fh_env_key, "fh-env-key");
-
 /* Vector of blocked operations */
 struct blocked_op *rep_blocked_ops[op_MAX];
 
@@ -156,13 +154,6 @@ int rep_op_insert_file_contents = op_insert_file_contents;
 
 
 DEFSYM(rep_io_file_handlers, "rep.io.file-handlers");
-
-static inline repv
-get_fh_env(void)
-{
-  repv ret = F_structure_ref(rep_structure, Qfh_env_key);
-  return rep_VOIDP(ret) ? Qt : ret;
-}
 
 /* This is duplicated in rep/io/file-handlers.jl. */
 
@@ -273,11 +264,11 @@ rep_call_file_handler(repv handler, int op, repv sym, int nargs, ...)
   op_data.handler = handler;
 
   if (rep_SYMBOLP(handler)) {
-    repv fh_env = get_fh_env();
-    if (fh_env == Qt) {
+    repv env = rep_STRUCTURE(rep_structure)->file_handlers;
+    if (env == Qt) {
       handler = file_handler_ref(handler);
     } else {
-      repv tem = Fassq(handler, fh_env);
+      repv tem = Fassq(handler, env);
       if (tem && rep_CONSP(tem)) {
 	if (rep_CDR(tem) == Qt) {
 	  handler = file_handler_ref(handler);
@@ -1678,15 +1669,6 @@ Returns the name of a unique file in the local filing system.
   }
 }
 
-DEFUN("set-file-handler-environment", Fset_file_handler_environment,
-      Sset_file_handler_environment, (repv env, repv structure), rep_Subr2) /*
-::doc:rep.io.files#set-file-handler-environment::
-set-file-handler-environment ENV
-::end:: */
-{
-  return Fstructure_define(structure, Qfh_env_key, env);
-}
-
 
 /* init */
 
@@ -1694,9 +1676,6 @@ void
 rep_files_init(void)
 {
   repv tem;
-  
-  Qfh_env_key = Fmake_symbol(rep_VAL(&str_fh_env_key));
-  rep_mark_static(&Qfh_env_key);
   
   rep_INTERN_SPECIAL(file_handler_alist);
   Fset(Qfile_handler_alist, rep_nil);
@@ -1802,7 +1781,6 @@ rep_files_init(void)
   rep_ADD_SUBR(Sstdout_file);
   rep_ADD_SUBR(Sstderr_file);
   rep_ADD_SUBR(Smake_temp_name);
-  rep_ADD_SUBR(Sset_file_handler_environment);
   
   rep_pop_structure(tem);
 

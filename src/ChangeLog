@@ -1,5 +1,12 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* structures.c, repint.h, files.c: renamed
+	set-file-handler-environment a set-file-handlers! and moved it
+	to structures.c, it now sets a field of the structure object,
+	rather than creating a top-level binding in the structure (the
+	latter would be searched through the structure's imports, which
+	is not what was wanted, and can be slow)
+
 	* tables.c, pointer-hash.h, origin.c: better pointer hash
 	function for form origins and table's eq-hash function
 

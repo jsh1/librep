@@ -125,10 +125,11 @@ struct rep_struct_struct {
   repv imports;
   repv accessible;
 
-  /* A list of the special variables that may be accessed in this
-    environment, or Qt to denote all specials. */
+  /* The lists of special variables and named file handlers that may be
+     accessed in this environment, or Qt to denote all specials. */
 
   repv special_variables;
+  repv file_handlers;
 
   /* Bytecode interpreter to use when calling functions defined here.
      If null, call rep_apply_bytecode  */
