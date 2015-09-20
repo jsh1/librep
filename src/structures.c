@@ -169,55 +169,66 @@ print_cache_stats(void)
 
 struct cache_line {
   rep_struct *s;
+  repv var;
   rep_struct_node *n;
+  uint32_t epoch;
 };
 
 static struct cache_line ref_cache[CACHE_SETS];
+uint32_t ref_epoch = 1;
 
 static inline void
-enter_cache(rep_struct *s, rep_struct_node *binding)
+enter_cache(rep_struct *s, repv var, rep_struct_node *binding)
 {
-  unsigned int hash = CACHE_HASH(binding->symbol);
+  uint32_t current_epoch = ref_epoch;
+  unsigned int hash = CACHE_HASH(var);
 
-  if (ref_cache[hash].s) {
 #ifdef VERBOSE
-    if (ref_cache[hash].n->symbol == binding->symbol) {
+  if (ref_cache[hash].s && ref_cache[hash].epoch == current_epoch) {
+    if (ref_cache[hash].var == var) {
       ref_cache_conflicts++;
     } else {
       ref_cache_collisions++;
     }
-#endif
   }
+#endif
 
   ref_cache[hash].s = s;
+  ref_cache[hash].var = var;
   ref_cache[hash].n = binding;
+  ref_cache[hash].epoch = current_epoch;
 }
 
-static inline rep_struct_node *
-lookup_cache(rep_struct *s, repv var)
+static inline bool
+lookup_cache(rep_struct *s, repv var, rep_struct_node **ret_n)
 {
+  uint32_t current_epoch = ref_epoch;
   unsigned int hash = CACHE_HASH(var);
 
-  if (ref_cache[hash].s == s && ref_cache[hash].n->symbol == var) {
+  if (ref_cache[hash].epoch == current_epoch
+      && ref_cache[hash].var == var
+      && ref_cache[hash].s == s)
+  {
 #ifdef VERBOSE
     ref_cache_hits++;
 #endif
-    return ref_cache[hash].n;
+    *ret_n = ref_cache[hash].n;
+    return true;
   } else {
 #ifdef VERBOSE
     ref_cache_misses++;
 #endif
-    return NULL;
+    return false;
   }
 }
 
 static inline void
-cache_invalidate_symbol(repv symbol)
+cache_invalidate_symbol(repv var)
 {
-  unsigned int hash = CACHE_HASH(symbol);
+  unsigned int hash = CACHE_HASH(var);
 
-  if (ref_cache[hash].s && ref_cache[hash].n->symbol == symbol) {
-    ref_cache[hash].s = NULL;
+  if (ref_cache[hash].s && ref_cache[hash].var == var) {
+    ref_cache[hash].epoch = 0;
   }
 }
 
@@ -226,7 +237,7 @@ cache_invalidate_struct(rep_struct *s)
 {
   for (int i = 0; i < CACHE_SETS; i++) {
     if (ref_cache[i].s == s) {
-      ref_cache[i].s = NULL;
+      ref_cache[i].epoch = 0;
     }
   }
 }
@@ -234,7 +245,7 @@ cache_invalidate_struct(rep_struct *s)
 static inline void
 cache_flush(void)
 {
-  memset(ref_cache, 0, sizeof(ref_cache));
+  ref_epoch++;
 }
 
 #elif defined(SINGLE_SA_CACHE )
@@ -249,35 +260,40 @@ cache_flush(void)
 
 struct cache_line {
   rep_struct *s;
+  repv var;
   rep_struct_node *n;
-  int age;
+  uint32_t lru;
+  uint32_t epoch;
 };
 
 static struct cache_line ref_cache[CACHE_SETS][CACHE_ASSOC];
-static int ref_age;
+static uint32_t ref_lru;
+static uint32_t ref_epoch = 1;
 
 static inline void
-enter_cache(rep_struct *s, rep_struct_node *binding)
+enter_cache(rep_struct *s, repv var, rep_struct_node *binding)
 {
-  unsigned int hash = CACHE_HASH(binding->symbol);
+  uint32_t current_epoch = ref_epoch;
+  unsigned int hash = CACHE_HASH(var);
 
-  int oldest_i = 0, oldest_age = INT_MAX;
+  unsigned int oldest_i = 0;
+  uint32_t oldest_lru = UINT32_MAX;
 
-  for (int i = 0; i < CACHE_ASSOC; i++) {
-    if (!ref_cache[hash][i].s) {
+  for (unsigned int i = 0; i < CACHE_ASSOC; i++) {
+    if (ref_cache[hash][i].epoch != current_epoch) {
       oldest_i = i;
       break;
-    } else if (ref_cache[hash][i].age < oldest_age) {
+    } else if (ref_cache[hash][i].lru < oldest_lru) {
       oldest_i = i;
-      oldest_age = ref_cache[hash][i].age;
+      oldest_lru = ref_cache[hash][i].lru;
     }
   }
 
-  assert(oldest_i < CACHE_ASSOC);
-
 #ifdef VERBOSE
-  if (ref_cache[hash][oldest_i].s) {
-    if (ref_cache[hash][oldest_i].n->symbol == binding->symbol) {
+  if (ref_cache[hash][oldest_i].s
+      && ref_cache[hash][oldest_i].epoch == current_epoch)
+  {
+    if (ref_cache[hash][oldest_i].var == var) {
       ref_cache_conflicts++;
     } else {
       ref_cache_collisions++;
@@ -286,39 +302,46 @@ enter_cache(rep_struct *s, rep_struct_node *binding)
 #endif
 
   ref_cache[hash][oldest_i].s = s;
+  ref_cache[hash][oldest_i].var = var;
   ref_cache[hash][oldest_i].n = binding;
-  ref_cache[hash][oldest_i].age = ++ref_age;
+  ref_cache[hash][oldest_i].lru = ++ref_lru;
+  ref_cache[hash][oldest_i].epoch = current_epoch;
 }
 
-static inline rep_struct_node *
-lookup_cache(rep_struct *s, repv var)
+static inline bool
+lookup_cache(rep_struct *s, repv var, rep_struct_node **ret_n)
 {
+  uint32_t current_epoch = ref_epoch;
   unsigned int hash = CACHE_HASH(var);
 
-  for (int i = 0; i < CACHE_ASSOC; i++) {
-    if (ref_cache[hash][i].s == s && ref_cache[hash][i].n->symbol == var) {
+  for (unsigned int i = 0; i < CACHE_ASSOC; i++) {
+    if (ref_cache[hash][i].epoch == current_epoch
+	&& ref_cache[hash][i].var == var
+	&& ref_cache[hash][i].s == s)
+    {
 #ifdef VERBOSE
       ref_cache_hits++;
 #endif
-      ref_cache[hash][i].age++;
-      return ref_cache[hash][i].n;
+      ref_cache[hash][i].lru = ++ref_lru;
+      *ret_n = ref_cache[hash][i].n;
+      return true;
     }
   }
 
 #ifdef VERBOSE
   ref_cache_misses++;
 #endif
-  return NULL;
+  return false;
 }
 
 static inline void
-cache_invalidate_symbol(repv symbol)
+cache_invalidate_symbol(repv var)
 {
-  unsigned int hash = CACHE_HASH(symbol);
+  unsigned int hash = CACHE_HASH(var);
 
-  for (int i = 0; i < CACHE_ASSOC; i++) {
-    if (ref_cache[hash][i].s && ref_cache[hash][i].n->symbol == symbol) {
-      ref_cache[hash][i].s = NULL;
+  for (unsigned int i = 0; i < CACHE_ASSOC; i++) {
+    if (ref_cache[hash][i].var == var) {
+      ref_cache[hash][i].epoch = 0;
     }
   }
 }
@@ -326,10 +349,10 @@ cache_invalidate_symbol(repv symbol)
 static void
 cache_invalidate_struct(rep_struct *s)
 {
-  for (int i = 0; i < CACHE_SETS; i++) {
-    for (int j = 0; j < CACHE_ASSOC; j++) {
+  for (unsigned int i = 0; i < CACHE_SETS; i++) {
+    for (unsigned int j = 0; j < CACHE_ASSOC; j++) {
       if (ref_cache[i][j].s == s) {
-	ref_cache[i][j].s = NULL;
+	ref_cache[i][j].epoch = 0;
       }
     }
   }
@@ -338,7 +361,7 @@ cache_invalidate_struct(rep_struct *s)
 static inline void
 cache_flush(void)
 {
-  memset(ref_cache, 0, sizeof(ref_cache));
+  ref_epoch++;
 }
 
 #else /* defined(SINGLE_SA_CACHE) */
@@ -350,17 +373,17 @@ enter_cache(rep_struct *s, rep_struct_node *binding)
 {
 }
 
-static inline rep_struct_node *
-lookup_cache(rep_struct *s, repv var)
+static inline bool
+lookup_cache(rep_struct *s, repv var, rep_struct_node **ret_n)
 {
 #ifdef VERBOSE
   ref_cache_misses++;
 #endif
-  return NULL;
+  return false;
 }
 
 static inline void
-cache_invalidate_symbol(repv symbol)
+cache_invalidate_symbol(repv var)
 {
 }
 
@@ -436,6 +459,8 @@ structure_sweep(void)
 
     s = next;
   }
+
+  cache_flush();
 }
 
 static void
@@ -637,21 +662,23 @@ lookup_recursively(repv s, repv var)
 rep_struct_node *
 rep_search_imports(rep_struct *s, repv var)
 {
-  rep_struct_node *n = lookup_cache(s, var);
+  rep_struct_node *n;
 
-  if (n) {
+  if (lookup_cache(s, var, &n)) {
     return n;
   }
+
+  n = NULL;
 
   for (repv lst = s->imports; rep_CONSP(lst); lst = rep_CDR(lst)) {
     n = lookup_recursively(rep_CAR(lst), var);
     if (n) {
-      enter_cache(s, n);
-      return n;
+      break;
     }
   }
 
-  return NULL;
+  enter_cache(s, var, n);
+  return n;
 }
 
 
