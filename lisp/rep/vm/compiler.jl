@@ -35,14 +35,23 @@
 	    compile-module)
 
     (open rep
+	  rep.io.files
+	  rep.lang.doc
+	  rep.regexp
 	  rep.structures
 	  rep.system
-	  rep.io.files
-	  rep.regexp
 	  rep.vm.compiler.basic
 	  rep.vm.compiler.bindings
 	  rep.vm.compiler.modules
 	  rep.vm.bytecodes)
+
+  (defvar *compiler-write-docs* nil
+    "When t all doc-strings are appended to the doc file and replaced with
+their position in that file.")
+
+  (defvar *compiler-no-low-level-optimisations* nil)
+
+  (defvar *compiler-debug* nil)
 
   (define-structure-alias compiler rep.vm.compiler)
 
@@ -316,15 +325,20 @@ EXCLUDE-RE may be a regexp matching files which shouldn't be compiled."
 	    (directory-files dir-name))
   t)
 
+(define (with-docs thunk)
+  (let ((*compiler-write-docs* t))
+    (call-with-batched-doc-updates thunk)))
+
 (defun compile-lisp-lib (#!optional directory force-p)
   "Recompile all out of date files in the lisp library directory. If FORCE-P
 is true it's as though all files were out of date.
 This makes sure that all doc strings are written to their special file and
 that files which shouldn't be compiled aren't."
   (interactive "\nP")
-  (let ((*compiler-write-docs* t))
-    (compile-directory (or directory lisp-lib-directory)
-		       force-p lib-exclude-re)))
+  (with-docs
+   (lambda ()
+     (compile-directory (or directory lisp-lib-directory)
+			force-p lib-exclude-re))))
 
 ;; Call like `rep --batch -l compiler -f compile-lib-batch [--force] DIR'
 (defun compile-lib-batch ()
@@ -337,15 +351,20 @@ that files which shouldn't be compiled aren't."
 
 ;; Call like `rep --batch -l compiler -f compile-batch [--write-docs] FILES...'
 (defun compile-batch ()
-  (when (get-command-line-option "--write-docs")
-    (set! *compiler-write-docs* t))
-  (while *command-line-args*
-    (compile-file (car *command-line-args*))
-    (set! *command-line-args* (cdr *command-line-args*))))
+  (let ((write-docs nil))
+    (when (get-command-line-option "--write-docs")
+      (set! write-docs t))
+    (while *command-line-args*
+      (if write-docs
+	  (with-docs (lambda ()
+		       (compile-file (car *command-line-args*))))
+	(compile-file (car *command-line-args*)))
+      (set! *command-line-args* (cdr *command-line-args*)))))
 
 (defun bootstrap (sources)
-  (let ((*compiler-write-docs* t))
-    (for-each (lambda (package)
+  (with-docs
+   (lambda ()
+     (for-each (lambda (package)
 		(let ((file (expand-file-name
 			     (concat (structure-file package) ".jl")
 			     lisp-lib-directory)))
@@ -353,7 +372,7 @@ that files which shouldn't be compiled aren't."
 			    (file-newer-than-file? file (concat file #\c)))
 		    (report-progress file)
 		    (compile-file file))))
-	      sources)))
+	       sources))))
 
 ;; Used when bootstrapping from the Makefile, recompiles compiler.jl if
 ;; it's out of date

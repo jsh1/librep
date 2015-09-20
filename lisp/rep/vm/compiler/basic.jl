@@ -53,14 +53,6 @@
 	  rep.vm.peephole
 	  rep.vm.assembler)
 
-  (defvar *compiler-write-docs* nil
-    "When t all doc-strings are appended to the doc file and replaced with
-their position in that file.")
-
-  (defvar *compiler-no-low-level-optimisations* nil)
-
-  (defvar *compiler-debug* nil)
-
   (define current-file (make-fluid))		;the file being compiled
   (define current-fun (make-fluid))		;the function being compiled
   (define current-form (make-fluid))		;the current cons-like form

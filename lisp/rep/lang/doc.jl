@@ -32,11 +32,14 @@
 	    documentation
 	    document-variable
 	    add-documentation
-	    add-documentation-params)
+	    add-documentation-params
+	    call-with-batched-doc-updates)
 
     (open rep
 	  rep.structures
 	  rep.system)
+
+  (define batched-doc-db (make-fluid))
 
   (defun describe-lambda-list (lambda-list)
     (let ((output (make-string-output-stream)))
@@ -124,13 +127,34 @@ NAME is true, then it should be the symbol that is associated with VALUE."
 		*documentation-files*)
       nil))
 
-  (defun doc-file-set (key value)
+  (define (open-db-for-writing)
+    ;; FIXME: I'm not convinced that turning off locking is wise?
     (require 'rep.io.db.gdbm)
-    ;; XXX I'm not convinced that turning off locking is wise..
-    (let ((db (gdbm-open *documentation-file* 'append nil '(no-lock))))
-      (when db
-	(unwind-protect
-	    (gdbm-set! db key value 'replace)
+    (gdbm-open *documentation-file* 'append nil '(no-lock)))
+
+  (defun doc-file-set (key value)
+    (let ((batcher (fluid-ref batched-doc-db)))
+      (let ((db (if batcher
+		    (batcher)
+		  (open-db-for-writing))))
+	(when db
+	  (unwind-protect
+	      (gdbm-set! db key value 'replace)
+	    (unless batcher
+	      (gdbm-close db)))))))
+
+  (define (call-with-batched-doc-updates thunk)
+    "Calls THUNK such that any calls to add-documentation[-params] within
+it will reuse a cached database, rather than opening it every time."
+    (let ((db nil))
+      (define (accessor)
+	(unless db
+	  (set! db (open-db-for-writing)))
+	db)
+      (unwind-protect
+	  (let-fluids ((batched-doc-db accessor))
+	    (thunk))
+	(when db
 	  (gdbm-close db)))))
 
 
