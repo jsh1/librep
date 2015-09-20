@@ -125,7 +125,7 @@
       var))
 
   (defun variable-ref-1 (var)
-    (cond ((and (symbol? var) (special-variable? var))
+    (cond ((and (symbol? var) (special-variable? var) (variable-bound? var))
 	   (variable-ref var))
 	  ((and (symbol? var) (fluid-ref current-structure)
 		(structure-bound? (fluid-ref current-structure) var))
@@ -149,8 +149,9 @@
 
   (defun compiler-bound? (var)
     (and (symbol? var)
-	 (or (locate-variable var)
-	     (and (special-variable? var) (variable-bound? var)))))
+	 (if (special-variable? var)
+	     (variable-bound? var)
+	   (locate-variable var))))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
   (defun compiler-binding-from-rep? (var)

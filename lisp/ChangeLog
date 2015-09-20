@@ -1,5 +1,9 @@
 2015-09-20  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/utils.jl, rep/vm/compiler/modules.jl: fixed
+	how compiler deals with importing function signatures from
+	existing structures
+
 	* rep/util/gaol.jl: updated for new set-file-handlers! name
 
 2015-09-18  John Harper  <jsh@unfactored.org>
