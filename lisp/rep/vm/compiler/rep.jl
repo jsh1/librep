@@ -36,7 +36,7 @@
   ;; List of side-effect-free functions. They should always return the
   ;; same value when given the same inputs. Used when constant folding.
   (define constant-functions
-    '(+ - * / % mod max min 1+ 1- car cdr assoc assq rassoc rassq
+    '(+ - * / % modulo max min 1+ 1- car cdr assoc assq rassoc rassq
       list-ref list-tail last member memq array? array-ref substring concat
       length elt lognot not logior logxor logand equal? = /= > < >= <=
       ash zero? null? atom? pair? list? number? integer? string? vector?
@@ -1099,8 +1099,8 @@
     (put '/ 'rep-compile-opcode 'div)
     (put 'remainder 'rep-compile-fun compile-2-args)
     (put 'remainder 'rep-compile-opcode 'rem)
-    (put 'mod 'rep-compile-fun compile-2-args)
-    (put 'mod 'rep-compile-opcode 'mod)
+    (put 'modulo 'rep-compile-fun compile-2-args)
+    (put 'modulo 'rep-compile-opcode 'modulo)
     (put 'lognot 'rep-compile-fun compile-1-args)
     (put 'lognot 'rep-compile-opcode 'lnot)
     (put 'not 'rep-compile-fun compile-1-args)
@@ -1264,13 +1264,7 @@
     (put 'sqrt 'rep-compile-fun compile-1-args)
     (put 'sqrt 'rep-compile-opcode 'sqrt)
     (put 'expt 'rep-compile-fun compile-2-args)
-    (put 'expt 'rep-compile-opcode 'expt)
-
-    ;; some pseudonyms
-    (put '% 'rep-compile-fun compile-2-args)
-    (put '% 'rep-compile-opcode 'rem)
-    (put 'modulo 'rep-compile-fun compile-2-args)
-    (put 'modulo 'rep-compile-opcode 'mod))
+    (put 'expt 'rep-compile-opcode 'expt))
 
   ;; setup properties to tell the compiler where to look for symbols
   ;; in the `rep'  package

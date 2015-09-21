@@ -1060,27 +1060,31 @@ rep_parse_number(const char *buf, size_t len, int radix,
     /* not reached */ }
 
   case rep_NUMBER_FLOAT: {
-    char *tem = NULL;
     double d;
+    if (len == 5 && strncmp(buf, "inf.0", 5) == 0) {
+      d = HUGE_VAL;
+    } else if (len == 5 && strncmp(buf, "nan.0", 5) == 0) {
+      d = NAN;
+    } else {
+      char *tem = NULL;
 #ifdef HAVE_STRTOD_L
-    d = strtod_l(buf, &tem, NULL);
+      d = strtod_l(buf, &tem, NULL);
 #else
 # ifdef HAVE_SETLOCALE
-    char *old_locale = NULL;
-    INSTALL_LOCALE(old_locale, LC_NUMERIC, "C");
+      char *old_locale = NULL;
+      INSTALL_LOCALE(old_locale, LC_NUMERIC, "C");
 # endif
-    d = strtod(buf, &tem);
+      d = strtod(buf, &tem);
 # ifdef HAVE_SETLOCALE
-    if (old_locale != 0) {
-      setlocale(LC_NUMERIC, old_locale);
-    }
+      if (old_locale != 0) {
+	setlocale(LC_NUMERIC, old_locale);
+      }
 # endif
 #endif
-
-    if (tem - buf != len) {
-      return 0;
+      if (tem - buf != len) {
+	return 0;
+      }
     }
-
     number_f *f = make_number(rep_NUMBER_FLOAT);
     f->f = d * sign;
     return rep_VAL(f); }
@@ -1165,30 +1169,36 @@ rep_print_number_to_string(repv obj, int radix, int prec)
 #endif
 
   case rep_NUMBER_FLOAT: {		/* FIXME: handle radix arg */
+    if (isnan(rep_NUMBER(obj, f))) {
+      strcpy(buf, "+nan.0");
+    } else if (isinf(rep_NUMBER(obj, f))) {
+      strcpy(buf, rep_NUMBER(obj, f) > 0 ? "+inf.0" : "-inf.0");
+    } else {
 #ifdef HAVE_SNPRINTF_L
-    /* Allows us to pass in null (i.e. C) locale directly. */
-    snprintf_l(fmt, sizeof(fmt), NULL, "%%.%dg", prec < 0 ? 16 : prec);
-    snprintf_l(buf, sizeof(buf), NULL, fmt, rep_NUMBER(obj, f));
+      /* Allows us to pass in null (i.e. C) locale directly. */
+      snprintf_l(fmt, sizeof(fmt), NULL, "%%.%dg", prec < 0 ? 16 : prec);
+      snprintf_l(buf, sizeof(buf), NULL, fmt, rep_NUMBER(obj, f));
 #else
-    sprintf(fmt, "%%.%dg", prec < 0 ? 16 : prec);
+      sprintf(fmt, "%%.%dg", prec < 0 ? 16 : prec);
 # ifdef HAVE_SETLOCALE
-    char *old_locale;
-    INSTALL_LOCALE(old_locale, LC_NUMERIC, "C");
+      char *old_locale;
+      INSTALL_LOCALE(old_locale, LC_NUMERIC, "C");
 # endif
 # ifdef HAVE_SNPRINTF
-    snprintf(buf, sizeof(buf), fmt, rep_NUMBER(obj, f));
+      snprintf(buf, sizeof(buf), fmt, rep_NUMBER(obj, f));
 # else
-    sprintf(buf, fmt, rep_NUMBER(obj, f));
+      sprintf(buf, fmt, rep_NUMBER(obj, f));
 # endif
 # ifdef HAVE_SETLOCALE
-    if (old_locale != 0) {
-      setlocale(LC_NUMERIC, old_locale);
-    }
+      if (old_locale != 0) {
+	setlocale(LC_NUMERIC, old_locale);
+      }
 # endif
 #endif /* !HAVE_SNPRINTF_L */
-    /* Libc doesn't always add a point */
-    if (!strchr(buf, '.') && !strchr(buf, 'e') && !strchr(buf, 'E')) {
-      strcat(buf, ".");
+      /* Libc doesn't always add a point */
+      if (!strchr(buf, '.') && !strchr(buf, 'e') && !strchr(buf, 'E')) {
+	strcat(buf, ".");
+      }
     }
     out = strdup(buf);
     break; }
@@ -1520,7 +1530,7 @@ rep_number_mul(repv x, repv y)
     long long a = rep_INT(x);
     long long b = rep_INT(y);
     long long tot = a * b;
-    if (a <= INT64_MAX / b) {
+    if (b == 0 || a <= INT64_MAX / b) {
       out = rep_make_longlong_int(tot);
     } else {
 #ifdef HAVE_GMP
@@ -1573,7 +1583,7 @@ rep_number_div(repv x, repv y)
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
 
-  if (ZEROP(y)) {
+  if (!rep_NUMBER_INEXACT_P(y) && ZEROP(y)) {
     return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
   }
 
@@ -1914,13 +1924,17 @@ DEFUN("remainder", Fremainder, Sremainder, (repv n1, repv n2), rep_Subr2) /*
 ::doc:rep.lang.math#remainder::
 remainder DIVIDEND DIVISOR
 
-Returns the integer remainder after dividing DIVIDEND by DIVISOR.
+Returns the remainder after dividing DIVIDEND by DIVISOR, that is:
+
+  (remainder X Y) == (- X (* Y (truncate (/ X Y)))),
+
+for Y not equal to zero.
 ::end:: */
 {
   rep_DECLARE1(n1, rep_NUMERICP);
   rep_DECLARE2(n2, rep_NUMERICP);
 
-  if (ZEROP(n2)) {
+  if (!rep_NUMBER_INEXACT_P(n2) && ZEROP(n2)) {
     return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
   }
 
@@ -1935,12 +1949,36 @@ Returns the integer remainder after dividing DIVIDEND by DIVISOR.
 #ifdef HAVE_GMP
     mpz_tdiv_r(rep_NUMBER(out,z), rep_NUMBER(n1,z), rep_NUMBER(n2,z));
 #else
-    number_z *z = make_number(rep_NUMBER_BIGNUM);
-    z->z = rep_NUMBER(n1,z) % rep_NUMBER(n2,z);
-    out = rep_VAL(z);
+    rep_NUMBER(out,z) = rep_NUMBER(n1,z) % rep_NUMBER(n2,z);
 #endif
     out = maybe_demote(out);
     break; }
+
+#ifdef HAVE_GMP
+  case rep_NUMBER_RATIONAL: {
+    /* See modulo. */
+    mpz_t d1n2, d2n1;
+    mpz_init(d1n2);
+    mpz_init(d2n1);
+    mpz_mul(d1n2, mpq_denref(rep_NUMBER(n1,q)), mpq_numref(rep_NUMBER(n2,q)));
+    mpz_mul(d2n1, mpq_denref(rep_NUMBER(n2,q)), mpq_numref(rep_NUMBER(n1,q)));
+    mpz_mul(mpq_denref(rep_NUMBER(out,q)),
+	    mpq_denref(rep_NUMBER(n1,q)), mpq_denref(rep_NUMBER(n2,q)));
+    mpz_tdiv_q(mpq_numref(rep_NUMBER(out,q)), d2n1, d1n2);
+    mpz_mul(mpq_numref(rep_NUMBER(out,q)),
+	    mpq_numref(rep_NUMBER(out,q)), d1n2);
+    mpz_sub(mpq_numref(rep_NUMBER(out,q)),
+	    d2n1, mpq_numref(rep_NUMBER(out,q)));
+    mpz_clear(d1n2);
+    mpz_clear(d2n1);
+    mpq_canonicalize(rep_NUMBER(out,q));
+    out = maybe_demote(out);
+    break; }
+#endif
+
+  case rep_NUMBER_FLOAT:
+    rep_NUMBER(out,f) = fmod(rep_NUMBER(n1,f), rep_NUMBER(n2,f));
+    break;
 
   default:
     return rep_signal_arg_error(n1, 1);
@@ -1949,24 +1987,21 @@ Returns the integer remainder after dividing DIVIDEND by DIVISOR.
   return out;
 }
 
-DEFUN("mod", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
-::doc:rep.lang.math#mod::
-mod DIVIDEND DIVISOR
+DEFUN("modulo", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
+::doc:rep.lang.math#modulo::
+modulo DIVIDEND DIVISOR
 
-Returns the value of DIVIDEND modulo DIVISOR; unlike the % (remainder)
-function the behaviour of `mod' is well-defined for negative arguments,
-we have that,
+Returns the value of DIVIDEND modulo DIVISOR, that is:
 
-	(mod X Y) == X - (* Y (floor (/ X Y))),	for Y not equal to zero
+  (modulo X Y) == (- X (* Y (floor (/ X Y)))),
 
-assuming that(floor Z) gives the least integer greater than or equal to Z,
-and that floating point division is used.
+for Y not equal to zero.
 ::end:: */
 {
   rep_DECLARE1(n1, rep_NUMERICP);
   rep_DECLARE2(n2, rep_NUMERICP);
 
-  if (ZEROP(n2)) {
+  if (!rep_NUMBER_INEXACT_P(n2) && ZEROP(n2)) {
     return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
   }
 
@@ -1992,14 +2027,46 @@ and that floating point division is used.
       mpz_add(rep_NUMBER(out,z), rep_NUMBER(out,z), rep_NUMBER(n2,z));
     }
 #else
-    number_z *z = make_number(rep_NUMBER_BIGNUM);
-    z->z = rep_NUMBER(n1,z) % rep_NUMBER(n2,z);
-    if (rep_NUMBER(n2,z) < 0 ? z->z > 0 : z->z < 0) {
-      z->z += rep_NUMBER(n2,z);
+    long long z = rep_NUMBER(n1,z) % rep_NUMBER(n2,z);
+    if (rep_NUMBER(n2,z) < 0 ? z > 0 : z < 0) {
+      z += rep_NUMBER(n2,z);
     }
-    out = rep_VAL(z);
+    rep_NUMBER(out,z) = z;
 #endif
     out = maybe_demote(out);
+    break; }
+
+#ifdef HAVE_GMP
+  case rep_NUMBER_RATIONAL: {
+    /* From the definition above: modulo(n1/d1, n2/d2)
+         = (d2*n1 - floor(d2*n1 / d1*n2) * d1*n2) / (d1*d2). */
+    mpz_t d1n2, d2n1;
+    mpz_init(d1n2);
+    mpz_init(d2n1);
+    mpz_mul(d1n2, mpq_denref(rep_NUMBER(n1,q)), mpq_numref(rep_NUMBER(n2,q)));
+    mpz_mul(d2n1, mpq_denref(rep_NUMBER(n2,q)), mpq_numref(rep_NUMBER(n1,q)));
+    mpz_mul(mpq_denref(rep_NUMBER(out,q)),
+	    mpq_denref(rep_NUMBER(n1,q)), mpq_denref(rep_NUMBER(n2,q)));
+    mpz_fdiv_q(mpq_numref(rep_NUMBER(out,q)), d2n1, d1n2);
+    mpz_mul(mpq_numref(rep_NUMBER(out,q)),
+	    mpq_numref(rep_NUMBER(out,q)), d1n2);
+    mpz_sub(mpq_numref(rep_NUMBER(out,q)),
+	    d2n1, mpq_numref(rep_NUMBER(out,q)));
+    mpz_clear(d1n2);
+    mpz_clear(d2n1);
+    mpq_canonicalize(rep_NUMBER(out,q));
+    out = maybe_demote(out);
+    break; }
+#endif
+
+  case rep_NUMBER_FLOAT: {
+    double f1 = rep_NUMBER(n1,f);
+    double f2 = rep_NUMBER(n2,f);
+    double d = fmod(f1, f2);
+    if (f2 < 0 ? d > 0 : d < 0) {
+      d += f2;
+    }
+    rep_NUMBER(out,f) = d;
     break; }
 
   default:
@@ -2009,32 +2076,64 @@ and that floating point division is used.
   return out;
 }
 
-DEFUN("quotient", Fquotient, Squotient, (repv x, repv y), rep_Subr2) /*
+DEFUN("quotient", Fquotient, Squotient, (repv n1, repv n2), rep_Subr2) /*
 ::doc:rep.lang.math#quotient::
 quotient DIVIDEND DIVISOR
 
-Returns the integer quotient from dividing integers DIVIDEND and
-DIVISOR.
+Returns the quotient from dividing numbers DIVIDEND and DIVISOR.
 ::end:: */
 {
-  rep_DECLARE1(x, rep_INTEGERP);
-  rep_DECLARE2(y, rep_INTEGERP);
+  rep_DECLARE1(n1, rep_NUMERICP);
+  rep_DECLARE2(n2, rep_NUMERICP);
 
-  if (ZEROP(y)) {
+  if (!rep_NUMBER_INEXACT_P(n2) && ZEROP(n2)) {
     return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
   }
 
-  repv out = promote_dup(&x, &y);
+  promote(&n1, &n2);
 
-  if (rep_INTP(x)) {
-    out = rep_MAKE_INT(rep_INT(x) / rep_INT(y));
-  } else {
+  repv out;
+
+  switch (rep_NUMERIC_TYPE(n1)) {
+  case rep_NUMBER_INT:
+    out = rep_MAKE_INT(rep_INT(n1) / rep_INT(n2));
+    break;
+
+  case rep_NUMBER_BIGNUM: {
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
 #ifdef HAVE_GMP
-    mpz_tdiv_q(rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
+    mpz_init(z->z);
+    mpz_tdiv_q(z->z, rep_NUMBER(n1,z), rep_NUMBER(n2,z));
 #else
-    rep_NUMBER(out,z) = rep_NUMBER(x,z) / rep_NUMBER(y,z);
+    rep_NUMBER(z,z) = rep_NUMBER(n1,z) / rep_NUMBER(n2,z);
 #endif
-    out = maybe_demote(out);
+    out = maybe_demote(rep_VAL(z));
+    break; }
+
+#ifdef HAVE_GMP
+  case rep_NUMBER_RATIONAL: {
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
+    mpz_t d1n2, d2n1;
+    mpz_init(d1n2);
+    mpz_init(d2n1);
+    mpz_mul(d1n2, mpq_denref(rep_NUMBER(n1,q)), mpq_numref(rep_NUMBER(n2,q)));
+    mpz_mul(d2n1, mpq_denref(rep_NUMBER(n2,q)), mpq_numref(rep_NUMBER(n1,q)));
+    mpz_init(z->z);
+    mpz_tdiv_q(z->z, d2n1, d1n2);
+    mpz_clear(d1n2);
+    mpz_clear(d2n1);
+    out = maybe_demote(rep_VAL(z));
+    break; }
+#endif
+
+  case rep_NUMBER_FLOAT: {
+    double d = rep_NUMBER(n1,f) / rep_NUMBER(n2,f);
+    d = d < 0 ? -floor(-d) : floor(d);
+    out = rep_make_float(d, true);
+    break; }
+
+  default:
+    return rep_signal_arg_error(n1, 1);
   }
 
   return out;
@@ -2307,8 +2406,12 @@ NUMBER.
     return arg;
 
 #ifdef HAVE_GMP
-  case rep_NUMBER_RATIONAL:
-    return rep_make_long_int(floor(mpq_get_d(rep_NUMBER(arg,q))));
+  case rep_NUMBER_RATIONAL: {
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
+    mpz_init(z->z);
+    mpz_fdiv_q(z->z, mpq_numref(rep_NUMBER(arg,q)),
+	       mpq_denref(rep_NUMBER(arg, q)));
+    return maybe_demote(rep_VAL(z)); }
 #endif
 
   case rep_NUMBER_FLOAT:
@@ -2317,7 +2420,7 @@ NUMBER.
   default:
     return rep_signal_arg_error(arg, 1);
   }
-}	
+}
 
 DEFUN("ceiling", Fceiling, Sceiling, (repv arg), rep_Subr1) /*
 ::doc:rep.lang.math#ceiling::
@@ -2335,8 +2438,12 @@ NUMBER.
     return arg;
 
 #ifdef HAVE_GMP
-  case rep_NUMBER_RATIONAL:
-    return rep_make_long_int(ceil(mpq_get_d(rep_NUMBER(arg,q))));
+  case rep_NUMBER_RATIONAL: {
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
+    mpz_init(z->z);
+    mpz_cdiv_q(z->z, mpq_numref(rep_NUMBER(arg,q)),
+	       mpq_denref(rep_NUMBER(arg, q)));
+    return maybe_demote(rep_VAL(z)); }
 #endif
 
   case rep_NUMBER_FLOAT:
@@ -2363,9 +2470,11 @@ Round NUMBER to the nearest integer between NUMBER and zero.
 
 #ifdef HAVE_GMP
   case rep_NUMBER_RATIONAL: {
-    double d = mpq_get_d(rep_NUMBER(arg,q));
-    d = d < 0 ? -floor(-d) : floor(d);
-    return rep_make_long_int((intptr_t)d); }
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
+    mpz_init(z->z);
+    mpz_tdiv_q(z->z, mpq_numref(rep_NUMBER(arg,q)),
+	       mpq_denref(rep_NUMBER(arg, q)));
+    return maybe_demote(rep_VAL(z)); }
 #endif
 
   case rep_NUMBER_FLOAT: {
@@ -2686,7 +2795,7 @@ DEFUN("fixnum?", Ffixnump, Sfixnump, (repv arg), rep_Subr1) /*
 ::doc:rep.lang.math#fixnum?::
 fixnum? ARG
 
-Return t if ARG is a fixnum(i.e. an integer that fits in a Lisp
+Return t if ARG is a fixnum (i.e. an integer that fits in a Lisp
 pointer).
 ::end:: */
 {
@@ -2711,6 +2820,54 @@ Return t if ARG is an exact number.
 ::end:: */
 {
   return rep_NUMBERP(arg) && rep_NUMBER_FLOAT_P(arg) ? Qt : rep_nil;
+}
+
+DEFUN("infinite?", Finfinitep, Sinfinitep, (repv arg), rep_Subr1) /*
+::doc::rep.lang.math#infinite?::
+infinite? ARG
+
+Return true if ARG is an infinite number.
+::end:: */
+{
+  if (rep_NUMBERP(arg) && rep_NUMBER_FLOAT_P(arg)) {
+    return isinf(rep_NUMBER(arg,f)) ? Qt : rep_nil;
+  } else {
+    return rep_nil;
+  }
+}
+
+DEFUN("finite?", Ffinitep, Sfinitep, (repv arg), rep_Subr1) /*
+::doc::rep.lang.math#finite?::
+finite? ARG
+
+Return true if ARG is a finite number.
+::end:: */
+{
+  if (rep_NUMBERP(arg)) {
+    if (rep_NUMBER_FLOAT_P(arg)) {
+      return isfinite(rep_NUMBER(arg,f)) ? Qt : rep_nil;
+    } else {
+      return Qt;
+    }
+  } else if (rep_INTP(arg)) {
+    return Qt;
+  } else {
+    return rep_nil;
+  }
+}
+
+DEFUN("nan?", Fnanp, Snanp, (repv arg), rep_Subr1) /*
+::doc::rep.lang.math#nan?::
+nan? ARG
+
+Return true if ARG is a NaN number.
+::end:: */
+{
+  if (rep_NUMBERP(arg) && rep_NUMBER_FLOAT_P(arg)) {
+    return isnan(rep_NUMBER(arg,f)) ? Qt : rep_nil;
+  } else {
+    return rep_nil;
+  }
 }
 
 DEFUN("exact->inexact", Fexact_to_inexact,
@@ -3175,6 +3332,9 @@ rep_numbers_init(void)
   rep_ADD_SUBR(Sfixnump);
   rep_ADD_SUBR(Sexactp);
   rep_ADD_SUBR(Sinexactp);
+  rep_ADD_SUBR(Snanp);
+  rep_ADD_SUBR(Sinfinitep);
+  rep_ADD_SUBR(Sfinitep);
   rep_ADD_SUBR(Sexact_to_inexact);
   rep_ADD_SUBR(Sinexact_to_exact);
   rep_ADD_SUBR(Snumerator);

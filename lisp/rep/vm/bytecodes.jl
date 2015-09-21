@@ -68,7 +68,7 @@
     (append '(env-ref refq reg-ref ref list-length list-ref list-tail array-ref
 	      length array-length add neg sub mul div rem lnot not lor land
 	      gt ge lt le inc dec ash boundp get reverse assoc assq rassoc
-	      rassq last copy-sequence lxor max min mod make-closure enclose
+	      rassq last copy-sequence lxor max min modulo make-closure enclose
 	      quotient floor ceiling truncate round exp log sin cos tan
 	      sqrt expt structure-ref vector-length vector-ref string-length
 	      string-ref)

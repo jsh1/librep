@@ -1,3 +1,12 @@
+2015-09-21  John Harper  <jsh@unfactored.org>
+
+	* numbers.c, read.c: support for "{+,-}{inf,nan}.0" number
+	syntax. Added nan?, infinite?, finite? functions. Renamed mod
+	as modulo. modulo, remainder, quotient, floor, ceiling now all
+	support all kinds of numbers (e.g. rationals)
+
+	* lispmach.h, bytecodes.h: rename mod as modulo
+
 2015-09-20  John Harper  <jsh@unfactored.org>
 
 	* structures.c (structure-exports?): fixed this -- external

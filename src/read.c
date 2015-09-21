@@ -426,41 +426,52 @@ read_symbol(repv stream, int *c_p, repv obarray)
 
 done:
   buf[buf_i] = 0;
-
-  repv result = 0;
+  *c_p = c;
 
   if (buf_i == 0) {
-    result = signal_reader_error(Qinvalid_read_syntax, stream,
-				 "zero length identifier");
-  } else if (radix > 0 && nfirst < buf_i) {
-    /* It was a number of some sort */
-    result = rep_parse_number(buf + nfirst, buf_i - nfirst, radix, sign,
+    return signal_reader_error(Qinvalid_read_syntax, stream,
+			       "zero length identifier");
+  }
+
+  if (radix > 0 && nfirst < buf_i) {
+    repv n = rep_parse_number(buf + nfirst, buf_i - nfirst, radix, sign,
 			      !exact ? rep_NUMBER_FLOAT
 			      : rational ? rep_NUMBER_RATIONAL : 0);
-    if (result == 0) {
-      goto intern;
+    if (n) {
+      if (force_exactness > 0) {
+	n = Finexact_to_exact(n);
+      } else if (force_exactness < 0) {
+	n = Fexact_to_inexact(n);
+      }
+      return n;
     }
-    if (force_exactness > 0) {
-      result = Finexact_to_exact(result);
-    } else if (force_exactness < 0) {
-      result = Fexact_to_inexact(result);
-    }
-  } else {
-  intern:
-    rep_string_set_len(buffer, buf_i);
-    result = Ffind_symbol(rep_VAL(buffer), obarray);
-    if (result != 0 && result == rep_nil) {
-      repv name = rep_string_copy_n(buf, buf_i);
-      rep_STRING(name)->car |= rep_STRING_IMMUTABLE;
-      result = Fmake_symbol(name);
-      if (result != 0) {
-	result = Fintern_symbol(result, obarray);
+  } else if (buf_i == 6 && buf[4] == '.' && buf[5] == '0'
+	     && (buf[0] == '+' || buf[0] == '-')) {
+    if ((buf[1] == 'i' && buf[2] == 'n' && buf[3] == 'f')
+	|| (buf[1] == 'n' && buf[2] == 'a' && buf[3] == 'n'))
+    {
+      repv n = rep_parse_number(buf + 1, buf_i - 1, 10,
+				buf[0] == '+' ? +1 : -1, rep_NUMBER_FLOAT);
+      if (n) {
+	return n;
       }
     }
   }
 
-  *c_p = c;
-  return result;
+  rep_string_set_len(buffer, buf_i);
+
+  repv sym = Ffind_symbol(rep_VAL(buffer), obarray);
+
+  if (sym && sym == rep_nil) {
+    repv name = rep_string_copy_n(buf, buf_i);
+    rep_STRING(name)->car |= rep_STRING_IMMUTABLE;
+    sym = Fmake_symbol(name);
+    if (sym) {
+      sym = Fintern_symbol(sym, obarray);
+    }
+  }
+
+  return sym;
 }
 
 static repv

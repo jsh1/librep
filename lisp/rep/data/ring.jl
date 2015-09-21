@@ -93,7 +93,7 @@ specified the default capacity `ring-default-size' is used."
     "Append OBJECT to the ring buffer RING. This may overwrite a previously
 added object."
     (set-item ring (get-pos ring) object)
-    (let ((new-pos (mod (1+ (get-pos ring)) (ring-capacity ring))))
+    (let ((new-pos (modulo (1+ (get-pos ring)) (ring-capacity ring))))
       (unless (= (ring-size ring) (ring-capacity ring))
 	(set-size! ring (1+ (ring-size ring))))
       (set-pos! ring new-pos)))
@@ -105,7 +105,7 @@ depth zero, the next at depth one, and so on. If there is no item at
 DEPTH nil is returned."
     (if (>= depth (ring-capacity ring))
 	nil
-      (get-item ring (mod (- (get-pos ring) (1+ depth))
+      (get-item ring (modulo (- (get-pos ring) (1+ depth))
 			  (ring-capacity ring)))))
 
   (define (ring-replace ring object)
@@ -113,7 +113,7 @@ DEPTH nil is returned."
 If RING contains no items, add OBJECT as the first."
     (if (zero? (ring-size ring))
 	(add-to-ring ring object)
-      (set-item ring (mod (1- (get-pos ring)) (ring-capacity ring)) object)))
+      (set-item ring (modulo (1- (get-pos ring)) (ring-capacity ring)) object)))
 
   (define (ring->list ring)
     "Return the elements in ring buffer RING as a list, newest to oldest."

@@ -45,12 +45,12 @@
   (< x 0))
 
 (defun odd? (x)
-  "Return t if X is odd, i.e. (/= (mod X 2) 0)."
-  (not (zero? (mod x 2))))
+  "Return t if X is odd, i.e. (/= (modulo X 2) 0)."
+  (not (zero? (modulo x 2))))
 
 (defun even? (x)
-  "Return t if X is odd, i.e. (= (mod X 2) 0)."
-  (zero? (mod x 2)))
+  "Return t if X is odd, i.e. (= (modulo X 2) 0)."
+  (zero? (modulo x 2)))
 
 (defun complex? (x)
   (declare (unused x))
@@ -66,9 +66,7 @@
       1
     (quotient (apply * (map abs args)) (apply gcd args))))
 
-(%define modulo mod)
-
 ;; exports
 
 (export-bindings '(real? rational? positive? negative?
-		   odd? even? complex? abs lcm modulo))
+		   odd? even? complex? abs lcm))

@@ -328,7 +328,7 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_APPLY), &&TAG(OP_ARRAY_LENGTH), &&TAG(OP_VECTOR_LENGTH),	\
   &&TAG(OP_EXP), &&TAG(OP_LOG), &&TAG(OP_SIN), &&TAG(OP_COS),		\
   &&TAG(OP_TAN), &&TAG(OP_SQRT), &&TAG(OP_EXPT), &&TAG(OP_SWAP2),	\
-  &&TAG(OP_MOD), &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_RESET_FRAMES),	\
+  &&TAG(OP_MODULO), &&TAG(OP_MAKE_CLOSURE), &&TAG(OP_RESET_FRAMES),	\
   &&TAG(OP_CLOSUREP), &&TAG(OP_POP_ALL),				\
   /* 0xc0 */								\
   &&TAG(OP_FLUID_SET), &&TAG(OP_FLUID_BIND), &&TAG(OP_MEMV),		\
@@ -1765,7 +1765,7 @@ again: {
       SAFE_NEXT;
     }
 
-    INSN(OP_MOD) {
+    INSN(OP_MODULO) {
       CALL_2(Fmod);
     }
 

@@ -240,7 +240,7 @@
 #define OP_SWAP2 0xba			/* stk[0] = stk[1], stk[1] = stk[2],
 					   stk[2] = stk[0]. */
 
-#define OP_MOD 0xbb			/* push (mod pop[1] pop[2]) */
+#define OP_MODULO 0xbb			/* push (modulo pop[1] pop[2]) */
 
 #define OP_MAKE_CLOSURE 0xbc		/* push (make-closure pop[1] pop[2]) */
 #define OP_CLEAR_FRAMES 0xbd

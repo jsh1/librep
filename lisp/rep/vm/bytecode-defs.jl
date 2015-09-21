@@ -192,7 +192,7 @@
       (expt . #xb9)
 
       (swap2 . #xba)
-      (mod . #xbb)
+      (modulo . #xbb)
 
       (make-closure . #xbc)
       (reset-frames . #xbd)		;pop all frames including function's

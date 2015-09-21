@@ -69,7 +69,7 @@
       char-lower-case? macroexpand macro? make-closure make-list
       make-string make-string-input-stream make-string-output-stream
       make-symbol make-vector makunbound map mapc mapcar match-end
-      match-start max member memq memv message min mod append! nop not
+      match-start max member memq memv message min modulo append! nop not
       reverse! list-length list-ref list-tail null? number? or prin1
       prin1-to-string princ print prog1 prog2 progn put quote
       quote-regexp random rassoc rassq read read-byte read-char read-bytes

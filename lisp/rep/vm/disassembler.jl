@@ -68,7 +68,7 @@
      "floor" "ceiling" "truncate" "round"
      "apply" "array-length" "vector-length" "exp"
      "log" "sin" "cos" "tan"		; #xb0
-     "sqrt" "expt" "swap2" "mod"
+     "sqrt" "expt" "swap2" "modulo"
      "make-closure" "reset-frames" "closure?" "pop-all"
      "fluid-set!" "fluid-bind" "memv" "num-eq"
      nil nil "%define" "spec-bind"	; #xc0
