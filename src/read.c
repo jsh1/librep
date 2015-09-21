@@ -28,6 +28,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <math.h>
 
 #ifdef NEED_MEMORY_H
 # include <memory.h>
@@ -46,6 +47,49 @@ DEFSYM(structure_ref, "structure-ref");
    someone else or unread before exiting... */
 
 static repv readl(repv, register int *, repv);
+
+/* Temporary buffers for reading and analysing characters. Used by
+   strings and symbols. */
+
+struct reader_buffer {
+  uint8_t *ptr;
+  size_t len;
+  uint8_t static_buffer[256];
+};
+
+static inline void
+init_reader_buffer(struct reader_buffer *buf)
+{
+  buf->ptr = buf->static_buffer;
+  buf->len = sizeof(buf->static_buffer);
+}
+
+static inline void
+free_reader_buffer(struct reader_buffer *buf)
+{
+  if (buf->ptr != buf->static_buffer) {
+    rep_free(buf->ptr);
+  }
+}
+
+static rep_NOT_INLINE bool
+grow_reader_buffer(struct reader_buffer *buf)
+{
+  size_t new_len = buf->len * 2;
+  uint8_t *new_buf = rep_alloc(new_len);
+
+  if (!new_buf) {
+    free_reader_buffer(buf);
+    return false;
+  }
+
+  memcpy(new_buf, buf->ptr, buf->len);
+  free_reader_buffer(buf);
+  buf->ptr = new_buf;
+  buf->len = new_len;
+
+  return true;
+}
 
 static repv
 signal_reader_error(repv type, repv stream, char *message)
@@ -251,30 +295,15 @@ read_symbol(repv stream, int *c_p, repv obarray)
   bool expecting_prefix = false;
   int force_exactness = 0;
 
-  /* FIXME: using a static string is grotesque, but it speeds up
-     the call to Ffind_symbol() below, as no allocations are required
-     for the common case of parsing an existing symbol. */
+  struct reader_buffer buf;
+  init_reader_buffer(&buf);
 
-  static repv buffer = 0;
-  static size_t buflen = 240;
-
-  if (!buffer) {
-    buffer = rep_allocate_string(buflen + 2);
-    rep_mark_static(&buffer);
-  }
-
-  char *buf = rep_MUTABLE_STR(buffer);
-  int buf_i = 0;
-
+  size_t buf_i = 0;
   int c = *c_p;
 
   while (c != EOF) {
-    if (buf_i == buflen) {
-      repv new;
-      buflen = buflen * 2;
-      new = rep_allocate_string(buflen + 2);
-      memcpy(rep_MUTABLE_STR(new), buf, buflen / 2);
-      buf = rep_MUTABLE_STR(new);
+    if (buf_i == buf.len && !grow_reader_buffer(&buf)) {
+      return rep_mem_error();
     }
 
     switch (c) {
@@ -295,20 +324,25 @@ read_symbol(repv stream, int *c_p, repv obarray)
       radix = 0;
       c = rep_stream_getc(stream);
       if (c == EOF) {
+	free_reader_buffer(&buf);
 	return signal_reader_error(Qpremature_end_of_stream,
 				   stream, "after `\\' in identifer");
       }
-      buf[buf_i++] = c;
+      buf.ptr[buf_i++] = c;
       break;
 
     case '|':
       radix = 0;
       c = rep_stream_getc(stream);
-      while ((c != EOF) && (c != '|') && (buf_i < buflen)) {
-	buf[buf_i++] = c;
+      while (c != EOF && c != '|') {
+	if (buf_i == buf.len && !grow_reader_buffer(&buf)) {
+	  return rep_mem_error();
+	}
+	buf.ptr[buf_i++] = c;
 	c = rep_stream_getc(stream);
       }
       if (c == EOF) {
+	free_reader_buffer(&buf);
 	return signal_reader_error(Qpremature_end_of_stream,
 				   stream, "after `|' in identifier");
       }
@@ -418,24 +452,24 @@ read_symbol(repv stream, int *c_p, repv obarray)
 	  }
 	}
       }
-      buf[buf_i++] = c;
+      buf.ptr[buf_i++] = c;
     }
 
     c = rep_stream_getc(stream);
   }
 
 done:
-  buf[buf_i] = 0;
   *c_p = c;
 
   if (buf_i == 0) {
+    free_reader_buffer(&buf);
     return signal_reader_error(Qinvalid_read_syntax, stream,
 			       "zero length identifier");
   }
 
   if (radix > 0 && nfirst < buf_i) {
-    repv n = rep_parse_number(buf + nfirst, buf_i - nfirst, radix, sign,
-			      !exact ? rep_NUMBER_FLOAT
+    repv n = rep_parse_number((char *)buf.ptr + nfirst, buf_i - nfirst,
+			      radix, sign, !exact ? rep_NUMBER_FLOAT
 			      : rational ? rep_NUMBER_RATIONAL : 0);
     if (n) {
       if (force_exactness > 0) {
@@ -443,35 +477,29 @@ done:
       } else if (force_exactness < 0) {
 	n = Fexact_to_inexact(n);
       }
+      free_reader_buffer(&buf);
       return n;
     }
-  } else if (buf_i == 6 && buf[4] == '.' && buf[5] == '0'
-	     && (buf[0] == '+' || buf[0] == '-')) {
-    if ((buf[1] == 'i' && buf[2] == 'n' && buf[3] == 'f')
-	|| (buf[1] == 'n' && buf[2] == 'a' && buf[3] == 'n'))
+  } else {
+    /* Check for "{+,-}{inf,nan}.0" */
+
+    if (buf_i == 6 && buf.ptr[4] == '.' && buf.ptr[5] == '0'
+	&& (buf.ptr[0] == '+' || buf.ptr[0] == '-'))
     {
-      repv n = rep_parse_number(buf + 1, buf_i - 1, 10,
-				buf[0] == '+' ? +1 : -1, rep_NUMBER_FLOAT);
+      int sign = buf.ptr[0] == '+' ? 1 : -1;
+      repv n = rep_parse_number((char *)buf.ptr + 1, buf_i - 1, 0,
+				sign, rep_NUMBER_FLOAT);
       if (n) {
+	free_reader_buffer(&buf);
 	return n;
       }
     }
   }
 
-  rep_string_set_len(buffer, buf_i);
+  repv ret = rep_intern_symbol((char *)buf.ptr, buf_i, obarray);
 
-  repv sym = Ffind_symbol(rep_VAL(buffer), obarray);
-
-  if (sym && sym == rep_nil) {
-    repv name = rep_string_copy_n(buf, buf_i);
-    rep_STRING(name)->car |= rep_STRING_IMMUTABLE;
-    sym = Fmake_symbol(name);
-    if (sym) {
-      sym = Fintern_symbol(sym, obarray);
-    }
-  }
-
-  return sym;
+  free_reader_buffer(&buf);
+  return ret;
 }
 
 static repv
@@ -610,45 +638,34 @@ read_string_escape(repv stream, int *c_p, uint8_t *ptr)
 static repv
 read_string(repv stream, int *c_p)
 {
-  uint8_t static_buffer[256];
-  size_t buf_len = sizeof(static_buffer);
-  uint8_t *buf = static_buffer;
+  struct reader_buffer buf;
+  init_reader_buffer(&buf);
+
   size_t buf_i = 0;
   bool all_ascii = true;
 
   int c = rep_stream_getc(stream);
 
   while ((c != EOF) && (c != '"')) {
-    if (buf_i + 8 >= buf_len) {
-      size_t new_len = buf_len * 2;
-      uint8_t *newbuf = rep_alloc(new_len);
-      if (newbuf) {
-	memcpy(newbuf, buf, buf_len);
-      }
-      if (buf != static_buffer) {
-	rep_free(buf);
-      }
-      if (!newbuf) {
-	return 0;
-      }
-      buf = newbuf;
-      buf_len = new_len;
+    if (buf_i + 8 >= buf.len && !grow_reader_buffer(&buf)) {
+      return rep_mem_error();
     }
 
     if (c != '\\') {
-      buf[buf_i++] = c;
+      buf.ptr[buf_i++] = c;
       if (all_ascii && c > 127) {
 	all_ascii = false;
       }
       c = rep_stream_getc(stream);
     } else {
       c = rep_stream_getc(stream);
-      intptr_t size = read_string_escape(stream, &c, buf + buf_i);
+      intptr_t size = read_string_escape(stream, &c, buf.ptr + buf_i);
       if (size <= 0) {
+	free_reader_buffer(&buf);
 	return signal_reader_error(Qinvalid_read_syntax, stream,
 				   "invalid string escape");
       }
-      if (all_ascii && buf[buf_i] > 127) {
+      if (all_ascii && buf.ptr[buf_i] > 127) {
 	all_ascii = false;
       }
       buf_i += size;
@@ -661,17 +678,14 @@ read_string(repv stream, int *c_p)
 			      stream, "while reading a string");
   } else {
     *c_p = rep_stream_getc(stream);
-    ret = rep_string_copy_n((char *)buf, buf_i);
+    ret = rep_string_copy_n((char *)buf.ptr, buf_i);
     rep_STRING(ret)->car |= rep_STRING_IMMUTABLE;
     if (all_ascii) {
       rep_string_set_ascii(ret);
     }
   }
 
-  if (buf != static_buffer) {
-    rep_free(buf);
-  }
-
+  free_reader_buffer(&buf);
   return ret;
 }
 

@@ -1,5 +1,8 @@
 2015-09-21  John Harper  <jsh@unfactored.org>
 
+	* symbols.c, repint_subrs.h, read.c: read_symbol() is now
+	reentrant (replaced the static string by a local buffer)
+
 	* numbers.c, read.c: support for "{+,-}{inf,nan}.0" number
 	syntax. Added nan?, infinite?, finite? functions. Renamed mod
 	as modulo. modulo, remainder, quotient, floor, ceiling now all

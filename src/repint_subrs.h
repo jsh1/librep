@@ -230,6 +230,7 @@ extern void rep_structures_init (void);
 /* from symbols.c */
 extern repv rep_keyword_obarray;
 extern int rep_allocated_closures, rep_used_closures;
+extern repv rep_intern_symbol(const char *name, size_t len, repv obarray);
 extern void rep_obarray_init(void);
 extern void rep_symbols_init(void);
 

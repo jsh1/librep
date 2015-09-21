@@ -47,16 +47,22 @@ DEFSYM(t, "t");
 repv rep_scm_t, rep_scm_f, rep_undefined_value;
 
 static uintptr_t
-symbol_name_hash(repv name)
+string_hash(const char *name, size_t len)
 {
   uintptr_t value = 5381;
 
-  const char *str = rep_STR(name);
-  while (*str != 0) {
-    value = (value * 33) + *str++;
+  const uint8_t *str = (const uint8_t *)name;
+  for (size_t i = 0; i < len; i++) {
+    value = (value * 33) + str[i];
   }
 
   return value;
+}
+
+static inline uintptr_t
+symbol_name_hash(repv name)
+{
+  return string_hash(rep_STR(name), rep_STRING_LEN(name));
 }
 
 static int
@@ -380,6 +386,33 @@ into the OBARRAY, then return it.
   }
 
   return Fintern_symbol(sym, ob);
+}
+
+repv
+rep_intern_symbol(const char *str, size_t len, repv obarray)
+{
+  /* Inlined Ffind_symbol() to avoid string allocation. */
+
+  uintptr_t vsize = rep_VECTOR_LEN(obarray);
+  uintptr_t h = string_hash(str, len) % vsize;
+
+  for (repv sym = rep_VECT(obarray)->array[h];
+       rep_SYMBOLP(sym); sym = rep_SYM(sym)->next) {
+    repv name = rep_SYM(sym)->name;
+    if (rep_STRING_LEN(name) == len && memcmp(rep_STR(name), str, len) == 0) {
+      return sym;
+    }
+  }
+
+  repv name = rep_string_copy_n(str, len);
+  rep_STRING(name)->car |= rep_STRING_IMMUTABLE;
+
+  repv sym = Fmake_symbol(name);
+  if (!sym) {
+    return 0;
+  }
+
+  return Fintern_symbol(sym, obarray);
 }
 
 DEFUN("unintern", Funintern, Sunintern, (repv sym, repv ob), rep_Subr2) /*
