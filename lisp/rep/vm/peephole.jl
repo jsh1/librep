@@ -101,6 +101,12 @@
     `(format *standard-error* "after: [%S %S %S]\n"
 	     (list-ref point 1) (list-ref point 2) (list-ref point 3)))
 
+  ;; set! returns #undefined, and need the value
+  (defmacro set-tem! (value)
+    `(progn
+       (set! tem ,value)
+       tem))
+
   ;; run the optimiser over CODE-STRING, modifying and returning it
   ;; returns (CODE . EXTRA-STACK)
   (defun peephole-optimizer (code-string)
@@ -123,7 +129,7 @@
 	   ;; <side-effect-free w/ stack-1>; pop --> pop; pop
 	   ((and (eq? (car insn1) 'pop)
 		 (memq (car insn0) byte-side-effect-free-insns))
-	    (set! tem (vector-ref byte-insn-stack-delta (bytecode-ref (car insn0))))
+	    (set-tem! (vector-ref byte-insn-stack-delta (bytecode-ref (car insn0))))
 	    (cond ((= tem 1)
 		   (del-0-1)
 		   (set! keep-going t))
@@ -141,13 +147,17 @@
 	   ;;    --> {push,dup}; bind X; {push, dup}
 	   ;; {push,dup}; reg-set #X; reg-ref #X
 	   ;;    --> {push,dup}; reg-set #X; {push, dup}
-	   ((and (or (and (eq? (car insn1) 'env-set) (eq? (car insn2) 'env-ref)
+	   ((and (or (and (eq? (car insn1) 'env-set)
+			  (eq? (car insn2) 'env-ref)
 			  (eq? (cadr insn1) (cadr insn2)))
-		     (and (eq? (car insn1) 'bind) (eq? (car insn2) 'env-ref)
+		     (and (eq? (car insn1) 'bind)
+			  (eq? (car insn2) 'env-ref)
 			  (eq? (cadr insn2) 0))
-		     (and (eq? (car insn1) 'reg-set) (eq? (car insn2) 'reg-ref)
+		     (and (eq? (car insn1) 'reg-set)
+			  (eq? (car insn2) 'reg-ref)
 			  (eq? (cadr insn1) (cadr insn2))))
-		 (or (eq? (car insn0) 'dup) (eq? (car insn0) 'push)))
+		 (or (eq? (car insn0) 'dup)
+		     (eq? (car insn0) 'push)))
 	    (set-car! insn2 (car insn0))
 	    (set-cdr! insn2 (cdr insn0))
 	    (set! keep-going t))
@@ -406,10 +416,10 @@
 
 	   ;; j* X; ... X: jmp Y --> j* Y; ... X: jmp Y
 	   ((and (memq (car insn0) byte-jmp-insns)
-		 (set! tem (or (memq (cadr insn0) (cdr code-string))
+		 (set-tem! (or (memq (cadr insn0) (cdr code-string))
 			       (error "Can't find jump destination: %s, %s"
 				      insn0 (cdr code-string))))
-		 (set! tem (car (cdr tem)))
+		 (set-tem! (car (cdr tem)))
 		 (eq? (car tem) 'jmp)
 		 (not (eq? (cadr insn0) (cadr tem))))
 	    (set-cdr! insn0 (cdr tem))
@@ -417,10 +427,10 @@
 
 	   ;; jmp X; ... X: return --> return; ... X: return
 	   ((and (eq? (car insn0) 'jmp)
-		 (set! tem (or (memq (cadr insn0) (cdr code-string))
+		 (set-tem! (or (memq (cadr insn0) (cdr code-string))
 			       (error "Can't find jump destination: %s, %s"
 				      insn0 (cdr code-string))))
-		 (set! tem (car (cdr tem)))
+		 (set-tem! (car (cdr tem)))
 		 (eq? (car tem) 'return))
 	    (set-car! insn0 'return)
 	    (set-cdr! insn0 nil)
@@ -428,9 +438,10 @@
 
 	   ;; {jnp,jtp} X; ... X: <cond. jmp> Y --> whatever
 	   ((and (memq (car insn0) '(jnp jtp))
-		 (set! tem (cdr (or (memq (cadr insn0) (cdr code-string))
-				    (error "Can't find jump destination: %s, %s"
-					   insn0 (cdr code-string)))))
+		 (set-tem! (cdr (or (memq (cadr insn0) (cdr code-string))
+				    (error
+				     "Can't find jump destination: %s, %s"
+				     insn0 (cdr code-string)))))
 		 (car tem)
 		 (memq (car (car tem)) byte-conditional-jmp-insns))
 	    (let

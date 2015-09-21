@@ -1,5 +1,8 @@
 2015-09-21  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/peephole.jl: fix bugs introduced by setq -> set!
+	changes
+
 	* rep/data/objects.jl, rep/lang/doc.jl, rep/lang/define.jl,
 	rep/vm/compiler/utils.jl, rep/vm/compiler/inline.jl,
 	rep/vm/compiler/basic.jl: removed final vestiges of &optional
