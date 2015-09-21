@@ -42,7 +42,7 @@
   (define frame-id (make-fluid))
   (define bottom-frame-id (make-fluid))
 
-  (define last-printed-frame)
+  (define last-printed-frame nil)
 
   (define last (make-fluid))
 

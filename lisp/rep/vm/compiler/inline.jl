@@ -63,9 +63,9 @@
 	    (set! args-left 0))
 	   ((pair? lambda-list)
 	    (case (car lambda-list)
-	      ((#!optional &optional)
+	      ((#!optional)
 	       (set! state 'optional))
-	      ((#!rest &rest)
+	      ((#!rest)
 	       (set! state 'rest))
 	      ;; XXX implement keyword params
 	      ((#!key)

@@ -48,8 +48,7 @@
 	(let ((arg-name (symbol-name (or (caar lambda-list)
 					 (car lambda-list)))))
 	  ;; Unless the it's a lambda-list keyword, print in capitals
-	  (unless (memq (car lambda-list)
-			'(#!optional #!key #!rest &optional &rest))
+	  (unless (memq (car lambda-list) '(#!optional #!key #!rest))
 	    (set! arg-name (string-upcase arg-name)))
 	  (format output " %s" arg-name))
 	(set! lambda-list (cdr lambda-list)))

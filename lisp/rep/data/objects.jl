@@ -71,7 +71,7 @@
       (cond ((null? rest) (reverse! out))
 	    ((atom? rest)
 	     (loop '() (1+ i) (cons `(,rest (list-tail ,args-var ,i)) out)))
-	    ((memq (car rest) '(#!optional #!rest #!key &optional &rest))
+	    ((memq (car rest) '(#!optional #!rest #!key))
 	     (error "Lambda-list keywords aren't implemented for objects: %s" spec))
 	    (t (loop (cdr rest) (1+ i)
 		     (cons `(,(car rest) (list-ref ,args-var ,i)) out))))))

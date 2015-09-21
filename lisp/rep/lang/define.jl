@@ -43,12 +43,14 @@
 ;; that have been rebound locally
 (%define define-bound-vars (make-fluid '()))
 
-;; returns (SYM DEF [DOC])
+;; returns (SYM [DEF [DOC]])
 (defun define-parse (args)
   (if (pair? (car args))
       (define-parse `(,(caar args) (lambda ,(cdar args) ,@(cdr args))))
-    (list* (car args) (define-scan-form (cadr args))
-	   (and (string? (caddr args)) (list (caddr args))))))
+    (let ((var (car args))
+	  (def (if (pair? (cdr args)) (cadr args) #undefined))
+	  (doc (caddr args)))
+      (list* var (define-scan-form def) (and (string? doc) (list doc))))))
 
 (defun define-scan-internals (body)
   (let (defs)
@@ -64,6 +66,17 @@
 	(if (null? (cdr new-body))
 	    (car new-body)
 	  (cons 'progn new-body))))))
+
+;; Returns the list of variables bound by LAMBDA-LIST.
+(defun define-lambda-args (lambda-list)
+  (let loop ((rest lambda-list)
+	     (vars '()))
+    (cond ((null? rest) vars)
+	  ((symbol? rest)
+	   (cons rest vars))
+	  ((memq (car rest) '(#!optional #!key #!rest))
+	   (loop (cdr rest) vars))
+	  (t (loop (cdr rest) (cons (or (caar rest) (car rest)) vars))))))
 
 (defun define-scan-body (body)
   (let ((new (map define-scan-form body)))
@@ -178,15 +191,7 @@
       ((quote structure-ref) form)
 
       ((lambda)
-       (let ((vars (let loop ((rest (cadr form))
-			      (vars '()))
-		     (cond ((null? rest) vars)
-			   ((memq (or (caar rest) (car rest))
-				  '(#!optional #!key #!rest &optional &rest))
-			    (loop (cdr rest) vars))
-			   (t (loop (cdr rest) (cons (or (caar rest)
-							 (car rest)) vars))))))
-	     (body (list-tail form 2))
+       (let ((body (list-tail form 2))
 	     (header nil))
 	 ;; skip doc strings and interactive decls..
 	 (while (or (string? (car body)) (eq? (caar body) 'interactive))
@@ -195,7 +200,8 @@
 	 `(lambda ,(cadr form)
 	    ,@(reverse! header)
 	    ,(let-fluids ((define-bound-vars
-			   (append! vars (fluid-ref define-bound-vars))))
+			   (append! (define-lambda-args (cadr form))
+				    (fluid-ref define-bound-vars))))
 	       (define-scan-internals body)))))
 
       ((defvar)

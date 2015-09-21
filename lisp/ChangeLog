@@ -1,5 +1,10 @@
 2015-09-21  John Harper  <jsh@unfactored.org>
 
+	* rep/data/objects.jl, rep/lang/doc.jl, rep/lang/define.jl,
+	rep/vm/compiler/utils.jl, rep/vm/compiler/inline.jl,
+	rep/vm/compiler/basic.jl: removed final vestiges of &optional
+	and &rest; a few other changes
+
 	* rep/data/ring.jl, rep/lang/math.jl, rep/util/gaol.jl,
 	rep/vm/bytecodes.jl, rep/vm/bytecode-defs.jl,
 	rep/vm/compiler/rep.jl, rep/vm/disassembler.jl: rename mod as
