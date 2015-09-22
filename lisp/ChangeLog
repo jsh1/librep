@@ -1,3 +1,12 @@
+2015-09-22  John Harper  <jsh@unfactored.org>
+
+	* rep/vm/compiler/rep.jl, rep/vm/compiler/inline.jl,
+	rep/vm/compiler/bindings.jl, rep/vm/compiler/basic.jl: refactor
+	compiler so that it identifies captured bindings immediately,
+	rather than as a post-compilation pass over the assembly code.
+	May allow us to eliminate VM frames that are solely for lexical
+	bindings in the future
+
 2015-09-21  John Harper  <jsh@unfactored.org>
 
 	* rep/vm/peephole.jl: fix bugs introduced by setq -> set!

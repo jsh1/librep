@@ -31,14 +31,17 @@
 	    tag-binding binding-tagged?
 	    note-binding
 	    note-bindings
-	    emit-binding emit-varset emit-varref
+	    emit-binding
+	    emit-varset emit-varref
+	    push-binding-frame
+	    push-handler-frame
+	    pop-frame
 	    note-binding-modified
 	    binding-modified?
-	    binding-enclosed?
 	    note-binding-referenced
 	    binding-referenced?
 	    binding-tail-call-only?
-	    note-closure-made
+	    binding-captured?
 	    allocate-bindings)
 
     (open rep
@@ -48,6 +51,7 @@
 
   (define spec-bindings (make-fluid '()))	;list of bound variables
   (define lex-bindings (make-fluid '()))	;alist of bound variables
+  (define lex-closure (make-fluid '()))
   (define lexically-pure (make-fluid t))	;any dynamic state?
 
   (define (spec-bound? var)
@@ -59,7 +63,9 @@
 
   (define (lexically-bound? var)
     (let ((cell (lexical-binding var)))
-      (and cell (not (cell-tagged? 'no-location cell)))))
+      (if (and cell (not (cell-tagged? 'no-location cell)))
+	  cell
+	nil)))
 
   (define (has-local-binding? var)
     (or (memq var (fluid-ref spec-bindings))
@@ -83,9 +89,11 @@
 
   ;; install a new binding contour, such that THUNK can add any bindings
   ;; (lexical and special), then when THUNK exits, the bindings are removed
-  (define (call-with-frame thunk)
+  (define (call-with-frame thunk #!key captures-bindings)
     (let ((old-env (fluid-ref lex-bindings)))
       (let-fluids ((lex-bindings (fluid-ref lex-bindings))
+		   (lex-closure (fluid-ref (if captures-bindings
+					       lex-bindings lex-closure)))
 		   (spec-bindings (fluid-ref spec-bindings))
 		   (lexically-pure (fluid-ref lexically-pure)))
 	(prog1 (thunk)
@@ -126,9 +134,6 @@
   (define (binding-modified? var)
     (binding-tagged? var 'modified))
 
-  (define (binding-enclosed? var)
-    (binding-tagged? var 'enclosed))
-
   (define (note-binding-referenced var #!optional for-tail-call)
     (tag-binding var 'referenced)
     (unless for-tail-call
@@ -140,10 +145,9 @@
   (define (binding-tail-call-only? var)
     (not (binding-tagged? var 'not-tail-call-only)))
 
-  ;; note that all current lexical bindings have been enclosed
-  (define (note-closure-made)
-    (for-each (lambda (cell)
-		(tag-cell 'enclosed cell)) (fluid-ref lex-bindings)))
+  (define (binding-captured? var)
+    (let ((cell (lexical-binding var)))
+      (and cell (cell-captured? cell))))
 
   (define (emit-binding var)
     (if (spec-bound? var)
@@ -154,40 +158,66 @@
 	  (decrement-stack))
       (emit-insn `(lex-bind ,var ,(fluid-ref lex-bindings)))))
 
+  (define (capture-cell-if-necessary cell)
+    (when (memq cell (fluid-ref lex-closure))
+      ;; cell is the far side of the current closure, i.e. the binding
+      ;; going to be captured by the closure.
+      (tag-cell 'captured cell)))
+
   (define (emit-varset sym)
     (test-variable-ref sym)
-    (cond ((spec-bound? sym)
-	   (emit-insn `(push ,sym))
-	   (increment-stack)
-	   (emit-insn '(%set))
-	   (decrement-stack))
-	  ((lexically-bound? sym)
-	    ;; The lexical address is known. Use it to avoid scanning
-	   (emit-insn `(lex-set ,sym ,(fluid-ref lex-bindings))))
-	  (t
-	   ;; No lexical binding, but not special either. Just
-	   ;; update the global value
-	   (emit-insn `(setq ,sym)))))
+    (if (spec-bound? sym)
+	(progn
+	  (emit-insn `(push ,sym))
+	  (increment-stack)
+	  (emit-insn '(%set))
+	  (decrement-stack))
+      (let ((cell (lexically-bound? sym)))
+	(if cell
+	    (progn
+	      ;; The lexical address is known. Use it to avoid scanning
+	      (emit-insn `(lex-set ,sym ,(fluid-ref lex-bindings)))
+	      (capture-cell-if-necessary cell))
+	  ;; No lexical binding, but not special either. Just
+	  ;; update the global value
+	  (emit-insn `(setq ,sym))))))
 
   (define (emit-varref form #!optional in-tail-slot)
-    (cond ((spec-bound? form)
-	   ;; Specially bound
-	   (emit-insn `(push ,form))
-	   (increment-stack)
-	   (emit-insn '(ref))
-	   (decrement-stack))
-	  ((lexically-bound? form)
-	    ;; We know the lexical address, so use it
-	   (emit-insn `(lex-ref ,form ,(fluid-ref lex-bindings)))
-	   (note-binding-referenced form in-tail-slot))
-	  (t
-	   ;; It's not bound, so just update the global value
-	   (emit-insn `(refq ,form)))))
+    (if (spec-bound? form)
+	(progn
+	  ;; Specially bound
+	  (emit-insn `(push ,form))
+	  (increment-stack)
+	  (emit-insn '(ref))
+	  (decrement-stack))
+      (let ((cell (lexically-bound? form)))
+	(if cell
+	    (progn
+	      ;; We know the lexical address, so use it
+	      (emit-insn `(lex-ref ,form ,(fluid-ref lex-bindings)))
+	      (capture-cell-if-necessary cell)
+	      (note-binding-referenced form in-tail-slot))
+	  ;; It's not bound, so just update the global value
+	  (emit-insn `(refq ,form))))))
+
+  (define (push-binding-frame)
+    (emit-insn '(push-frame))
+    (increment-b-stack))
+
+  (define (push-handler-frame label)
+    (push-label-addr label)
+    (emit-insn '(binderr))
+    (increment-b-stack)
+    (decrement-stack))
+
+  (define (pop-frame)
+    (emit-insn '(pop-frame))
+    (decrement-b-stack))
 
 
 ;; allocation of bindings, either on stack or in heap
 
-  (define (heap-binding? cell)
+  (define (cell-captured? cell)
     (or (cell-tagged? 'captured cell)
 	;; used to tag bindings unconditionally on the heap
 	(cell-tagged? 'heap-allocated cell)))
@@ -197,7 +227,7 @@
     (let loop ((rest bindings)
 	       (i 0))
       (cond ((null? rest) (error "No heap address for %s" var))
-	    ((or (not (heap-binding? (car rest)))
+	    ((or (not (cell-captured? (car rest)))
 		 (cell-tagged? 'no-location (car rest)))
 	     (loop (cdr rest) i))
 	    ((eq? (caar rest) var) i)
@@ -212,23 +242,11 @@
 	     (let loop-2 ((rest (cdr rest))
 			  (i 0))
 	       (cond ((eq? rest base) i)
-		     ((or (heap-binding? (car rest))
+		     ((or (cell-captured? (car rest))
 			  (cell-tagged? 'no-location (car rest)))
 		      (loop-2 (cdr rest) i))
 		     (t (loop-2 (cdr rest) (1+ i))))))
 	    (t (loop (cdr rest))))))
-
-  (define (identify-captured-bindings asm lex-env)
-    (for-each (lambda (insn)
-		(case (car insn)
-		  ((lex-ref lex-set)
-		   (let ((cell (assq (list-ref insn 1) lex-env)))
-		     (when cell
-		       (tag-cell 'captured cell))))
-		  ((push-bytecode)
-		   (identify-captured-bindings
-		    (list-ref insn 1) (list-ref insn 2)))))
-	      (assembly-code asm)))
 
   ;; Extra pass over the output pseudo-assembly code; converts
   ;; pseudo-instructions accessing lexical bindings into real
@@ -242,7 +260,7 @@
 	     (let* ((var (list-ref (car rest) 1))
 		    (bindings (list-ref (car rest) 2))
 		    (cell (assq var bindings)))
-	       (if (heap-binding? cell)
+	       (if (cell-captured? cell)
 		   (set-car! rest (case (caar rest)
 				  ((lex-bind) (list 'bind))
 				  ((lex-ref)
@@ -269,7 +287,6 @@
       asm))
 
   (define (allocate-bindings asm)
-    (identify-captured-bindings asm (fluid-ref lex-bindings))
     (allocate-bindings-1 asm (fluid-ref lex-bindings)))
 
 

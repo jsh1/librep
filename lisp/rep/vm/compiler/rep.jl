@@ -414,8 +414,7 @@
 	((lst (car (cdr form))))
       (call-with-frame
        (lambda ()
-	 (emit-insn '(push-frame))
-	 (increment-b-stack)
+	 (push-binding-frame)
 	 (while (pair? lst)
 	   (cond ((pair? (car lst))
 		  (let ((tmp (car lst)))
@@ -431,8 +430,7 @@
 	   (decrement-stack)
 	   (set! lst (cdr lst)))
 	 (compile-body (list-tail form 2) return-follows)
-	 (emit-insn '(pop-frame))
-	 (decrement-b-stack)))))
+	 (pop-frame)))))
   (put 'let* 'rep-compile-fun compile-let*)
 
   ;; let can be compiled straight from its macro definition
@@ -443,8 +441,7 @@
       (call-with-frame
        (lambda ()
 	 (push-state)
-	 (emit-insn '(push-frame))
-	 (increment-b-stack)
+	 (push-binding-frame)
 
 	 ;; create the bindings, should really be to void values, but use nil..
 	 (for-each (lambda (cell)
@@ -497,8 +494,7 @@
 
 	   ;; no, keep on the usual track
 	   (compile-body (list-tail form 2) return-follows)
-	   (emit-insn '(pop-frame))
-	   (decrement-b-stack))
+	   (pop-frame))
 	 (pop-state)))))
   (put 'letrec 'rep-compile-fun compile-letrec)
 
@@ -512,15 +508,13 @@
 	 (for-each (lambda (cell)
 		     (compile-form-1 (car cell))
 		     (compile-body (cdr cell))) bindings)
-	 (emit-insn '(push-frame))
-	 (increment-b-stack)
+	 (push-binding-frame)
 	 (for-each (lambda (unused)
 		     (declare (unused unused))
 		     (emit-insn '(fluid-bind))
 		     (decrement-stack 2)) bindings)
 	 (compile-body body)
-	 (emit-insn '(pop-frame))
-	 (decrement-b-stack)))))
+	 (pop-frame)))))
   (put 'let-fluids 'rep-compile-fun compile-let-fluids)
 
   (defun compile-defun (form)
@@ -692,13 +686,9 @@
       ;;		pop-frame
       ;; end:
       (fix-label start-label)
-      (push-label-addr catch-label)
-      (emit-insn '(binderr))
-      (increment-b-stack)
-      (decrement-stack)
+      (push-handler-frame catch-label)
       (compile-body (list-tail form 2))
-      (emit-insn '(pop-frame))
-      (decrement-b-stack)
+      (pop-frame)
       (fix-label end-label))))
   (put 'catch 'rep-compile-fun compile-catch)
 
@@ -733,13 +723,9 @@
       ;;		jmp cleanup
       ;; [overall, stack +2]
       (fix-label start-label)
-      (push-label-addr cleanup-label)
-      (emit-insn '(binderr))
-      (increment-b-stack)
-      (decrement-stack)
+      (push-handler-frame cleanup-label)
       (compile-form-1 (list-ref form 1))
-      (emit-insn '(pop-frame))
-      (decrement-b-stack)
+      (pop-frame)
       (emit-insn '(push ()))
       (decrement-stack)
       (emit-insn `(jmp ,cleanup-label))
@@ -831,17 +817,13 @@
       ;;		binderr
       ;;		FORM
       (fix-label start-label)
-      (push-label-addr cleanup-label)
-      (emit-insn '(binderr))
-      (increment-b-stack)
-      (decrement-stack)
+      (push-handler-frame cleanup-label)
       (compile-form-1 (list-ref form 2))
 
       ;; end:
       ;;		pop-frame		;pop error handler or VAR
       (fix-label end-label)
-      (emit-insn '(pop-frame))
-      (decrement-b-stack))))
+      (pop-frame))))
   (put 'condition-case 'rep-compile-fun compile-condition-case)
 
   (defun compile-list (form)
@@ -950,7 +932,6 @@
     (compile-form-1 (list-ref form 1))
     (compile-form-1 (list-ref form 2))
     (emit-insn '(make-closure))
-    (note-closure-made)
     (decrement-stack))
   (put 'make-closure 'rep-compile-fun compile-make-closure)
 

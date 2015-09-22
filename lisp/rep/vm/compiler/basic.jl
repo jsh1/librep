@@ -331,7 +331,8 @@
 	       (fix-label (lambda-label (current-lambda)))
 	       (compile-body body t)
 	       (emit-insn '(return))
-	       (get-assembly)))))))))
+	       (get-assembly))
+	     #:captures-bindings t)))))))
 
   (define (optimize-assembly asm)
     (when *compiler-debug*
@@ -424,5 +425,4 @@
 		   ,(compile-lambda-to-asm `(lambda ,args ,@body) name)
 		   ,(fluid-ref lex-bindings) ,doc ,interactive))
       (emit-insn '(enclose))
-      (increment-stack)
-      (note-closure-made))))
+      (increment-stack))))

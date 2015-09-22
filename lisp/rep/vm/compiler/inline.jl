@@ -156,8 +156,7 @@
 	 ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
 	 (if bind-stack
 	     (progn
-	       (emit-insn '(push-frame))
-	       (increment-b-stack)
+	       (push-binding-frame)
 	       (pop-inline-args bind-stack args-left (lambda (x)
 						       (note-binding x)
 						       (emit-binding x)))
@@ -166,8 +165,7 @@
 		  (fix-label (lambda-label (current-lambda)))
 		  (set-lambda-inlined (current-lambda) t)
 		  (compile-body body return-follows)))
-	       (emit-insn '(pop-frame))
-	       (decrement-b-stack))
+	       (pop-frame))
 	   ;; Nothing to bind to. Just pop the evaluated args and
 	   ;; evaluate the body
 	   (while (> args-left 0)
@@ -210,12 +208,12 @@
        (lambda ()
 	 (if (catch 'foo
 	       (for-each (lambda (var)
-			   (when (binding-enclosed? var)
+			   (when (binding-captured? var)
 			     (throw 'foo t)))
 			 (get-lambda-vars (lambda-args lambda-record)))
 	       nil)
-	     ;; some of the parameter bindings may have been captured,
-	     ;; so rebind all of them
+	     ;; some of the parameters bindings have been captured,
+	     ;; create new bindings for all of them.
 	     (progn
 	       (unbind-between (fluid-ref current-b-stack)
 			       ;; the 1- is so that the frame of
