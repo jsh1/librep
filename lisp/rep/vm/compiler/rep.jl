@@ -503,18 +503,19 @@
 	  (body (cddr form)))
       (call-with-frame
        (lambda ()
-	 (fluid-set! lexically-pure nil)
-	 ;; compile each fluid, value pair onto the stack
-	 (for-each (lambda (cell)
-		     (compile-form-1 (car cell))
-		     (compile-body (cdr cell))) bindings)
-	 (push-binding-frame)
-	 (for-each (lambda (unused)
-		     (declare (unused unused))
-		     (emit-insn '(fluid-bind))
-		     (decrement-stack 2)) bindings)
-	 (compile-body body)
-	 (pop-frame)))))
+	 (call-with-dynamic-binding
+	  (lambda ()
+	    ;; compile each fluid, value pair onto the stack
+	    (for-each (lambda (cell)
+			(compile-form-1 (car cell))
+			(compile-body (cdr cell))) bindings)
+	    (push-binding-frame)
+	    (for-each (lambda (unused)
+			(declare (unused unused))
+			(emit-insn '(fluid-bind))
+			(decrement-stack 2)) bindings)
+	    (compile-body body)
+	    (pop-frame)))))))
   (put 'let-fluids 'rep-compile-fun compile-let-fluids)
 
   (defun compile-defun (form)
@@ -659,171 +660,166 @@
   (put 'case 'rep-compile-fun compile-case)
 
   (defun compile-catch (form)
-    (let
-	((catch-label (make-label))
-	 (start-label (make-label))
-	 (end-label (make-label)))
-    (let-fluids ((lexically-pure nil))
+    (let ((catch-label (make-label))
+	  (start-label (make-label))
+	  (end-label (make-label)))
+      (call-with-dynamic-binding
+       (lambda ()
+	 ;;		jmp start
+	 (emit-insn `(jmp ,start-label))
 
-      ;;		jmp start
-      (emit-insn `(jmp ,start-label))
+	 ;; catch:
+	 ;;		catch TAG
+	 ;;		ejmp end
+	 (increment-stack)		;enter with one arg on stack
+	 (fix-label catch-label)
+	 (compile-form-1 (list-ref form 1))
+	 (emit-insn '(catch))
+	 (decrement-stack)
+	 (emit-insn `(ejmp ,end-label))
+	 (decrement-stack)
 
-      ;; catch:
-      ;;		catch TAG
-      ;;		ejmp end
-      (increment-stack)			;enter with one arg on stack
-      (fix-label catch-label)
-      (compile-form-1 (list-ref form 1))
-      (emit-insn '(catch))
-      (decrement-stack)
-      (emit-insn `(ejmp ,end-label))
-      (decrement-stack)
-
-      ;; start:
-      ;;		push #catch
-      ;;		binderr
-      ;;		FORMS...
-      ;;		pop-frame
-      ;; end:
-      (fix-label start-label)
-      (push-handler-frame catch-label)
-      (compile-body (list-tail form 2))
-      (pop-frame)
-      (fix-label end-label))))
+	 ;; start:
+	 ;;		push #catch
+	 ;;		binderr
+	 ;;		FORMS...
+	 ;;		pop-frame
+	 ;; end:
+	 (fix-label start-label)
+	 (push-handler-frame catch-label)
+	 (compile-body (list-tail form 2))
+	 (pop-frame)
+	 (fix-label end-label)))))
   (put 'catch 'rep-compile-fun compile-catch)
 
   (defun compile-unwind-pro (form)
-    (let
-	((cleanup-label (make-label))
-	 (start-label (make-label))
-	 (end-label (make-label)))
-    (let-fluids ((lexically-pure nil))
+    (let ((cleanup-label (make-label))
+	  (start-label (make-label))
+	  (end-label (make-label)))
+      (call-with-dynamic-binding
+       (lambda ()
+	 ;;		jmp start
+	 (emit-insn `(jmp ,start-label))
 
-      ;;		jmp start
-      (emit-insn `(jmp ,start-label))
+	 ;; cleanup:
+	 ;;		CLEANUP-FORMS
+	 ;;		pop
+	 ;;		ejmp end
+	 ;; [overall, stack +1]
+	 (increment-stack 2)
+	 (fix-label cleanup-label)
+	 (compile-body (list-tail form 2))
+	 (emit-insn '(pop))
+	 (emit-insn `(ejmp ,end-label))
+	 (decrement-stack 2)
 
-      ;; cleanup:
-      ;;		CLEANUP-FORMS
-      ;;		pop
-      ;;		ejmp end
-      ;; [overall, stack +1]
-      (increment-stack 2)
-      (fix-label cleanup-label)
-      (compile-body (list-tail form 2))
-      (emit-insn '(pop))
-      (emit-insn `(ejmp ,end-label))
-      (decrement-stack 2)
+	 ;; start:
+	 ;;		push #cleanup
+	 ;;		binderr
+	 ;;		FORM
+	 ;;		pop-frame
+	 ;;		nil
+	 ;;		jmp cleanup
+	 ;; [overall, stack +2]
+	 (fix-label start-label)
+	 (push-handler-frame cleanup-label)
+	 (compile-form-1 (list-ref form 1))
+	 (pop-frame)
+	 (emit-insn '(push ()))
+	 (decrement-stack)
+	 (emit-insn `(jmp ,cleanup-label))
 
-      ;; start:
-      ;;		push #cleanup
-      ;;		binderr
-      ;;		FORM
-      ;;		pop-frame
-      ;;		nil
-      ;;		jmp cleanup
-      ;; [overall, stack +2]
-      (fix-label start-label)
-      (push-handler-frame cleanup-label)
-      (compile-form-1 (list-ref form 1))
-      (pop-frame)
-      (emit-insn '(push ()))
-      (decrement-stack)
-      (emit-insn `(jmp ,cleanup-label))
-
-      ;; end:
-      (fix-label end-label))))
+	 ;; end:
+	 (fix-label end-label)))))
   (put 'unwind-protect 'rep-compile-fun compile-unwind-pro)
 
   (defun compile-condition-case (form)
-    (let
-	((cleanup-label (make-label))
-	 (start-label (make-label))
-	 (end-label (make-label))
-	 (handlers (list-tail form 3)))
-    (let-fluids ((lexically-pure nil))
+    (let ((cleanup-label (make-label))
+	  (start-label (make-label))
+	  (end-label (make-label))
+	  (handlers (list-tail form 3)))
+      (call-with-dynamic-binding
+       (lambda ()
+	 ;;		jmp start
+	 ;; cleanup:
+	 (emit-insn `(jmp ,start-label))
+	 (fix-label cleanup-label)
 
-      ;;		jmp start
-      ;; cleanup:
-      (emit-insn `(jmp ,start-label))
-      (fix-label cleanup-label)
+	 (increment-stack)		;reach here with one item on stack
+	 (if (pair? handlers)
+	     (call-with-frame
+	      (lambda ()
+		(if (and (list-ref form 1) (not (eq? (list-ref form 1) 'nil)))
+		    (let ((var (list-ref form 1)))
+		      (when (spec-bound? var)
+			(compiler-error
+			 "condition-case can't bind to special variable `%s'" var))
+		      (test-variable-bind var)
+		      (note-binding var)
+		      ;; XXX errorpro instruction always heap binds..
+		      (tag-binding var 'heap-allocated))
+		  ;; something always gets bound
+		  (let ((tem (gensym)))
+		    (note-binding tem)
+		    (tag-binding tem 'heap-allocated)
+		    ;; avoid `unused variable' warnings
+		    (note-binding-referenced tem)))
+		;; Loop over all but the last handler
+		(while (pair? (cdr handlers))
+		  (if (pair? (car handlers))
+		      (let ((next-label (make-label)))
+			;;	push CONDITIONS
+			;;	errorpro
+			;;	jtp next
+			;;	HANDLER
+			;;	jmp end
+			;; next:
+			(compile-constant (car (car handlers)))
+			(emit-insn '(errorpro))
+			(decrement-stack)
+			(emit-insn `(jtp ,next-label))
+			(decrement-stack)
+			(compile-body (cdr (car handlers)))
+			(emit-insn `(jmp ,end-label))
+			(fix-label next-label))
+		    (compiler-error
+		     "badly formed condition-case handler: `%s'"
+		     (car handlers) #:form handlers))
+		  (set! handlers (cdr handlers)))
+		;; The last handler
+		(if (pair? (car handlers))
+		    (let ((pc-label (make-label)))
+		      ;;	push CONDITIONS
+		      ;;	errorpro
+		      ;;	ejmp pc
+		      ;; pc:	HANDLER
+		      ;;	jmp end
+		      (compile-constant (car (car handlers)))
+		      (emit-insn '(errorpro))
+		      (decrement-stack)
+		      (emit-insn `(ejmp ,pc-label))
+		      (fix-label pc-label)
+		      (decrement-stack)
+		      (compile-body (cdr (car handlers)))
+		      (emit-insn `(jmp ,end-label)))
+		  (compiler-error
+		   "badly formed condition-case handler: `%s'"
+		   (car handlers) #:form (car handlers)))))
+	   (compiler-error "no handlers in condition-case"))
+	 (decrement-stack)
 
-      (increment-stack)		;reach here with one item on stack
-      (if (pair? handlers)
-	  (call-with-frame
-	   (lambda ()
-	     (if (and (list-ref form 1) (not (eq? (list-ref form 1) 'nil)))
-		 (let ((var (list-ref form 1)))
-		   (when (spec-bound? var)
-		     (compiler-error
-		      "condition-case can't bind to special variable `%s'" var))
-		   (test-variable-bind var)
-		   (note-binding var)
-		   ;; XXX errorpro instruction always heap binds..
-		   (tag-binding var 'heap-allocated))
-	       ;; something always gets bound
-	       (let ((tem (gensym)))
-		 (note-binding tem)
-		 (tag-binding tem 'heap-allocated)
-		 ;; avoid `unused variable' warnings
-		 (note-binding-referenced tem)))
-	     ;; Loop over all but the last handler
-	     (while (pair? (cdr handlers))
-	       (if (pair? (car handlers))
-		   (let
-		       ((next-label (make-label)))
-		     ;;		push CONDITIONS
-		     ;;		errorpro
-		     ;;		jtp next
-		     ;;		HANDLER
-		     ;;		jmp end
-		     ;; next:
-		     (compile-constant (car (car handlers)))
-		     (emit-insn '(errorpro))
-		     (decrement-stack)
-		     (emit-insn `(jtp ,next-label))
-		     (decrement-stack)
-		     (compile-body (cdr (car handlers)))
-		     (emit-insn `(jmp ,end-label))
-		     (fix-label next-label))
-		 (compiler-error
-		  "badly formed condition-case handler: `%s'"
-		  (car handlers) #:form handlers))
-	       (set! handlers (cdr handlers)))
-	     ;; The last handler
-	     (if (pair? (car handlers))
-		 (let
-		     ((pc-label (make-label)))
-		   ;;		push CONDITIONS
-		   ;;		errorpro
-		   ;;		ejmp pc
-		   ;; pc:	HANDLER
-		   ;;		jmp end
-		   (compile-constant (car (car handlers)))
-		   (emit-insn '(errorpro))
-		   (decrement-stack)
-		   (emit-insn `(ejmp ,pc-label))
-		   (fix-label pc-label)
-		   (decrement-stack)
-		   (compile-body (cdr (car handlers)))
-		   (emit-insn `(jmp ,end-label)))
-	       (compiler-error
-		"badly formed condition-case handler: `%s'"
-		(car handlers) #:form (car handlers)))))
-	(compiler-error "no handlers in condition-case"))
-      (decrement-stack)
+	 ;; start:
+	 ;;		push cleanup
+	 ;;		binderr
+	 ;;		FORM
+	 (fix-label start-label)
+	 (push-handler-frame cleanup-label)
+	 (compile-form-1 (list-ref form 2))
 
-      ;; start:
-      ;;		push cleanup
-      ;;		binderr
-      ;;		FORM
-      (fix-label start-label)
-      (push-handler-frame cleanup-label)
-      (compile-form-1 (list-ref form 2))
-
-      ;; end:
-      ;;		pop-frame		;pop error handler or VAR
-      (fix-label end-label)
-      (pop-frame))))
+	 ;; end:
+	 ;;		pop-frame		;pop error handler or VAR
+	 (fix-label end-label)
+	 (pop-frame)))))
   (put 'condition-case 'rep-compile-fun compile-condition-case)
 
   (defun compile-list (form)

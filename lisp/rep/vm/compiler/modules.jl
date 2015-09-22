@@ -223,7 +223,6 @@
 		 (defuns nil)
 		 (defvars (fluid-ref defvars))
 		 (defines nil)
-		 (lexically-pure t)
 		 (output-stream nil))
       (thunk)))
 

@@ -121,8 +121,7 @@
     (let ((tem (find-lambda fun)))
       (and tem
 	   (or (lambda-inlined tem)
-	       (and (fluid-ref lexically-pure)
-		    return-follows
+	       (and (lexically-pure?) return-follows
 		    (not (binding-modified? fun))))
 	   (= (lambda-depth tem) (lambda-depth (current-lambda)))
 	   (lambda-label tem))))
@@ -247,8 +246,7 @@
 		 (max-stack 0)
 		 (current-b-stack 0)
 		 (max-b-stack 0)
-		 (intermediate-code '())
-		 (lexically-pure t))
+		 (intermediate-code '()))
       (thunk)))
 
   (define (get-assembly)
@@ -423,6 +421,6 @@
       ;; call itself for pushed bytecode
       (emit-insn `(push-bytecode
 		   ,(compile-lambda-to-asm `(lambda ,args ,@body) name)
-		   ,(fluid-ref lex-bindings) ,doc ,interactive))
+		   ,(bytecode-env) ,doc ,interactive))
       (emit-insn '(enclose))
       (increment-stack))))

@@ -23,16 +23,20 @@
 
 (define-structure rep.vm.compiler.bindings
 
-    (export lex-bindings spec-bindings
-	    lexically-pure
-	    call-with-frame
+    (export call-with-frame
+	    save-current-frame
+	    reload-current-frame
+	    lexically-pure?
+	    call-with-dynamic-binding
 	    spec-bound?
 	    has-local-binding?
-	    tag-binding binding-tagged?
+	    tag-binding
+	    binding-tagged?
 	    note-binding
 	    note-bindings
 	    emit-binding
-	    emit-varset emit-varref
+	    emit-varset
+	    emit-varref
 	    push-binding-frame
 	    push-handler-frame
 	    pop-frame
@@ -42,24 +46,93 @@
 	    binding-referenced?
 	    binding-tail-call-only?
 	    binding-captured?
-	    allocate-bindings)
+	    allocate-bindings
+	    bytecode-env)
 
     (open rep
+	  rep.data.records
 	  rep.vm.compiler.utils
 	  rep.vm.compiler.lap
 	  rep.vm.compiler.basic)
 
-  (define spec-bindings (make-fluid '()))	;list of bound variables
-  (define lex-bindings (make-fluid '()))	;alist of bound variables
-  (define lex-closure (make-fluid '()))
-  (define lexically-pure (make-fluid t))	;any dynamic state?
+  (define-record-type :frame
+    (make-frame special-env lexical-env closure-env dynamic-binding)
+    frame?
+    (special-env special-env set-special-env!)
+    (lexical-env lexical-env set-lexical-env!)
+    (closure-env closure-env)
+    (dynamic-binding dynamic-binding? set-dynamic-binding!))
+
+  (define current-frame (make-fluid nil))
+
+  ;; Install a new binding contour, such that THUNK can add any
+  ;; bindings (lexical and special), then when THUNK exits, the
+  ;; bindings are removed.
+
+  (define (call-with-frame thunk #!key captures-bindings)
+    (let* ((old-frame (fluid-ref current-frame))
+	   (new-frame (if old-frame
+			  (make-frame (special-env old-frame)
+				      (lexical-env old-frame)
+				      (if captures-bindings
+					  (lexical-env old-frame)
+					(closure-env old-frame))
+				      (if captures-bindings
+					  (dynamic-binding? old-frame)
+					nil))
+			(make-frame '() '() '() nil))))
+      (let-fluids ((current-frame new-frame))
+	(prog1 (thunk)
+	  ;; check for unused variables
+	  (let ((old-env (and old-frame (lexical-env old-frame))))
+	    (do ((new-env (lexical-env new-frame) (cdr new-env)))
+		((eq? new-env old-env))
+	      (unless (or (cell-tagged? 'referenced (car new-env))
+			  (cell-tagged? 'no-location (car new-env))
+			  (cell-tagged? 'maybe-unused (car new-env)))
+		(compiler-warning
+		 'unused "unused variable `%s'" (caar new-env)))))))))
+
+  (define (save-current-frame)
+    (let ((frame (fluid-ref current-frame)))
+      ;; none of the other fields are modified permanently
+      (list (special-env frame)
+	    (map copy-sequence (lexical-env frame)))))
+
+  (define (reload-current-frame list)
+    (let ((frame (fluid-ref current-frame)))
+      (set-special-env! frame (list-ref list 0))
+      ;; restore lexical environment
+      (let ((frame-lex (lexical-env frame))
+	    (saved-lex (list-ref list 1)))
+	(set! frame-lex (list-tail frame-lex (- (list-length frame-lex)
+						(list-length saved-lex))))
+	(for-each (lambda (frame-cell saved-cell)
+		    (unless (eq? (car frame-cell) (car saved-cell))
+		      (error "Mismatched bindings: %S %S"
+			     frame-cell saved-cell))
+		    (set-cdr! frame-cell (cdr saved-cell)))
+		  frame-lex saved-lex)
+	(set-lexical-env! frame frame-lex))))
+
+  (define (lexically-pure?)
+    (let ((frame (fluid-ref current-frame)))
+      (and (null? (special-env frame)) (not (dynamic-binding? frame)))))
+
+  (define (call-with-dynamic-binding thunk)
+    (let* ((frame (fluid-ref current-frame))
+	   (old-value (dynamic-binding? frame)))
+      (set-dynamic-binding! frame t)
+      (prog1 (thunk)
+	(set-dynamic-binding! frame old-value))))
+
+  (define (lexical-binding var)
+    (assq var (lexical-env (fluid-ref current-frame))))
 
   (define (spec-bound? var)
     (or (memq var (fluid-ref defvars))
 	(special-variable? var)
-	(memq var (fluid-ref spec-bindings))))
-
-  (define (lexical-binding var) (assq var (fluid-ref lex-bindings)))
+	(memq var (special-env (fluid-ref current-frame)))))
 
   (define (lexically-bound? var)
     (let ((cell (lexical-binding var)))
@@ -68,64 +141,46 @@
 	nil)))
 
   (define (has-local-binding? var)
-    (or (memq var (fluid-ref spec-bindings))
+    (or (memq var (special-env (fluid-ref current-frame)))
 	(lexical-binding var)))
 
-  (define (cell-tagged? tag cell) (memq tag (cdr cell)))
+  (define (cell-tagged? tag cell)
+    (memq tag (cdr cell)))
+
   (define (tag-cell tag cell)
     (unless (cell-tagged? tag cell)
       (set-cdr! cell (cons tag (cdr cell)))))
 
   ;; note that the outermost binding of symbol VAR has state TAG
+
   (define (tag-binding var tag)
     (let ((cell (lexical-binding var)))
       (when cell
 	(tag-cell tag cell))))
 
   ;; return t if outermost binding of symbol VAR has state TAG
+
   (define (binding-tagged? var tag)
     (let ((cell (lexical-binding var)))
       (and cell (cell-tagged? tag cell))))
 
-  ;; install a new binding contour, such that THUNK can add any bindings
-  ;; (lexical and special), then when THUNK exits, the bindings are removed
-  (define (call-with-frame thunk #!key captures-bindings)
-    (let ((old-env (fluid-ref lex-bindings)))
-      (let-fluids ((lex-bindings (fluid-ref lex-bindings))
-		   (lex-closure (fluid-ref (if captures-bindings
-					       lex-bindings lex-closure)))
-		   (spec-bindings (fluid-ref spec-bindings))
-		   (lexically-pure (fluid-ref lexically-pure)))
-	(prog1 (thunk)
-	  ;; check for unused variables
-	  (do ((new-env (fluid-ref lex-bindings) (cdr new-env)))
-	      ((eq? new-env old-env))
-	    (unless (or (cell-tagged? 'referenced (car new-env))
-			(cell-tagged? 'no-location (car new-env))
-			(cell-tagged? 'maybe-unused (car new-env)))
-	      (compiler-warning
-	       'unused "unused variable `%s'" (caar new-env))))))))
-
   ;; note that symbol VAR has been bound
+
   (define (note-binding var #!optional without-location)
-    (if (spec-bound? var)
-	(progn
+    (let ((frame (fluid-ref current-frame)))
+      (if (spec-bound? var)
 	  ;; specially bound (dynamic scope)
-	  (fluid-set! spec-bindings (cons var (fluid-ref spec-bindings)))
-	  (fluid-set! lexically-pure nil))
-      ;; assume it's lexically bound otherwise
-      (fluid-set! lex-bindings (cons (list var) (fluid-ref lex-bindings)))
-      (when without-location
-	(tag-binding var 'no-location)))
-    ;; XXX handled by `modified' tag?
-;    (when (eq? var (fluid-ref lambda-name))
-;      (fluid-set! lambda-name nil))
-)
+	  (set-special-env! frame (cons var (special-env frame)))
+	;; assume it's lexically bound otherwise
+	(set-lexical-env! frame (cons (list var) (lexical-env frame)))
+	(when without-location
+	  (tag-binding var 'no-location)))))
 
   (defun note-bindings (vars)
     (for-each note-binding vars))
 
   ;; note that the outermost binding of VAR has been modified
+
   (define (note-binding-modified var)
     (let ((cell (lexical-binding var)))
       (when cell
@@ -156,10 +211,10 @@
 	  (increment-stack)
 	  (emit-insn '(spec-bind))
 	  (decrement-stack))
-      (emit-insn `(lex-bind ,var ,(fluid-ref lex-bindings)))))
+      (emit-insn `(lex-bind ,var ,(lexical-env (fluid-ref current-frame))))))
 
   (define (capture-cell-if-necessary cell)
-    (when (memq cell (fluid-ref lex-closure))
+    (when (memq cell (closure-env (fluid-ref current-frame)))
       ;; cell is the far side of the current closure, i.e. the binding
       ;; going to be captured by the closure.
       (tag-cell 'captured cell)))
@@ -176,7 +231,8 @@
 	(if cell
 	    (progn
 	      ;; The lexical address is known. Use it to avoid scanning
-	      (emit-insn `(lex-set ,sym ,(fluid-ref lex-bindings)))
+	      (emit-insn
+	       `(lex-set ,sym ,(lexical-env (fluid-ref current-frame))))
 	      (capture-cell-if-necessary cell))
 	  ;; No lexical binding, but not special either. Just
 	  ;; update the global value
@@ -194,7 +250,8 @@
 	(if cell
 	    (progn
 	      ;; We know the lexical address, so use it
-	      (emit-insn `(lex-ref ,form ,(fluid-ref lex-bindings)))
+	      (emit-insn
+	       `(lex-ref ,form ,(lexical-env (fluid-ref current-frame))))
 	      (capture-cell-if-necessary cell)
 	      (note-binding-referenced form in-tail-slot))
 	  ;; It's not bound, so just update the global value
@@ -223,6 +280,7 @@
 	(cell-tagged? 'heap-allocated cell)))
 
   ;; heap addresses count up from the _most_ recent binding
+
   (define (heap-address var bindings)
     (let loop ((rest bindings)
 	       (i 0))
@@ -234,14 +292,15 @@
 	    (t (loop (cdr rest) (1+ i))))))
 
   ;; register addresses count up from the _least_ recent binding
-  (define (register-address var bindings base)
+
+  (define (register-address var bindings base-env)
     (let loop ((rest bindings))
-      (cond ((eq? rest base)
+      (cond ((eq? rest base-env)
 	     (error "No register address for %s, %s" var bindings))
 	    ((eq? (caar rest) var)
 	     (let loop-2 ((rest (cdr rest))
 			  (i 0))
-	       (cond ((eq? rest base) i)
+	       (cond ((eq? rest base-env) i)
 		     ((or (cell-captured? (car rest))
 			  (cell-tagged? 'no-location (car rest)))
 		      (loop-2 (cdr rest) i))
@@ -251,6 +310,7 @@
   ;; Extra pass over the output pseudo-assembly code; converts
   ;; pseudo-instructions accessing lexical bindings into real
   ;; instructions accessing either the heap or the registers
+
   (define (allocate-bindings-1 asm base-env)
     (let ((max-register 0))
       (let loop ((rest (assembly-code asm)))
@@ -276,10 +336,10 @@
 				   (list 'reg-ref register))))))))
 	    ((push-bytecode)
 	     (let ((asm (list-ref (car rest) 1))
-		   (env (list-ref (car rest) 2))
+		   (base-env (list-ref (car rest) 2))
 		   (doc (list-ref (car rest) 3))
 		   (interactive (list-ref (car rest) 4)))
-	       (allocate-bindings-1 asm env)
+	       (allocate-bindings-1 asm base-env)
 	       (set-car! rest (list 'push (assemble-assembly-to-subr
 					 asm doc interactive))))))
 	  (loop (cdr rest))))
@@ -287,10 +347,14 @@
       asm))
 
   (define (allocate-bindings asm)
-    (allocate-bindings-1 asm (fluid-ref lex-bindings)))
+    (allocate-bindings-1 asm (lexical-env (fluid-ref current-frame))))
 
-
-;; declarations
+  ;; For calls to push-bytecode. Have to record the actual environment
+  ;; here, rather than just the current frame, as we need to know the
+  ;; state when the closure was created.
+
+  (define (bytecode-env)
+    (lexical-env (fluid-ref current-frame)))
 
   ;; (declare (bound VARIABLE))
 
@@ -304,10 +368,11 @@
   ;; (declare (special VARIABLE))
 
   (define (declare-special form)
-    (let loop ((vars (cdr form)))
-      (when vars
-	(fluid-set! spec-bindings (cons (car vars) (fluid-ref spec-bindings)))
-	(loop (cdr vars)))))
+    (let ((frame (fluid-ref current-frame)))
+      (let loop ((vars (cdr form)))
+	(when vars
+	  (set-special-env! frame (cons (car vars) (special-env frame)))
+	  (loop (cdr vars))))))
   (put 'special 'compiler-decl-fun declare-special)
 
   ;; (declare (heap-allocated VARS...))

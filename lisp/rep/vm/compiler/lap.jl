@@ -67,11 +67,9 @@
 
   (define (push-state)
     (fluid-set! saved-state
-	       (cons (list (cons intermediate-code (fluid-ref intermediate-code))
-			   (cons spec-bindings (fluid-ref spec-bindings))
-			   (cons lex-bindings
-				 (map copy-sequence (fluid-ref lex-bindings)))
-			   (cons lexically-pure (fluid-ref lexically-pure))
+	       (cons (list (cons 'frame (save-current-frame))
+			   (cons intermediate-code
+				 (fluid-ref intermediate-code))
 			   (cons current-stack (fluid-ref current-stack))
 			   (cons max-stack (fluid-ref max-stack))
 			   (cons current-b-stack (fluid-ref current-b-stack))
@@ -81,21 +79,9 @@
   (define (pop-state)
     (fluid-set! saved-state (cdr (fluid-ref saved-state))))
 
-  ;; reload lex-bindings value, preserving eq-ness of cells
-  (define (reload-lex-bindings saved)
-    (let loop ((rest (fluid-ref lex-bindings)))
-      (if (eq? (caar rest) (caar saved))
-	  (progn
-	    (fluid-set! lex-bindings rest)
-	    (do ((old rest (cdr old))
-		 (new saved (cdr new)))
-		((null? old))
-	      (set-cdr! (car old) (cdr (car new)))))
-	(loop (cdr rest)))))
-
   (define (reload-state)
     (for-each (lambda (cell)
-		(if (eq? (car cell) lex-bindings)
-		    (reload-lex-bindings (cdr cell))
+		(if (eq? (car cell) 'frame)
+		    (reload-current-frame (cdr cell))
 		  (fluid-set! (car cell) (cdr cell))))
 	      (car (fluid-ref saved-state)))))

@@ -1,5 +1,12 @@
 2015-09-22  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/utils.jl, rep/vm/compiler/rep.jl,
+	rep/vm/compiler/modules.jl, rep/vm/compiler/lap.jl,
+	rep/vm/compiler/bindings.jl, rep/vm/compiler/basic.jl:
+	refactored binding frame management -- a single record rather
+	than various fluid variables, and keep everything local to the
+	bindings module.
+
 	* rep/vm/compiler/rep.jl, rep/vm/compiler/inline.jl,
 	rep/vm/compiler/bindings.jl, rep/vm/compiler/basic.jl: refactor
 	compiler so that it identifies captured bindings immediately,
