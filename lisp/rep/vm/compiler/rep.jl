@@ -414,7 +414,7 @@
 	((lst (car (cdr form))))
       (call-with-frame
        (lambda ()
-	 (push-binding-frame)
+	 (emit-push-frame 'variable)
 	 (while (pair? lst)
 	   (cond ((pair? (car lst))
 		  (let ((tmp (car lst)))
@@ -430,7 +430,7 @@
 	   (decrement-stack)
 	   (set! lst (cdr lst)))
 	 (compile-body (list-tail form 2) return-follows)
-	 (pop-frame)))))
+	 (emit-pop-frame 'variable)))))
   (put 'let* 'rep-compile-fun compile-let*)
 
   ;; let can be compiled straight from its macro definition
@@ -441,7 +441,7 @@
       (call-with-frame
        (lambda ()
 	 (push-state)
-	 (push-binding-frame)
+	 (emit-push-frame 'variable)
 
 	 ;; create the bindings, should really be to void values, but use nil..
 	 (for-each (lambda (cell)
@@ -494,7 +494,7 @@
 
 	   ;; no, keep on the usual track
 	   (compile-body (list-tail form 2) return-follows)
-	   (pop-frame))
+	   (emit-pop-frame 'variable))
 	 (pop-state)))))
   (put 'letrec 'rep-compile-fun compile-letrec)
 
@@ -509,13 +509,13 @@
 	    (for-each (lambda (cell)
 			(compile-form-1 (car cell))
 			(compile-body (cdr cell))) bindings)
-	    (push-binding-frame)
+	    (emit-push-frame 'fluid)
 	    (for-each (lambda (unused)
 			(declare (unused unused))
 			(emit-insn '(fluid-bind))
 			(decrement-stack 2)) bindings)
 	    (compile-body body)
-	    (pop-frame)))))))
+	    (emit-pop-frame 'fluid)))))))
   (put 'let-fluids 'rep-compile-fun compile-let-fluids)
 
   (defun compile-defun (form)
@@ -686,9 +686,9 @@
 	 ;;		pop-frame
 	 ;; end:
 	 (fix-label start-label)
-	 (push-handler-frame catch-label)
+	 (emit-push-frame 'exception #:handler catch-label)
 	 (compile-body (list-tail form 2))
-	 (pop-frame)
+	 (emit-pop-frame 'exception)
 	 (fix-label end-label)))))
   (put 'catch 'rep-compile-fun compile-catch)
 
@@ -722,9 +722,9 @@
 	 ;;		jmp cleanup
 	 ;; [overall, stack +2]
 	 (fix-label start-label)
-	 (push-handler-frame cleanup-label)
+	 (emit-push-frame 'exception #:handler cleanup-label)
 	 (compile-form-1 (list-ref form 1))
-	 (pop-frame)
+	 (emit-pop-frame 'exception)
 	 (emit-insn '(push ()))
 	 (decrement-stack)
 	 (emit-insn `(jmp ,cleanup-label))
@@ -813,13 +813,13 @@
 	 ;;		binderr
 	 ;;		FORM
 	 (fix-label start-label)
-	 (push-handler-frame cleanup-label)
+	 (emit-push-frame 'exception #:handler cleanup-label)
 	 (compile-form-1 (list-ref form 2))
 
 	 ;; end:
 	 ;;		pop-frame		;pop error handler or VAR
 	 (fix-label end-label)
-	 (pop-frame)))))
+	 (emit-pop-frame 'exception)))))
   (put 'condition-case 'rep-compile-fun compile-condition-case)
 
   (defun compile-list (form)

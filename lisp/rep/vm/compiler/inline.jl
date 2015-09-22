@@ -133,50 +133,36 @@
       (fluid-set! inline-depth 0)
       (compiler-error "can't inline more than %d nested functions"
 		      max-inline-depth))
-    (let*
-	((lambda-list (list-ref fun 1))
-	 (body (list-tail fun 2))
-	 (out (push-inline-args
-	       lambda-list args pushed-args-already test-variable-bind))
-	 (args-left (car out))
-	 (bind-stack (cdr out)))
+    (let* ((lambda-list (list-ref fun 1))
+	   (body (list-tail fun 2))
+	   (out (push-inline-args
+		 lambda-list args pushed-args-already test-variable-bind))
+	   (args-left (car out))
+	   (bind-stack (cdr out)))
+
+      ;; skip interactive decl and doc string.
+      (while (and (pair? body)
+		  (or (string? (car body))
+		      (and (pair? (car body))
+			   (eq? (car (car body)) 'interactive))))
+	(set! body (cdr body)))
 
       (call-with-frame
        (lambda ()
-	 ;; Set up the body for compiling, skip any interactive form or
-	 ;; doc string
-	 (while (and (pair? body)
-		     (or (string? (car body))
-			 (and (pair? (car body))
-			      (eq? (car (car body)) 'interactive))))
-	   (set! body (cdr body)))
-    
 	 ;; Now we have a list of things to bind to, in the same order
 	 ;; as the stack of evaluated arguments. The list has items
 	 ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
-	 (if bind-stack
-	     (progn
-	       (push-binding-frame)
-	       (pop-inline-args bind-stack args-left (lambda (x)
-						       (note-binding x)
-						       (emit-binding x)))
-	       (call-with-lambda-record name lambda-list 0
-		(lambda ()
-		  (fix-label (lambda-label (current-lambda)))
-		  (set-lambda-inlined (current-lambda) t)
-		  (compile-body body return-follows)))
-	       (pop-frame))
-	   ;; Nothing to bind to. Just pop the evaluated args and
-	   ;; evaluate the body
-	   (while (> args-left 0)
-	     (emit-insn '(pop))
-	     (decrement-stack)
-	     (set! args-left (1- args-left)))
-	   (call-with-lambda-record name lambda-list 0
-	    (lambda ()
-	      (fix-label (lambda-label (current-lambda)))
-	      (set-lambda-inlined (current-lambda) t)
-	      (compile-body body return-follows))))))
+	 (emit-push-frame 'variable)
+	 (pop-inline-args bind-stack args-left (lambda (x)
+						 (note-binding x)
+						 (emit-binding x)))
+	 (call-with-lambda-record name lambda-list 0
+	  (lambda ()
+	    (fix-label (lambda-label (current-lambda)))
+	    (set-lambda-inlined (current-lambda) t)
+	    (compile-body body return-follows)))
+	 (emit-pop-frame 'variable)))
+
       (fluid-set! inline-depth (1- (fluid-ref inline-depth)))))
 
   (define (pop-between top bottom)
@@ -195,9 +181,10 @@
 	  ((= bottom 0)
 	   (unless (<= top bottom)
 	     (emit-insn '(pop-frames))))
-	  (t (do ((bp top (1- bp)))
-		 ((<= bp bottom))
-	       (emit-insn '(pop-frame))))))
+	  (t (do ((bp (1- top) (1- bp)))
+		 ((< bp bottom))
+	       ;; stamp with frame ID for delete-binding-insns
+	       (emit-insn `(pop-frame ,bp))))))
 
   (defun compile-tail-call (lambda-record args)
     (let* ((out (push-inline-args (lambda-args lambda-record)

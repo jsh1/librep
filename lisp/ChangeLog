@@ -1,5 +1,12 @@
 2015-09-22  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/rep.jl, rep/vm/compiler/lap.jl,
+	rep/vm/compiler/inline.jl, rep/vm/compiler/bindings.jl:
+	eliminate push/pop-frame instructions where only lexical
+	bindings are created. (This is the third attempt at this
+	optimization, it's quite hairy, especially the interaction with
+	inlined tail-calls, but seems to work.)
+
 	* rep/vm/compiler/utils.jl, rep/vm/compiler/rep.jl,
 	rep/vm/compiler/modules.jl, rep/vm/compiler/lap.jl,
 	rep/vm/compiler/bindings.jl, rep/vm/compiler/basic.jl:

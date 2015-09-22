@@ -37,9 +37,8 @@
 	    emit-binding
 	    emit-varset
 	    emit-varref
-	    push-binding-frame
-	    push-handler-frame
-	    pop-frame
+	    emit-push-frame
+	    emit-pop-frame
 	    note-binding-modified
 	    binding-modified?
 	    note-binding-referenced
@@ -56,12 +55,19 @@
 	  rep.vm.compiler.basic)
 
   (define-record-type :frame
-    (make-frame special-env lexical-env closure-env dynamic-binding)
+    (make-frame special-env lexical-env closure-env dynamic-binding
+		#!optional variable-frames)
     frame?
     (special-env special-env set-special-env!)
     (lexical-env lexical-env set-lexical-env!)
     (closure-env closure-env)
-    (dynamic-binding dynamic-binding? set-dynamic-binding!))
+    (dynamic-binding dynamic-binding? set-dynamic-binding!)
+    (variable-frames variable-frames set-variable-frames!))
+
+  (define (copy-frame frame)
+    (make-frame (special-env frame) (lexical-env frame)
+		(closure-env frame) (dynamic-binding? frame)
+		(variable-frames frame)))
 
   (define current-frame (make-fluid nil))
 
@@ -97,7 +103,8 @@
     (let ((frame (fluid-ref current-frame)))
       ;; none of the other fields are modified permanently
       (list (special-env frame)
-	    (map copy-sequence (lexical-env frame)))))
+	    (map copy-sequence (lexical-env frame))
+	    (variable-frames frame))))
 
   (define (reload-current-frame list)
     (let ((frame (fluid-ref current-frame)))
@@ -113,7 +120,8 @@
 			     frame-cell saved-cell))
 		    (set-cdr! frame-cell (cdr saved-cell)))
 		  frame-lex saved-lex)
-	(set-lexical-env! frame frame-lex))))
+	(set-lexical-env! frame frame-lex)
+	(set-variable-frames! frame (list-ref list 2)))))
 
   (define (lexically-pure?)
     (let ((frame (fluid-ref current-frame)))
@@ -257,19 +265,64 @@
 	  ;; It's not bound, so just update the global value
 	  (emit-insn `(refq ,form))))))
 
-  (define (push-binding-frame)
-    (emit-insn '(push-frame))
+  (define (emit-push-frame type #!key handler)
+    (case type
+      ((variable)
+       ;; May be able to remove the push-frame instruction later,
+       ;; when we know exactly what variables were bound. To do that
+       ;; we need to stamp the push/pop instructions with the current
+       ;; binding depth so that we can identify them (and any extra
+       ;; pop instructions added by tailcalls) later to remove them.
+       ;; Save a copy of the current frame so we can work out what was
+       ;; bound.
+       (let ((frame (fluid-ref current-frame)))
+	 (set-variable-frames! frame (cons (cons (fluid-ref intermediate-code)
+						 (copy-frame frame))
+					   (variable-frames frame)))
+	 (emit-insn `(push-frame ,(fluid-ref current-b-stack)))))
+      ((fluid)
+       (emit-insn '(push-frame)))
+      ((exception)
+       (or handler (error "No exception handler to bind"))
+       (push-label-addr handler)
+       (emit-insn '(binderr))
+       (decrement-stack))
+      (t (error "unspecified frame type")))
     (increment-b-stack))
 
-  (define (push-handler-frame label)
-    (push-label-addr label)
-    (emit-insn '(binderr))
-    (increment-b-stack)
-    (decrement-stack))
+  (define (emit-pop-frame type)
+    (decrement-b-stack)
+    (if (eq? type 'variable)
+	(let* ((frame (fluid-ref current-frame))
+	       (saved-code (caar (variable-frames frame)))
+	       (saved-frame (cdar (variable-frames frame))))
+	  (set-variable-frames! frame (cdr (variable-frames frame)))
+	  (if (and (eq? (special-env frame) (special-env saved-frame))
+		   (let loop ((rest (lexical-env frame)))
+		     (cond ((eq? rest (lexical-env saved-frame)) t)
+			   ((cell-captured? (car rest)) nil)
+			   (t (loop (cdr rest))))))
+	      ;; only lexical bindings, don't need push/pop-frame
+	      (delete-binding-insns (fluid-ref current-b-stack) saved-code)
+	    (emit-insn `(pop-frame ,(fluid-ref current-b-stack)))))
+      (emit-insn `(pop-frame ,(fluid-ref current-b-stack)))))
 
-  (define (pop-frame)
-    (emit-insn '(pop-frame))
-    (decrement-b-stack))
+  ;; Deletes all ({push,pop}-frame ID) instructions from the current
+  ;; code list, upto the point START in the list.
+  
+  (define (delete-binding-insns id start)
+    ;; use an extra pair to make it easy to delete as we go
+    (let ((header (cons nil (fluid-ref intermediate-code))))
+      (let loop ((rest header))
+	(if (eq? (cdr rest) start)
+	    (cdr header)
+	  (let ((insn (cadr rest)))
+	    (if (and (memq (car insn) '(push-frame pop-frame))
+		     (= (cadr insn) id))
+		(progn
+		  (set-cdr! rest (cddr rest))
+		  (loop rest))
+	      (loop (cdr rest))))))))
 
 
 ;; allocation of bindings, either on stack or in heap
@@ -341,13 +394,19 @@
 		   (interactive (list-ref (car rest) 4)))
 	       (allocate-bindings-1 asm base-env)
 	       (set-car! rest (list 'push (assemble-assembly-to-subr
-					 asm doc interactive))))))
+					 asm doc interactive)))))
+
+	    ;; remove the binding ids we may have inserted
+	    ((push-frame pop-frame)
+	     (set-cdr! (car rest) nil)))
 	  (loop (cdr rest))))
       (assembly-registers-set asm max-register)
       asm))
 
   (define (allocate-bindings asm)
-    (allocate-bindings-1 asm (lexical-env (fluid-ref current-frame))))
+    ;; top-level functions don't have a containing frame.
+    (let ((frame (fluid-ref current-frame)))
+      (allocate-bindings-1 asm (if frame (lexical-env frame) nil))))
 
   ;; For calls to push-bytecode. Have to record the actual environment
   ;; here, rather than just the current frame, as we need to know the

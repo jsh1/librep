@@ -41,24 +41,30 @@
   (define saved-state (make-fluid))
 
   ;; list of (INSN . [ARG]), (TAG . REFS)
+
   (define intermediate-code (make-fluid '()))
 
-  ;; Output one opcode and its optional argument
+  ;; Output one instruction (OP [ARG]) or LABEL. Returns the added value.
+
   (define (emit-insn insn)
     (when (pair? insn)
       ;; so the peepholer can safely modify code
       (set! insn (copy-sequence insn)))
-    (fluid-set! intermediate-code (cons insn (fluid-ref intermediate-code))))
+    (fluid-set! intermediate-code (cons insn (fluid-ref intermediate-code)))
+    insn)
 
   ;; Create a new label
+
   (define make-label gensym)
 
   ;; Arrange for the address of LABEL to be pushed onto the stack
+
   (define (push-label-addr label)
     (emit-insn `(push-label ,label))
     (increment-stack))
 
   ;; Set the address of the label LABEL to the current pc
+
   (define fix-label emit-insn)
 
   (define (prefix-label label)
