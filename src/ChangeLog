@@ -1,3 +1,8 @@
+2015-09-22  John Harper  <jsh@unfactored.org>
+
+	* lispmach.h: cache code string byte-pointer to avoid having to
+	refetch it every jump instruction
+
 2015-09-21  John Harper  <jsh@unfactored.org>
 
 	* symbols.c, repint_subrs.h, read.c: read_symbol() is now

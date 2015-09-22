@@ -118,10 +118,10 @@ unbind_n(repv *ptr, int n)
 #define BIND_TOP_P	(bp < bindings)
 #define BIND_PUSH(x)	(*(++bp) = (x))
 
-#define CHECK_NEXT	 						\
-  do {									\
-    ASSERT(STACK_USAGE <= stack_size);					\
-    ASSERT(((char *)pc - rep_STR(code)) < rep_STRING_LEN(code));	\
+#define CHECK_NEXT	 					\
+  do {								\
+    ASSERT(STACK_USAGE <= stack_size);				\
+    ASSERT(((char *)pc - pc_base) < rep_STRING_LEN(code));	\
   } while (0)
 
 #ifdef BYTECODE_PROFILE
@@ -566,7 +566,8 @@ again: {
 
   /* Initialize the various virtual registers. */
 
-  const uint8_t *pc = (const uint8_t *)rep_STR(code);
+  const uint8_t *pc_base = (const uint8_t *)rep_STR(code);
+  const uint8_t *pc = pc_base;
 
   repv *sp = stack;
   repv *bp = bindings;
@@ -1995,7 +1996,7 @@ again: {
     INSN(OP_JMP) {
     do_jmp:;
       const uint8_t *old_pc = pc;
-      pc = (uint8_t *) rep_STR(code) + ((pc[0] << ARG_SHIFT) | pc[1]);
+      pc = pc_base + ((pc[0] << ARG_SHIFT) | pc[1]);
 
       /* Only check for interrupts / GC on backwards jumps, i.e. loops. */
 
@@ -2059,7 +2060,7 @@ again: {
 	  sp = stack + rep_INT(rep_CDR(item));
 	  PUSH(rep_throw_value);
 	  rep_throw_value = 0;
-	  pc = (uint8_t *) rep_STR(code) + rep_INT(rep_CAR(item));
+	  pc = pc_base + rep_INT(rep_CAR(item));
 	  impurity--;
 	  SAFE_NEXT;
 
