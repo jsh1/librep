@@ -2145,7 +2145,7 @@ Fquotient__(repv n1, repv n2)
   return out;
 }
 
-/* Fast path functions. These assume rep_INT(x) := 4x + 2. */
+/* Fast path functions. These assume rep_MAKE_INT(x) == 4x + 2. */
 
 repv
 rep_number_add(repv x, repv y)
