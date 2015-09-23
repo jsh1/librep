@@ -33,9 +33,9 @@
 #define ABS(x)   MAX(x, -(x))
 
 #if __GNUC__ >= 4
-# define rep_NOT_INLINE __attribute__((noinline))
+# define NOT_INLINE __attribute__((noinline))
 #else
-# define rep_NOT_INLINE
+# define NOT_INLINE
 #endif
 
 /* Compile-time assert() macro. */
@@ -251,6 +251,12 @@ typedef struct rep_guardian_struct {
 # define rep_isalnum(c) isalnum(c)
 # define rep_isspace(c) isspace(c)
 # define rep_iscntrl(c) iscntrl(c)
+#endif
+
+#if defined(__has_builtin) && __has_builtin(__builtin_saddl_overflow)
+# define HAVE_OVERFLOW_BUILTINS 1
+#elif defined(__GNUC__) && __GNUC__ >= 5
+# define HAVE_OVERFLOW_BUILTINS 1
 #endif
 
 

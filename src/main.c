@@ -157,7 +157,7 @@ get_main_options(char *prog_name, int *argc_p, char ***argv_p)
   }
 }
 
-static rep_NOT_INLINE void
+static NOT_INLINE void
 check_configuration(int *stack_low)
 {
   int stack_high = 1;

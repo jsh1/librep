@@ -1,3 +1,18 @@
+2015-09-23  John Harper  <jsh@unfactored.org>
+
+	* numbers.c, lispmach.h: use __builtin_foo_overflow()
+	intrinsics to check for integer arithmetic overflow when
+	available. Split most numeric functions into fixnum fast-path
+	or call to general case in a separate function
+
+	* rep_lisp.h: added rep_INTP_2(), checks if both arguments are
+	fixnums
+
+	* repint.h: renamed rep_NOT_INLINE as NOT_INLINE
+
+	* rep_subrs.h, numbers.c, librep.sym (rep_foldl,
+	rep_integer_foldl, rep_number_foldl): deleted
+
 2015-09-22  John Harper  <jsh@unfactored.org>
 
 	* lispmach.h: cache code string byte-pointer to avoid having to

@@ -72,7 +72,7 @@ free_reader_buffer(struct reader_buffer *buf)
   }
 }
 
-static rep_NOT_INLINE bool
+static NOT_INLINE bool
 grow_reader_buffer(struct reader_buffer *buf)
 {
   size_t new_len = buf->len * 2;

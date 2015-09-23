@@ -259,7 +259,7 @@ number_sweep(void)
 
 /* Promotion */
 
-static rep_NOT_INLINE repv
+static NOT_INLINE repv
 copy_number__(repv in)
 {
   switch (rep_NUMBER_TYPE(in)) {
@@ -474,7 +474,7 @@ promote(repv *n1p, repv *n2p)
   }
 }
 
-static rep_NOT_INLINE repv
+static NOT_INLINE repv
 promote_dup__(repv *n1p, repv *n2p)
 {
   repv n1 = *n1p;
@@ -504,7 +504,7 @@ promote_dup(repv *n1p, repv *n2p)
   repv n1 = *n1p;
   repv n2 = *n2p;
 
-  if (rep_INTP(n1) && rep_INTP(n2)) {
+  if (rep_INTP_2(n1, n2)) {
     return n1;
   } else {
     return promote_dup__(n1p, n2p);
@@ -514,7 +514,7 @@ promote_dup(repv *n1p, repv *n2p)
 bool
 rep_long_int_p(repv v)
 {
-  return rep_INTEGERP(v) || (rep_CONSP(v) && rep_INTP(rep_CAR(v)) && rep_INTP(rep_CDR(v)));
+  return rep_INTEGERP(v) || (rep_CONSP(v) && rep_INTP_2(rep_CAR(v), rep_CDR(v)));
 }
 
 repv
@@ -533,13 +533,9 @@ rep_make_long_uint(uintptr_t in)
   }
 }
 
-repv
-rep_make_long_int(intptr_t in)
+static NOT_INLINE repv
+make_long_int__(intptr_t in)
 {
-  if (in >= rep_LISP_MIN_INT && in <= rep_LISP_MAX_INT) {
-    return rep_MAKE_INT(in);
-  }
-
   number_z *z = make_number(rep_NUMBER_BIGNUM);
 #ifdef HAVE_GMP
   mpz_init_set_si(z->z, in);
@@ -547,6 +543,22 @@ rep_make_long_int(intptr_t in)
   z->z = in;
 #endif
   return rep_VAL(z);
+}
+
+static inline repv
+make_long_int(intptr_t in)
+{
+  if (in >= rep_LISP_MIN_INT && in <= rep_LISP_MAX_INT) {
+    return rep_MAKE_INT(in);
+  }
+
+  return make_long_int__(in);
+}
+
+repv
+rep_make_long_int(intptr_t in)
+{
+  return make_long_int(in);
 }
 
 uintptr_t
@@ -621,7 +633,7 @@ rep_make_longlong_int(long long in)
 {
 #if LONG_LONG_MAX == LONG_MAX
 
-  return rep_make_long_int(in);
+  return make_long_int(in);
 
 #else
 
@@ -723,7 +735,7 @@ rep_make_float(double in, bool force)
 {
   if (!force && floor(in) == in) {
     if (in < LONG_MAX && in > LONG_MIN) {
-      return rep_make_long_int((long) in);
+      return make_long_int((long) in);
     }
 #if LONG_LONG_MAX > LONG_MAX
     else if (in < LONG_LONG_MAX && in > LONG_LONG_MIN) {
@@ -770,6 +782,11 @@ rep_get_float(repv in)
 int
 rep_compare_numbers(repv v1, repv v2)
 {
+  if (rep_INTP_2(v1, v2)) {
+    /* FIMXE: can we remove the rep_INT()'s here? */
+    return rep_INT(v1) - rep_INT(v2);
+  }
+
   if (!rep_NUMERICP(v1) || !rep_NUMERICP(v2)) {
     return 1;
   }
@@ -805,6 +822,11 @@ rep_compare_numbers(repv v1, repv v2)
 static int
 number_cmp(repv v1, repv v2)
 {
+  if (rep_INTP_2(v1, v2)) {
+    /* FIMXE: can we remove the rep_INT()'s here? */
+    return rep_INT(v1) - rep_INT(v2);
+  }
+
   if (!rep_NUMERICP(v1) || !rep_NUMERICP(v2)) {
     return 1;
   }
@@ -1232,40 +1254,7 @@ number_prin(repv stream, repv obj)
 }
 
 
-/* lisp functions */
-
-repv
-rep_number_foldl(repv args, repv(*op)(repv, repv))
-{
-  rep_TEST_INT_LOOP_COUNTER;
-
-  if (!rep_CONSP(args)) {
-    return rep_signal_missing_arg(1);
-  }
-  if (!rep_NUMERICP(rep_CAR(args))) {
-    return rep_signal_arg_error(rep_CAR(args), 1);
-  }
-
-  repv sum = rep_CAR(args);
-  args = rep_CDR(args);
-
-  int i = 2;
-
-  while (rep_CONSP(args) && !rep_INTERRUPTP) {
-    repv arg = rep_CAR(args);
-    if (!rep_NUMERICP(arg)) {
-      return rep_signal_arg_error(arg, i);
-    }
-
-    sum = op(sum, arg);
-
-    args = rep_CDR(args);
-    i++;
-    rep_TEST_INT;
-  }
-
-  return sum;
-}
+/* Arithmetic primitives. */
 
 static inline repv
 number_foldv(int argc, repv *argv, repv(*op) (repv, repv))
@@ -1285,39 +1274,6 @@ number_foldv(int argc, repv *argv, repv(*op) (repv, repv))
     }
 
     sum = op(sum, argv[i]);
-  }
-
-  return sum;
-}
-
-repv
-rep_integer_foldl(repv args, repv(*op)(repv, repv))
-{
-  rep_TEST_INT_LOOP_COUNTER;
-
-  if (!rep_CONSP(args)) {
-    return rep_signal_missing_arg(1);
-  }
-  if (!rep_INTEGERP(rep_CAR(args))) {
-    return rep_signal_arg_error(rep_CAR(args), 1);
-  }
-
-  repv sum = rep_CAR(args);
-  args = rep_CDR(args);
-
-  int i = 2;
-
-  while (rep_CONSP(args) && !rep_INTERRUPTP) {
-    repv arg = rep_CAR(args);
-    if (!rep_INTEGERP(arg)) {
-      return rep_signal_arg_error(arg, i);
-    }
-
-    sum = op(sum, arg);
-
-    args = rep_CDR(args);
-    i++;
-    rep_TEST_INT;
   }
 
   return sum;
@@ -1346,33 +1302,6 @@ integer_foldv(int argc, repv *argv, repv(*op) (repv, repv))
   return sum;
 }
 
-repv
-rep_foldl(repv args, repv(*op)(repv, repv))
-{
-  rep_TEST_INT_LOOP_COUNTER;
-
-  if (!rep_CONSP(args)) {
-    return rep_signal_missing_arg(1);
-  }
-
-  repv sum = rep_CAR(args);
-  args = rep_CDR(args);
-
-  int i = 2;
-
-  while (sum && rep_CONSP(args) && !rep_INTERRUPTP) {
-    repv arg = rep_CAR(args);
-    args = rep_CDR(args);
-
-    sum = op(sum, arg);
-
-    i++;
-    rep_TEST_INT;
-  }
-
-  return sum;
-}
-
 static inline repv
 foldv(int argc, repv *argv, repv(*op) (repv, repv))
 {
@@ -1389,13 +1318,48 @@ foldv(int argc, repv *argv, repv(*op) (repv, repv))
   return sum;
 }
 
-repv
-rep_number_add(repv x, repv y)
+static inline intptr_t
+modulo_int(intptr_t a, intptr_t b)
+{
+  /* This code from GNU Emacs */
+
+  intptr_t c = a % b;
+
+  /* If the "remainder" comes out with the wrong sign, fix it.  */
+
+  if (b < 0 ? c > 0 : c < 0) {
+    c += b;
+  }
+
+  return c;
+}
+
+static inline double
+round_even(double x)
+{
+  /* From Guile. */
+
+  double plus_half = x + 0.5;
+  double result = floor(plus_half);
+
+  /* Adjust so that the round is towards even.  */
+
+  return ((plus_half == result && plus_half / 2 != floor(plus_half / 2))
+	  ? result - 1 : result);
+}
+
+/* "Slow" arithmetic functions. These are only called if both
+    arguments are fixnums. (Or possibly if the divisor is zero).
+    They're marked non-inline to avoid making the prolog of the
+    calling fast-path function slower. */
+
+static NOT_INLINE repv
+rep_number_add__(repv x, repv y)
 {
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
 
-  repv out = promote_dup(&x, &y);
+  repv out = promote_dup__(&x, &y);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT:
@@ -1431,8 +1395,49 @@ rep_number_add(repv x, repv y)
   return out;
 }
 
-repv
-rep_number_neg(repv x)
+static NOT_INLINE repv
+rep_number_add1__(repv x)
+{
+  rep_DECLARE1(x, rep_NUMERICP);
+
+  switch (rep_NUMERIC_TYPE(x)) {
+  case rep_NUMBER_INT:
+    return rep_make_long_int(rep_INT(x) + 1);
+
+  case rep_NUMBER_BIGNUM:
+    x = copy_number(x);
+#ifdef HAVE_GMP
+    mpz_add_ui(rep_NUMBER(x,z), rep_NUMBER(x,z), 1);
+#else
+    rep_NUMBER(x,z) = rep_NUMBER(x,z) + 1;
+#endif
+    return maybe_demote(x);
+
+#ifdef HAVE_GMP
+  case rep_NUMBER_RATIONAL: {
+    x = copy_number(x);
+    mpq_t temq;
+    mpq_init(temq);
+    mpq_set_ui(temq, 1, 1);
+    mpq_add(rep_NUMBER(x,q), rep_NUMBER(x,q), temq);
+    mpq_clear(temq);
+    return maybe_demote(x); }
+#endif
+
+  case rep_NUMBER_FLOAT:
+    x = copy_number(x);
+    rep_NUMBER(x,f) = rep_NUMBER(x,f) + 1;
+    return x;
+
+  default:
+    return rep_signal_arg_error(x, 1);
+  }
+
+  /* not reached */
+}
+
+static NOT_INLINE repv
+rep_number_neg__(repv x)
 {
   rep_DECLARE1(x, rep_NUMERICP);
 
@@ -1470,13 +1475,13 @@ rep_number_neg(repv x)
   return out;
 }
 
-repv
-rep_number_sub(repv x, repv y)
+static NOT_INLINE repv
+rep_number_sub__(repv x, repv y)
 {
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
 
-  repv out = promote_dup(&x, &y);
+  repv out = promote_dup__(&x, &y);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT:
@@ -1512,39 +1517,66 @@ rep_number_sub(repv x, repv y)
   return out;
 }
 
-repv
-rep_number_mul(repv x, repv y)
+static NOT_INLINE repv
+rep_number_sub1__(repv x)
+{
+  rep_DECLARE1(x, rep_NUMERICP);
+
+  switch (rep_NUMERIC_TYPE(x)) {
+  case rep_NUMBER_INT:
+    return rep_make_long_int(rep_INT(x) - 1);
+
+  case rep_NUMBER_BIGNUM:
+    x = copy_number(x);
+#ifdef HAVE_GMP
+    mpz_sub_ui(rep_NUMBER(x,z), rep_NUMBER(x,z), 1);
+#else
+    rep_NUMBER(x,z) = rep_NUMBER(x,z) - 1;
+#endif
+    return maybe_demote(x);
+
+#ifdef HAVE_GMP
+  case rep_NUMBER_RATIONAL: {
+    x = copy_number(x);
+    mpq_t temq;
+    mpq_init(temq);
+    mpq_set_si(temq, 1, 1);
+    mpq_sub(rep_NUMBER(x,q), rep_NUMBER(x,q), temq);
+    mpq_clear(temq);
+    return maybe_demote(x); }
+#endif
+
+  case rep_NUMBER_FLOAT:
+    x = copy_number(x);
+    rep_NUMBER(x,f) = rep_NUMBER(x,f) - 1;
+    return x;
+
+  default:
+    return rep_signal_arg_error(x, 1);
+  }
+}
+
+static NOT_INLINE repv
+rep_number_mul__(repv x, repv y)
 {
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
 
-  repv out = promote_dup(&x, &y);
+  repv out = promote_dup__(&x, &y);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT: {
-#if INTPTR_MAX < LONG_LONG_MAX
-    long long tot = ((long long)rep_INT(x)) * ((long long)rep_INT(y));
-    out = rep_make_longlong_int(tot);
-#else
-    /* No larger integral type to cast input values to. */
-    long long a = rep_INT(x);
-    long long b = rep_INT(y);
-    long long tot = a * b;
-    if (b == 0 || a <= INT64_MAX / b) {
-      out = rep_make_longlong_int(tot);
-    } else {
+    /* Only got here because rep_number_mul() overflowed. */
 #ifdef HAVE_GMP
-      number_z *z = make_number(rep_NUMBER_BIGNUM);
-      mpz_init_set_si(z->z, rep_INT(x));
-      mpz_t tem;
-      mpz_init_set_si(tem, rep_INT(y));
-      mpz_mul(z->z, z->z, tem);
-      mpz_clear(tem);
-      out = rep_VAL(z);
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
+    mpz_init_set_si(z->z, rep_INT(x));
+    mpz_t tem;
+    mpz_init_set_si(tem, rep_INT(y));
+    mpz_mul(z->z, z->z, tem);
+    mpz_clear(tem);
+    out = maybe_demote(rep_VAL(z));
 #else
-      out = rep_make_float((double)a * (double)b, false);
-#endif
-    }
+    out = rep_make_float((double)a * (double)b, false);
 #endif
     break; }
 
@@ -1577,8 +1609,8 @@ rep_number_mul(repv x, repv y)
   return out;
 }
 
-repv
-rep_number_div(repv x, repv y)
+static NOT_INLINE repv
+rep_number_div__(repv x, repv y)
 {
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
@@ -1587,7 +1619,7 @@ rep_number_div(repv x, repv y)
     return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
   }
 
-  repv out = promote_dup(&x, &y);
+  repv out = promote_dup__(&x, &y);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT:
@@ -1662,8 +1694,8 @@ rep_number_div(repv x, repv y)
   return out;
 }
 
-repv
-rep_number_lognot(repv x)
+static NOT_INLINE repv
+rep_number_lognot__(repv x)
 {
   rep_DECLARE1(x, rep_NUMERICP);
 
@@ -1691,13 +1723,13 @@ rep_number_lognot(repv x)
   return out;
 }
 
-repv
-rep_number_logior(repv x, repv y)
+static NOT_INLINE repv
+rep_number_logior__(repv x, repv y)
 {
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
 
-  repv out = promote_dup(&x, &y);
+  repv out = promote_dup__(&x, &y);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT:
@@ -1719,13 +1751,13 @@ rep_number_logior(repv x, repv y)
   return out;
 }
 
-repv
-rep_number_logxor(repv x, repv y)
+static NOT_INLINE repv
+rep_number_logxor__(repv x, repv y)
 {
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
 
-  repv out = promote_dup(&x, &y);
+  repv out = promote_dup__(&x, &y);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT:
@@ -1754,13 +1786,13 @@ rep_number_logxor(repv x, repv y)
   return out;
 }
 
-repv
-rep_number_logand(repv x, repv y)
+static NOT_INLINE repv
+rep_number_logand__(repv x, repv y)
 {
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
 
-  repv out = promote_dup(&x, &y);
+  repv out = promote_dup__(&x, &y);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT:
@@ -1782,8 +1814,8 @@ rep_number_logand(repv x, repv y)
   return out;
 }
 
-repv
-rep_number_max(repv x, repv y)
+static NOT_INLINE repv
+rep_number_max__(repv x, repv y)
 {
   repv max;
 
@@ -1799,8 +1831,8 @@ rep_number_max(repv x, repv y)
   return max;
 }
 
-repv
-rep_number_min(repv x, repv y)
+static NOT_INLINE repv
+rep_number_min__(repv x, repv y)
 {
   repv min;
 
@@ -1816,120 +1848,112 @@ rep_number_min(repv x, repv y)
   return min;
 }
 
-repv
-rep_integer_gcd(repv x, repv y)
+static NOT_INLINE repv
+Ffloor__(repv x)
 {
-  repv out = promote_dup(&x, &y);
+  rep_DECLARE1(x, rep_NUMBERP);
 
-  if (rep_INTP(x)) {
-    /* Euclid's algorithm */
+  switch (rep_NUMBER_TYPE(x)) {
+  case rep_NUMBER_BIGNUM:
+    return x;
 
-    intptr_t m = rep_INT(x);
-    intptr_t n = rep_INT(y);
-    m = ABS(m); n = ABS(n);
-
-    while (m != 0) {
-      intptr_t t = n % m;
-      n = m;
-      m = t;
-    }
-
-    out = rep_MAKE_INT(n);
-
-  } else {
 #ifdef HAVE_GMP
-    mpz_gcd(rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
-#else
-    /* Same as above */
-
-    long long m = rep_NUMBER(x,z);
-    long long n = rep_NUMBER(y,z);
-    m = ABS(m); n = ABS(n);
-
-    while (m != 0) {
-      long long t = n % m;
-      n = m;
-      m = t;
-    }
-
-    rep_NUMBER(out,z) = n;
+  case rep_NUMBER_RATIONAL: {
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
+    mpz_init(z->z);
+    mpz_fdiv_q(z->z, mpq_numref(rep_NUMBER(x,q)),
+	       mpq_denref(rep_NUMBER(x, q)));
+    return maybe_demote(rep_VAL(z)); }
 #endif
-  }
 
-  return out;
+  case rep_NUMBER_FLOAT:
+    return rep_make_float(floor(rep_NUMBER(x,f)), true);
+
+  default:
+    return rep_signal_arg_error(x, 1);
+  }
 }
 
-DEFUN("+", Fplus, Splus, (int argc, repv *argv), rep_SubrV) /*
-::doc:rep.lang.math#+::
-+ NUMBERS...
-
-Adds all NUMBERS together. If no arguments are given returns 0.
-::end:: */
+static NOT_INLINE repv
+Fceiling__(repv x)
 {
-  if (argc == 0) {
-    return rep_MAKE_INT(0);
-  } else {
-    return number_foldv(argc, argv, rep_number_add);
+  rep_DECLARE1(x, rep_NUMBERP);
+
+  switch (rep_NUMBER_TYPE(x)) {
+  case rep_NUMBER_BIGNUM:
+    return x;
+
+#ifdef HAVE_GMP
+  case rep_NUMBER_RATIONAL: {
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
+    mpz_init(z->z);
+    mpz_cdiv_q(z->z, mpq_numref(rep_NUMBER(x,q)),
+	       mpq_denref(rep_NUMBER(x, q)));
+    return maybe_demote(rep_VAL(z)); }
+#endif
+
+  case rep_NUMBER_FLOAT:
+    return rep_make_float(ceil(rep_NUMBER(x,f)), true);
+
+  default:
+    return rep_signal_arg_error(x, 1);
   }
 }
 
-DEFUN("-", Fminus, Sminus, (int argc, repv *argv), rep_SubrV) /*
-::doc:rep.lang.math#-::
-- NUMBER [NUMBERS...]
-
-Either returns the negation of NUMBER or the value of NUMBER minus
-NUMBERS
-::end:: */
+static NOT_INLINE repv
+Ftruncate__(repv x)
 {
-  if (argc == 0) {
-    return rep_signal_missing_arg(1);
-  } else if (argc == 1) {
-    return rep_number_neg(argv[0]);
-  } else {
-    return number_foldv(argc, argv, rep_number_sub);
+  rep_DECLARE1(x, rep_NUMBERP);
+
+  switch (rep_NUMBER_TYPE(x)) {
+  case rep_NUMBER_BIGNUM:
+    return x;
+
+#ifdef HAVE_GMP
+  case rep_NUMBER_RATIONAL: {
+    number_z *z = make_number(rep_NUMBER_BIGNUM);
+    mpz_init(z->z);
+    mpz_tdiv_q(z->z, mpq_numref(rep_NUMBER(x,q)),
+	       mpq_denref(rep_NUMBER(x, q)));
+    return maybe_demote(rep_VAL(z)); }
+#endif
+
+  case rep_NUMBER_FLOAT: {
+    double d = rep_NUMBER(x,f);
+    d = d < 0 ? -floor(-d) : floor(d);
+    return rep_make_float(d, true); }
+
+  default:
+    return rep_signal_arg_error(x, 1);
   }
 }
 
-DEFUN("*", Fproduct, Sproduct, (int argc, repv *argv), rep_SubrV) /*
-::doc:rep.lang.math#*::
-* NUMBERS...
-
-Multiplies all NUMBERS together. If no numbers are given returns 1.
-::end:: */
+static NOT_INLINE repv
+Fround__(repv x)
 {
-  if (argc == 0) {
-    return rep_MAKE_INT(1);
-  } else {
-    return number_foldv(argc, argv, rep_number_mul);
+  rep_DECLARE1(x, rep_NUMBERP);
+
+  switch (rep_NUMBER_TYPE(x)) {
+  case rep_NUMBER_INT:
+  case rep_NUMBER_BIGNUM:
+    return x;
+
+#ifdef HAVE_GMP
+  case rep_NUMBER_RATIONAL:
+    return rep_make_long_int((intptr_t)round_even
+			     (mpq_get_d(rep_NUMBER(x,q))));
+#endif
+
+  case rep_NUMBER_FLOAT:
+    return rep_make_float(round_even(rep_NUMBER(x,f)), true);
+
+  default:
+    return rep_signal_arg_error(x, 1);
   }
 }
 
-DEFUN("/", Fdivide, Sdivide, (int argc, repv *argv), rep_SubrV) /*
-::doc:rep.lang.math#/::
-/ NUMBERS...
-
-Divides NUMBERS(in left-to-right order).
-::end:: */
-{
-  if (argc == 0) {
-    return rep_signal_missing_arg(1);
-  } else if (argc == 1) {
-    return rep_number_div(rep_MAKE_INT(1), argv[0]);
-  } else {
-    return number_foldv(argc, argv, rep_number_div);
-  }
-}
-
-DEFUN("remainder", Fremainder, Sremainder, (repv n1, repv n2), rep_Subr2) /*
-::doc:rep.lang.math#remainder::
-remainder DIVIDEND DIVISOR
-
-Returns the remainder after dividing DIVIDEND by DIVISOR, that is:
-
-  (remainder X Y) == (- X (* Y (truncate (/ X Y)))),
-
-for Y not equal to zero.
-::end:: */
+static NOT_INLINE repv
+Fremainder__(repv n1, repv n2)
 {
   rep_DECLARE1(n1, rep_NUMERICP);
   rep_DECLARE2(n2, rep_NUMERICP);
@@ -1938,7 +1962,7 @@ for Y not equal to zero.
     return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
   }
 
-  repv out = promote_dup(&n1, &n2);
+  repv out = promote_dup__(&n1, &n2);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT:
@@ -1987,16 +2011,8 @@ for Y not equal to zero.
   return out;
 }
 
-DEFUN("modulo", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
-::doc:rep.lang.math#modulo::
-modulo DIVIDEND DIVISOR
-
-Returns the value of DIVIDEND modulo DIVISOR, that is:
-
-  (modulo X Y) == (- X (* Y (floor (/ X Y)))),
-
-for Y not equal to zero.
-::end:: */
+static NOT_INLINE repv
+Fmodulo__(repv n1, repv n2)
 {
   rep_DECLARE1(n1, rep_NUMERICP);
   rep_DECLARE2(n2, rep_NUMERICP);
@@ -2005,17 +2021,11 @@ for Y not equal to zero.
     return Fsignal(Qarith_error, rep_LIST_1(rep_VAL(&div_zero)));
   }
 
-  repv out = promote_dup(&n1, &n2);
+  repv out = promote_dup__(&n1, &n2);
 
   switch (rep_NUMERIC_TYPE(out)) {
   case rep_NUMBER_INT: {
-    /* This code from GNU Emacs */
-    intptr_t tem = rep_INT(n1) % rep_INT(n2);
-    /* If the "remainder" comes out with the wrong sign, fix it.  */
-    if (rep_INT(n2) < 0 ? tem > 0 : tem < 0) {
-      tem += rep_INT(n2);
-    }
-    out = rep_MAKE_INT(tem);
+    out = rep_MAKE_INT(modulo_int(rep_INT(n1), rep_INT(n2)));
     break; }
 
   case rep_NUMBER_BIGNUM: {
@@ -2076,12 +2086,8 @@ for Y not equal to zero.
   return out;
 }
 
-DEFUN("quotient", Fquotient, Squotient, (repv n1, repv n2), rep_Subr2) /*
-::doc:rep.lang.math#quotient::
-quotient DIVIDEND DIVISOR
-
-Returns the quotient from dividing numbers DIVIDEND and DIVISOR.
-::end:: */
+static NOT_INLINE repv
+Fquotient__(repv n1, repv n2)
 {
   rep_DECLARE1(n1, rep_NUMERICP);
   rep_DECLARE2(n2, rep_NUMERICP);
@@ -2139,6 +2145,322 @@ Returns the quotient from dividing numbers DIVIDEND and DIVISOR.
   return out;
 }
 
+/* Fast path functions. These assume rep_INT(x) := 4x + 2. */
+
+repv
+rep_number_add(repv x, repv y)
+{
+  if (rep_INTP_2(x, y)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+    long z;
+    if (!__builtin_saddl_overflow(x, y - 2, &z)) {
+      return (repv)z;
+    }
+#else
+    return make_long_int(rep_INT(x) + rep_INT(y));
+#endif
+  }
+
+  return rep_number_add__(x, y);
+}
+
+repv
+rep_number_neg(repv x)
+{
+  if (rep_INTP(x)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+    long y;
+    if (!__builtin_ssubl_overflow(4, x, &y)) {
+      return (repv)y;
+    }
+#else
+    return make_long_int(-rep_INT(x));
+#endif
+  }
+
+  return rep_number_neg__(x);
+}
+
+repv
+rep_number_sub(repv x, repv y)
+{
+  if (rep_INTP_2(x, y)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+    long z;
+    if (!__builtin_ssubl_overflow(x, y - 2, &z)) {
+      return (repv)z;
+    }
+#else
+    return make_long_int(rep_INT(x) - rep_INT(y));
+#endif
+  }
+
+  return rep_number_sub__(x, y);
+}
+
+repv
+rep_number_mul(repv x, repv y)
+{
+  if (rep_INTP_2(x, y)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+    long z;
+    /* ((4x+2)-2) * y + 2 == 4xy + 2. */
+    if (!__builtin_smull_overflow(x - 2, rep_INT(y), &z)
+	&& !__builtin_saddl_overflow(z, 2, &z)) {
+      return z;
+    }
+#elif INTPTR_MAX < LONG_LONG_MAX
+    long long z = (long long)rep_INT(x) * (long long)rep_INT(y);
+    return rep_make_longlong_int(z);
+#else
+    /* No larger integral type to cast input values to. */
+    long long a = rep_INT(x);
+    long long b = rep_INT(y);
+    long long c = a * b;
+    if (b == 0 || a <= INT64_MAX / b) {
+      return rep_make_longlong_int(c);
+    }
+#endif
+  }
+
+  return rep_number_mul__(x, y);
+}
+
+repv
+rep_number_div(repv x, repv y)
+{
+  if (rep_INTP_2(x, y) && y != rep_MAKE_INT(0)) {
+    return rep_MAKE_INT(rep_INT(x) / rep_INT(y));
+  }
+
+  return rep_number_div__(x, y);
+}
+
+repv
+rep_number_lognot(repv x)
+{
+  if (rep_INTP(x)) {
+    return rep_MAKE_INT(~rep_INT(x));
+  }
+
+  return rep_number_lognot__(x);
+}
+
+repv
+rep_number_logior(repv x, repv y)
+{
+  if (rep_INTP_2(x, y)) {
+    return rep_MAKE_INT(rep_INT(x) | rep_INT(y));
+  }
+
+  return rep_number_logior__(x, y);
+}
+
+repv
+rep_number_logxor(repv x, repv y)
+{
+  if (rep_INTP_2(x, y)) {
+    return rep_MAKE_INT(rep_INT(x) ^ rep_INT(y));
+  }
+
+  return rep_number_logxor__(x, y);
+}
+
+repv
+rep_number_logand(repv x, repv y)
+{
+  if (rep_INTP_2(x, y)) {
+    return rep_MAKE_INT(rep_INT(x) & rep_INT(y));
+  }
+
+  return rep_number_logand__(x, y);
+}
+
+repv
+rep_number_max(repv x, repv y)
+{
+  if (rep_INTP_2(x, y)) {
+    return x > y ? x : y;
+  }
+
+  return rep_number_max__(x, y);
+}
+
+repv
+rep_number_min(repv x, repv y)
+{
+  if (rep_INTP_2(x, y)) {
+    return x < y ? x : y;
+  }
+
+  return rep_number_min__(x, y);
+}
+
+repv
+rep_integer_gcd(repv x, repv y)
+{
+  repv out = promote_dup(&x, &y);
+
+  if (rep_INTP(x)) {
+    /* Euclid's algorithm */
+
+    intptr_t m = rep_INT(x);
+    intptr_t n = rep_INT(y);
+    m = ABS(m); n = ABS(n);
+
+    while (m != 0) {
+      intptr_t t = n % m;
+      n = m;
+      m = t;
+    }
+
+    out = rep_MAKE_INT(n);
+
+  } else {
+#ifdef HAVE_GMP
+    mpz_gcd(rep_NUMBER(out,z), rep_NUMBER(x,z), rep_NUMBER(y,z));
+#else
+    /* Same as above */
+
+    long long m = rep_NUMBER(x,z);
+    long long n = rep_NUMBER(y,z);
+    m = ABS(m); n = ABS(n);
+
+    while (m != 0) {
+      long long t = n % m;
+      n = m;
+      m = t;
+    }
+
+    rep_NUMBER(out,z) = n;
+#endif
+  }
+
+  return out;
+}
+
+
+/* Lisp functions. */
+
+DEFUN("+", Fplus, Splus, (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.lang.math#+::
++ NUMBERS...
+
+Adds all NUMBERS together. If no arguments are given returns 0.
+::end:: */
+{
+  if (argc == 2) {
+    return rep_number_add(argv[0], argv[1]);
+  } else if (argc == 0) {
+    return rep_MAKE_INT(0);
+  } else {
+    return number_foldv(argc, argv, rep_number_add);
+  }
+}
+
+DEFUN("-", Fminus, Sminus, (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.lang.math#-::
+- NUMBER [NUMBERS...]
+
+Either returns the negation of NUMBER or the value of NUMBER minus
+NUMBERS
+::end:: */
+{
+  if (argc == 2) {
+    return rep_number_sub(argv[0], argv[1]);
+  } else if (argc == 1) {
+    return rep_number_neg(argv[0]);
+  } else if (argc == 0) {
+    return rep_signal_missing_arg(1);
+  } else {
+    return number_foldv(argc, argv, rep_number_sub);
+  }
+}
+
+DEFUN("*", Fproduct, Sproduct, (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.lang.math#*::
+* NUMBERS...
+
+Multiplies all NUMBERS together. If no numbers are given returns 1.
+::end:: */
+{
+  if (argc == 2) {
+    return rep_number_mul(argv[0], argv[1]);
+  } else   if (argc == 0) {
+    return rep_MAKE_INT(1);
+  } else {
+    return number_foldv(argc, argv, rep_number_mul);
+  }
+}
+
+DEFUN("/", Fdivide, Sdivide, (int argc, repv *argv), rep_SubrV) /*
+::doc:rep.lang.math#/::
+/ NUMBERS...
+
+Divides NUMBERS(in left-to-right order).
+::end:: */
+{
+  if (argc == 2) {
+    return rep_number_div(argv[0], argv[1]);
+  } else if (argc == 1) {
+    return rep_number_div(rep_MAKE_INT(1), argv[0]);
+  } else if (argc == 0) {
+    return rep_signal_missing_arg(1);
+  } else {
+    return number_foldv(argc, argv, rep_number_div);
+  }
+}
+
+DEFUN("remainder", Fremainder, Sremainder, (repv n1, repv n2), rep_Subr2) /*
+::doc:rep.lang.math#remainder::
+remainder DIVIDEND DIVISOR
+
+Returns the remainder after dividing DIVIDEND by DIVISOR, that is:
+
+  (remainder X Y) == (- X (* Y (truncate (/ X Y)))),
+
+for Y not equal to zero.
+::end:: */
+{
+  if (rep_INTP_2(n1, n2) && n2 != rep_MAKE_INT(0)) {
+    return rep_MAKE_INT(rep_INT(n1) % rep_INT(n2));
+  }
+
+  return Fremainder__(n1, n2);
+}
+
+DEFUN("modulo", Fmod, Smod, (repv n1, repv n2), rep_Subr2) /*
+::doc:rep.lang.math#modulo::
+modulo DIVIDEND DIVISOR
+
+Returns the value of DIVIDEND modulo DIVISOR, that is:
+
+  (modulo X Y) == (- X (* Y (floor (/ X Y)))),
+
+for Y not equal to zero.
+::end:: */
+{
+  if (rep_INTP_2(n1, n2) && n2 != rep_MAKE_INT(0)) {
+    return rep_MAKE_INT(modulo_int(rep_INT(n1), rep_INT(n2)));
+  }
+
+  return Fmodulo__(n1, n2);
+}
+
+DEFUN("quotient", Fquotient, Squotient, (repv n1, repv n2), rep_Subr2) /*
+::doc:rep.lang.math#quotient::
+quotient DIVIDEND DIVISOR
+
+Returns the quotient from dividing numbers DIVIDEND and DIVISOR.
+::end:: */
+{
+  if (rep_INTP_2(n1, n2) && n2 != rep_MAKE_INT(0)) {
+    return rep_MAKE_INT(rep_INT(n1) / rep_INT(n2));
+  }
+
+  return Fquotient__(n1, n2);
+}
+
 DEFUN("lognot", Flognot, Slognot, (repv num), rep_Subr1) /*
 ::doc:rep.lang.math#lognot::
 lognot NUMBER
@@ -2146,8 +2468,6 @@ lognot NUMBER
 Returns the bitwise logical `not' of NUMBER.
 ::end:: */
 {
-  rep_DECLARE1(num, rep_NUMERICP);
-
   return rep_number_lognot(num);
 }
 
@@ -2158,7 +2478,9 @@ logior NUMBERS...
 Returns the bitwise logical `inclusive-or' of its arguments.
 ::end:: */
 {
-  if (argc == 0) {
+  if (argc == 2) {
+    return rep_number_logior(argv[0], argv[1]);
+  } else if (argc == 0) {
     return rep_MAKE_INT(0);
   } else {
     return number_foldv(argc, argv, rep_number_logior);
@@ -2172,7 +2494,11 @@ logxor NUMBERS...
 Returns the bitwise logical `exclusive-or' of its arguments.
 ::end:: */
 {
-  return number_foldv(argc, argv, rep_number_logxor);
+  if (argc == 2) {
+    return rep_number_logxor(argv[0], argv[1]);
+  } else {
+    return number_foldv(argc, argv, rep_number_logxor);
+  }
 }
 
 DEFUN("logand", Flogand, Slogand, (int argc, repv *argv), rep_SubrV) /*
@@ -2182,7 +2508,11 @@ logand NUMBERS...
 Returns the bitwise logical `and' of its arguments.
 ::end:: */
 {
-  return number_foldv(argc, argv, rep_number_logand);
+  if (argc == 2) {
+    return rep_number_logand(argv[0], argv[1]);
+  } else {
+    return number_foldv(argc, argv, rep_number_logand);
+  }
 }
 
 DEFUN("eqv?", Feql, Seql, (repv arg1, repv arg2), rep_Subr2) /*
@@ -2211,11 +2541,10 @@ zero? NUMBER
 Return t if NUMBER is zero.
 ::end:: */
 {
-  if (rep_NUMERICP(num)) {
-    switch (rep_NUMERIC_TYPE(num)) {
-    case rep_NUMBER_INT:
-      return num == rep_MAKE_INT(0) ? Qt : rep_nil;
-
+  if (rep_INTP(num)) {
+    return num == rep_MAKE_INT(0) ? Qt : rep_nil;
+  } else if (rep_NUMBERP(num)) {
+    switch (rep_NUMBER_TYPE(num)) {
     case rep_NUMBER_BIGNUM:
 #ifdef HAVE_GMP
       return mpz_sgn(rep_NUMBER(num,z)) == 0 ? Qt : rep_nil;
@@ -2236,92 +2565,46 @@ Return t if NUMBER is zero.
   return rep_nil;
 }
 
-DEFUN("1+", Fplus1, Splus1, (repv num), rep_Subr1) /*
+DEFUN("1+", Fplus1, Splus1, (repv x), rep_Subr1) /*
 ::doc:rep.lang.math#1+::
 1+ NUMBER
 
 Return NUMBER plus 1.
 ::end:: */
 {
-  rep_DECLARE1(num, rep_NUMERICP);
-
-  switch (rep_NUMERIC_TYPE(num)) {
-  case rep_NUMBER_INT:
-    return rep_make_long_int(rep_INT(num) + 1);
-
-  case rep_NUMBER_BIGNUM:
-    num = copy_number(num);
-#ifdef HAVE_GMP
-    mpz_add_ui(rep_NUMBER(num,z), rep_NUMBER(num,z), 1);
+  if (rep_INTP(x)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+    long z;
+    if (!__builtin_saddl_overflow(x, 4, &z)) {
+      return (repv)z;
+    }
 #else
-    rep_NUMBER(num,z) = rep_NUMBER(num,z) + 1;
+    return make_long_int(rep_INT(x) + 1);
 #endif
-    return maybe_demote(num);
-
-#ifdef HAVE_GMP
-  case rep_NUMBER_RATIONAL: {
-    num = copy_number(num);
-    mpq_t temq;
-    mpq_init(temq);
-    mpq_set_ui(temq, 1, 1);
-    mpq_add(rep_NUMBER(num,q), rep_NUMBER(num,q), temq);
-    mpq_clear(temq);
-    return maybe_demote(num); }
-#endif
-
-  case rep_NUMBER_FLOAT:
-    num = copy_number(num);
-    rep_NUMBER(num,f) = rep_NUMBER(num,f) + 1;
-    return num;
-
-  default:
-    return rep_signal_arg_error(num, 1);
   }
 
-  /* not reached */
+  return rep_number_add1__(x);
 }
 
-DEFUN("1-", Fsub1, Ssub1, (repv num), rep_Subr1) /*
+DEFUN("1-", Fsub1, Ssub1, (repv x), rep_Subr1) /*
 ::doc:rep.lang.math#1-::
 1- NUMBER
 
 Return NUMBER minus 1.
 ::end:: */
 {
-  rep_DECLARE1(num, rep_NUMERICP);
-
-  switch (rep_NUMERIC_TYPE(num)) {
-  case rep_NUMBER_INT:
-    return rep_make_long_int(rep_INT(num) - 1);
-
-  case rep_NUMBER_BIGNUM:
-    num = copy_number(num);
-#ifdef HAVE_GMP
-    mpz_sub_ui(rep_NUMBER(num,z), rep_NUMBER(num,z), 1);
+  if (rep_INTP(x)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+    long z;
+    if (!__builtin_ssubl_overflow(x, 4, &z)) {
+      return (repv)z;
+    }
 #else
-    rep_NUMBER(num,z) = rep_NUMBER(num,z) - 1;
+    return make_long_int(rep_INT(x) + 1);
 #endif
-    return maybe_demote(num);
-
-#ifdef HAVE_GMP
-  case rep_NUMBER_RATIONAL: {
-    num = copy_number(num);
-    mpq_t temq;
-    mpq_init(temq);
-    mpq_set_si(temq, 1, 1);
-    mpq_sub(rep_NUMBER(num,q), rep_NUMBER(num,q), temq);
-    mpq_clear(temq);
-    return maybe_demote(num); }
-#endif
-
-  case rep_NUMBER_FLOAT:
-    num = copy_number(num);
-    rep_NUMBER(num,f) = rep_NUMBER(num,f) - 1;
-    return num;
-
-  default:
-    return rep_signal_arg_error(num, 1);
   }
+
+  return rep_number_sub1__(x);
 }
 
 DEFUN("ash", Fash, Sash, (repv num, repv shift), rep_Subr2) /*
@@ -2398,28 +2681,11 @@ Round NUMBER downwards to the nearest integer less than or equal to
 NUMBER.
 ::end:: */
 {
-  rep_DECLARE1(arg, rep_NUMERICP);
-
-  switch (rep_NUMERIC_TYPE(arg)) {
-  case rep_NUMBER_INT:
-  case rep_NUMBER_BIGNUM:
+  if (rep_INTP(arg)) {
     return arg;
-
-#ifdef HAVE_GMP
-  case rep_NUMBER_RATIONAL: {
-    number_z *z = make_number(rep_NUMBER_BIGNUM);
-    mpz_init(z->z);
-    mpz_fdiv_q(z->z, mpq_numref(rep_NUMBER(arg,q)),
-	       mpq_denref(rep_NUMBER(arg, q)));
-    return maybe_demote(rep_VAL(z)); }
-#endif
-
-  case rep_NUMBER_FLOAT:
-    return rep_make_float(floor(rep_NUMBER(arg,f)), true);
-
-  default:
-    return rep_signal_arg_error(arg, 1);
   }
+
+  return Ffloor__(arg);
 }
 
 DEFUN("ceiling", Fceiling, Sceiling, (repv arg), rep_Subr1) /*
@@ -2430,28 +2696,11 @@ Round NUMBER upwards to the nearest integer greater than or equal to
 NUMBER.
 ::end:: */
 {
-  rep_DECLARE1(arg, rep_NUMERICP);
-
-  switch (rep_NUMERIC_TYPE(arg)) {
-  case rep_NUMBER_INT:
-  case rep_NUMBER_BIGNUM:
+  if (rep_INTP(arg)) {
     return arg;
-
-#ifdef HAVE_GMP
-  case rep_NUMBER_RATIONAL: {
-    number_z *z = make_number(rep_NUMBER_BIGNUM);
-    mpz_init(z->z);
-    mpz_cdiv_q(z->z, mpq_numref(rep_NUMBER(arg,q)),
-	       mpq_denref(rep_NUMBER(arg, q)));
-    return maybe_demote(rep_VAL(z)); }
-#endif
-
-  case rep_NUMBER_FLOAT:
-    return rep_make_float(ceil(rep_NUMBER(arg,f)), true);
-
-  default:
-    return rep_signal_arg_error(arg, 1);
   }
+
+  return Fceiling__(arg);
 }
 
 DEFUN("truncate", Ftruncate, Struncate, (repv arg), rep_Subr1) /*
@@ -2461,44 +2710,11 @@ truncate NUMBER
 Round NUMBER to the nearest integer between NUMBER and zero.
 ::end:: */
 {
-  rep_DECLARE1(arg, rep_NUMERICP);
-
-  switch (rep_NUMERIC_TYPE(arg)) {
-  case rep_NUMBER_INT:
-  case rep_NUMBER_BIGNUM:
+  if (rep_INTP(arg)) {
     return arg;
-
-#ifdef HAVE_GMP
-  case rep_NUMBER_RATIONAL: {
-    number_z *z = make_number(rep_NUMBER_BIGNUM);
-    mpz_init(z->z);
-    mpz_tdiv_q(z->z, mpq_numref(rep_NUMBER(arg,q)),
-	       mpq_denref(rep_NUMBER(arg, q)));
-    return maybe_demote(rep_VAL(z)); }
-#endif
-
-  case rep_NUMBER_FLOAT: {
-    double d = rep_NUMBER(arg,f);
-    d = d < 0 ? -floor(-d) : floor(d);
-    return rep_make_float(d, true); }
-
-  default:
-    return rep_signal_arg_error(arg, 1);
   }
-}
 
-static double
-round_even(double x)
-{
-  /* From Guile. */
-
-  double plus_half = x + 0.5;
-  double result = floor(plus_half);
-
-  /* Adjust so that the round is towards even.  */
-
-  return ((plus_half == result && plus_half / 2 != floor(plus_half / 2))
-	  ? result - 1 : result);
+  return Ftruncate__(arg);
 }
 
 DEFUN("round", Fround, Sround, (repv arg), rep_Subr1) /*
@@ -2509,25 +2725,11 @@ Round NUMBER to the nearest integer. Halfway cases are rounded to the
 nearest even integer.
 ::end:: */
 {
-  rep_DECLARE1(arg, rep_NUMERICP);
-
-  switch (rep_NUMERIC_TYPE(arg)) {
-  case rep_NUMBER_INT:
-  case rep_NUMBER_BIGNUM:
+  if (rep_INTP(arg)) {
     return arg;
-
-#ifdef HAVE_GMP
-  case rep_NUMBER_RATIONAL:
-    return rep_make_long_int((intptr_t)round_even
-			     (mpq_get_d(rep_NUMBER(arg,q))));
-#endif
-
-  case rep_NUMBER_FLOAT:
-    return rep_make_float(round_even(rep_NUMBER(arg,f)), true);
-
-  default:
-    return rep_signal_arg_error(arg, 1);
   }
+
+  return Fround__(arg);
 }
 
 DEFUN("exp", Fexp, Sexp, (repv arg), rep_Subr1) /*
@@ -2773,12 +2975,15 @@ integer? ARG
 Return t if ARG is a integer.
 ::end:: */
 {
-  if (!rep_NUMERICP(arg)) {
+  if (rep_INTP(arg)) {
+    return Qt;
+  }
+
+  if (!rep_NUMBERP(arg)) {
     return rep_nil;
   }
 
-  switch (rep_NUMERIC_TYPE(arg)) {
-  case rep_NUMBER_INT:
+  switch (rep_NUMBER_TYPE(arg)) {
   case rep_NUMBER_BIGNUM:
     return Qt;
 

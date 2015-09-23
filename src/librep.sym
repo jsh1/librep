@@ -549,7 +549,6 @@ rep_expand_and_get_handler
 rep_file_length
 rep_find_c_symbol
 rep_find_dl_symbol
-rep_foldl
 rep_gc_n_roots_stack
 rep_gc_root_stack
 rep_gc_threshold
@@ -571,7 +570,6 @@ rep_init
 rep_init_from_dump
 rep_input_timeout_secs
 rep_int_cell
-rep_integer_foldl
 rep_integer_gcd
 rep_intern_char
 rep_intern_static
@@ -606,7 +604,6 @@ rep_message_fun
 rep_null_string
 rep_number_add
 rep_number_div
-rep_number_foldl
 rep_number_logand
 rep_number_logior
 rep_number_lognot

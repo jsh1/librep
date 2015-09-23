@@ -1065,12 +1065,21 @@ again: {
       /* Open-code fixnum arithmetic */
       repv arg2 = POP;
       repv arg1 = TOP;
-      if (rep_INTP(arg1) && rep_INTP(arg2)) {
+      if (rep_INTP_2(arg1, arg2)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+	/* see rep_number_add(). */
+	long x;
+	if (!__builtin_saddl_overflow(arg1, arg2 - 2, &x)) {
+	  TOP = (repv)x;
+	  SAFE_NEXT;
+	}
+#else
 	intptr_t x = rep_INT(arg1) + rep_INT(arg2);
 	if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT) {
 	  TOP = rep_MAKE_INT(x);
 	  SAFE_NEXT;
 	}
+#endif
       }
       TOP = rep_number_add(arg1, arg2);
       INLINE_NEXT;
@@ -1080,11 +1089,20 @@ again: {
       /* Open-code fixnum arithmetic */
       repv tem = TOP;
       if (rep_INTP(tem)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+	/* see rep_number_neg(). */
+	long x;
+	if (!__builtin_ssubl_overflow(4, tem, &x)) {
+	  TOP = (repv)x;
+	  SAFE_NEXT;
+	}
+#else
 	intptr_t x = - rep_INT(tem);
 	if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT) {
 	  TOP = rep_MAKE_INT(x);
 	  SAFE_NEXT;
 	}
+#endif
       }
       TOP = rep_number_neg(tem);
       INLINE_NEXT;
@@ -1094,19 +1112,42 @@ again: {
       /* Open-code fixnum arithmetic */
       repv arg2 = POP;
       repv arg1 = TOP;
-      if (rep_INTP(arg1) && rep_INTP(arg2)) {
+      if (rep_INTP_2(arg1, arg2)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+	/* see rep_number_sub(). */
+	long x;
+	if (!__builtin_ssubl_overflow(arg1, arg2 - 2, &x)) {
+	  TOP = (repv)x;
+	  SAFE_NEXT;
+	}
+#else
 	intptr_t x = rep_INT(arg1) - rep_INT(arg2);
 	if (x >= rep_LISP_MIN_INT && x <= rep_LISP_MAX_INT) {
 	  TOP = rep_MAKE_INT(x);
 	  SAFE_NEXT;
 	}
+#endif
       }
       TOP = rep_number_sub(arg1, arg2);
       INLINE_NEXT;
     }
 
     INSN(OP_MUL) {
-      CALL_2(rep_number_mul);
+      repv arg2 = POP;
+      repv arg1 = TOP;
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+      if (rep_INTP_2(arg1, arg2)) {
+	/* see rep_number_mul(). */
+	long x;
+	if (!__builtin_smull_overflow(arg1 - 2, rep_INT(arg2), &x)
+	    && !__builtin_saddl_overflow(x, 2, &x)) {
+	  TOP = x;
+	  SAFE_NEXT;
+	}
+      }
+#endif
+      TOP = rep_number_sub(arg1, arg2);
+      NEXT;
     }
 
     INSN(OP_DIV) {
@@ -1174,7 +1215,7 @@ again: {
     INSN(OP_GT) {
       repv arg2 = POP;
       repv arg1 = TOP;
-      if (rep_INTP(arg1) && rep_INTP(arg2)) {
+      if (rep_INTP_2(arg1, arg2)) {
 	TOP = rep_INT(arg1) > rep_INT(arg2) ? Qt : rep_nil;
 	SAFE_NEXT;
       } else if (rep_NUMBERP(arg1) || rep_NUMBERP(arg2)) {
@@ -1189,7 +1230,7 @@ again: {
     INSN(OP_GE) {
       repv arg2 = POP;
       repv arg1 = TOP;
-      if (rep_INTP(arg1) && rep_INTP(arg2)) {
+      if (rep_INTP_2(arg1, arg2)) {
 	TOP = rep_INT(arg1) >= rep_INT(arg2) ? Qt : rep_nil;
 	SAFE_NEXT;
       } else if (rep_NUMBERP(arg1) || rep_NUMBERP(arg2)) {
@@ -1204,7 +1245,7 @@ again: {
     INSN(OP_LT) {
       repv arg2 = POP;
       repv arg1 = TOP;
-      if (rep_INTP(arg1) && rep_INTP(arg1)) {
+      if (rep_INTP_2(arg1, arg2)) {
 	TOP = rep_INT(arg1) < rep_INT(arg2) ? Qt : rep_nil;
 	SAFE_NEXT;
       } else if (rep_NUMBERP(arg1) || rep_NUMBERP(arg2)) {
@@ -1219,7 +1260,7 @@ again: {
     INSN(OP_LE) {
       repv arg2 = POP;
       repv arg1 = TOP;
-      if (rep_INTP(arg1) && rep_INTP(arg2)) {
+      if (rep_INTP_2(arg1, arg2)) {
 	TOP = rep_INT(arg1) <= rep_INT(arg2) ? Qt : rep_nil;
 	SAFE_NEXT;
       } else if (rep_NUMBERP(arg1) || rep_NUMBERP(arg2)) {
@@ -1234,11 +1275,20 @@ again: {
     INSN(OP_INC) {
       repv tem = TOP;
       if (rep_INTP(tem)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+	/* see Fplus1(). */
+	long x;
+	if (!__builtin_saddl_overflow(tem, 4, &x)) {
+	  TOP = (repv)x;
+	  SAFE_NEXT;
+	}
+#else
 	intptr_t x = rep_INT(tem) + 1;
 	if (x <= rep_LISP_MAX_INT) {
 	  TOP = rep_MAKE_INT(x);
 	  SAFE_NEXT;
 	}
+#endif
       }
       TOP = Fplus1(tem);
       NEXT;
@@ -1247,11 +1297,20 @@ again: {
     INSN(OP_DEC) {
       repv tem = TOP;
       if (rep_INTP(tem)) {
+#if defined(HAVE_OVERFLOW_BUILTINS) && INTPTR_MAX == LONG_MAX
+	/* see Fsub1(). */
+	long x;
+	if (!__builtin_ssubl_overflow(tem, 4, &x)) {
+	  TOP = (repv)x;
+	  SAFE_NEXT;
+	}
+#else
 	intptr_t x = rep_INT(tem) - 1;
 	if (x >= rep_LISP_MIN_INT) {
 	  TOP = rep_MAKE_INT(x);
 	  SAFE_NEXT;
 	}
+#endif
       }
       TOP = Fsub1(tem);
       NEXT;
@@ -1815,7 +1874,7 @@ again: {
     INSN(OP_NUM_EQ) {
       repv arg2 = POP;
       repv arg1 = TOP;
-      if (rep_INTP(arg1) && rep_INTP(arg2)) {
+      if (rep_INTP_2(arg1, arg2)) {
 	TOP = arg1 == arg2 ? Qt : rep_nil;
 	SAFE_NEXT;
       } else if (rep_NUMBERP(arg1) || rep_NUMBERP(arg2)) {

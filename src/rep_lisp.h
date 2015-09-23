@@ -91,6 +91,9 @@ typedef uintptr_t repv;
 /* Is repv V a fixnum? */
 #define rep_INTP(v)		(!rep_CELLP(v))
 
+/* Are both V1 and V2 fixnums? */
+#define rep_INTP_2(v1, v2)	rep_INTP((v1) & (v2))
+
 /* Is V a fixnum and not negative? */
 #define rep_NON_NEG_INT_P(v)	(rep_INTP(v) && !(rep_INT(v) < 0))
 
