@@ -1,3 +1,7 @@
+2015-09-23  John Harper  <jsh@unfactored.org>
+
+	* rep/vm/compiler/utils.jl (compiler-deprecated): removed
+
 2015-09-22  John Harper  <jsh@unfactored.org>
 
 	* rep/vm/compiler/rep.jl, rep/vm/compiler/lap.jl,

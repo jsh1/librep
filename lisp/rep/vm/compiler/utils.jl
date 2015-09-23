@@ -31,8 +31,8 @@
 	    silence-compiler
 	    compiler-error
 	    compiler-warning
-	    compiler-deprecated
-	    remember-function forget-function
+	    remember-function
+	    forget-function
 	    remember-variable
 	    remember-lexical-variable
 	    test-variable-ref
@@ -130,6 +130,7 @@
       (set! last-current-file (fluid-ref current-file))))
 
   (put 'compile-error 'error-message "Compilation mishap")
+
   (defun compiler-error (fmt #!key form #!rest data)
     (apply compiler-message fmt #:form form data)
     (signal 'compile-error (list (apply format nil fmt data))))
@@ -137,13 +138,6 @@
   (defun compiler-warning (type fmt #!key form #!rest args)
     (when (memq type *compiler-warnings*)
       (apply compiler-message (concat "warning: " fmt) #:form form args)))
-
-  (define deprecated-seen '())
-
-  (defun compiler-deprecated (id fmt #!rest args)
-    (unless (memq id deprecated-seen)
-      (apply compiler-warning 'deprecated (concat "deprecated - " fmt) args)
-      (set! deprecated-seen (cons id deprecated-seen))))
 
 
 ;;; Code to handle warning tests
