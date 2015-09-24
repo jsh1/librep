@@ -1,5 +1,14 @@
 2015-09-24  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler.jl, rep/vm/compiler/utils.jl,
+	rep/vm/compiler/rep.jl, rep/vm/compiler/modules.jl,
+	rep/vm/compiler/inline.jl, rep/vm/compiler/bindings.jl,
+	rep/vm/compiler/basic.jl: compile let-escape directly, when
+	possible just generate jumps to the exit point. Use let-escape
+	in various places. Other compiler clean-ups. Fixed issue with
+	lambda bindings not correctly being shadowed by normal bindings
+	with the same name, and similar for global `t` constant
+
 	* rep/lang/interpreter.jl, rep/lang/define.jl: added
 	(let-escape VAR BODY..) macro, a lexical non-local exit
 

@@ -240,7 +240,7 @@
   ;; XXX this doesn't handle #!key params
   (defun test-function-call (name nargs)
     (when (symbol? name)
-      (catch 'return
+      (let-escape return
 	(let ((decl (assq name (fluid-ref defuns))))
 	  (when (and (null? decl) (or (assq name (fluid-ref inline-env))
 				      (compiler-bound? name)))
@@ -250,7 +250,7 @@
 		(when (or (subr? new-decl)
 			  (and (closure? new-decl)
 			       (eq? (car (closure-function new-decl)) 'autoload)))
-		  (throw 'return))
+		  (return))
 		(when (eq? (car new-decl) 'macro)
 		  (set! new-decl (cdr new-decl)))
 		(when (closure? new-decl)
@@ -293,7 +293,10 @@
 	(fluid-set! max-stack value))))
 
   (defun decrement-stack (#!optional (n 1))
-    (fluid-set! current-stack (- (fluid-ref current-stack) n)))
+    (let ((sp (- (fluid-ref current-stack) n)))
+      (fluid-set! current-stack sp)
+      (unless (>= sp 0)
+	(error "Invalid stack pointer"))))
 
   (defun increment-b-stack ()
     (fluid-set! current-b-stack (1+ (fluid-ref current-b-stack)))

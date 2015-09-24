@@ -24,7 +24,8 @@
 (define-structure rep.vm.compiler.inline
 
     (export compile-lambda-inline
-	    compile-tail-call)
+	    compile-tail-call
+	    compile-emitted-lambda)
 
     (open rep
 	  rep.vm.compiler.utils
@@ -154,7 +155,7 @@
 	 ;; SYMBOL, (SYMBOL . ARGS-TO-BIND), or (SYMBOL . nil)
 	 (emit-push-frame 'variable)
 	 (pop-inline-args bind-stack args-left (lambda (x)
-						 (note-binding x)
+						 (create-binding x)
 						 (emit-binding x)))
 	 (call-with-lambda-record name lambda-list 0
 	  (lambda ()
@@ -167,7 +168,6 @@
 
   (define (pop-between top bottom)
     (or (and (>= top bottom) (>= bottom 0))
-	(break)
 	(error "Invalid stack pointers: %d, %d" top bottom))
     (when (/= top bottom)
       (if (= bottom 0)
@@ -177,8 +177,11 @@
 	  (emit-insn '(pop))))))
 
   (define (unbind-between top bottom)
-    (cond ((= bottom -1) (emit-insn '(reset-frames)))
-	  ((= bottom 0)
+    (cond ((= bottom -1)
+	   (emit-insn '(reset-frames)))
+	  ;; if only one frame to remove, prefer pop-frame, as it
+	  ;; may get removed entirely by delete-binding-insns.
+	  ((and (= bottom 0) (/= top 1))
 	   (unless (<= top bottom)
 	     (emit-insn '(pop-frames))))
 	  (t (do ((bp (1- top) (1- bp)))
@@ -193,10 +196,10 @@
 	   (bind-stack (cdr out)))
       (call-with-frame
        (lambda ()
-	 (if (catch 'foo
+	 (if (let-escape done
 	       (for-each (lambda (var)
 			   (when (binding-captured? var)
-			     (throw 'foo t)))
+			     (done t)))
 			 (get-lambda-vars (lambda-args lambda-record)))
 	       nil)
 	     ;; some of the parameters bindings have been captured,
@@ -214,4 +217,13 @@
 			   (lambda-bp lambda-record)))
 	 ;; force the stack pointer to what it should be
 	 (pop-between (fluid-ref current-stack) (lambda-sp lambda-record))
-	 (emit-insn `(jmp ,(lambda-label lambda-record))))))))
+	 (emit-insn `(jmp ,(lambda-label lambda-record)))))))
+
+  (defun compile-emitted-lambda (lambda-record args)
+    (pop-between (fluid-ref current-stack) (lambda-sp lambda-record))
+    ((lambda-emitter lambda-record) args
+     ;; pass in a thunk to unbind back to where the lambda was defined,
+     ;; emitting code may need to reference variables before unbinding.
+     (lambda ()
+       (unbind-between (fluid-ref current-b-stack)
+		       (lambda-bp lambda-record))))))

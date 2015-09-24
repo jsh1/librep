@@ -298,7 +298,7 @@
 
   (defun find-language-module ()
     ;; scan all opened modules for a known language
-    (catch 'out
+    (let-escape return
       (for-each
        (lambda (struct)
 	 (if (get struct 'compiler-module)
@@ -307,7 +307,7 @@
 		   (compiler-error "unable to load module `%s'"
 				   (get struct 'compiler-module)))
 	       (fluid-set! current-language struct)
-	       (throw 'out))))
+	       (return))))
        (fluid-ref open-modules))
       (fluid-set! current-language 'no-lang)))
 

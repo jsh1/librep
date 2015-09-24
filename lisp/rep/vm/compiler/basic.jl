@@ -32,8 +32,10 @@
 	    lambda-label
 	    lambda-stack
 	    lambda-inlined set-lambda-inlined
+	    lambda-emitter
 	    current-lambda
 	    call-with-lambda-record
+	    call-with-lambda-emitter
 	    assembly-code assembly-code-set
 	    assembly-registers assembly-registers-set
 	    compile-constant compile-form-1 compile-body
@@ -66,7 +68,7 @@
     (registers assembly-registers assembly-registers-set))
 
   (define-record-type :lambda-record
-    (make-lambda-record name args depth sp bp label)
+    (make-lambda-record name args depth sp bp label emitter)
     lambda-record?
     (name lambda-name)			;name of the lambda exp or ()
     (args lambda-args)			;arg spec of the lambda
@@ -75,7 +77,8 @@
     (bp lambda-bp)			;value of current-b-stack at top
     (label lambda-label)		;label for code (after binding init)
     ;; t when inlined (from a letrec)
-    (inlined lambda-inlined set-lambda-inlined))
+    (inlined lambda-inlined set-lambda-inlined)
+    (emitter lambda-emitter))
 
   ;; list of lambda records
   (define lambda-stack (make-fluid))
@@ -83,22 +86,48 @@
 
 ;;; lambda management
 
+  ;; The lambda-stack shares its namespace with all variable bindings,
+  ;; so to allow non-lambda bindings to shadow lambdas, we ensure that
+  ;; all entries in the lambda-stack also have an item in the binding
+  ;; stack, tagged with the lambda key. So to check for a lambda-
+  ;; record being the current binding, we search for an entry with that
+  ;; tag in the environment, and if found look in the lambda-stack.
+
   (define (find-lambda name)
-    (let loop ((rest (fluid-ref lambda-stack)))
-      (cond ((null? rest) nil)
-	    ((eq? (lambda-name (car rest)) name) (car rest))
-	    (t (loop (cdr rest))))))
+    (when (lambda-binding? name)
+      (let loop ((rest (fluid-ref lambda-stack)))
+	(cond ((null? rest) nil)
+	      ((eq? (lambda-name (car rest)) name) (car rest))
+	      (t (loop (cdr rest)))))))
+
+  (define (current-lambda-depth delta)
+    (if (fluid-ref lambda-stack)
+	(+ (lambda-depth (current-lambda)) delta)
+      0))
+
+  (define (call-with-lambda-record-1 lr thunk)
+    (when (lambda-name lr)
+      (tag-lambda-binding (lambda-name lr)))
+    (let-fluids ((lambda-stack (cons lr (fluid-ref lambda-stack))))
+      (thunk)))
 
   (define (call-with-lambda-record name args depth-delta thunk)
-    (let* ((label (make-label))
-	   (depth (if (fluid-ref lambda-stack)
-		      (+ (lambda-depth (current-lambda)) depth-delta)
-		    0))
-	   (lr (make-lambda-record name args depth
-				   (fluid-ref current-stack)
-				   (fluid-ref current-b-stack) label)))
-      (let-fluids ((lambda-stack (cons lr (fluid-ref lambda-stack))))
-	(thunk))))
+    (call-with-lambda-record-1
+     (make-lambda-record name args
+			 (current-lambda-depth depth-delta)
+			 (fluid-ref current-stack)
+			 (fluid-ref current-b-stack)
+			 (make-label) nil)
+     thunk))
+
+  (define (call-with-lambda-emitter name args depth-delta emitter-thunk thunk)
+    (call-with-lambda-record-1
+     (make-lambda-record name args
+			 (current-lambda-depth depth-delta)
+			 (fluid-ref current-stack)
+			 (fluid-ref current-b-stack)
+			 nil emitter-thunk)
+     thunk))
 
   (define (current-lambda)
     (or (car (fluid-ref lambda-stack)) (error "No current lambda!")))
@@ -117,108 +146,102 @@
     (emit-insn `(push ,value))
     (increment-stack))
 
-  (define (inlinable-call? fun return-follows)
-    (let ((tem (find-lambda fun)))
-      (and tem
-	   (or (lambda-inlined tem)
-	       (and (lexically-pure?) return-follows
-		    (not (binding-modified? fun))))
-	   (= (lambda-depth tem) (lambda-depth (current-lambda)))
-	   (lambda-label tem))))
+  (define (emittable-lambda? lambda-record)
+    (and lambda-record
+	 (lambda-emitter lambda-record)
+	 (= (lambda-depth lambda-record)
+	    (lambda-depth (current-lambda)))))
+
+  (define (inlinable-lambda? lambda-record return-follows)
+    (and lambda-record
+	 (or (lambda-inlined lambda-record)
+	     (and (lexically-pure?) return-follows
+		  (not (binding-modified? (lambda-name lambda-record)))))
+	 (= (lambda-depth lambda-record) (lambda-depth (current-lambda)))
+	 (lambda-label lambda-record)))
 
   ;; Compile one form so that its value ends up on the stack when interpreted
-  (defun compile-form-1 (form #!key return-follows in-tail-slot)
+  (defun compile-form-1 (form #!key return-follows for-call tail-call)
     (cond
      ((eq? form '())
       (emit-insn '(push ()))
       (increment-stack))
-     ((eq? form t)
+
+     ((and (eq? form 't)
+	   (compiler-binding-from-rep? 't))
       (emit-insn '(push t))
       (increment-stack))
 
      ((symbol? form)
       ;; A variable reference
-      (let (val)
-	(test-variable-ref form)
-	(cond
-	 ((keyword? form)
-	  (compile-constant form))
-	 ((progn (set! val (assq form (fluid-ref const-env))) val)
-	  ;; A constant from this file
-	  (compile-constant (cdr val)))
-	 ((compiler-binding-immutable? form)
-	  ;; A known constant
-	  (compile-constant (compiler-variable-ref form)))
-	 (t
-	  ;; Not a constant
-	  (emit-varref form in-tail-slot)
-	  (increment-stack)))))
+      (test-variable-ref form)
+      (if (keyword? form)
+	  (compile-constant form)
+	(let ((value (assq form (fluid-ref const-env))))
+	  (if value
+	      ;; A constant from this file
+	      (compile-constant (cdr value))
+	    (if (compiler-binding-immutable? form)
+		;; A known constant
+		(compile-constant (compiler-variable-ref form))
+	      ;; Not a constant
+	      (emit-varref form #:for-call for-call #:tail-call tail-call)
+	      (increment-stack))))))
 
-       ((pair? form)
-	(let-fluids ((current-form form))
-	  (let ((new (source-code-transform form)))
-	    (if (pair? new)
-		(set! form new)
-	      (compile-form-1 new)
-	      (set! form nil)))
-	  (unless (null? form)
+     ((pair? form)
+      (let-fluids ((current-form form))
+	(let ((new (source-code-transform form)))
+	  (if (not (eq? new form))
+	      (compile-form-1 new #:return-follows return-follows)
 	    ;; A subroutine application of some sort
-	    (let (fun)
-	      (cond
-	       ;; Check if there's a special handler for this function
-	       ((and (variable-ref? (car form))
-		     (progn
-		       (set! fun (get-procedure-handler
-				  (car form) 'compiler-handler-property))
-		       fun))
-		(fun form return-follows))
-
-	       (t
-		;; Expand macros
+	    (let ((handler (and (variable-ref? (car form))
+				(get-procedure-handler
+				 (car form) 'compiler-handler-property))))
+	      (if handler
+		  ;; built-in function or special-form
+		  (handler form return-follows)
 		(test-function-call (car form) (list-length (cdr form)))
-		(set! fun (compiler-macroexpand form macroexpand-pred))
-		(if (not (eq? fun form))
-		    ;; The macro did something, so start again
-		    (compile-form-1 fun #:return-follows return-follows)
-		  ;; No special handler, so do it ourselves
-		  (set! fun (car form))
-		  (cond
-		   ;; XXX assumes usual rep binding of `lambda'
-		   ((and (pair? fun) (eq? (car fun) 'lambda))
-		    ;; An inline lambda expression
-		    (compile-lambda-inline (car form) (cdr form)
-					   nil return-follows))
-
-		   ;; Assume a normal function call
-
-		   ((inlinable-call? fun return-follows)
-		    ;; an inlinable tail call
-		    (note-binding-referenced fun t)
-		    (compile-tail-call (find-lambda fun) (cdr form))
-		    ;; fake it, the next caller will pop the (non-existant)
-		    ;; return value
-		    (increment-stack))
-
-		   ((and (symbol? fun)
-			 (cdr (assq fun (fluid-ref inline-env)))
-			 (not (find-lambda fun)))
-		    ;; A call to a function that should be open-coded
-		    (compile-lambda-inline (cdr (assq fun (fluid-ref inline-env)))
-					   (cdr form) nil return-follows fun))
-		   (t
-		    (compile-form-1
-		     fun #:in-tail-slot (inlinable-call? fun return-follows))
-		    (set! form (cdr form))
-		    (let ((i 0))
-		      (while (pair? form)
-			(compile-form-1 (car form))
-			(set! i (1+ i))
-			(set! form (cdr form)))
-		      (emit-insn `(call ,i))
-		      (decrement-stack i)))))))))))
-       (t
-	;; Not a variable reference or a function call; so what is it?
-	(compile-constant form))))
+		(let ((expanded (compiler-macroexpand form macroexpand-pred)))
+		  (if (not (eq? expanded form))
+		      (compile-form-1 expanded #:return-follows return-follows)
+		    (let ((fun (car expanded)))
+		      ;; FIXME: assumes usual rep binding of `lambda'?
+		      (if (and (pair? fun) (eq? (car fun) 'lambda))
+			  ;; An inline lambda expression
+			  (compile-lambda-inline
+			   (car expanded) (cdr expanded) nil return-follows)
+			(let ((lr (find-lambda fun)))
+			  (if (emittable-lambda? lr)
+			      ;; function is bound to custom emitter
+			      (compile-emitted-lambda lr (cdr expanded))
+			    (if (inlinable-lambda? lr return-follows)
+				;; inlinable tail call
+				(progn
+				  (note-binding-referenced
+				   fun #:for-call t #:tail-call t)
+				  (compile-tail-call (find-lambda fun)
+						     (cdr expanded))
+				  (increment-stack))
+			      (if (and (not lr) (symbol? fun)
+				       (cdr (assq fun (fluid-ref inline-env))))
+				  ;; function should be open-coded
+				  (compile-lambda-inline
+				   (cdr (assq fun (fluid-ref inline-env)))
+				   (cdr expanded) nil return-follows fun)
+				;; standard stack-based call
+				(compile-form-1 fun #:for-call t
+						#:tail-call return-follows)
+				(let loop ((args (cdr expanded))
+					   (i 0))
+				  (if (pair? args)
+				      (progn
+					(compile-form-1 (car args))
+					(loop (cdr args) (1+ i)))
+				    (emit-insn `(call ,i))
+				    (decrement-stack i)))))))))))))))))
+     (t
+      ;; Not a variable reference or a function call; so what is it?
+      (compile-constant form))))
 
   ;; Compile a list of forms, the last form's evaluated value is left on
   ;; the stack. If the list is empty nil is pushed.
@@ -231,12 +254,14 @@
 	(if (and (null? (cdr body)) (constant-function? (car body)) name)
 	    ;; handle named lambdas specially so we track name of current fun
 	    (compile-lambda-constant (constant-function-value (car body)) name)
-	  (compile-form-1
-	   (car body) #:return-follows (if (cdr body) nil return-follows)))
+	  (compile-form-1 (car body) #:return-follows
+			  (if (cdr body) nil return-follows)))
 	(when (cdr body)
 	  (emit-insn '(pop))
 	  (decrement-stack))
-	(set! body (cdr body)))))
+	(set! body (cdr body)))
+      (or (null? body)
+	  (compiler-error "Improper list as statement body"))))
 
 
 ;;; creating assembly code
@@ -275,7 +300,7 @@
 	     ;; emit the bindings now
 	     (do ((rest vars (cdr rest)))
 		 ((null? rest))
-	       (note-binding (car rest))
+	       (create-binding (car rest))
 	       (emit-binding (car rest))
 	       (decrement-stack)))
 	    ((symbol? rest)
@@ -321,16 +346,19 @@
 	  (body (list-tail lst 2)))
       (call-with-initial-env
        (lambda ()
-	 (call-with-lambda-record name args +1
+	 (call-with-frame
 	  (lambda ()
-	    (call-with-frame
+	    ;; so we can tag it as a named lambda
+	    (when (and name (not (has-local-binding? name)))
+	      (create-binding name #:no-location t))
+	    (call-with-lambda-record name args +1
 	     (lambda ()
 	       (compile-lambda-spec args)
 	       (fix-label (lambda-label (current-lambda)))
 	       (compile-body body t)
 	       (emit-insn '(return))
-	       (get-assembly))
-	     #:captures-bindings t)))))))
+	       (get-assembly))))
+	  #:captures-bindings t)))))
 
   (define (optimize-assembly asm)
     (when *compiler-debug*

@@ -182,7 +182,7 @@
 	((defmacro)
 	 (let ((code (call-with-frame
 		      (lambda ()
-			(note-binding '*macro-environment*)
+			(create-binding '*macro-environment*)
 			(compile-lambda (cons 'lambda (list-tail form 2))
 					(list-ref form 1)))))
 	       (tmp (assq (list-ref form 1) (fluid-ref macro-env))))
@@ -420,12 +420,12 @@
 		  (let ((tmp (car lst)))
 		    (compile-body (cdr tmp))
 		    (test-variable-bind (car tmp))
-		    (note-binding (car tmp))
+		    (create-binding (car tmp))
 		    (emit-binding (car tmp))))
 		 (t (emit-insn '(push ()))
 		    (increment-stack)
 		    (test-variable-bind (car lst))
-		    (note-binding (car lst))
+		    (create-binding (car lst))
 		    (emit-binding (car lst))))
 	   (decrement-stack)
 	   (set! lst (cdr lst)))
@@ -448,7 +448,7 @@
 		     (let ((var (or (car cell) cell)))
 		       (test-variable-bind var)
 		       (compile-constant nil)
-		       (note-binding var)
+		       (create-binding var)
 		       (emit-binding var)
 		       (decrement-stack))) bindings)
 	 ;; then set them to their values
@@ -461,31 +461,31 @@
 	 ;; Test if we can inline it away.
 	 ;; Look for forms like (letrec ((foo (lambda (..) body..))) (foo ..))
 	 ;; where `foo' only appears in inlinable tail calls in body
-	 (when (catch 'no
+	 (when (let-escape no-inline
 		 (unless (= (list-length bindings) 1)
-		   (throw 'no t))
+		   (no-inline t))
 		 (let ((var (or (caar bindings) (car bindings)))
 		       (value (cdar bindings)))
 		   (unless (and (binding-tail-call-only? var)
 				value (not (cdr value))
 				(eq? (caar value) 'lambda))
-		     (throw 'no t))
+		     (no-inline t))
 		   (set! value (car value))
 		   (let ((body (list-tail form 2)))
 		     (unless (= (list-length body) 1)
-		       (throw 'no t))
+		       (no-inline t))
 		     (set! body (car body))
 		     (when (and (eq? (car body) (get-language-property
 						'compiler-sequencer))
 				(= (list-length body) 2))
 		       (set! body (cadr body)))
 		     (unless (eq? (car body) var)
-		       (throw 'no t))
+		       (no-inline t))
 
 		     ;; okay, let's go
 		     (let-fluids ((silence-compiler t))
 		       (reload-state)
-		       ;; XXX what if this clashes?
+		       (create-binding var #:no-location t)
 		       (remember-function var (cadr value))
 		       (compile-lambda-inline value (cdr body)
 					      nil return-follows var)
@@ -518,10 +518,64 @@
 	    (emit-pop-frame 'fluid)))))))
   (put 'let-fluids 'rep-compile-fun compile-let-fluids)
 
+  (defun compile-let-escape (form #!optional return-follows)
+    (let ((var (cadr form))
+	  (body (cddr form)))
+      (call-with-frame
+       (lambda ()
+	 (push-state)
+
+	 ;; First try the general case, binding an actual closure that
+	 ;; does a dynamic exit via catch/throw using the closure as
+	 ;; the catch tag (need something unique to simulate lexical
+	 ;; scope). But if the function binding is only referenced
+	 ;; from the function slot of applications, discard all that
+	 ;; code and recompile with calls to the function as jumps to
+	 ;; the end of the compiled code body.
+
+	 (emit-push-frame 'variable)
+	 (emit-varref 'let-escape/tag)
+	 (increment-stack)
+	 (emit-insn '(call 0))
+	 (test-variable-bind var)
+	 (create-binding var)
+	 (emit-binding var)
+	 (decrement-stack)
+
+	 (catch-helper
+	  (lambda ()
+	    (emit-varref var #:for-call t)	;avoids adding not-call-only
+	    (increment-stack))
+	  (lambda ()
+	   (compile-body body)))
+
+	 (emit-pop-frame 'variable)
+
+	 (unless (binding-tagged? var 'not-call-only)
+	   ;; no one used VAR except to call it directly, so rewind
+	   (let-fluids ((silence-compiler t))
+	     (reload-state)
+	     (let ((end-label (make-label)))
+	       (create-binding var #:no-location t)
+	       ;; lambda emitters are how we replace named function
+	       ;; calls by arbitrary code
+	       (call-with-lambda-emitter var '(#!optional v) +1
+		(lambda (args unbind)
+		  (compile-form-1 (if args (car args) #undefined))
+		  (unbind)
+		  (emit-insn `(jmp ,end-label)))
+		(lambda ()
+		  (compile-body body return-follows)
+		  (fix-label end-label))))))
+	 ;; done
+	 (pop-state)))))
+  (put 'let-escape 'rep-compile-fun compile-let-escape)
+
   (defun compile-defun (form)
     (remember-function (list-ref form 1) (list-ref form 2))
     (compile-constant (list-ref form 1))
-    (compile-lambda-constant (cons 'lambda (list-tail form 2)) (list-ref form 1))
+    (compile-lambda-constant
+     (cons 'lambda (list-tail form 2)) (list-ref form 1))
     (emit-insn '(%define))
     (decrement-stack))
   (put 'defun 'rep-compile-fun compile-defun)
@@ -530,7 +584,8 @@
     (remember-function (list-ref form 1) (list-ref form 2))
     (compile-constant (list-ref form 1))
     (compile-constant 'macro)
-    (compile-lambda-constant (cons 'lambda (list-tail form 2)) (list-ref form 1))
+    (compile-lambda-constant
+     (cons 'lambda (list-tail form 2)) (list-ref form 1))
     (emit-insn '(cons))
     (emit-insn '(%define))
     (decrement-stack))
@@ -659,7 +714,7 @@
       (emit-insn '(pop))))
   (put 'case 'rep-compile-fun compile-case)
 
-  (defun compile-catch (form)
+  (defun catch-helper (tag-thunk body-thunk)
     (let ((catch-label (make-label))
 	  (start-label (make-label))
 	  (end-label (make-label)))
@@ -669,11 +724,12 @@
 	 (emit-insn `(jmp ,start-label))
 
 	 ;; catch:
-	 ;;		catch TAG
+	 ;;		TAG
+	 ;;		catch
 	 ;;		ejmp end
 	 (increment-stack)		;enter with one arg on stack
 	 (fix-label catch-label)
-	 (compile-form-1 (list-ref form 1))
+	 (tag-thunk)
 	 (emit-insn '(catch))
 	 (decrement-stack)
 	 (emit-insn `(ejmp ,end-label))
@@ -682,14 +738,21 @@
 	 ;; start:
 	 ;;		push #catch
 	 ;;		binderr
-	 ;;		FORMS...
+	 ;;		BODY
 	 ;;		pop-frame
 	 ;; end:
 	 (fix-label start-label)
 	 (emit-push-frame 'exception #:handler catch-label)
-	 (compile-body (list-tail form 2))
+	 (body-thunk)
 	 (emit-pop-frame 'exception)
 	 (fix-label end-label)))))
+
+  (defun compile-catch (form)
+    (catch-helper
+     (lambda ()
+       (compile-form-1 (list-ref form 1)))
+     (lambda ()
+       (compile-body (list-tail form 2)))))
   (put 'catch 'rep-compile-fun compile-catch)
 
   (defun compile-unwind-pro (form)
@@ -755,13 +818,13 @@
 			(compiler-error
 			 "condition-case can't bind to special variable `%s'" var))
 		      (test-variable-bind var)
-		      (note-binding var)
+		      (create-binding var)
 		      ;; XXX errorpro instruction always heap binds..
-		      (tag-binding var 'heap-allocated))
+		      (tag-binding var '(heap-allocated)))
 		  ;; something always gets bound
 		  (let ((tem (gensym)))
-		    (note-binding tem)
-		    (tag-binding tem 'heap-allocated)
+		    (create-binding tem)
+		    (tag-binding tem '(heap-allocated))
 		    ;; avoid `unused variable' warnings
 		    (note-binding-referenced tem)))
 		;; Loop over all but the last handler

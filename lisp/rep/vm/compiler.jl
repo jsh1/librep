@@ -247,7 +247,7 @@ we would like. This is due to the view of folded functions as
 			    (let ((out (make-string-output-stream))
 				  tem)
 			      (write out "#!")
-			      (catch 'done
+			      (let-escape done
 				(let loop ()
 				  (set! tem (read-char src-file))
 				  (when tem 
@@ -256,7 +256,7 @@ we would like. This is due to the view of folded functions as
 					       (set! tem (read-char src-file)))
 				      (write out tem)
 				      (when (= tem #\#)
-					(throw 'done t)))
+					(done)))
 				    (loop))))
 			      (set! header (get-output-stream-string out)))
 			  (seek-file src-file 0 'start))
