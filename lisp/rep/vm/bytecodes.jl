@@ -28,6 +28,7 @@
 	    byte-two-byte-insns byte-three-byte-insns
 	    byte-insn-stack-delta byte-constant-insns
 	    byte-varref-free-insns byte-side-effect-free-insns
+	    byte-pushes-undefined-insns
 	    byte-conditional-jmp-insns byte-jmp-insns
 	    byte-opcodes-with-constants byte-varref-insns
 	    byte-varset-insns byte-varbind-insns
@@ -73,6 +74,10 @@
 	      sqrt expt structure-ref vector-length vector-ref string-length
 	      string-ref)
            byte-varref-free-insns))
+
+  (define byte-pushes-undefined-insns
+    '(%define set set-car! set-cdr! fluid-set! string-set! vector-set!
+      array-set!))
 
   ;; list of all conditional jumps
   (define byte-conditional-jmp-insns '(jpn jpt jn jt jnp jtp))

@@ -362,9 +362,22 @@
 	    (del-0)
 	    (set! keep-going t))
 
-	   ;; pop-frame; return --> return
-	   ((and (eq? (car insn0) 'pop-frame) (eq? (car insn1) 'return))
+	   ;; {pop-frame, pop-frames, reset-frames}; return --> return
+	   ((and (eq? (car insn1) 'return)
+		 (memq (car insn0) '(pop-frame pop-frames reset-frames)))
 	    (del-0)
+	    (set! keep-going t))
+
+	   ;; pop; pop-all -> pop-all
+	   ((and (eq? (car insn1) 'pop-all) (eq? (car insn0) 'pop))
+	    (del-0)
+	    (set! keep-going t))
+
+	   ;; <pushes-undefined>; pop; undefined -> <pushes-undefined>
+	   ((and (eq? (car insn1) 'pop)
+		 (equal? insn2 '(push #undefined))
+		 (memq (car insn0) byte-pushes-undefined-insns))
+	    (del-1-2)
 	    (set! keep-going t))
 
 	   ;; <varref> X; dup... ; <varref> X --> <varref> X; dup...; dup
