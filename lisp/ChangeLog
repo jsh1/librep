@@ -1,5 +1,8 @@
 2015-09-24  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/compiler/src.jl (fold-constants): rewritten to use
+	named let instead of map -- avoids needing dynamic exit
+
 	* rep/vm/disassembler.jl: fixed "push t" output
 
 	* rep/vm/peephole.jl, rep/vm/bytecodes.jl: added a few more

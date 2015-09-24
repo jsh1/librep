@@ -49,20 +49,21 @@
   ;; This assumes that FORM is a list, and its car is one of the functions
   ;; in the comp-constant-functions list
   (defun fold-constants (form)
-    (catch 'exit
-      (let
-	  ((args (map (lambda (arg)
-			(when (pair? arg)
-			  (set! arg (compiler-macroexpand arg)))
-			(when (and (pair? arg) (foldablep (car arg)))
-			  (set! arg (fold-constants arg)))
-			(if (compiler-constant? arg)
-			    (compiler-constant-value arg)
-			  ;; Not a constant, abort, abort
-			  (throw 'exit form)))
-		      (cdr form))))
-	;; Now we have ARGS, the constant [folded] arguments from FORM
-	(quote-constant (apply (compiler-variable-ref (car form)) args)))))
+    (let loop ((rest (cdr form))
+	       (args '()))
+      (if (null? rest)
+	  ;; Now we have ARGS, the constant [folded] arguments from FORM
+	  (quote-constant
+	   (apply (compiler-variable-ref (car form)) (reverse! args)))
+	(let ((arg (car rest)))
+	  (when (pair? arg)
+	    (set! arg (compiler-macroexpand arg)))
+	  (when (and (pair? arg) (foldablep (car arg)))
+	    (set! arg (fold-constants arg)))
+	  (if (compiler-constant? arg)
+	      (loop (cdr rest) (cons (compiler-constant-value arg) args))
+	    ;; Not a constant, exit unchanged
+	    form)))))
 
   (defun coalesce-constants (folder forms)
     (when forms
