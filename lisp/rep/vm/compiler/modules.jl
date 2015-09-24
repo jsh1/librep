@@ -56,19 +56,21 @@
   (define macro-env (make-fluid '()))		;alist of (NAME . MACRO-DEF)
   (define default-macro-env (make-fluid '()))
 
-;;; module environment of form being compiled
+  ;; the name of the module containing what is being compiled
 
-  ;; the name of the module being compiled in
   (define current-module (make-fluid *user-structure*))
 
-  ;; if true, the namespace of the module being compiled in; only
-  ;; set when compiling code outside a module definition
+  ;; if true, the namespace of the module containing what is being
+  ;; compiled in; only set when compiling code outside a module
+  ;; definition
+
   (define current-structure (make-fluid
 			     (get-structure (fluid-ref current-module))))
 
   (define current-language (make-fluid 'rep))
 
   ;; the names of the currently open and accessed modules
+
   (define open-modules (make-fluid (and (fluid-ref current-structure)
 					(structure-imports
 					 (fluid-ref current-structure)))))
@@ -76,14 +78,13 @@
 					    (structure-accessible
 					     (fluid-ref current-structure)))))
 
-;;; functions
-
   (define (find-structure name)
     (condition-case nil
 	(intern-structure name)
       (file-error nil)))
 
   ;; return t if the module called STRUCT exports a variable called VAR
+
   (defun module-exports? (struct var)
     (and (symbol? var)
 	 (cond ((symbol? struct)
@@ -93,16 +94,19 @@
 		(structure-exports? struct var)))))
 
   ;; return t if ARG is a structure reference form
+
   (defun structure-ref? (arg)
     (and (eq? (car arg) 'structure-ref)
 	 (memq (locate-variable 'structure-ref) '(rep rep.module-system))))
 
   ;; return t if ARG refers to a variable
+
   (defun variable-ref? (arg)
     (or (symbol? arg) (structure-ref? arg)))
 
   ;; return the name of the structure exporting VAR to the current
   ;; structure, or nil
+
   (defun locate-variable (var)
     (if (structure-ref? var)
 	(list-ref var 1)
@@ -139,6 +143,7 @@
 		  (%structure-ref module (variable-stem var)))))))
 
   ;; if possible, return the value of variable VAR, else return nil
+
   (defun compiler-variable-ref (var)
     (let ((value (variable-ref-1 var)))
       ;; if the value is an autoload, try to load it
@@ -154,6 +159,7 @@
 	   (locate-variable var))))
 
   ;; return t if the binding of VAR comes from the rep (built-ins) module
+
   (defun compiler-binding-from-rep? (var)
     (if (structure-ref? var)
 	(eq? (list-ref var 1) 'rep)
@@ -162,6 +168,7 @@
 
   ;; return t if the binding of VAR is a known constant
   ;; (not including those in comp-constant-env)
+
   (defun compiler-binding-immutable? (var)
     (and (not (has-local-binding? var))
 	 (let ((struct (locate-variable var)))
@@ -207,6 +214,7 @@
 	  (loop out)))))
 
   ;; if OPENED or ACCESSED are `t', the current values are used
+
   (defun call-with-module-env (thunk opened accessed)
     (let-fluids ((macro-env (fluid-ref default-macro-env))
 		 (current-module (fluid-ref current-module))
@@ -228,10 +236,10 @@
 
   (defun compile-module-body-1 (body)
     (find-language-module)
-    (let
-	;; find language pass-1 and pass-2 compilers
-	((pass-1 (get-language-property 'compiler-pass-1))
-	 (pass-2 (get-language-property 'compiler-pass-2)))
+
+    ;; find language pass-1 and pass-2 compilers
+    (let ((pass-1 (get-language-property 'compiler-pass-1))
+	  (pass-2 (get-language-property 'compiler-pass-2)))
 
       ;; pass 1. remember definitions in the body for pass 2
       (when pass-1
@@ -252,9 +260,12 @@
   (defun note-require (feature)
     (unless (or (memq feature (fluid-ref open-modules))
 		(and (fluid-ref current-structure)
-		     (eval `(feature? ',feature) (fluid-ref current-structure))))
-      ;; XXX this is broken; there's no way to tell if we're trying
-      ;; XXX to load a module, or a bare file.
+		     (eval `(feature? ',feature)
+			   (fluid-ref current-structure))))
+
+      ;; FIXME: this is broken; there's no way to tell if we're trying
+      ;; to load a module, or a bare file.
+
       (cond ((get-structure feature)
 	     ;; structure already loaded..
 	     (fluid-set! open-modules (cons feature (fluid-ref open-modules))))
@@ -263,7 +274,8 @@
 	     ;; try to require it..
 	     (eval `(require ',feature) (fluid-ref current-structure))
 	     (when (get-structure feature)
-	       (fluid-set! open-modules (cons feature (fluid-ref open-modules)))))
+	       (fluid-set! open-modules (cons feature
+					      (fluid-ref open-modules)))))
 
 	    ;; no current structure, try to load the file
 	    ;; as a module..
@@ -272,8 +284,9 @@
 
 	    (t (compiler-warning "unable to require `%s'" feature)))))
 
-  ;; XXX enclose macro defs in the *user-structure*, this is different
-  ;; to with interpreted code
+  ;; FIXME: enclose macro defs in the *user-structure*, this is
+  ;; different to with interpreted code
+
   (defun note-macro-def (name body)
     (fluid-set! macro-env
 	       (cons (cons name
@@ -311,9 +324,6 @@
        (fluid-ref open-modules))
       (fluid-set! current-language 'no-lang)))
 
-
-;;; declarations
-
   ;; (declare (language LANG))
 
   (defun declare-language (form)
@@ -340,8 +350,7 @@
 		  (cons 'rep.structures (fluid-ref open-modules)))))
   (put 'module-bootstrap 'compiler-decl-fun declare-module-bootstrap)
 
-
-;;; module compilers
+  ;; Module compilers
 
   (defun compile-structure (form)
     (compile-structure-def nil (cadr form) (cddr form)))
@@ -423,8 +432,7 @@
       (emit-insn '(structure-ref))
       (decrement-stack)))
 
-
-;;; exported top-level functions
+  ;; Exported top-level functions
 
   (defun compile-function (function #!optional name)
     "Compiles the body of the function FUNCTION."

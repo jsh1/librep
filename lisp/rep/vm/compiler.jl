@@ -98,7 +98,7 @@ this:
 
 	compiler-handler-property
 	compiler-transform-property
-	compiler-foldablep
+	compiler-foldable?
 	compiler-pass-1
 	compiler-pass-2
 

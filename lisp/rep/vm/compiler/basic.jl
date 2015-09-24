@@ -94,7 +94,7 @@
   ;; tag in the environment, and if found look in the lambda-stack.
 
   (define (find-lambda name)
-    (when (lambda-binding? name)
+    (when (binding-has-lambda-record? name)
       (let loop ((rest (fluid-ref lambda-stack)))
 	(cond ((null? rest) nil)
 	      ((eq? (lambda-name (car rest)) name) (car rest))
@@ -107,7 +107,7 @@
 
   (define (call-with-lambda-record-1 lr thunk)
     (when (lambda-name lr)
-      (tag-lambda-binding (lambda-name lr)))
+      (set-binding-has-lambda-record! (lambda-name lr)))
     (let-fluids ((lambda-stack (cons lr (fluid-ref lambda-stack))))
       (thunk)))
 
@@ -172,9 +172,10 @@
       (emit-insn '(push t))
       (increment-stack))
 
+     ;; A variable reference
+
      ((symbol? form)
-      ;; A variable reference
-      (test-variable-ref form)
+      (check-variable-ref form)
       (if (keyword? form)
 	  (compile-constant form)
 	(let ((value (assq form (fluid-ref const-env))))
@@ -188,6 +189,8 @@
 	      (emit-varref form #:for-call for-call #:tail-call tail-call)
 	      (increment-stack))))))
 
+     ;; Application of some sort
+
      ((pair? form)
       (let-fluids ((current-form form))
 	(let ((new (source-code-transform form)))
@@ -200,7 +203,7 @@
 	      (if handler
 		  ;; built-in function or special-form
 		  (handler form return-follows)
-		(test-function-call (car form) (list-length (cdr form)))
+		(check-function-call (car form) (list-length (cdr form)))
 		(let ((expanded (compiler-macroexpand form macroexpand-pred)))
 		  (if (not (eq? expanded form))
 		      (compile-form-1 expanded #:return-follows return-follows)
@@ -211,37 +214,39 @@
 			  (compile-lambda-inline
 			   (car expanded) (cdr expanded) nil return-follows)
 			(let ((lr (find-lambda fun)))
-			  (if (emittable-lambda? lr)
-			      ;; function is bound to custom emitter
-			      (compile-emitted-lambda lr (cdr expanded))
-			    (if (inlinable-lambda? lr return-follows)
-				;; inlinable tail call
-				(progn
-				  (note-binding-referenced
-				   fun #:for-call t #:tail-call t)
-				  (compile-tail-call (find-lambda fun)
-						     (cdr expanded))
-				  (increment-stack))
-			      (if (and (not lr) (symbol? fun)
-				       (cdr (assq fun (fluid-ref inline-env))))
-				  ;; function should be open-coded
-				  (compile-lambda-inline
-				   (cdr (assq fun (fluid-ref inline-env)))
-				   (cdr expanded) nil return-follows fun)
-				;; standard stack-based call
-				(compile-form-1 fun #:for-call t
-						#:tail-call return-follows)
-				(let loop ((args (cdr expanded))
-					   (i 0))
-				  (if (pair? args)
-				      (progn
-					(compile-form-1 (car args))
-					(loop (cdr args) (1+ i)))
-				    (emit-insn `(call ,i))
-				    (decrement-stack i)))))))))))))))))
-     (t
-      ;; Not a variable reference or a function call; so what is it?
-      (compile-constant form))))
+			  (cond
+			   ((emittable-lambda? lr)
+			    ;; function is bound to custom emitter
+			    (compile-emitted-lambda lr (cdr expanded)))
+			   ((inlinable-lambda? lr return-follows)
+			    ;; inlinable tail call
+			    (set-binding-referenced!
+			     fun #:for-call t #:tail-call t)
+			    (compile-tail-call
+			     (find-lambda fun) (cdr expanded))
+			    (increment-stack))
+			   ((and (not lr) (symbol? fun)
+				 (cdr (assq fun (fluid-ref inline-env))))
+			    ;; function should be open-coded
+			    (compile-lambda-inline
+			     (cdr (assq fun (fluid-ref inline-env)))
+			     (cdr expanded) nil return-follows fun))
+			   ;; standard stack-based call
+			   (t (compile-form-1 fun #:for-call t
+					      #:tail-call return-follows)
+			      (let loop ((args (cdr expanded))
+					 (i 0))
+				(if (pair? args)
+				    (progn
+				      (compile-form-1 (car args))
+				      (loop (cdr args) (1+ i)))
+				  (emit-insn `(call ,i))
+				  (decrement-stack i))))))))))))))))
+
+     ;; Not a variable reference or a function call; so assume self-
+     ;; evaluating.
+
+     (t (compile-constant form))))
 
   ;; Compile a list of forms, the last form's evaluated value is left on
   ;; the stack. If the list is empty nil is pushed.
@@ -304,7 +309,7 @@
 	       (emit-binding (car rest))
 	       (decrement-stack)))
 	    ((symbol? rest)
-	     (test-variable-bind rest)
+	     (check-variable-bind rest)
 	     (emit-insn '(rest-arg))
 	     (increment-stack)
 	     (loop '() nil (cons rest vars)))
@@ -315,7 +320,7 @@
 		 (t (let ((var (or (caar rest) (car rest)))
 			  (default (cdar rest))
 			  (pushed 0))
-		      (test-variable-bind var)
+		      (check-variable-bind var)
 		      (when (eq? state 'key)
 			(compile-constant (make-keyword var))
 			(set! pushed (1+ pushed)))

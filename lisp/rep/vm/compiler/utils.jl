@@ -35,9 +35,9 @@
 	    forget-function
 	    remember-variable
 	    remember-lexical-variable
-	    test-variable-ref
-	    test-variable-bind
-	    test-function-call
+	    check-variable-ref
+	    check-variable-bind
+	    check-function-call
 	    increment-stack
 	    decrement-stack
 	    increment-b-stack
@@ -47,7 +47,7 @@
 	    compiler-constant-value
 	    constant-function?
 	    constant-function-value
-	    note-declaration)
+	    compile-declaration)
 
     (open rep
 	  rep.io.files
@@ -74,8 +74,7 @@
   (defvar *compiler-warnings* '(unused bindings parameters misc deprecated))
   (define silence-compiler (make-fluid nil))
 
-
-;;; Message output
+  ;; Message output
 
   (define last-current-file t)
   (define last-current-fun t)
@@ -139,11 +138,9 @@
     (when (memq type *compiler-warnings*)
       (apply compiler-message (concat "warning: " fmt) #:form form args)))
 
-
-;;; Code to handle warning tests
-
   ;; Note that there's a function or macro NAME with lambda-list ARGS
   ;; in the current file
+
   (defun remember-function (name args #!optional body)
     (when body
       (let ((cell (assq name (fluid-ref inline-env))))
@@ -191,19 +188,20 @@
     (let ((cell (assq name (fluid-ref defuns))))
       (fluid-set! defuns (delq! cell (fluid-ref defuns)))))
 
-  ;; Similar for variables
   (defun remember-variable (name)
     (cond ((memq name (fluid-ref defines))
 	   (compiler-error
-	    "variable `%s' was previously declared lexically" name))	;
+	    "variable `%s' was previously declared lexically" name))
 	  ((memq name (fluid-ref defvars))
-	   (compiler-warning 'misc "variable `%s' defined more than once" name))
+	   (compiler-warning
+	    'misc "variable `%s' defined more than once" name))
 	  (t
 	   (fluid-set! defvars (cons name (fluid-ref defvars))))))
 
   (defun remember-lexical-variable (name)
     (cond ((memq name (fluid-ref defvars))
-	   (compiler-error "variable `%s' was previously declared special" name))
+	   (compiler-error
+	    "variable `%s' was previously declared special" name))
 	  ((memq name (fluid-ref defines))
 	   (compiler-warning
 	    'misc "lexical variable `%s' defined more than once" name))
@@ -211,7 +209,8 @@
 	   (fluid-set! defines (cons name (fluid-ref defines))))))
 
   ;; Test that a reference to variable NAME appears valid
-  (defun test-variable-ref (name)
+
+  (defun check-variable-ref (name)
     (when (and (symbol? name)
 	       (not (keyword? name))
 	       (null? (memq name (fluid-ref defvars)))
@@ -223,7 +222,8 @@
        'bindings "referencing undeclared free variable `%s'" name)))
 
   ;; Test that binding to variable NAME appears valid
-  (defun test-variable-bind (name)
+
+  (defun check-variable-bind (name)
     (cond ((assq name (fluid-ref defuns))
 	   (compiler-warning
 	    'shadowing "binding to `%s' shadows function" name))
@@ -236,9 +236,11 @@
 	    'shadowing "binding to `%s' shadows pre-defined value" name))))
 
   ;; Test a call to NAME with NARGS arguments
-  ;; XXX functions in comp-fun-bindings aren't type-checked
-  ;; XXX this doesn't handle #!key params
-  (defun test-function-call (name nargs)
+
+  ;; FIXME: functions in comp-fun-bindings aren't type-checked.
+  ;; FIXME: this doesn't handle #!key params.
+
+  (defun check-function-call (name nargs)
     (when (symbol? name)
       (let-escape return
 	(let ((decl (assq name (fluid-ref defuns))))
@@ -249,7 +251,8 @@
 	      (when new-decl
 		(when (or (subr? new-decl)
 			  (and (closure? new-decl)
-			       (eq? (car (closure-function new-decl)) 'autoload)))
+			       (eq? (car (closure-function new-decl))
+				    'autoload)))
 		  (return))
 		(when (eq? (car new-decl) 'macro)
 		  (set! new-decl (cdr new-decl)))
@@ -277,15 +280,13 @@
 		   name nargs)
 		(when (and (null? rest) (null? keys)
 			   (> nargs (+ required (or optional 0))))
-		  (compiler-warning
-		   'parameters "too many arguments to `%s' (%d given, %d used) %S"
+		  (compiler-warning 'parameters
+		   "too many arguments to `%s' (%d given, %d used) %S"
 		   name nargs (+ required (or optional 0)) decl)))))))))
-
-
-;;; stack handling
 
   ;; Increment the current stack size, setting the maximum stack size if
   ;; necessary
+
   (defun increment-stack (#!optional (n 1))
     (let ((value (+ (fluid-ref current-stack) n)))
       (fluid-set! current-stack value)
@@ -306,83 +307,76 @@
   (defun decrement-b-stack ()
     (fluid-set! current-b-stack (1- (fluid-ref current-b-stack))))
 
-
-
   ;; Remove all keywords from a lambda list ARGS, returning the list of
   ;; variables that would be bound (in the order they would be bound)
+
   (defun get-lambda-vars (args)
-    (let
-	(vars)
-      (while args
-	(if (symbol? args)
-	    (set! vars (cons args vars))
-	  (unless (memq (car args) '(#!optional #!key #!rest))
-	    (set! vars (cons (or (caar args) (car args)) vars))))
-	(set! args (cdr args)))
-      (reverse! vars)))
+    (let loop ((rest args)
+	       (vars '()))
+      (if (null? rest)
+	  (reverse! vars)
+	(if (symbol? rest)
+	    (loop nil (cons rest vars))
+	  (loop (cdr rest)
+		(if (memq (car rest) '(#!optional #!key #!rest))
+		    vars
+		  (cons (car rest) vars)))))))
 
-
-;;; constant forms
+  ;; Return t if FORM is a constant
 
-;; Return t if FORM is a constant
-(defun compiler-constant? (form)
-  (cond
-   ((pair? form)
-    ;; XXX this is wrong, but easy..!
-    (eq? (car form) 'quote))
-   ((symbol? form)
-    (or (keyword? form)
-	(assq form (fluid-ref const-env))
-	(compiler-binding-immutable? form)))
-   ;; Assume self-evaluating
-   (t t)))
+  (defun compiler-constant? (form)
+    (cond ((pair? form)
+	   ;; FIXME: this is wrong, but easy..!
+	   (eq? (car form) 'quote))
+	  ((symbol? form)
+	   (or (keyword? form)
+	       (assq form (fluid-ref const-env))
+	       (compiler-binding-immutable? form)))
+	  ;; Assume self-evaluating
+	  (t t)))
 
-;; If FORM is a constant, return its value
-(defun compiler-constant-value (form)
-  (cond
-   ((pair? form)
-    ;; only quote
-    (list-ref form 1))
-   ((symbol? form)
-    (cond ((keyword? form) form)
-	  ((compiler-binding-immutable? form)
-	   (compiler-variable-ref form))
-	  (t (cdr (assq form (fluid-ref const-env))))))
-   (t form)))
+  ;; If FORM is a constant, return its value
 
-(defun constant-function? (form)
-  (set! form (compiler-macroexpand form))
-  (and (eq? (car form) 'lambda)
-       ;; XXX this is broken
-       (compiler-binding-from-rep? (car form))))
+  (defun compiler-constant-value (form)
+    (cond ((pair? form)
+	   ;; only quote
+	   (list-ref form 1))
+	  ((symbol? form)
+	   (cond ((keyword? form) form)
+		 ((compiler-binding-immutable? form)
+		  (compiler-variable-ref form))
+		 (t (cdr (assq form (fluid-ref const-env))))))
+	  (t form)))
 
-(defun constant-function-value (form)
-  (set! form (compiler-macroexpand form))
-  (cond ((eq? (car form) 'lambda)
-	 form)
-	((eq? (car form) 'function)
-	 (list-ref form 1))))
+  (defun constant-function? (form)
+    (set! form (compiler-macroexpand form))
+    (and (eq? (car form) 'lambda)
+	 ;; FIXME: this is broken
+	 (compiler-binding-from-rep? (car form))))
 
-
-;;; declarations
+  (defun constant-function-value (form)
+    (set! form (compiler-macroexpand form))
+    (cond ((eq? (car form) 'lambda)
+	   form)
+	  ((eq? (car form) 'function)
+	   (list-ref form 1))))
 
-(defun note-declaration (form)
-  (for-each
-   (lambda (clause)
-     (let ((handler (get (or (car clause) clause) 'compiler-decl-fun)))
-       (if handler
-	   (handler clause)
-	 (compiler-warning 'misc "unknown declaration: `%s'" clause))))
-   form))
+  ;; Declarations
 
-(defun declare-inline (form)
-  (for-each
-   (lambda (name)
-     (when (symbol? name)
-       (unless (assq name (fluid-ref inline-env))
-	 (fluid-set! inline-env (cons (cons name nil) (fluid-ref inline-env))))))
-   (cdr form)))
+  (defun compile-declaration (form)
+    (for-each
+     (lambda (clause)
+       (let ((handler (get (or (car clause) clause) 'compiler-decl-fun)))
+	 (if handler
+	     (handler clause)
+	   (compiler-warning 'misc "unknown declaration: `%s'" clause))))
+     form))
 
-(put 'inline 'compiler-decl-fun declare-inline)
-
-)
+  (defun declare-inline (form)
+    (for-each (lambda (name)
+		(when (symbol? name)
+		  (unless (assq name (fluid-ref inline-env))
+		    (fluid-set! inline-env (cons (cons name nil)
+						 (fluid-ref inline-env))))))
+	      (cdr form)))
+  (put 'inline 'compiler-decl-fun declare-inline))

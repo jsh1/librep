@@ -137,7 +137,7 @@
     (let* ((lambda-list (list-ref fun 1))
 	   (body (list-tail fun 2))
 	   (out (push-inline-args
-		 lambda-list args pushed-args-already test-variable-bind))
+		 lambda-list args pushed-args-already check-variable-bind))
 	   (args-left (car out))
 	   (bind-stack (cdr out)))
 
@@ -191,7 +191,7 @@
 
   (defun compile-tail-call (lambda-record args)
     (let* ((out (push-inline-args (lambda-args lambda-record)
-				  args nil test-variable-ref))
+				  args nil check-variable-ref))
 	   (args-left (car out))
 	   (bind-stack (cdr out)))
       (call-with-frame

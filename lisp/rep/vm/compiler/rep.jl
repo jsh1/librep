@@ -138,7 +138,7 @@
 	   (eval form)))
 
 	((declare)
-	 (note-declaration (cdr form)))
+	 (compile-declaration (cdr form)))
 
 	((eval-when-compile)
 	 (if (and (eq? (car (list-ref form 1)) 'require)
@@ -250,7 +250,7 @@
 ;;; used at compile-time.
 
   ;; tells the constant-folder which functions can be removed
-  (defun foldablep (name)
+  (defun foldable? (name)
     (memq name constant-functions))
 
   (defun trans-defvar (form)
@@ -294,7 +294,7 @@
   (put 'structure-ref 'rep-compile-fun compile-structure-ref)
 
   (defun compile-declare (form)
-    (note-declaration (cdr form))
+    (compile-declaration (cdr form))
     (compile-constant nil))
   (put 'declare 'rep-compile-fun compile-declare)
 
@@ -402,7 +402,6 @@
 	(compiler-error "too many parameters to set!: %S" form))
       (compile-form-1 val)
       (emit-varset sym)
-      (note-binding-modified sym)
       (decrement-stack)
       (emit-insn '(push #undefined))
       (increment-stack)))
@@ -419,12 +418,12 @@
 	   (cond ((pair? (car lst))
 		  (let ((tmp (car lst)))
 		    (compile-body (cdr tmp))
-		    (test-variable-bind (car tmp))
+		    (check-variable-bind (car tmp))
 		    (create-binding (car tmp))
 		    (emit-binding (car tmp))))
 		 (t (emit-insn '(push ()))
 		    (increment-stack)
-		    (test-variable-bind (car lst))
+		    (check-variable-bind (car lst))
 		    (create-binding (car lst))
 		    (emit-binding (car lst))))
 	   (decrement-stack)
@@ -446,8 +445,8 @@
 	 ;; create the bindings, should really be to void values, but use nil..
 	 (for-each (lambda (cell)
 		     (let ((var (or (car cell) cell)))
-		       (test-variable-bind var)
 		       (compile-constant nil)
+		       (check-variable-bind var)
 		       (create-binding var)
 		       (emit-binding var)
 		       (decrement-stack))) bindings)
@@ -537,7 +536,7 @@
 	 (emit-varref 'let-escape/tag)
 	 (increment-stack)
 	 (emit-insn '(call 0))
-	 (test-variable-bind var)
+	 (check-variable-bind var)
 	 (create-binding var)
 	 (emit-binding var)
 	 (decrement-stack)
@@ -551,8 +550,8 @@
 
 	 (emit-pop-frame 'variable)
 
-	 (unless (binding-tagged? var 'not-call-only)
-	   ;; no one used VAR except to call it directly, so rewind
+	 (when (binding-call-only? var)
+	   ;; no one used VAR except to call it as a function, so rewind
 	   (let-fluids ((silence-compiler t))
 	     (reload-state)
 	     (let ((end-label (make-label)))
@@ -817,16 +816,16 @@
 		      (when (spec-bound? var)
 			(compiler-error
 			 "condition-case can't bind to special variable `%s'" var))
-		      (test-variable-bind var)
+		      (check-variable-bind var)
 		      (create-binding var)
 		      ;; XXX errorpro instruction always heap binds..
-		      (tag-binding var '(heap-allocated)))
+		      (set-binding-heap-allocated! var))
 		  ;; something always gets bound
 		  (let ((tem (gensym)))
 		    (create-binding tem)
-		    (tag-binding tem '(heap-allocated))
+		    (set-binding-heap-allocated! tem)
 		    ;; avoid `unused variable' warnings
-		    (note-binding-referenced tem)))
+		    (set-binding-maybe-unused! tem)))
 		;; Loop over all but the last handler
 		(while (pair? (cdr handlers))
 		  (if (pair? (car handlers))
@@ -1314,4 +1313,4 @@
     (put 'rep 'compiler-sequencer 'progn)
     (put 'rep 'compiler-pass-1 pass-1)
     (put 'rep 'compiler-pass-2 pass-2)
-    (put 'rep 'compiler-foldablep foldablep)))
+    (put 'rep 'compiler-foldable? foldable?)))

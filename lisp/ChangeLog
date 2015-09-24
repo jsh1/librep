@@ -1,6 +1,12 @@
 2015-09-24  John Harper  <jsh@unfactored.org>
 
 	* rep/vm/compiler.jl, rep/vm/compiler/utils.jl,
+	rep/vm/compiler/src.jl, rep/vm/compiler/rep.jl,
+	rep/vm/compiler/modules.jl, rep/vm/compiler/inline.jl,
+	rep/vm/compiler/bindings.jl, rep/vm/compiler/basic.jl: more
+	compiler clean-up
+
+	* rep/vm/compiler.jl, rep/vm/compiler/utils.jl,
 	rep/vm/compiler/rep.jl, rep/vm/compiler/modules.jl,
 	rep/vm/compiler/inline.jl, rep/vm/compiler/bindings.jl,
 	rep/vm/compiler/basic.jl: compile let-escape directly, when

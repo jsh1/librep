@@ -29,23 +29,22 @@
 	    lexically-pure?
 	    call-with-dynamic-binding
 	    create-binding
-	    tag-binding
-	    binding-tagged?
-	    tag-lambda-binding
 	    spec-bound?
 	    has-local-binding?
-	    lambda-binding?
+	    binding-modified?
+	    set-binding-referenced!
+	    set-binding-has-lambda-record!
+	    binding-has-lambda-record?
+	    set-binding-heap-allocated!
+	    set-binding-maybe-unused!
+	    binding-call-only?
+	    binding-tail-call-only?
+	    binding-captured?
 	    emit-binding
 	    emit-varset
 	    emit-varref
 	    emit-push-frame
 	    emit-pop-frame
-	    note-binding-modified
-	    binding-modified?
-	    note-binding-referenced
-	    binding-referenced?
-	    binding-tail-call-only?
-	    binding-captured?
 	    allocate-bindings
 	    bytecode-env)
 
@@ -145,6 +144,9 @@
   (define (untag-cell cell tag)
     (set-cdr! cell (delq! tag (cdr cell))))
 
+  (define (cell-has-location? cell)
+    (not (cell-tagged? cell 'no-location)))
+
   ;; note that symbol VAR has been bound
 
   (define (create-binding var #!key no-location)
@@ -155,28 +157,22 @@
 	;; assume it's lexically bound otherwise
 	(set-lexical-env! frame (cons (list var) (lexical-env frame)))
 	(when no-location
-	  (tag-binding var '(no-location))))))
+	  (tag-binding! var '(no-location))))))
 
   ;; returns the binding cell (VAR . (TAGS...))
 
   (define (lexical-binding var)
     (assq var (lexical-env (fluid-ref current-frame))))
 
-  ;; same, but ignores no-location bindings
-
-  (define (lexical-binding* var)
-    (let ((cell (lexical-binding var)))
-      (and cell (not (cell-tagged? cell 'no-location)) cell)))
-
   ;; note that the outermost binding of symbol VAR has state TAG
 
-  (define (tag-binding var tags)
+  (define (tag-binding! var tags)
     (let ((cell (lexical-binding var)))
       (when cell
 	(for-each (lambda (tag)
 		    (tag-cell cell tag)) tags))))
 
-  (define (untag-binding var tags)
+  (define (untag-binding! var tags)
     (let ((cell (lexical-binding var)))
       (when cell
 	(for-each (lambda (tag)
@@ -188,11 +184,6 @@
     (let ((cell (lexical-binding var)))
       (and cell (cell-tagged? cell tag))))
 
-  (defun tag-lambda-binding (var)
-    ;; It's not an error for no binding to be found, e.g. inlined
-    ;; bodies of defsubst forms have no actual binding.
-    (tag-binding var '(lambda)))
-
   (define (spec-bound? var)
     (or (memq var (fluid-ref defvars))
 	(special-variable? var)
@@ -202,33 +193,54 @@
     (or (memq var (special-env (fluid-ref current-frame)))
 	(lexical-binding var)))
 
-  (defun lambda-binding? (var)
-    (binding-tagged? var 'lambda))
-
   ;; note that the outermost binding of VAR has been modified
-
-  (define (note-binding-modified var)
-    (tag-binding var '(modified)))
 
   (define (binding-modified? var)
     (binding-tagged? var 'modified))
 
-  (define (note-binding-referenced var #!key call tail-call)
+  (define (set-binding-referenced! var #!key call tail-call)
     (let ((tags '(referenced)))
       (unless call
 	(set! tags (cons 'not-call-only tags)))
       (unless tail-call
 	(set! tags (cons 'not-tail-call-only tags)))
-      (tag-binding var tags)))
+      (tag-binding! var tags)))
 
-  (define (binding-referenced? var)
-    (binding-tagged? var 'referenced))
+  (defun set-binding-has-lambda-record! (var)
+    ;; It's not an error for no binding to be found, e.g. inlined
+    ;; bodies of defsubst forms have no actual binding.
+    (tag-binding! var '(lambda)))
+
+  (defun binding-has-lambda-record? (var)
+    (binding-tagged? var 'lambda))
+
+  (define (set-binding-heap-allocated! var)
+    (tag-binding! var '(heap-allocated)))
+
+  (define (set-binding-maybe-unused! var)
+    (tag-binding! var '(maybe-unused)))
+
+  (define (binding-call-only? var)
+    (not (binding-tagged? var 'not-call-only)))
 
   (define (binding-tail-call-only? var)
     (not (binding-tagged? var 'not-tail-call-only)))
 
+  (define (capture-cell-if-necessary! cell)
+    (when (memq cell (closure-env (fluid-ref current-frame)))
+      ;; cell is the far side of the current closure, i.e. the binding
+      ;; going to be captured by the closure.
+      (tag-cell cell 'captured)))
+
   (define (binding-captured? var)
     (binding-tagged? var 'captured))
+
+  (define (cell-heap-allocated? cell)
+    (or (cell-tagged? cell 'captured)
+	;; used to tag bindings unconditionally on the heap
+	(cell-tagged? cell 'heap-allocated)))
+
+  ;; Code generation
 
   (define (emit-binding var)
     (if (spec-bound? var)
@@ -239,27 +251,22 @@
 	  (decrement-stack))
       (emit-insn `(lex-bind ,var ,(lexical-env (fluid-ref current-frame))))))
 
-  (define (capture-cell-if-necessary cell)
-    (when (memq cell (closure-env (fluid-ref current-frame)))
-      ;; cell is the far side of the current closure, i.e. the binding
-      ;; going to be captured by the closure.
-      (tag-cell cell 'captured)))
-
   (define (emit-varset sym)
-    (test-variable-ref sym)
+    (check-variable-ref sym)
     (if (spec-bound? sym)
 	(progn
 	  (emit-insn `(push ,sym))
 	  (increment-stack)
 	  (emit-insn '(%set))
 	  (decrement-stack))
-      (let ((cell (lexical-binding* sym)))
-	(if cell
+      (let ((cell (lexical-binding sym)))
+	(if (and cell (cell-has-location? cell))
 	    (progn
 	      ;; The lexical address is known. Use it to avoid scanning
 	      (emit-insn
 	       `(lex-set ,sym ,(lexical-env (fluid-ref current-frame))))
-	      (capture-cell-if-necessary cell))
+	      (capture-cell-if-necessary! cell)
+	      (tag-cell cell '(modified)))
 	  ;; No lexical binding, but not special either. Just
 	  ;; update the global value
 	  (emit-insn `(setq ,sym))))))
@@ -272,14 +279,14 @@
 	  (increment-stack)
 	  (emit-insn '(ref))
 	  (decrement-stack))
-      (let ((cell (lexical-binding* form)))
-	(if cell
+      (let ((cell (lexical-binding form)))
+	(if (and cell (cell-has-location? cell))
 	    (progn
 	      ;; We know the lexical address, so use it
 	      (emit-insn
 	       `(lex-ref ,form ,(lexical-env (fluid-ref current-frame))))
-	      (capture-cell-if-necessary cell)
-	      (note-binding-referenced form #:call for-call
+	      (capture-cell-if-necessary! cell)
+	      (set-binding-referenced! form #:call for-call
 				       #:tail-call tail-call))
 	  ;; It's not bound, so just update the global value
 	  (emit-insn `(refq ,form))))))
@@ -319,7 +326,7 @@
 	  (if (and (eq? (special-env frame) (special-env saved-frame))
 		   (let loop ((rest (lexical-env frame)))
 		     (cond ((eq? rest (lexical-env saved-frame)) t)
-			   ((cell-captured? (car rest)) nil)
+			   ((cell-heap-allocated? (car rest)) nil)
 			   (t (loop (cdr rest))))))
 	      ;; only lexical bindings, don't need push/pop-frame
 	      (delete-binding-insns (fluid-ref current-b-stack) saved-code)
@@ -343,13 +350,7 @@
 		  (loop rest))
 	      (loop (cdr rest))))))))
 
-
-;; allocation of bindings, either on stack or in heap
-
-  (define (cell-captured? cell)
-    (or (cell-tagged? cell 'captured)
-	;; used to tag bindings unconditionally on the heap
-	(cell-tagged? cell 'heap-allocated)))
+  ;; Allocation of bindings, either on stack or in heap
 
   ;; heap addresses count up from the _most_ recent binding
 
@@ -357,8 +358,8 @@
     (let loop ((rest bindings)
 	       (i 0))
       (cond ((null? rest) (error "No heap address for %s" var))
-	    ((or (not (cell-captured? (car rest)))
-		 (cell-tagged? (car rest) 'no-location))
+	    ((or (not (cell-heap-allocated? (car rest)))
+		 (not (cell-has-location? (car rest))))
 	     (loop (cdr rest) i))
 	    ((eq? (caar rest) var) i)
 	    (t (loop (cdr rest) (1+ i))))))
@@ -373,8 +374,8 @@
 	     (let loop-2 ((rest (cdr rest))
 			  (i 0))
 	       (cond ((eq? rest base-env) i)
-		     ((or (cell-captured? (car rest))
-			  (cell-tagged? (car rest) 'no-location))
+		     ((or (cell-heap-allocated? (car rest))
+			  (not (cell-has-location? (car rest))))
 		      (loop-2 (cdr rest) i))
 		     (t (loop-2 (cdr rest) (1+ i))))))
 	    (t (loop (cdr rest))))))
@@ -392,7 +393,7 @@
 	     (let* ((var (list-ref (car rest) 1))
 		    (bindings (list-ref (car rest) 2))
 		    (cell (assq var bindings)))
-	       (if (cell-captured? cell)
+	       (if (cell-heap-allocated? cell)
 		   (set-car! rest (case (caar rest)
 				  ((lex-bind) (list 'bind))
 				  ((lex-ref)
@@ -439,7 +440,8 @@
   (define (declare-bound form)
     (let loop ((vars (cdr form)))
       (when vars
-	(create-binding (car vars) #:no-location t)
+	(unless (has-local-binding? (car vars))
+	  (create-binding (car vars) #:no-location t))
 	(loop (cdr vars)))))
   (put 'bound 'compiler-decl-fun declare-bound)
 
@@ -458,13 +460,13 @@
   (define (declare-heap-allocated form)
     (let loop ((vars (cdr form)))
       (when vars
-	(tag-binding (car vars) '(heap-allocated))
+	(set-binding-heap-allocated! (car vars))
 	(loop (cdr vars)))))
   (put 'heap-allocated 'compiler-decl-fun declare-heap-allocated)
 
   (define (declare-unused form)
     (let loop ((vars (cdr form)))
       (when vars
-	(tag-binding (car vars) '(maybe-unused))
+	(set-binding-maybe-unused! (car vars))
 	(loop (cdr vars)))))
   (put 'unused 'compiler-decl-fun declare-unused))

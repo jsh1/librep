@@ -24,7 +24,6 @@
 (define-structure rep.vm.compiler.src
 
     (export coalesce-constants
-	    mash-constants
 	    source-code-transform)
 
     (open rep
@@ -36,9 +35,9 @@
 
 ;;; Constant folding
 
-  (defun foldablep (name)
+  (defun foldable? (name)
     (unless (has-local-binding? name)
-      (let ((fun (get-procedure-handler name 'compiler-foldablep)))
+      (let ((fun (get-procedure-handler name 'compiler-foldable?)))
 	(and fun (fun name)))))
 
   (defun quote-constant (value)
@@ -58,7 +57,7 @@
 	(let ((arg (car rest)))
 	  (when (pair? arg)
 	    (set! arg (compiler-macroexpand arg)))
-	  (when (and (pair? arg) (foldablep (car arg)))
+	  (when (and (pair? arg) (foldable? (car arg)))
 	    (set! arg (fold-constants arg)))
 	  (if (compiler-constant? arg)
 	      (loop (cdr rest) (cons (compiler-constant-value arg) args))
@@ -80,21 +79,11 @@
 		     (cdr rest)))
 	      (t (loop (cons first result) (car rest) (cdr rest)))))))
 
-  (defun mash-constants (folder forms)
-    (let ((consts (filter compiler-constant? forms))
-	  (non-consts (filter (lambda (x)
-				(not (compiler-constant? x))) forms)))
-      (if consts
-	  (cons (quote-constant
-		 (apply folder (map compiler-constant-value consts)))
-		non-consts)
-	non-consts)))
-
 ;;; Entry point
 
   (defun source-code-transform (form)
     ;; first try constant folding
-    (when (and (pair? form) (foldablep (car form)))
+    (when (and (pair? form) (foldable? (car form)))
       (set! form (fold-constants form)))
 	 
     ;; then look for a specific tranformer
