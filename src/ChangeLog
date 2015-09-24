@@ -1,3 +1,9 @@
+2015-09-24  John Harper  <jsh@unfactored.org>
+
+	* dlopen.c: scan modules features by symbol not string
+	comparison. Fix bug when looking for symbols in first module to
+	be loaded
+
 2015-09-23  John Harper  <jsh@unfactored.org>
 
 	* numbers.c, lispmach.h: use __builtin_foo_overflow()

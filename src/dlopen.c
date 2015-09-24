@@ -192,15 +192,11 @@ find_dl_module(repv file)
 static int
 find_dl_module_by_feature(repv feature)
 {
-  assert(rep_STRINGP(feature));
+  assert(rep_SYMBOLP(feature));
 
   for (int i = 0; i < dl_module_count; i++) {
-    repv sym = dl_modules[i].feature_sym;
-    if (rep_SYMBOLP(sym)) {
-      repv name = rep_SYM(sym)->name;
-      if (strcmp(rep_STR(name), rep_STR(feature)) == 0) {
-	return i;
-      }
+    if (dl_modules[i].feature_sym == feature) {
+      return i;
     }
   }
 
@@ -469,9 +465,9 @@ rep_find_dl_symbol(repv feature, char *symbol)
 {
   assert(rep_SYMBOLP(feature));
 
-  int idx = find_dl_module_by_feature(rep_SYM(feature)->name);
+  int idx = find_dl_module_by_feature(feature);
 
-  if (idx <= 0) {
+  if (idx < 0) {
     return NULL;
   }
 
