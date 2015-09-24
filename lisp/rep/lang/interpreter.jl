@@ -420,6 +420,22 @@ progn or the value given to any matching `throw' form."
 VALUE from it."
   (raise-exception (cons tag value)))
 
+(defmacro let-escape (var #!rest body)
+  "Evaluate BODY in an implicit progn with variable VAR bound to a
+procedure with one (optional) parameter. When (VAR VALUE) is called
+within BODY control will pass out of BODY to the continuation of the
+let-escape form, returning VALUE. If no VALUE is given, the function
+returns the undefined value."
+  (list 'let (list (list var '(let-escape/tag))) (list* 'catch var body)))
+
+;; let-escape/tag is also used by compiled code.
+
+(defun let-escape/tag ()
+  ;; this only works because lambda always creates a new closure
+  (letrec ((thrower (lambda (#!optional (v #undefined))
+		      (throw thrower v))))
+    thrower))
+
 (defmacro unwind-protect (form . body)
   "Return the result of evaluating FORM. When execution leaves the
 dynamic extent of FORM evaluate `(progn BODY)' (even if exiting due to
@@ -473,8 +489,9 @@ DATA)' while the handler is evaluated (these are the arguments given to
 (defvar *error-handler-function* default-error-handler)
 
 (export-bindings '(call-with-catch call-with-unwind-protect
-		   call-with-error-handlers catch throw
-		   unwind-protect condition-case default-error-handler))
+		   call-with-error-handlers catch throw let-escape
+		   let-escape/tag call-with-escape unwind-protect
+		   condition-case default-error-handler))
 
 
 ;; Function to allow easy creation of autoload stubs

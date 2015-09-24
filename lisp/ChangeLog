@@ -1,5 +1,8 @@
 2015-09-24  John Harper  <jsh@unfactored.org>
 
+	* rep/lang/interpreter.jl, rep/lang/define.jl: added
+	(let-escape VAR BODY..) macro, a lexical non-local exit
+
 	* rep/vm/compiler/src.jl (fold-constants): rewritten to use
 	named let instead of map -- avoids needing dynamic exit
 

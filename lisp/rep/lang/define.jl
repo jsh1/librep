@@ -155,6 +155,10 @@
 		  (cadr form))
 	     (define-scan-internals (cddr form))))
 
+      ((let-escape)
+       (list 'let-escape (cadr form)
+	     (define-scan-internals (cddr form))))
+
       ((set!)
        (list 'set! (cadr form) (define-scan-form (caddr form))))
 
