@@ -1,5 +1,7 @@
 2015-09-24  John Harper  <jsh@unfactored.org>
 
+	* rep/vm/disassembler.jl: fixed "push t" output
+
 	* rep/vm/peephole.jl, rep/vm/bytecodes.jl: added a few more
 	peephole rules
 

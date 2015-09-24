@@ -42,7 +42,7 @@
      "env-ref" nil nil nil nil nil nil nil
      "ref" "%set" "fluid-ref" "enclose"
      "push-frame" "pop-frame" "dup" "swap"	; #x40
-     "pop" "push ()" "push " "cons"
+     "pop" "push ()" "push t" "cons"
      "car" "cdr" "set-car!" "set-cdr!"
      "list-ref" "list-tail" "array-set!" "array-ref"
      "length" "bind" "add" "neg" "sub"	; #x50
