@@ -8,6 +8,10 @@ libexecdir="./.libexec"
 libs="rep.io.db.gdbm rep.i18n.gettext rep.io.readline \
  rep.lang.record-profile rep.io.timers rep.util.md5 rep.ffi"
 
+if [ "x$ENABLE_MAC" != "xNO" ]; then
+  libs="$libs mac.runloop"
+fi
+
 rm -rf $libexecdir
 
 for f in $libs; do

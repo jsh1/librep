@@ -1,5 +1,8 @@
 2015-09-24  John Harper  <jsh@unfactored.org>
 
+	* mac-runloop.m, fake-libexec, Makefile.in: imported Mac
+	runloop support from jade, as mac.runloop module
+
 	* dlopen.c: scan modules features by symbol not string
 	comparison. Fix bug when looking for symbols in first module to
 	be loaded

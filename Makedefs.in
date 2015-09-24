@@ -52,6 +52,7 @@ LIBTOOL=@LIBTOOL@
 MAKEDEP=@MAKEDEP@
 CPPFLAGS=-DHAVE_CONFIG_H -I. -I$(top_srcdir)/src -I.. @CPPFLAGS@
 CFLAGS=@CFLAGS@
+MFLAGS=@MFLAGS@
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
 LIBOBJS=@LIBOBJS@
@@ -62,6 +63,8 @@ GDBM_LIBS=@GDBM_LIBS@
 FFI_LIBS=@FFI_LIBS@
 INTL_LIBS=@INTL_LIBS@
 ALLOCA=@ALLOCA@
+ENABLE_MAC=@ENABLE_MAC@
+MAC_LIBS=@MAC_LIBS@
 
 DESTDIR=
 INSTALL=@INSTALL@
@@ -89,23 +92,45 @@ include $(top_srcdir)/rules.mk
 rep_LIBTOOL=@LIBTOOL@
 
 # Rule for ``normal'' C objects
+
 %.o : %.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
+%.o : %.m
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(MFLAGS) -o $@ $<
+
 # Rule for ``normal'' executables
+
 % : %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 
+% : %.m
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(MFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
+
 # Rule for libtool controlled C objects
+
 %.lo : %.c
 	$(LIBTOOL) --mode=compile $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
+%.lo : %.m
+	$(LIBTOOL) --mode=compile $(CC) -c $(CPPFLAGS) $(CFLAGS) $(MFLAGS) $<
+
 # Rule for dlopen'able C objects
+
 %.la : %.c
 	$(LIBTOOL) --mode=compile $(CC) -c $(CPPFLAGS) $(CFLAGS) $<
-	$(rep_DL_LD) $(CPPFLAGS) $(CFLAGS) -o $@ $*.lo
+	$(rep_DL_LD) $(CPPFLAGS) $(CFLAGS) $(MFLAGS) -o $@ $*.lo
+
+%.la : %.m
+	$(LIBTOOL) --mode=compile $(CC) -c $(CPPFLAGS) $(CFLAGS) $(MFLAGS) $<
+	$(rep_DL_LD) $(CPPFLAGS) $(CFLAGS) $(MFLAGS) -o $@ $*.lo
 
 # Build dependancy files from C source files.
+
 .%.d : %.c
 	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< \
+	| sed '\''s/$*\.o/& $*.lo .$*\.d/g'\'' > $@'
+
+.%.d : %.m
+	$(SHELL) -ec '$(CC) -MM $(CPPFLAGS) $(CFLAGS) $< \
 	| sed '\''s/$*\.o/& $*.lo .$*\.d/g'\'' > $@'

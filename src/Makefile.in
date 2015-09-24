@@ -21,7 +21,7 @@
 top_builddir=..
 VPATH=@srcdir@:@top_srcdir@
 
-SRCS =	apply.c arrays.c autoload.c call-hook.c characters.c \
+SRCS :=	apply.c arrays.c autoload.c call-hook.c characters.c \
 	closures.c compare.c datums.c debug-buffer.c dlopen.c \
 	environ.c errors.c eval.c files.c find.c fluids.c gc.c \
 	gh.c guardians.c input.c lambda.c lispmach.c lists.c load.c \
@@ -31,18 +31,24 @@ SRCS =	apply.c arrays.c autoload.c call-hook.c characters.c \
 	structures.c subr-utils.c symbols.c tables.c time.c tuples.c \
 	types.c utf8-utils.c variables.c vectors.c weak-refs.c
 
-INSTALL_HDRS = rep.h rep_lisp.h rep_regexp.h rep_subrs.h rep_gh.h
+INSTALL_HDRS := rep.h rep_lisp.h rep_regexp.h rep_subrs.h rep_gh.h
 
-OBJS = $(SRCS:.c=.lo)
+OBJS := $(SRCS:.c=.lo)
+
+DL_MAC_SRCS := mac-runloop.m
+DL_MAC_OBJS := runloop.la
+DL_MAC_DSTS := mac/runloop.la
+DL_MAC_DIRS := mac
 
 DL_SRCS = timers.c gettext.c readline.c rep-gdbm.c record-profile.c \
-	md5.c ffi.c
+	md5.c ffi.c $(DL_$(ENABLE_MAC)_SRCS)
 DL_OBJS = timers.la gettext.la readline.la gdbm.la record-profile.la \
-	md5.la ffi.la
+	md5.la ffi.la $(DL_$(ENABLE_MAC)_OBJS)
 DL_DSTS = rep/io/timers.la rep/i18n/gettext.la rep/io/readline.la \
 	rep/io/db/gdbm.la rep/ffi.la rep/lang/record-profile.la \
-	rep/util/md5.la
-DL_DIRS = rep rep/io rep/io/db rep/i18n rep/lang rep/vm rep/util
+	rep/util/md5.la $(DL_$(ENABLE_MAC)_DSTS)
+DL_DIRS = rep rep/io rep/io/db rep/i18n rep/lang rep/vm rep/util \
+	$(DL_$(ENABLE_MAC)_DIRS)
 
 REP_SRCS = rep.c
 REP_OBJS = $(REP_SRCS:.c=.o)
@@ -146,8 +152,11 @@ md5.la : md5.lo rep-md5.lo
 ffi.la : ffi.lo
 	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(FFI_LIBS)
 
+runloop.la : mac-runloop.lo
+	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(MAC_LIBS)
+
 .libexec : $(DL_OBJS)
-	$(SHELL) $(srcdir)/fake-libexec
+	ENABLE_MAC=$(ENABLE_MAC) $(SHELL) $(srcdir)/fake-libexec
 
 clean :
 	rm -f *~ *.o *.lo *.la build.h
@@ -161,4 +170,5 @@ realclean : distclean
 
 check :
 
--include $(SRCS:%.c=.%.d) $(DL_SRCS:%.c=.%.d) $(REP_SRCS:%.c=.%.d)
+-include $(patsubst %.c,.%.d,$(filter %.c,$(SRCS) $(DL_SRCS) $(REP_SRCS)))
+-include $(patsubst %.m,.%.d,$(filter %.m,$(SRCS) $(DL_SRCS) $(REP_SRCS)))
