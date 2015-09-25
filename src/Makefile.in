@@ -35,7 +35,7 @@ INSTALL_HDRS := rep.h rep_lisp.h rep_regexp.h rep_subrs.h rep_gh.h
 
 OBJS := $(SRCS:.c=.lo)
 
-DL_MAC_SRCS := mac-runloop.m
+DL_MAC_SRCS := mac-runloop.m ffi-objc.m
 DL_MAC_OBJS := runloop.la
 DL_MAC_DSTS := mac/runloop.la
 DL_MAC_DIRS := mac
@@ -149,7 +149,7 @@ readline.la : readline.lo
 md5.la : md5.lo rep-md5.lo
 	$(rep_DL_LD) $(LDFLAGS) -o $@ $^
 
-ffi.la : ffi.lo
+ffi.la : @FFI_OBJS@
 	$(rep_DL_LD) $(LDFLAGS) -o $@ $^ $(FFI_LIBS)
 
 runloop.la : mac-runloop.lo

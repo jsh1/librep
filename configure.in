@@ -246,7 +246,9 @@ if test "$with_ffi" != "no"; then
     fi
   fi
 fi
+FFI_OBJS=ffi.lo
 AC_SUBST(FFI_LIBS)
+AC_SUBST(FFI_OBJS)
 
 dnl Check for dynamic loading
 AC_CHECK_HEADER(dlfcn.h, [AC_DEFINE(HAVE_DLFCN_H)])
@@ -322,6 +324,9 @@ if test "$use_mac" = "yes"; then
   ENABLE_MAC=MAC
   MFLAGS=
   MAC_LIBS="-framework AppKit -framework Foundation -framework CoreFoundation"
+  CPPFLAGS="${CPPFLAGS} -DHAVE_FFI_OBJECTS=1"
+  FFI_OBJS="${FFI_OBJS} ffi-objc.lo"
+  FFI_LIBS="${FFI_LIBS} -framework Foundation -framework CoreFoundation"
   AC_SUBST(MFLAGS)
   AC_SUBST(MAC_LIBS)
 fi

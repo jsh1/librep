@@ -61,23 +61,7 @@
    this should be enough to allow everything to be handled by higher
    level code. */
 
-#include "repint.h"
-
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <inttypes.h>
-
-#if defined (HAVE_FFI_H)
-#include <ffi.h>
-#elif defined (HAVE_FFI_FFI_H)
-#include <ffi/ffi.h>
-#endif
-
-/* long_uint functions take/return uintptr_t. */
-#define rep_make_pointer(p) rep_make_long_uint((unsigned long) p)
-#define rep_get_pointer(x)  (void *) rep_get_long_uint(x)
-#define rep_pointerp(x)     rep_INTEGERP(x)
+#include "rep-ffi.h"
 
 #undef ALIGN
 #define ALIGN(v, a)     (((size_t)(v) + (a) - 1) & ~((a) - 1))
@@ -98,6 +82,10 @@ enum rep_ffi_subtype_enum {
   rep_FFI_PRIMITIVE = 0,
   rep_FFI_STRUCT,
   rep_FFI_ALIAS,
+  rep_FFI_STRING,
+#ifdef HAVE_FFI_OBJECTS
+  rep_FFI_OBJECT,
+#endif
 };
 
 struct rep_ffi_alias_struct {
@@ -146,11 +134,11 @@ static rep_ffi_interface **ffi_interfaces;
 static bool
 ffi_types_equal_p(const rep_ffi_type *a, const rep_ffi_type *b)
 {
-  if (a->type != NULL && a->type == b->type) {
-    return true;
-  }
   if (a->subtype != b->subtype) {
     return false;
+  }
+  if (a->type != NULL && a->type == b->type) {
+    return true;
   }
 
   switch (a->subtype) {
@@ -260,6 +248,7 @@ rep_ffi_marshal(unsigned int type_id, repv value, char *ptr)
   switch (type->subtype) {
     DEFSTRING(err, "unknown ffi type id");
     DEFSTRING(err2, "ffi struct expected a vector or list");
+    DEFSTRING(err3, "ffi type expected a string");
 
   case rep_FFI_PRIMITIVE:
     switch (type->type->type) {
@@ -368,6 +357,24 @@ rep_ffi_marshal(unsigned int type_id, repv value, char *ptr)
     }
 
     return rep_ffi_marshal(s->base, value, ptr); }
+
+  case rep_FFI_STRING:
+    if (!rep_STRINGP(value)) {
+      Fsignal(Qerror, rep_list_2(rep_VAL(&err3), value));
+      return NULL;
+    }
+    *(const void **)ptr = rep_STR(value);
+    return ptr + sizeof(void *);
+
+#ifdef HAVE_FFI_OBJECTS
+  case rep_FFI_OBJECT: {
+    void *obj = rep_ffi_object_pointer(value);
+    if (!obj) {
+      return NULL;
+    }
+    *(void **)ptr = obj;
+    return ptr + sizeof(void *); }
+#endif
 
   default:
     Fsignal(Qerror, rep_list_2(rep_VAL(&err), rep_MAKE_INT(type_id)));
@@ -482,7 +489,17 @@ rep_ffi_demarshal(unsigned int type_id, char *ptr, repv *value)
     }
     
     return ptr; }
+
+  case rep_FFI_STRING:
+    *value = rep_string_copy(*(void **)ptr);
+    return ptr + sizeof(void *);
     
+#ifdef HAVE_FFI_OBJECTS
+  case rep_FFI_OBJECT:
+    *value = rep_ffi_make_object(*(void **)ptr);
+    return ptr + sizeof(void *);
+#endif
+
   default:
     Fsignal(Qerror, rep_list_2(rep_VAL(&err), rep_MAKE_INT(type_id)));
     return NULL;
@@ -573,6 +590,17 @@ ffi_add_primitive_type(ffi_type *type)
 
   s->subtype = rep_FFI_PRIMITIVE;
   s->type = type;
+
+  return rep_MAKE_INT(ffi_alloc_type(s));
+}
+
+static repv
+ffi_add_custom_type(unsigned int subtype)
+{
+  rep_ffi_type *s = rep_alloc(sizeof(rep_ffi_type));
+
+  s->subtype = subtype;
+  s->type = &ffi_type_pointer;
 
   return rep_MAKE_INT(ffi_alloc_type(s));
 }
@@ -859,14 +887,16 @@ DEFUN("ffi-load-library", Fffi_load_library,
 }
 
 DEFUN("ffi-lookup-symbol", Fffi_lookup_symbol,
-      Sffi_lookup_symbol, (repv handle, repv name), rep_Subr2)
+      Sffi_lookup_symbol, (repv name, repv handle), rep_Subr2)
 {
-  if (handle != rep_nil) {
-    rep_DECLARE1(handle, rep_INTP);
-  }
-  rep_DECLARE2(name, rep_STRINGP);
+  rep_DECLARE1(name, rep_STRINGP);
 
-    /* anything outside the range of valid handles means RTLD_DEFAULT. */
+  if (handle != rep_nil) {
+    rep_DECLARE2(handle, rep_INTP);
+  }
+
+  /* anything outside the range of valid handles means RTLD_DEFAULT. */
+
   void *ptr = rep_dl_lookup_symbol(handle != rep_nil ? rep_INT(handle) : -1,
 				   rep_STR(name));
 
@@ -889,6 +919,8 @@ DEFSYM(ffi_type_float, "ffi-type-float");
 DEFSYM(ffi_type_double, "ffi-type-double");
 DEFSYM(ffi_type_longdouble, "ffi-type-longdouble");
 DEFSYM(ffi_type_pointer, "ffi-type-pointer");
+DEFSYM(ffi_type_string, "ffi-type-string");
+DEFSYM(ffi_type_object, "ffi-type-object");
 
 repv
 rep_dl_init(void)
@@ -908,6 +940,8 @@ rep_dl_init(void)
   rep_INTERN(ffi_type_double);
   rep_INTERN(ffi_type_longdouble);
   rep_INTERN(ffi_type_pointer);
+  rep_INTERN(ffi_type_string);
+  rep_INTERN(ffi_type_object);
   
 #ifdef HAVE_LIBFFI
   Fset(Qffi_type_void, ffi_add_primitive_type(&ffi_type_void));
@@ -923,6 +957,12 @@ rep_dl_init(void)
   Fset(Qffi_type_double, ffi_add_primitive_type(&ffi_type_double));
   Fset(Qffi_type_longdouble, ffi_add_primitive_type(&ffi_type_longdouble));
   Fset(Qffi_type_pointer, ffi_add_primitive_type(&ffi_type_pointer));
+  Fset(Qffi_type_string, ffi_add_custom_type(rep_FFI_STRING));
+# ifdef HAVE_FFI_OBJECTS
+  Fset(Qffi_type_object, ffi_add_custom_type(rep_FFI_OBJECT));
+# else
+  Fset(Qffi_type_object, rep_nil);
+# endif
 #else
   Fset(Qffi_type_void, rep_nil);
   Fset(Qffi_type_uint8, rep_nil);
@@ -937,6 +977,8 @@ rep_dl_init(void)
   Fset(Qffi_type_double, rep_nil);
   Fset(Qffi_type_longdouble, rep_nil);
   Fset(Qffi_type_pointer, rep_nil);
+  Fset(Qffi_type_string, rep_nil);
+  Fset(Qffi_type_object, rep_nil);
 #endif
   
   Fexport_binding(Qffi_type_void);
@@ -952,6 +994,8 @@ rep_dl_init(void)
   Fexport_binding(Qffi_type_double);
   Fexport_binding(Qffi_type_longdouble);
   Fexport_binding(Qffi_type_pointer);
+  Fexport_binding(Qffi_type_string);
+  Fexport_binding(Qffi_type_object);
   
   rep_ADD_SUBR(Sffi_struct);
   rep_ADD_SUBR(Sffi_type);
@@ -966,6 +1010,10 @@ rep_dl_init(void)
   rep_ADD_SUBR(Sffi_address_of);
   rep_ADD_SUBR(Sffi_set_);
   rep_ADD_SUBR(Sffi_get);
+
+#ifdef HAVE_FFI_OBJECTS
+  rep_ffi_objects_init();
+#endif
   
   return rep_pop_structure(tem);
 }

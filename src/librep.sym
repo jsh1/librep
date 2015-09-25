@@ -540,6 +540,9 @@ rep_deref_local_symbol_fun
 rep_deregister_input_fd
 rep_deregister_input_fd_fun
 rep_documentation_property
+rep_dl_intern_library
+rep_dl_lookup_symbol
+rep_dl_open_structure
 rep_env
 rep_eol_datum
 rep_eval

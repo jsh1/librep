@@ -1,3 +1,8 @@
+2015-09-25  John Harper  <jsh@unfactored.org>
+
+	* rep-ffi.h, librep.sym, ffi.c, ffi-objc.m, Makefile.in:
+	starting to add Objective C support to FFI module
+
 2015-09-24  John Harper  <jsh@unfactored.org>
 
 	* mac-runloop.m, fake-libexec, Makefile.in: imported Mac
