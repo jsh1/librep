@@ -260,6 +260,16 @@ typedef struct rep_guardian_struct {
 #endif
 
 
+/* For flags field of rep_type. */
+
+enum rep_type_flags {
+  rep_TYPE_INITIALIZED = 1U << 0,
+  rep_TYPE_HAS_APPLY = 1U << 1,		/* originally had non-nil apply */
+  rep_TYPE_INPUT_STREAM = 1U << 2,	/* originally had non-nil getc */
+  rep_TYPE_OUTPUT_STREAM = 1U << 3,	/* originally had non-nil putc */
+};
+
+
 /* prototypes */
 
 #include "repint_subrs.h"

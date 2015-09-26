@@ -31,10 +31,7 @@ rep_value_cmp(repv v1, repv v2)
   }
 
   if (v1 && v2) {
-    rep_type *t1 = rep_get_data_type(rep_TYPE(v1));
-    if (t1) {
-      return t1->compare(v1, v2);
-    }
+    return rep_value_type(v1)->compare(v1, v2);
   }
 
   return 1;

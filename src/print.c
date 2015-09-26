@@ -155,7 +155,7 @@ void
 rep_princ_val(repv strm, repv val)
 {
   if (val) {
-    rep_type *t = rep_get_data_type(rep_TYPE(val));
+    const rep_type *t = rep_value_type(val);
 
     rep_GC_root gc_strm, gc_val;
     rep_PUSHGC(gc_strm, strm);
@@ -171,7 +171,7 @@ void
 rep_print_val(repv strm, repv val)
 {
   if (val) {
-    rep_type *t = rep_get_data_type(rep_TYPE(val));
+    const rep_type *t = rep_value_type(val);
 
     rep_GC_root gc_strm, gc_val;
     rep_PUSHGC(gc_strm, strm);

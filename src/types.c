@@ -41,10 +41,44 @@ rep_type_cmp(repv val1, repv val2)
     return !(rep_TYPE(val1) == rep_TYPE(val2));
 }
 
+static repv
+apply_error(repv fun, int argc, repv *argv)
+{
+  return Fsignal(Qinvalid_function, rep_list_1(fun));
+}
+
+static int
+getc_error(repv obj)
+{
+  Fsignal(Qinvalid_stream, rep_list_1(obj));
+  return EOF;
+}
+
+static int
+ungetc_error(repv obj, int c)
+{
+  Fsignal(Qinvalid_stream, rep_list_1(obj));
+  return EOF;
+}
+
+static int
+putc_error(repv obj, int c)
+{
+  Fsignal(Qinvalid_stream, rep_list_1(obj));
+  return EOF;
+}
+
+static intptr_t
+puts_error(repv obj, const void *data, intptr_t length, bool lisp_obj_p)
+{
+  Fsignal(Qinvalid_stream, rep_list_1(obj));
+  return -1;
+}
+
 repv
 rep_define_type(rep_type *t)
 {
-  if (!t->initialized) {
+  if (!(t->flags & rep_TYPE_INITIALIZED)) {
     if (t->car == 0) {
       static int next_free_type = 0;
       assert(next_free_type != 256);
@@ -60,19 +94,41 @@ rep_define_type(rep_type *t)
       t->princ = t->print;
     }
 
+    if (!t->apply) {
+      t->apply = apply_error;
+    } else {
+      t->flags |= rep_TYPE_HAS_APPLY;
+    }
+
+    if (!t->getc || !t->ungetc) {
+      assert(!t->getc && !t->ungetc);
+      t->getc = getc_error;
+      t->ungetc = ungetc_error;
+    } else {
+      t->flags |= rep_TYPE_INPUT_STREAM;
+    }
+
+    if (!t->putc || !t->puts) {
+      assert(!t->puts && !t->putc);
+      t->putc = putc_error;
+      t->puts = puts_error;
+    } else {
+      t->flags |= rep_TYPE_OUTPUT_STREAM;
+    }
+
     unsigned int hash = TYPE_HASH(t->car);
 
     t->next = data_types[hash];
     data_types[hash] = t;
 
-    t->initialized = true;
+    t->flags |= rep_TYPE_INITIALIZED;
   }
 
   return t->car;
 }
 
-rep_type *
-rep_get_data_type(repv car)
+const rep_type *
+rep_get_type(repv car)
 {
   for (rep_type *t = data_types[TYPE_HASH(car)]; t; t = t->next) {
     if (t->car == car) {
@@ -80,6 +136,12 @@ rep_get_data_type(repv car)
     }
   }
   return NULL;
+}
+
+const rep_type *
+rep_value_type(repv value)
+{
+  return rep_get_type(rep_TYPE(value));
 }
 
 void

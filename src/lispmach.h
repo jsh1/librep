@@ -694,7 +694,7 @@ again: {
 	    TOP = bc_apply(fun, arg, sp+1);
 	  }
 	} else {
-	  TOP = Fsignal(Qinvalid_function, rep_LIST_1(TOP));
+	  TOP = rep_value_type(fun)->apply(fun, argc, argv);
 	}
 	rep_POP_CALL(lc);
 	INLINE_NEXT;

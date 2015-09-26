@@ -94,7 +94,8 @@ again:;
 	goto again;
       }
     } else {
-      goto invalid;
+    invalid:
+      Fsignal(Qinvalid_function, rep_list_1(lc.fun));
     }
   } else if (rep_CELL8_TYPE(fun) == rep_Subr) {
     int arity = rep_SUBR_ARITY(fun);
@@ -170,27 +171,28 @@ again:;
       rep_stack_free(repv, length, vec);
       break; }
     }
-  } else if (rep_CELL8_TYPE(fun) == rep_Bytecode) {
+  } else {
     int nargs = rep_list_length(arglist);
     if (nargs >= 0) {
       repv *args = rep_stack_alloc(repv, nargs);
       if (args) {
 	copy_to_vector(arglist, nargs, args);
-	repv (*bc_apply)(repv, int, repv *) =
-	rep_STRUCTURE(rep_structure)->apply_bytecode;
-	if (!bc_apply) {
-	  result = rep_apply_bytecode(fun, nargs, args);
+	if (rep_CELL8_TYPE(fun) == rep_Bytecode) {
+	  repv (*bc_apply)(repv, int, repv *) =
+	  rep_STRUCTURE(rep_structure)->apply_bytecode;
+	  if (!bc_apply) {
+	    result = rep_apply_bytecode(fun, nargs, args);
+	  } else {
+	    result = bc_apply(fun, nargs, args);
+	  }
 	} else {
-	  result = bc_apply(fun, nargs, args);
+	  result = rep_value_type(fun)->apply(fun, nargs, args);
 	}
 	rep_stack_free(repv, nargs, args);
       } else {
 	rep_mem_error();
       }
     }
-  } else {
-  invalid:
-    Fsignal(Qinvalid_function, rep_LIST_1(lc.fun));
   }
 
   /* In case I missed a non-local exit somewhere.  */
@@ -338,17 +340,10 @@ Returns t if ARG is a function.
   case rep_Subr:
   case rep_Closure:
     return Qt;
-
-  case rep_Cons:
-    arg = rep_CAR(arg);
-    if(arg == Qautoload) {
-      return Qt;
-    }
-    /* fall through */
-
-  default:
-    return rep_nil;
   }
+
+  const rep_type *t = rep_value_type(arg);
+  return (t->flags & rep_TYPE_HAS_APPLY) ? Qt : rep_nil;
 }
 
 repv
@@ -489,7 +484,7 @@ too small(you get errors in normal use) set it to something larger.
 static repv
 bind_object(repv obj)
 {
-  rep_type *t = rep_get_data_type(rep_TYPE(obj));
+  const rep_type *t = rep_value_type(obj);
   return t->bind ? t->bind(obj) : rep_nil;
 }
 
@@ -501,7 +496,7 @@ unbind_object(repv handle)
   }
 
   repv obj = rep_CONSP(handle) ? rep_CAR(handle) : handle;
-  rep_type *t = rep_get_data_type(rep_TYPE(obj));
+  const rep_type *t = rep_value_type(obj);
 
   if (t->unbind != 0) {
     t->unbind(handle);

@@ -200,7 +200,7 @@ typedef struct rep_type_struct {
   /* Private values. */
 
   struct rep_type_struct *next;
-  bool initialized;
+  uintptr_t flags;
 
   /* Value to be put in the car of each object to denote this type. */
 
@@ -209,6 +209,12 @@ typedef struct rep_type_struct {
   /* Name of the type. */
 
   char *name;
+
+  /* Applies the object to a list of parameters, as a procedure call.
+     If non-null when the type is registered, a default function will
+     be put here that signals an error when called. */
+
+  repv (*apply)(repv obj, int argc, repv *argv);
 
   /* Compares two values, rc is similar to strcmp() */
 
@@ -243,10 +249,12 @@ typedef struct rep_type_struct {
 
   void (*after_gc)(void);
 
-  /* When non-null, functions called for the stream OBJ. */
+  /* Functions to use the object as a stream. Set to error-throwing
+     functions if nil when initialized. */
 
   int (*getc)(repv obj);
   int (*ungetc)(repv obj, int c);
+
   int (*putc)(repv obj, int c);
   intptr_t (*puts)(repv obj, const void *data,
 		   intptr_t length, bool lisp_obj_p);

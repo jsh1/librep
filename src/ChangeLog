@@ -1,3 +1,13 @@
+2015-09-26  John Harper  <jsh@unfactored.org>
+
+	* types.c, streams.c, rep_subrs.h, rep_lisp.h, print.c,
+	lispmach.h, gc.c, compare.c, apply.c: added `apply` function to
+	data type vtable -- allows custom types to be applied as
+	functions. Instead of checking every time if apply and stream
+	vtable functions are non-nil, rep_define_type() sets a flag if
+	they were, and if not sets them to functions that will throw a
+	suitable error when called.
+
 2015-09-25  John Harper  <jsh@unfactored.org>
 
 	* rep-ffi.h, librep.sym, ffi.c, ffi-objc.m, Makefile.in:

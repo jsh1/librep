@@ -93,12 +93,7 @@ rep_stream_getc(repv stream)
       }
       break;
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(stream)));
-      if (t->getc) {
-	c = t->getc(stream);
-      } else {
-	Fsignal(Qinvalid_stream, rep_LIST_1(stream));
-      }
+      c = rep_value_type(rep_CAR(stream))->getc(stream);
     }
     break;
 
@@ -122,12 +117,7 @@ rep_stream_getc(repv stream)
 	rep_FILE(stream)->line_number++;
       }
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(stream));
-      if (t->getc) {
-	c = t->getc(stream);
-      } else {
-	Fsignal(Qinvalid_stream, rep_LIST_1(stream));
-      }
+      c = rep_value_type(stream)->getc(stream);
     }
     break;
   }
@@ -155,12 +145,7 @@ rep_stream_ungetc(repv stream, int c)
     if (rep_INTP(rep_CAR(stream)) && rep_STRINGP(rep_CDR(stream))) {
       rep_CAR(stream) = rep_MAKE_INT(rep_INT(rep_CAR(stream)) - 1);
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(stream)));
-      if (t->ungetc) {
-	t->ungetc(stream, c);
-      } else {
-	Fsignal(Qinvalid_stream, rep_LIST_1(stream));
-      }
+      rep_value_type(rep_CAR(stream))->ungetc(stream, c);
     }
     break;
 
@@ -179,12 +164,7 @@ rep_stream_ungetc(repv stream, int c)
 	rep_stream_ungetc(rep_FILE(stream)->file.stream, c);
       }
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(stream));
-      if (t->ungetc) {
-	t->ungetc(stream, c);
-      } else {
-	Fsignal(Qinvalid_stream, rep_LIST_1(stream));
-      }
+      rep_value_type(stream)->ungetc(stream, c);
     }
     break;
   }
@@ -227,12 +207,7 @@ rep_stream_putc(repv stream, int c)
       rep_string_set_len(str, len + 1);
       rc = 1;
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(stream)));
-      if (t->putc) {
-	rc = t->putc(stream, c);
-      } else {
-	Fsignal(Qinvalid_stream, rep_LIST_1(stream));
-      }
+      rc = rep_value_type(rep_CAR(stream))->putc(stream, c);
     }
     break; }
 
@@ -265,12 +240,7 @@ rep_stream_putc(repv stream, int c)
 	rc = rep_stream_putc(rep_FILE(stream)->file.stream, c);
       }
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(stream));
-      if (t->putc) {
-	rc = t->putc(stream, c);
-      } else {
-	Fsignal(Qinvalid_stream, rep_LIST_1(stream));
-      }
+      rc = rep_value_type(stream)->putc(stream, c);
     }
     break;
   }
@@ -336,12 +306,8 @@ rep_stream_puts(repv stream, const void *data,
       rc = data_len;
       break;
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(stream)));
-      if (t->puts) {
-	rc = t->puts(stream, data, data_len, lisp_string);
-      } else {
-	Fsignal(Qinvalid_stream, rep_LIST_1(stream));
-      }
+      rc = rep_value_type(rep_CAR(stream))
+        ->puts(stream, data, data_len, lisp_string);
     }
     break;
 
@@ -376,12 +342,7 @@ rep_stream_puts(repv stream, const void *data,
 			     data, data_len, lisp_string);
       }
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(stream));
-      if (t->puts) {
-	rc = t->puts(stream, data, data_len, lisp_string);
-      } else {
-	Fsignal(Qinvalid_stream, rep_LIST_1(stream));
-      }
+      rc = rep_value_type(stream)->puts(stream, data, data_len, lisp_string);
     }
     break;
   }
@@ -1182,8 +1143,8 @@ Returns t if ARG is an input stream.
     if (rep_INTP(rep_CAR(arg)) && rep_STRINGP(rep_CDR(arg))) {
       return Qt;
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(arg)));
-      if (t->getc && t->ungetc) {
+      const rep_type *t = rep_value_type(rep_CAR(arg));
+      if (t->flags & rep_TYPE_INPUT_STREAM) {
 	return Qt;
       }
     }
@@ -1193,8 +1154,8 @@ Returns t if ARG is an input stream.
     if (rep_FILEP(arg)) {
       return Qt;
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(arg));
-      if (t->getc && t->ungetc) {
+      const rep_type *t = rep_value_type(arg);
+      if (t->flags & rep_TYPE_INPUT_STREAM) {
 	return Qt;
       }
     }
@@ -1227,8 +1188,8 @@ Returns t if ARG is an output stream.
     if (rep_STRINGP(rep_CAR(arg)) && rep_INTP(rep_CDR(arg))) {
       return Qt;
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(rep_CAR(arg)));
-      if (t->putc && t->puts) {
+      const rep_type *t = rep_value_type(rep_CAR(arg));
+      if (t->flags & rep_TYPE_OUTPUT_STREAM) {
 	return Qt;
       }
     }
@@ -1238,8 +1199,8 @@ Returns t if ARG is an output stream.
     if (rep_FILEP(arg)) {
       return Qt;
     } else {
-      rep_type *t = rep_get_data_type(rep_TYPE(arg));
-      if (t->putc && t->puts) {
+      const rep_type *t = rep_value_type(arg);
+      if (t->flags & rep_TYPE_OUTPUT_STREAM) {
 	return Qt;
       }
     }

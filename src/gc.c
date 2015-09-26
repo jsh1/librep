@@ -97,7 +97,7 @@ again:
 
     rep_GC_SET_CELL(val);
 
-    rep_type *t = rep_get_data_type(rep_CELL16_TYPE(val));
+    const rep_type *t = rep_get_type(rep_CELL16_TYPE(val));
     if (t->mark) {
       t->mark(val);
     }
@@ -161,7 +161,7 @@ again:
 
   default: {
     rep_GC_SET_CELL(val);
-    rep_type *t = rep_get_data_type(rep_CELL8_TYPE(val));
+    const rep_type *t = rep_get_type(rep_CELL8_TYPE(val));
     if (t->mark) {
       t->mark(val);
     }
