@@ -1,5 +1,7 @@
 2015-09-26  John Harper  <jsh@unfactored.org>
 
+	* ffi-objc.m: store class and instance methods separately
+
 	* rep-ffi.h, ffi.c, ffi-objc.m: more ffi bug fixes, struct
 	returns seem to work now
 

@@ -44,7 +44,8 @@ struct rep_ffi_proxy_struct {
 struct rep_ffi_class_info_struct {
   rep_ffi_class_info *next;
   Class cls;
-  rep_ffi_method_info *methods;
+  rep_ffi_method_info *class_methods;
+  rep_ffi_method_info *instance_methods;
 };
 
 struct rep_ffi_method_info_struct {
@@ -108,7 +109,8 @@ class_info_ref(Class cls)
   rep_ffi_class_info *c = rep_alloc(sizeof(*c));
 
   c->cls = cls;
-  c->methods = NULL;
+  c->class_methods = NULL;
+  c->instance_methods = NULL;
 
   c->next = classes;
   classes = c;
@@ -354,11 +356,15 @@ again:
 static const rep_ffi_method_info *
 proxy_method(rep_ffi_proxy *p, repv name)
 {
+  rep_ffi_class_info *info = p->info;
+  bool class_method = p->obj == info->cls;
+
   /* FIXME: hash table? */
 
-  /* FIXME: wrong, class and instance methods are in the same list! */
+  rep_ffi_method_info *m = class_method ? info->class_methods :
+    info->instance_methods;
 
-  for (rep_ffi_method_info *m = p->info->methods; m; m = m->next) {
+  for (; m; m = m->next) {
     if (m->name == name) {
       return m;
     }
@@ -405,12 +411,12 @@ proxy_method(rep_ffi_proxy *p, repv name)
     return NULL;
   }
 
-  rep_ffi_method_info *info = rep_alloc(sizeof(rep_ffi_method_info));
-  info->name = name;
-  info->sel = sel;
-  info->ffi_interface = iface_id;
-  info->n_args = n_args;
-  info->ret_type = 0;
+  m = rep_alloc(sizeof(rep_ffi_method_info));
+  m->name = name;
+  m->sel = sel;
+  m->ffi_interface = iface_id;
+  m->n_args = n_args;
+  m->ret_type = 0;
 
   const rep_ffi_interface *iface = rep_ffi_interface_ref(iface_id);
   const rep_ffi_type *ret = rep_ffi_type_ref(iface->ret);
@@ -426,12 +432,12 @@ proxy_method(rep_ffi_proxy *p, repv name)
     case 1: case 2: case 4: case 8:
       break;
     default:
-      info->ret_type = 1;		/* _stret */
+      m->ret_type = 1;		/* _stret */
 #elif defined(__x86_64__)
     case 1: case 2: case 4: case 8: case 16:
       break;
     default:
-      info->ret_type = 1;		/* _stret */
+      m->ret_type = 1;		/* _stret */
 #elif defined(__arm__)
 #else
 #error "Unknown _stret ABI."
@@ -443,7 +449,7 @@ proxy_method(rep_ffi_proxy *p, repv name)
 
 #if defined(__i386__)
     if (ret->type == ffi_type_float || ffi_type_double) {
-      info->ret_type = 2;		/* _fpret */
+      m->ret_type = 2;		/* _fpret */
     }
 #elif defined(__x86_64) || defined(__arm__)
     /* no _fpret */
@@ -452,10 +458,15 @@ proxy_method(rep_ffi_proxy *p, repv name)
 #endif
   }
 
-  info->next = p->info->methods;
-  p->info->methods = info;
+  if (class_method) {
+    m->next = info->class_methods;
+    info->class_methods = m;
+  } else {
+    m->next = info->instance_methods;
+    info->instance_methods = m;
+  }
 
-  return info;
+  return m;
 }
 
 static repv
@@ -512,7 +523,10 @@ static void
 proxy_mark_type(void)
 {
   for (rep_ffi_class_info *c = classes; c; c = c->next) {
-    for (rep_ffi_method_info *m = c->methods; m; m = m->next) {
+    for (rep_ffi_method_info *m = c->class_methods; m; m = m->next) {
+      rep_MARKVAL(m->name);
+    }
+    for (rep_ffi_method_info *m = c->instance_methods; m; m = m->next) {
       rep_MARKVAL(m->name);
     }
   }
