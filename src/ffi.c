@@ -321,11 +321,7 @@ rep_ffi_marshal(unsigned int type_id, repv value, char *ptr)
 
 #ifdef HAVE_FFI_OBJECTS
   case rep_FFI_OBJECT: {
-    void *obj = rep_ffi_object_pointer(value);
-    if (!obj) {
-      return NULL;
-    }
-    *(void **)ptr = obj;
+    *(void **)ptr = rep_ffi_object_pointer(value);
     return ptr + sizeof(void *); }
 #endif
 
@@ -514,19 +510,8 @@ rep_ffi_get_array_type(int n, unsigned int elt_type)
 
   s->n_elements = n;
   s->type.elements = elts;
+  s->type.type = FFI_TYPE_STRUCT;
   s->type.size = s->type.alignment = 0;
-
-  /* We should leave size and alignment as zero and let libffi
-     initialize them. But that doesn't for me, need the size known at
-     all times. */
-
-  if (n != 0) {
-    s->type.alignment = elts[0]->alignment;
-    for (unsigned int i = 0; i < n; i++) {
-      s->type.size = ALIGN(s->type.size, elts[i]->alignment);
-      s->type.size += elts[i]->size;
-    }
-  }
 
   return ffi_alloc_type(&s->super, false);
 }
@@ -587,17 +572,8 @@ rep_ffi_get_struct_type(int n, const unsigned int *elt_types)
 
   s->n_elements = n;
   s->type.elements = elts;
+  s->type.type = FFI_TYPE_STRUCT;
   s->type.size = s->type.alignment = 0;
-
-  /* We should leave size and alignment as zero and let libffi
-     initialize them. But that doesn't for me, need the size known at
-     all times. */
-
-  for (unsigned int i = 0; i < s->n_elements; i++) {
-    s->type.size = ALIGN(s->type.size, elts[i]->alignment);
-    s->type.size += elts[i]->size;
-    s->type.alignment = MAX(s->type.alignment, elts[i]->alignment);
-  }
 
   return ffi_alloc_type(&s->super, false);
 }
@@ -696,25 +672,19 @@ ffi_add_custom_type(ffi_type *type, unsigned int subtype)
   return rep_MAKE_INT(ffi_alloc_type(s, false));
 }
 
+const rep_ffi_type *
+rep_ffi_type_ref(unsigned int idx)
+{
+  return ffi_types[idx];
+}
+
 int
 rep_ffi_get_interface(unsigned int ret, int n_args,
 		      const unsigned int *args)
 {
-  unsigned int args_size = 0;
-  for (unsigned int i = 0; i < n_args; i++) {
-    ffi_type *arg_type = ffi_types[args[i]]->type;
-    if (arg_type->alignment > 1) {
-      args_size = ALIGN(args_size, arg_type->alignment);
-    }
-    args_size += arg_type->size;
-  }
-
   for (unsigned int i = 0; i < n_ffi_interfaces; i++) {
     const rep_ffi_interface *p = ffi_interfaces[i];
-    if (p->ret != ret) {
-      continue;
-    }
-    if (p->n_args != n_args || p->args_size != args_size) {
+    if (p->n_args != n_args || p->ret != ret) {
       continue;
     }
     bool matches = true;
@@ -732,7 +702,6 @@ rep_ffi_get_interface(unsigned int ret, int n_args,
   rep_ffi_interface *s = rep_alloc(SIZEOF_REP_FFI_INTERFACE(n_args)
 				   + sizeof(ffi_type *) * n_args);
   s->n_args = n_args;
-  s->args_size = args_size;
   s->ret = ret;
 
   ffi_type *ret_type = ffi_types[ret]->type;
@@ -749,6 +718,15 @@ rep_ffi_get_interface(unsigned int ret, int n_args,
   {
     Fsignal(Qinvalid_function, rep_nil);	/* FIXME: */
     return -1;
+  }
+
+  s->args_size = 0;
+  for (unsigned int i = 0; i < n_args; i++) {
+    ffi_type *arg_type = ffi_types[args[i]]->type;
+    if (arg_type->alignment > 1) {
+      s->args_size = ALIGN(s->args_size, arg_type->alignment);
+    }
+    s->args_size += arg_type->size;
   }
 
   unsigned int idx = n_ffi_interfaces++;

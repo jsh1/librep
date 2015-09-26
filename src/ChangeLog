@@ -1,5 +1,8 @@
 2015-09-26  John Harper  <jsh@unfactored.org>
 
+	* rep-ffi.h, ffi.c, ffi-objc.m: more ffi bug fixes, struct
+	returns seem to work now
+
 	* readline.c, gettext.c: build fixes
 
 	* rep-ffi.h, ffi.c, ffi-objc.m: objc method calls now mostly

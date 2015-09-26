@@ -120,9 +120,12 @@ struct rep_ffi_interface_struct {
 extern int rep_ffi_get_array_type(int n, unsigned int elt_type);
 extern int rep_ffi_get_struct_type(int n, const unsigned int *elt_types);
 
+extern const rep_ffi_type *rep_ffi_type_ref(unsigned int idx);
+
 extern int rep_ffi_get_interface(unsigned int ret_type, int argc,
   const unsigned int *arg_types);
-extern const rep_ffi_interface *rep_ffi_interface_ref(unsigned int iface);
+
+extern const rep_ffi_interface *rep_ffi_interface_ref(unsigned int idx);
 
 extern repv rep_ffi_apply(unsigned int iface_id, void *function_ptr,
   int argc, repv *argv);

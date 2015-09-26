@@ -119,6 +119,10 @@ class_info_ref(Class cls)
 repv
 rep_ffi_make_object(void *ptr)
 {
+  if (!ptr) {
+    return rep_nil;
+  }
+
   uintptr_t hash = pointer_hash((uintptr_t)ptr);
 
   rep_ffi_proxy *p;
@@ -158,11 +162,13 @@ rep_ffi_object_pointer(repv obj)
 {
   if (PROXYP(obj)) {
     return (void *)PROXY(obj)->obj;
+  } else if (obj == rep_nil) {
+    return NULL;
+  } else {
+    DEFSTRING(err, "ffi expected an objc reference");
+    Fsignal(Qerror, rep_list_2(rep_VAL(&err), obj));
+    return NULL;
   }
-
-  DEFSTRING(err, "ffi expected an objc reference");
-  Fsignal(Qerror, rep_list_2(rep_VAL(&err), obj));
-  return NULL;
 }
 
 static int parse_objc_type(const char **str_ptr);
@@ -404,33 +410,47 @@ proxy_method(rep_ffi_proxy *p, repv name)
   info->sel = sel;
   info->ffi_interface = iface_id;
   info->n_args = n_args;
-
-  /* FIXME: delving into the ffi_cif flags to figure out if it's
-     going to return structs/floats via the stack or registers. */
-
-  const rep_ffi_interface *iface = rep_ffi_interface_ref(iface_id);
-
   info->ret_type = 0;
 
-#if defined(__x86_64__)
-  if (iface->cif.flags & (1 << 10) /* FFI_UNIX64_FLAG_RET_IN_MEM */) {
-    info->ret_type = 1;			/* _stret */
-  }
-#elif defined(__i386__)
-  switch (iface->cif.flags) {
-  case 10;				/* X86_RET_STRUCTPOP */
-  case 11;				/* X86_RET_STRUCTARG */
-    info->ret_type = 1;			/* _stret */
-    break;
-  case 0:				/* X86_RET_FLOAT */
-  case 1:				/* X86_RET_DOUBLE */
-    info->ret_type = 2;			/* _fpret */
-  }
+  const rep_ffi_interface *iface = rep_ffi_interface_ref(iface_id);
+  const rep_ffi_type *ret = rep_ffi_type_ref(iface->ret);
+
+  if (ret->subtype == rep_FFI_STRUCT) {
+    /* FIXME: libffi knows exactly when the return value is in memory,
+       but the way it stores that in the internal fields of ffi_cif has
+       changed between versions, so there's no good way we can use
+       that. Instead reuse some ad hoc rules from pyobjc. */
+
+    switch (ret->type->size) {
+#if defined(__i386__)
+    case 1: case 2: case 4: case 8:
+      break;
+    default:
+      info->ret_type = 1;		/* _stret */
+#elif defined(__x86_64__)
+    case 1: case 2: case 4: case 8: case 16:
+      break;
+    default:
+      info->ret_type = 1;		/* _stret */
 #elif defined(__arm__)
-  /* nothing */
 #else
-# error "Unknown objc_msgSend ABI."
+#error "Unknown _stret ABI."
 #endif
+    }
+
+  } else if (ret->subtype == rep_FFI_PRIMITIVE) {
+    /* FIXME: ignoring _fp2ret variant. */
+
+#if defined(__i386__)
+    if (ret->type == ffi_type_float || ffi_type_double) {
+      info->ret_type = 2;		/* _fpret */
+    }
+#elif defined(__x86_64) || defined(__arm__)
+    /* no _fpret */
+#else
+#error "Unknown _fpret ABI."
+#endif
+  }
 
   info->next = p->info->methods;
   p->info->methods = info;
