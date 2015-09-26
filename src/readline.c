@@ -20,6 +20,12 @@
 
 #include "repint.h"
 
+#include <string.h>
+
+#ifdef NEED_MEMORY_H
+# include <memory.h>
+#endif
+
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif

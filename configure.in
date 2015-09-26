@@ -60,6 +60,9 @@ repdocfile='${repexecdir}/doc-strings'
 
 emacssitelispdir='${datadir}/emacs/site-lisp'
 
+CPPFLAGS="${CPPFLAGS} -I/usr/local/include"
+LDFLAGS="${LDFLAGS} -L/usr/local/lib"
+
 dnl make sure we can find libraries and headers under $prefix
 case "$prefix" in
   /|/usr|/usr/local|NONE)

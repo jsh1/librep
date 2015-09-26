@@ -1,5 +1,7 @@
 2015-09-26  John Harper  <jsh@unfactored.org>
 
+	* readline.c, gettext.c: build fixes
+
 	* rep-ffi.h, ffi.c, ffi-objc.m: objc method calls now mostly
 	work
 

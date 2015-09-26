@@ -28,17 +28,22 @@ DEFUN("gettext", Fgettext, Sgettext, (repv in), rep_Subr1)
 {
   rep_DECLARE1(in, rep_STRINGP);
 
+#ifdef HAVE_LIBINTL_H
   char *out = gettext(rep_STR(in));
   if (!out || out == rep_STR(in)) {
     return in;
   } else {
     return rep_string_copy(out);
   }
+#else
+  return in;
+#endif
 }
 
 DEFUN("bindtextdomain", Fbindtextdomain,
       Sbindtextdomain, (repv dom, repv dir), rep_Subr2)
 {
+#ifdef HAVE_LIBINTL_H
   const char *domainname = NULL;
   if (rep_STRINGP(dom)) {
     domainname = rep_STR(dom);
@@ -52,11 +57,15 @@ DEFUN("bindtextdomain", Fbindtextdomain,
   const char *out = bindtextdomain(domainname, dirname);
 
   return out ? rep_string_copy(out) : rep_nil;
+#else
+  return rep_nil;
+#endif
 }
 
 DEFUN("bindtextdomaincodeset", Fbindtextdomaincodeset,
       Sbindtextdomaincodeset, (repv dom, repv cod), rep_Subr2)
 {
+#ifdef HAVE_LIBINTL_H
   const char *domainname = NULL;
   if (rep_STRINGP(dom)) {
     domainname = rep_STR(dom);
@@ -70,10 +79,14 @@ DEFUN("bindtextdomaincodeset", Fbindtextdomaincodeset,
   const char *out = bind_textdomain_codeset(domainname, codeset);
 
   return out ? rep_string_copy(out) : rep_nil;
+#else
+  return rep_nil;
+#endif
 }
 
 DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
 {
+#ifdef HAVE_LIBINTL_H
   const char *domainname = NULL;
   if (rep_STRINGP(dom)) {
     domainname = rep_STR(dom);
@@ -82,6 +95,9 @@ DEFUN("textdomain", Ftextdomain, Stextdomain, (repv dom), rep_Subr1)
   const char *out = textdomain(domainname);
 
   return out ? rep_string_copy(out) : rep_nil;
+#else
+  return rep_nil;
+#endif
 }
 
 repv
