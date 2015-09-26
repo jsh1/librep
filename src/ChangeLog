@@ -1,5 +1,8 @@
 2015-09-26  John Harper  <jsh@unfactored.org>
 
+	* rep-ffi.h, ffi.c, ffi-objc.m: objc method calls now mostly
+	work
+
 	* types.c, streams.c, rep_subrs.h, rep_lisp.h, print.c,
 	lispmach.h, gc.c, compare.c, apply.c: added `apply` function to
 	data type vtable -- allows custom types to be applied as

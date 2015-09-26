@@ -46,16 +46,88 @@ enum rep_ffi_types {
   rep_FFI_TYPE_SINT64,
   rep_FFI_TYPE_FLOAT,
   rep_FFI_TYPE_DOUBLE,
+  rep_FFI_TYPE_LONGDOUBLE,
   rep_FFI_TYPE_POINTER,
+  rep_FFI_TYPE_BOOL,
   rep_FFI_TYPE_STRING,
   rep_FFI_TYPE_OBJECT,
 };
 
-/* long_uint functions take/return uintptr_t. */
-#define rep_make_pointer(p) rep_make_long_uint((unsigned long) p)
-#define rep_get_pointer(x)  (void *) rep_get_long_uint(x)
+#ifdef HAVE_LIBFFI
+
+typedef struct rep_ffi_type_struct rep_ffi_type;
+typedef struct rep_ffi_alias_struct rep_ffi_alias;
+typedef struct rep_ffi_array_struct rep_ffi_array;
+typedef struct rep_ffi_struct_struct rep_ffi_struct;
+typedef struct rep_ffi_interface_struct rep_ffi_interface;
+
+struct rep_ffi_type_struct {
+  ffi_type *type;
+  unsigned int subtype;
+};
+
+enum rep_ffi_subtype_enum {
+  rep_FFI_PRIMITIVE = 0,
+  rep_FFI_ARRAY,
+  rep_FFI_STRUCT,
+  rep_FFI_ALIAS,
+  rep_FFI_BOOL,
+  rep_FFI_STRING,
+#ifdef HAVE_FFI_OBJECTS
+  rep_FFI_OBJECT,
+#endif
+};
+
+struct rep_ffi_alias_struct {
+  rep_ffi_type super;
+  repv predicate;
+  repv conv_in;
+  repv conv_out;
+  unsigned int base;
+};
+
+struct rep_ffi_array_struct {
+  rep_ffi_type super;
+  ffi_type type;
+  unsigned int n_elements;
+  unsigned int element_id;
+};
+
+struct rep_ffi_struct_struct {
+  rep_ffi_type super;
+  ffi_type type;
+  unsigned int n_elements;
+  unsigned int *element_ids;
+};
+
+struct rep_ffi_interface_struct {
+  ffi_cif cif;
+  unsigned int n_args;
+  unsigned int args_size;
+  unsigned int ret;
+  unsigned int args[1];
+};
+
+#define SIZEOF_REP_FFI_INTERFACE(n) \
+  (sizeof(rep_ffi_interface) + (sizeof(int) * ((n) - 1)))
+
+#endif /* HAVE_FFI */
+
+#define rep_make_pointer(p) rep_make_long_uint((uintptr_t)p)
+#define rep_get_pointer(x)  ((void *)rep_get_long_uint(x))
 #define rep_pointerp(x)     rep_INTEGERP(x)
 
+extern int rep_ffi_get_array_type(int n, unsigned int elt_type);
+extern int rep_ffi_get_struct_type(int n, const unsigned int *elt_types);
+
+extern int rep_ffi_get_interface(unsigned int ret_type, int argc,
+  const unsigned int *arg_types);
+extern const rep_ffi_interface *rep_ffi_interface_ref(unsigned int iface);
+
+extern repv rep_ffi_apply(unsigned int iface_id, void *function_ptr,
+  int argc, repv *argv);
+
+extern repv Fffi_array(repv count, repv type);
 extern repv Fffi_struct(repv fields);
 extern repv Fffi_type(repv base, repv pred, repv in, repv out);
 extern repv Fffi_interface(repv ret, repv args);
