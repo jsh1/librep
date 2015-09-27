@@ -1,3 +1,12 @@
+2015-09-27  John Harper  <jsh@unfactored.org>
+
+	* rep-ffi.h, ffi.c: added ffi-enum and ffi-flags type
+	constructors, for named enum and bit-flags types. Renamed
+	ffi-type-FOO to ffi/FOO and added logical types: ffi/char,
+	ffi/uchar, ffi/short, ffi/ushort, ffi/int, ffi/uint, ffi/long,
+	ffi/ulong, ffi/longlong, ffi/ulonglong, ffi/intptr,
+	ffi/uintptr.
+
 2015-09-26  John Harper  <jsh@unfactored.org>
 
 	* ffi-objc.m: store class and instance methods separately

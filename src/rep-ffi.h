@@ -1,4 +1,4 @@
-/* rep-ffi.h -- foreigh function interface
+/* rep-ffi.h -- foreign function interface
 
    Copyright (C) 1993-2015 John Harper <jsh@unfactored.org>
 
@@ -59,6 +59,7 @@ typedef struct rep_ffi_type_struct rep_ffi_type;
 typedef struct rep_ffi_alias_struct rep_ffi_alias;
 typedef struct rep_ffi_array_struct rep_ffi_array;
 typedef struct rep_ffi_struct_struct rep_ffi_struct;
+typedef struct rep_ffi_enum_struct rep_ffi_enum;
 typedef struct rep_ffi_interface_struct rep_ffi_interface;
 
 struct rep_ffi_type_struct {
@@ -70,6 +71,8 @@ enum rep_ffi_subtype_enum {
   rep_FFI_PRIMITIVE = 0,
   rep_FFI_ARRAY,
   rep_FFI_STRUCT,
+  rep_FFI_ENUM,
+  rep_FFI_FLAGS,
   rep_FFI_ALIAS,
   rep_FFI_BOOL,
   rep_FFI_STRING,
@@ -98,6 +101,14 @@ struct rep_ffi_struct_struct {
   ffi_type type;
   unsigned int n_elements;
   unsigned int *element_ids;
+};
+
+/* Used for rep_FFI_FLAGS as well. */
+
+struct rep_ffi_enum_struct {
+  rep_ffi_type super;
+  repv values;
+  unsigned int element_id;
 };
 
 struct rep_ffi_interface_struct {

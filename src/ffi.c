@@ -119,6 +119,18 @@ ffi_types_equal_p(const rep_ffi_type *a, const rep_ffi_type *b)
     }
     return true; }
 
+  case rep_FFI_ENUM:
+  case rep_FFI_FLAGS: {
+    const rep_ffi_enum *ea = (rep_ffi_enum *)a;
+    const rep_ffi_enum *eb = (rep_ffi_enum *)b;
+    if (ea->super.type != eb->super.type) {
+      return false;
+    }
+    if (rep_value_cmp(ea->values, eb->values) != 0) {
+      return false;
+    }
+    return true; }
+    
   case rep_FFI_ALIAS: {
     const rep_ffi_alias *aa = (rep_ffi_alias *)a;
     const rep_ffi_alias *ab = (rep_ffi_alias *)b;
@@ -295,6 +307,41 @@ rep_ffi_marshal(unsigned int type_id, repv value, char *ptr)
     rep_POPGC;
     return ptr; }
 
+  case rep_FFI_ENUM:
+  case rep_FFI_FLAGS: {
+    rep_ffi_enum *e = (rep_ffi_enum *)type;
+    if (rep_INTP(value)) {
+      return rep_ffi_marshal(e->element_id, value, ptr);
+    }
+    uintptr_t i = 0;
+    for (repv lst = e->values; rep_CONSP(lst); lst = rep_CDR(lst)) {
+      repv cell = rep_CAR(lst);
+      if (rep_CONSP(cell)) {
+	if (rep_INTP(rep_CDR(cell))) {
+	  i = rep_INT(rep_CDR(cell));
+	} else {
+	  DEFSTRING(err, "invalid ffi enum/flags definition");
+	  Fsignal(Qerror, rep_list_2(rep_VAL(&err), cell));
+	  return NULL;
+	}
+	if (rep_CAR(cell) == value) {
+	  return rep_ffi_marshal(e->element_id, rep_MAKE_INT(i), ptr);
+	}
+      } else {
+	if (cell == value) {
+	  return rep_ffi_marshal(e->element_id, rep_MAKE_INT(i), ptr);
+	}
+	if (type->subtype == rep_FFI_ENUM) {
+	  i++;
+	} else {
+	  i = i << 1;
+	}
+      }
+    }
+    DEFSTRING(err, "invalid ffi enum/flags value");
+    Fsignal(Qerror, rep_list_2(rep_VAL(&err), value));
+    return NULL; }
+
   case rep_FFI_ALIAS: {
     rep_ffi_alias *s = (rep_ffi_alias *)type;
 
@@ -442,6 +489,49 @@ rep_ffi_demarshal(unsigned int type_id, char *ptr, repv *value)
     }
     
     rep_POPGCN;
+    return ptr; }
+
+  case rep_FFI_ENUM:
+  case rep_FFI_FLAGS: {
+    rep_ffi_enum *e = (rep_ffi_enum *)type;
+    repv tem;
+    ptr = rep_ffi_demarshal(e->element_id, ptr, &tem);
+    if (!ptr) {
+      return NULL;
+    }
+    if (!rep_INTP(tem)) {
+      DEFSTRING(err, "non-integer ffi enum/flags value");
+      Fsignal(Qerror, rep_list_2(rep_VAL(&err), tem));
+      return NULL;
+    }
+    uintptr_t i = 0;
+    for (repv lst = e->values; rep_CONSP(lst); lst = rep_CDR(lst)) {
+      repv cell = rep_CAR(lst);
+      if (rep_CONSP(cell)) {
+	if (rep_INTP(rep_CDR(cell))) {
+	  i = rep_INT(rep_CDR(cell));
+	  if (rep_INT(tem) == i) {
+	    *value = rep_CAR(cell);
+	    return ptr;
+	  }
+	} else {
+	  DEFSTRING(err, "invalid ffi enum/flags definition");
+	  Fsignal(Qerror, rep_list_2(rep_VAL(&err), cell));
+	  return NULL;
+	}
+      } else {
+	if (rep_INT(tem) == i) {
+	  *value = cell;
+	  return ptr;
+	}
+	if (type->subtype == rep_FFI_ENUM) {
+	  i++;
+	} else {
+	  i = i << 1;
+	}
+      }
+    }
+    *value = tem;
     return ptr; }
     
   case rep_FFI_ALIAS: {
@@ -625,6 +715,47 @@ DEFUN("ffi-struct", Fffi_struct, Sffi_struct, (repv fields), rep_Subr1)
   }
 
   return rep_MAKE_INT(idx);
+}
+
+static repv
+ffi_enum_flags(unsigned int kind, repv values, repv type)
+{
+  rep_DECLARE1(values, rep_LISTP);
+  rep_DECLARE2_OPT(type, rep_VALID_INTERFACE_P);
+
+  unsigned int elt_id = rep_INTP(type) ? rep_INT(type) : rep_FFI_TYPE_SINT32;
+  ffi_type *elt_type = ffi_types[elt_id]->type;
+
+  for (unsigned int i = 0; i < n_ffi_types; i++) {
+    const rep_ffi_enum *e = (rep_ffi_enum *)ffi_types[i];
+    if (e->super.subtype == kind && e->super.type == elt_type
+	&& rep_value_cmp(e->values, values) == 0) {
+      return rep_MAKE_INT(i);
+    }
+  }
+
+  rep_ffi_enum *e = rep_alloc(sizeof(rep_ffi_enum));
+
+  e->super.type = elt_type;
+  e->super.subtype = kind;
+  e->element_id = elt_id;
+  e->values = values;
+  rep_mark_static(&e->values);
+
+  return ffi_alloc_type(&e->super, false);
+}
+
+
+DEFUN("ffi-enum", Fffi_enum, Sffi_enum,
+      (repv values, repv type), rep_Subr2)
+{
+  return ffi_enum_flags(rep_FFI_ENUM, values, type);
+}
+
+DEFUN("ffi-flags", Fffi_flags, Sffi_flags,
+      (repv values, repv type), rep_Subr2)
+{
+  return ffi_enum_flags(rep_FFI_FLAGS, values, type);
 }
 
 DEFUN("ffi-type", Fffi_type, Sffi_type,
@@ -1046,106 +1177,182 @@ DEFUN("ffi-lookup-symbol", Fffi_lookup_symbol,
 
 /* dl hooks */
 
-DEFSYM(ffi_type_void, "ffi-type-void");
-DEFSYM(ffi_type_uint8, "ffi-type-uint8");
-DEFSYM(ffi_type_sint8, "ffi-type-sint8");
-DEFSYM(ffi_type_uint16, "ffi-type-uint16");
-DEFSYM(ffi_type_sint16, "ffi-type-sint16");
-DEFSYM(ffi_type_uint32, "ffi-type-uint32");
-DEFSYM(ffi_type_sint32, "ffi-type-sint32");
-DEFSYM(ffi_type_uint64, "ffi-type-uint64");
-DEFSYM(ffi_type_sint64, "ffi-type-sint64");
-DEFSYM(ffi_type_float, "ffi-type-float");
-DEFSYM(ffi_type_double, "ffi-type-double");
-DEFSYM(ffi_type_longdouble, "ffi-type-longdouble");
-DEFSYM(ffi_type_pointer, "ffi-type-pointer");
-DEFSYM(ffi_type_bool, "ffi-type-bool");
-DEFSYM(ffi_type_string, "ffi-type-string");
-DEFSYM(ffi_type_object, "ffi-type-object");
+DEFSYM(ffi_void, "ffi/void");
+DEFSYM(ffi_uint8, "ffi/uint8");
+DEFSYM(ffi_int8, "ffi/int8");
+DEFSYM(ffi_uint16, "ffi/uint16");
+DEFSYM(ffi_int16, "ffi/int16");
+DEFSYM(ffi_uint32, "ffi/uint32");
+DEFSYM(ffi_int32, "ffi/int32");
+DEFSYM(ffi_uint64, "ffi/uint64");
+DEFSYM(ffi_int64, "ffi/int64");
+DEFSYM(ffi_float, "ffi/float");
+DEFSYM(ffi_double, "ffi/double");
+DEFSYM(ffi_longdouble, "ffi/longdouble");
+DEFSYM(ffi_pointer, "ffi/pointer");
+DEFSYM(ffi_bool, "ffi/bool");
+DEFSYM(ffi_string, "ffi/string");
+DEFSYM(ffi_object, "ffi/object");
+
+DEFSYM(ffi_char, "ffi/char");
+DEFSYM(ffi_uchar, "ffi/uchar");
+DEFSYM(ffi_short, "ffi/short");
+DEFSYM(ffi_ushort, "ffi/ushort");
+DEFSYM(ffi_int, "ffi/int");
+DEFSYM(ffi_uint, "ffi/uint");
+DEFSYM(ffi_long, "ffi/long");
+DEFSYM(ffi_ulong, "ffi/ulong");
+DEFSYM(ffi_longlong, "ffi/longlong");
+DEFSYM(ffi_ulonglong, "ffi/ulonglong");
+DEFSYM(ffi_intptr, "ffi/intptr");
+DEFSYM(ffi_uintptr, "ffi/uintptr");
 
 repv
 rep_dl_init(void)
 {
   repv tem = rep_push_structure("rep.ffi");
   
-  rep_INTERN(ffi_type_void);
-  rep_INTERN(ffi_type_uint8);
-  rep_INTERN(ffi_type_sint8);
-  rep_INTERN(ffi_type_uint16);
-  rep_INTERN(ffi_type_sint16);
-  rep_INTERN(ffi_type_uint32);
-  rep_INTERN(ffi_type_sint32);
-  rep_INTERN(ffi_type_uint64);
-  rep_INTERN(ffi_type_sint64);
-  rep_INTERN(ffi_type_float);
-  rep_INTERN(ffi_type_double);
-  rep_INTERN(ffi_type_longdouble);
-  rep_INTERN(ffi_type_pointer);
-  rep_INTERN(ffi_type_bool);
-  rep_INTERN(ffi_type_string);
-  rep_INTERN(ffi_type_object);
+  rep_INTERN(ffi_void);
+  rep_INTERN(ffi_uint8);
+  rep_INTERN(ffi_int8);
+  rep_INTERN(ffi_uint16);
+  rep_INTERN(ffi_int16);
+  rep_INTERN(ffi_uint32);
+  rep_INTERN(ffi_int32);
+  rep_INTERN(ffi_uint64);
+  rep_INTERN(ffi_int64);
+  rep_INTERN(ffi_float);
+  rep_INTERN(ffi_double);
+  rep_INTERN(ffi_longdouble);
+  rep_INTERN(ffi_pointer);
+  rep_INTERN(ffi_bool);
+  rep_INTERN(ffi_string);
+  rep_INTERN(ffi_object);
+
+  rep_INTERN(ffi_char);
+  rep_INTERN(ffi_uchar);
+  rep_INTERN(ffi_short);
+  rep_INTERN(ffi_ushort);
+  rep_INTERN(ffi_int);
+  rep_INTERN(ffi_uint);
+  rep_INTERN(ffi_long);
+  rep_INTERN(ffi_ulong);
+  rep_INTERN(ffi_longlong);
+  rep_INTERN(ffi_ulonglong);
+  rep_INTERN(ffi_intptr);
+  rep_INTERN(ffi_uintptr);
   
 #ifdef HAVE_LIBFFI
   /* order of initialization must match rep_ffi_types enum. */
-  Fset(Qffi_type_void, ffi_add_primitive_type(&ffi_type_void));
-  Fset(Qffi_type_uint8, ffi_add_primitive_type(&ffi_type_uint8));
-  Fset(Qffi_type_sint8, ffi_add_primitive_type(&ffi_type_sint8));
-  Fset(Qffi_type_uint16, ffi_add_primitive_type(&ffi_type_uint16));
-  Fset(Qffi_type_sint16, ffi_add_primitive_type(&ffi_type_sint16));
-  Fset(Qffi_type_uint32, ffi_add_primitive_type(&ffi_type_uint32));
-  Fset(Qffi_type_sint32, ffi_add_primitive_type(&ffi_type_sint32));
-  Fset(Qffi_type_uint64, ffi_add_primitive_type(&ffi_type_uint64));
-  Fset(Qffi_type_sint64, ffi_add_primitive_type(&ffi_type_sint64));
-  Fset(Qffi_type_float, ffi_add_primitive_type(&ffi_type_float));
-  Fset(Qffi_type_double, ffi_add_primitive_type(&ffi_type_double));
-  Fset(Qffi_type_longdouble, ffi_add_primitive_type(&ffi_type_longdouble));
-  Fset(Qffi_type_pointer, ffi_add_primitive_type(&ffi_type_pointer));
+  Fset(Qffi_void, ffi_add_primitive_type(&ffi_type_void));
+  Fset(Qffi_uint8, ffi_add_primitive_type(&ffi_type_uint8));
+  Fset(Qffi_int8, ffi_add_primitive_type(&ffi_type_sint8));
+  Fset(Qffi_uint16, ffi_add_primitive_type(&ffi_type_uint16));
+  Fset(Qffi_int16, ffi_add_primitive_type(&ffi_type_sint16));
+  Fset(Qffi_uint32, ffi_add_primitive_type(&ffi_type_uint32));
+  Fset(Qffi_int32, ffi_add_primitive_type(&ffi_type_sint32));
+  Fset(Qffi_uint64, ffi_add_primitive_type(&ffi_type_uint64));
+  Fset(Qffi_int64, ffi_add_primitive_type(&ffi_type_sint64));
+  Fset(Qffi_float, ffi_add_primitive_type(&ffi_type_float));
+  Fset(Qffi_double, ffi_add_primitive_type(&ffi_type_double));
+  Fset(Qffi_longdouble, ffi_add_primitive_type(&ffi_type_longdouble));
+  Fset(Qffi_pointer, ffi_add_primitive_type(&ffi_type_pointer));
   rep_static_assert(sizeof(bool) == sizeof(uint8_t));
-  Fset(Qffi_type_bool, ffi_add_custom_type(&ffi_type_uint8, rep_FFI_BOOL));
-  Fset(Qffi_type_string, ffi_add_custom_type(&ffi_type_pointer, rep_FFI_STRING));
+  Fset(Qffi_bool, ffi_add_custom_type(&ffi_type_uint8, rep_FFI_BOOL));
+  Fset(Qffi_string, ffi_add_custom_type(&ffi_type_pointer, rep_FFI_STRING));
 # ifdef HAVE_FFI_OBJECTS
-  Fset(Qffi_type_object, ffi_add_custom_type(&ffi_type_pointer, rep_FFI_OBJECT));
+  Fset(Qffi_object, ffi_add_custom_type(&ffi_type_pointer, rep_FFI_OBJECT));
 # else
-  Fset(Qffi_type_object, rep_nil);
+  Fset(Qffi_object, rep_nil);
 # endif
+
+  Fset(Qffi_char, rep_MAKE_INT(rep_FFI_TYPE_SINT8));
+  Fset(Qffi_uchar, rep_MAKE_INT(rep_FFI_TYPE_UINT8));
+  Fset(Qffi_short, rep_MAKE_INT(rep_FFI_TYPE_SINT16));
+  Fset(Qffi_ushort, rep_MAKE_INT(rep_FFI_TYPE_UINT16));
+  Fset(Qffi_int, rep_MAKE_INT(rep_FFI_TYPE_SINT32));
+  Fset(Qffi_uint, rep_MAKE_INT(rep_FFI_TYPE_UINT32));
+#if defined(__LP64__) && __LP64__
+  Fset(Qffi_long, rep_MAKE_INT(rep_FFI_TYPE_SINT64));
+  Fset(Qffi_ulong, rep_MAKE_INT(rep_FFI_TYPE_UINT64));
+  Fset(Qffi_intptr, rep_MAKE_INT(rep_FFI_TYPE_SINT64));
+  Fset(Qffi_uintptr, rep_MAKE_INT(rep_FFI_TYPE_UINT64));
 #else
-  Fset(Qffi_type_void, rep_nil);
-  Fset(Qffi_type_uint8, rep_nil);
-  Fset(Qffi_type_sint8, rep_nil);
-  Fset(Qffi_type_uint16, rep_nil);
-  Fset(Qffi_type_sint16, rep_nil);
-  Fset(Qffi_type_uint32, rep_nil);
-  Fset(Qffi_type_sint32, rep_nil);
-  Fset(Qffi_type_uint64, rep_nil);
-  Fset(Qffi_type_sint64, rep_nil);
-  Fset(Qffi_type_float, rep_nil);
-  Fset(Qffi_type_double, rep_nil);
-  Fset(Qffi_type_longdouble, rep_nil);
-  Fset(Qffi_type_pointer, rep_nil);
-  Fset(Qffi_type_bool, rep_nil);
-  Fset(Qffi_type_string, rep_nil);
-  Fset(Qffi_type_object, rep_nil);
+  Fset(Qffi_long, rep_MAKE_INT(rep_FFI_TYPE_SINT32));
+  Fset(Qffi_ulong, rep_MAKE_INT(rep_FFI_TYPE_UINT32));
+  Fset(Qffi_intptr, rep_MAKE_INT(rep_FFI_TYPE_SINT32));
+  Fset(Qffi_uintptr, rep_MAKE_INT(rep_FFI_TYPE_UINT32));
+#endif
+  Fset(Qffi_longlong, rep_MAKE_INT(rep_FFI_TYPE_SINT64));
+  Fset(Qffi_ulonglong, rep_MAKE_INT(rep_FFI_TYPE_UINT64));
+
+#else
+  Fset(Qffi_void, rep_nil);
+  Fset(Qffi_uint8, rep_nil);
+  Fset(Qffi_int8, rep_nil);
+  Fset(Qffi_uint16, rep_nil);
+  Fset(Qffi_int16, rep_nil);
+  Fset(Qffi_uint32, rep_nil);
+  Fset(Qffi_int32, rep_nil);
+  Fset(Qffi_uint64, rep_nil);
+  Fset(Qffi_int64, rep_nil);
+  Fset(Qffi_float, rep_nil);
+  Fset(Qffi_double, rep_nil);
+  Fset(Qffi_longdouble, rep_nil);
+  Fset(Qffi_pointer, rep_nil);
+  Fset(Qffi_bool, rep_nil);
+  Fset(Qffi_string, rep_nil);
+  Fset(Qffi_object, rep_nil);
+
+  Fset(Qffi_char, rep_nil);
+  Fset(Qffi_uchar, rep_nil);
+  Fset(Qffi_short, rep_nil);
+  Fset(Qffi_ushort, rep_nil);
+  Fset(Qffi_int, rep_nil);
+  Fset(Qffi_uint, rep_nil);
+  Fset(Qffi_long, rep_nil);
+  Fset(Qffi_ulong, rep_nil);
+  Fset(Qffi_longlong, rep_nil);
+  Fset(Qffi_ulonglong, rep_nil);
+  Fset(Qffi_intptr, rep_nil);
+  Fset(Qffi_uintptr, rep_nil);
+
 #endif
   
-  Fexport_binding(Qffi_type_void);
-  Fexport_binding(Qffi_type_uint8);
-  Fexport_binding(Qffi_type_sint8);
-  Fexport_binding(Qffi_type_uint16);
-  Fexport_binding(Qffi_type_sint16);
-  Fexport_binding(Qffi_type_uint32);
-  Fexport_binding(Qffi_type_sint32);
-  Fexport_binding(Qffi_type_uint64);
-  Fexport_binding(Qffi_type_sint64);
-  Fexport_binding(Qffi_type_float);
-  Fexport_binding(Qffi_type_double);
-  Fexport_binding(Qffi_type_longdouble);
-  Fexport_binding(Qffi_type_pointer);
-  Fexport_binding(Qffi_type_bool);
-  Fexport_binding(Qffi_type_string);
-  Fexport_binding(Qffi_type_object);
+  Fexport_binding(Qffi_void);
+  Fexport_binding(Qffi_uint8);
+  Fexport_binding(Qffi_int8);
+  Fexport_binding(Qffi_uint16);
+  Fexport_binding(Qffi_int16);
+  Fexport_binding(Qffi_uint32);
+  Fexport_binding(Qffi_int32);
+  Fexport_binding(Qffi_uint64);
+  Fexport_binding(Qffi_int64);
+  Fexport_binding(Qffi_float);
+  Fexport_binding(Qffi_double);
+  Fexport_binding(Qffi_longdouble);
+  Fexport_binding(Qffi_pointer);
+  Fexport_binding(Qffi_bool);
+  Fexport_binding(Qffi_string);
+  Fexport_binding(Qffi_object);
+
+  Fexport_binding(Qffi_char);
+  Fexport_binding(Qffi_uchar);
+  Fexport_binding(Qffi_short);
+  Fexport_binding(Qffi_ushort);
+  Fexport_binding(Qffi_int);
+  Fexport_binding(Qffi_uint);
+  Fexport_binding(Qffi_long);
+  Fexport_binding(Qffi_ulong);
+  Fexport_binding(Qffi_longlong);
+  Fexport_binding(Qffi_ulonglong);
+  Fexport_binding(Qffi_intptr);
+  Fexport_binding(Qffi_uintptr);
   
   rep_ADD_SUBR(Sffi_array);
   rep_ADD_SUBR(Sffi_struct);
+  rep_ADD_SUBR(Sffi_enum);
+  rep_ADD_SUBR(Sffi_flags);
   rep_ADD_SUBR(Sffi_type);
   rep_ADD_SUBR(Sffi_interface);
   rep_ADD_SUBR(Sffi_apply);
