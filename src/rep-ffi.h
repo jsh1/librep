@@ -23,6 +23,8 @@
 
 #include "repint.h"
 
+#ifdef HAVE_LIBFFI
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -141,11 +143,12 @@ extern const rep_ffi_interface *rep_ffi_interface_ref(unsigned int idx);
 extern repv rep_ffi_apply(unsigned int iface_id, void *function_ptr,
   int argc, repv *argv);
 
+repv rep_ffi_make_subr(unsigned int iface, void *fn_ptr);
+
 extern repv Fffi_array(repv count, repv type);
 extern repv Fffi_struct(repv fields);
 extern repv Fffi_type(repv base, repv pred, repv in, repv out);
-extern repv Fffi_interface(repv ret, repv args);
-extern repv Fffi_apply(repv iface_id, repv ptr, repv args);
+extern repv Fffi_procedure(repv addr, repv ret, repv args);
 
 extern repv Fffi_new(repv type_id, repv count);
 extern repv Fffi_delete(repv type_id, repv addr);
@@ -162,4 +165,5 @@ extern void *rep_ffi_object_pointer(repv obj);
 extern void rep_ffi_objects_init(void);
 #endif
 
+#endif /* HAVE_LIBFFI */
 #endif /* REP_FFI_H */

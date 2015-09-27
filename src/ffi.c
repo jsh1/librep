@@ -23,14 +23,11 @@
    (ffi-struct [MEMBER-TYPES ...]) -> TYPE
      -- creates a new structure type
 
-   (ffi-interface RET-TYPE (PARAM-TYPES ...)) -> INTERFACE
-     -- creates a new ffi function signature
-
    (ffi-type BASE-TYPE [PREDICATE] [TYPE->BASE] [BASE->TYPE]) -> TYPE
      -- creates a new type alias
 
-   (ffi-apply INTERFACE FN-POINTER ARG-LIST) -> RET-VALUE
-     -- calls a function and returns its result
+   (ffi-procedure FN-POINTER RET-TYPE ARG-LIST) -> SUBR
+     -- returns a new procedure that invokes the foreign function
 
    Apply works by walking the list of arguments converting everything
    into native or structure types. It calls the function then converts
@@ -63,10 +60,10 @@
 
 #include "rep-ffi.h"
 
+#ifdef HAVE_LIBFFI
+
 #undef ALIGN
 #define ALIGN(v, a)     (((size_t)(v) + (a) - 1) & ~((a) - 1))
-
-#ifdef HAVE_LIBFFI
 
 static int n_ffi_types, n_alloc_ffi_types;
 static rep_ffi_type **ffi_types;
@@ -78,6 +75,30 @@ static rep_ffi_interface **ffi_interfaces;
   (rep_INTP(x) && rep_INT(x) >= 0 && rep_INT(x) < n_ffi_types)
 #define rep_VALID_INTERFACE_P(x) \
   (rep_INTP(x) && rep_INT(x) >= 0 && rep_INT(x) < n_ffi_interfaces)
+
+#define SUBRS_PER_BLOCK 127
+
+typedef struct rep_ffi_subr_struct rep_ffi_subr;
+typedef struct rep_ffi_subr_block_struct rep_ffi_subr_block;
+
+struct rep_ffi_subr_struct {
+  repv car;
+  unsigned int iface;
+  void *fn_ptr;
+};
+
+struct rep_ffi_subr_block_struct {
+  rep_ffi_subr_block *next;
+  rep_ALIGN_CELL(rep_ffi_subr data[SUBRS_PER_BLOCK]);
+};
+
+static repv subr_type(void);
+
+static rep_ffi_subr_block *subr_block_list;
+static rep_ffi_subr *subr_free_list;
+
+#define FFI_SUBRP(v) rep_CELL16_TYPEP(v, subr_type())
+#define FFI_SUBR(v) ((rep_ffi_subr *)rep_PTR(v))
 
 static bool
 ffi_types_equal_p(const rep_ffi_type *a, const rep_ffi_type *b)
@@ -879,53 +900,6 @@ rep_ffi_interface_ref(unsigned int idx)
   return ffi_interfaces[idx];
 }
 
-DEFUN("ffi-interface", Fffi_interface, Sffi_interface,
-      (repv ret, repv args), rep_Subr2)
-{
-  if (ret != rep_nil) {
-    rep_DECLARE(1, ret, rep_VALID_TYPE_P (ret));
-  }
-
-  unsigned int n;
-  if (rep_VECTORP(args)) {
-    n = rep_VECTOR_LEN(args);
-  } else if (rep_LISTP(args)) {
-    int l = rep_list_length(args);
-    if (l < 0) {
-      return 0;
-    }
-    n = l;
-  } else {
-    return rep_signal_arg_error (args, 2);
-  }
-
-  unsigned int argv[n];
-
-  for (unsigned int i = 0; i < n; i++) {
-    repv elt;
-    if (rep_VECTORP(args)) {
-      elt = rep_VECTI (args, i);
-    } else {
-      elt = rep_CAR(args);
-      args = rep_CDR(args);
-    }
-
-    if (!rep_VALID_TYPE_P(elt)) {
-      return rep_signal_arg_error(args, 2);
-    }
-
-    argv[i] = rep_INT(elt);
-  }
-
-  int idx = rep_ffi_get_interface(rep_INT(ret), n, argv);
-
-  if (idx < 0) {
-    return 0;
-  }
-
-  return rep_MAKE_INT(idx);
-}
-
 repv
 rep_ffi_apply(unsigned int iface_id, void *function_ptr, int argc, repv *argv)
 {
@@ -974,30 +948,144 @@ rep_ffi_apply(unsigned int iface_id, void *function_ptr, int argc, repv *argv)
   return ret_value;
 }
 
-DEFUN("ffi-apply", Fffi_apply, Sffi_apply,
-      (repv iface_id, repv ptr, repv args), rep_Subr3)
+static rep_ffi_subr *
+refill_free_list(void)
 {
-  rep_DECLARE(1, iface_id, rep_VALID_INTERFACE_P(iface_id));
-  rep_DECLARE(2, ptr, rep_pointerp(ptr));
+  rep_ffi_subr_block *b = rep_alloc(sizeof(rep_ffi_subr_block));
 
-  void *function_ptr = rep_get_pointer(ptr);
-  if (!function_ptr) {
-    return rep_signal_arg_error(ptr, 2);
+  b->next = subr_block_list;
+  subr_block_list = b;
+
+  for (int i = 1; i < SUBRS_PER_BLOCK; i++) {
+    b->data[i].car = 0;
+    b->data[i].fn_ptr = (void *)&b->data[i + 1];
   }
 
-  const rep_ffi_interface *iface = ffi_interfaces[rep_INT(iface_id)];
+  b->data[SUBRS_PER_BLOCK - 1].fn_ptr = (void *)subr_free_list;
+  subr_free_list = &b->data[1];
 
-  repv argv[iface->n_args];
+  return &b->data[0];
+}
 
-  for (unsigned int i = 0; i < iface->n_args; i++) {
-    if (!rep_CONSP(args)) {
-      return rep_signal_missing_arg(i + 1);
+repv
+rep_ffi_make_subr(unsigned int iface, void *fn_ptr)
+{
+  if (!fn_ptr) {
+    return rep_nil;
+  }
+
+  rep_ffi_subr *p = subr_free_list;
+  if (p) {
+    subr_free_list = p->fn_ptr;
+  } else {
+    p = refill_free_list();
+  }
+
+  p->car = subr_type();
+  p->iface = iface;
+  p->fn_ptr = fn_ptr;
+
+  return rep_VAL(p);
+}
+
+static repv
+subr_apply(repv obj, int argc, repv *argv)
+{
+  rep_ffi_subr *subr = FFI_SUBR(obj);
+
+  return rep_ffi_apply(subr->iface, subr->fn_ptr, argc, argv);
+}
+
+static void
+subr_sweep(void)
+{
+  rep_ffi_subr *free_list = NULL;
+
+  for (rep_ffi_subr_block *b = subr_block_list; b; b = b->next) {
+    for (int i = 0; i < SUBRS_PER_BLOCK; i++) {
+      rep_ffi_subr *p = &b->data[i];
+      if (!rep_GC_CELL_MARKEDP(rep_VAL(p))) {
+	p->fn_ptr = free_list;
+	free_list = p;
+      } else {
+	rep_GC_CLR_CELL(rep_VAL(p));
+      }
     }
-    argv[i] = rep_CAR(args);
-    args = rep_CDR(args);
   }
 
-  return rep_ffi_apply(rep_INT(iface_id), function_ptr, iface->n_args, argv);
+  subr_free_list = free_list;
+}
+
+static void
+subr_print(repv stream, repv arg)
+{    
+  char buf[256];
+#ifdef HAVE_SNPRINTF
+  snprintf(buf, sizeof(buf), "#<ffi-subr %p>", FFI_SUBR(arg)->fn_ptr);
+#else
+  sprintf(buf, "#<ffi-subr %p>", FFI_SUBR(arg)->fn_ptr);
+#endif
+
+  rep_stream_puts(stream, buf, -1, false);
+}
+
+static repv
+subr_type(void)
+{
+  static repv type;
+
+  if (!type) {
+    static rep_type subr = {
+      .name = "ffi-subr",
+      .apply = subr_apply,
+      .print = subr_print,
+      .sweep = subr_sweep,
+    };
+
+    type = rep_define_type(&subr);
+  }
+
+  return type;
+}
+
+DEFUN("ffi-procedure", Fffi_procedure, Sffi_procedure,
+      (repv addr, repv ret, repv args), rep_Subr3) /*
+::doc:rep.ffi#ffi-procedure::
+ffi-procedure ADDRESS RET-TYPE ARG-TYPES
+
+Returns a value callable as a function representing the foreign function
+at ADDRESS returning RET-TYPE from parameters ARG-TYPES (a list).
+::end:: */
+{
+  rep_DECLARE1(addr, rep_pointerp);
+  rep_DECLARE2(ret, rep_VALID_TYPE_P);
+  rep_DECLARE3(args, rep_LISTP);
+
+  int len = rep_list_length(args);
+  if (len < 0) {
+    return 0;
+  }
+
+  unsigned int *arg_types = rep_stack_alloc(unsigned int, len);
+  if (!arg_types) {
+    return rep_mem_error();
+  }
+
+  repv lst = args;
+  for (int i = 0; i < len; i++) {
+    if (!rep_VALID_TYPE_P(rep_CAR(lst))) {
+      return rep_signal_arg_error(2, rep_CAR(lst));
+    }
+    arg_types[i] = rep_INT(rep_CAR(lst));
+    lst = rep_CDR(lst);
+  }
+
+  int idx = rep_ffi_get_interface(rep_INT(ret), len, arg_types);
+  if (idx < 0) {
+    return 0;
+  }
+
+  return rep_ffi_make_subr(idx, rep_get_pointer(addr));
 }
 
 DEFUN("ffi-new", Fffi_new, Sffi_new, (repv type_id, repv count), rep_Subr2)
@@ -1079,68 +1167,6 @@ DEFUN("ffi-get", Fffi_get, Sffi_get, (repv type_id, repv addr), rep_Subr2)
 
   return value;
 }
-
-#else /* HAVE_LIBFFI */
-
-static repv
-no_libffi_error(void)
-{
-  DEFSTRING(err, "ffi support is not present in this installation");
-  return Fsignal(Qerror, Fcons(rep_VAL(&err), rep_nil));
-}
-
-DEFUN("ffi-struct", Fffi_struct, Sffi_struct, (repv fields), rep_Subr1)
-{
-  return no_libffi_error();
-}
-
-DEFUN("ffi-type", Fffi_type, Sffi_type,
-      (repv base, repv pred, repv in, repv out), rep_Subr4)
-{
-  return no_libffi_error();
-}
-
-DEFUN("ffi-interface", Fffi_interface, Sffi_interface,
-      (repv ret, repv args), rep_Subr2)
-{
-  return no_libffi_error();
-}
-
-DEFUN("ffi-apply", Fffi_apply, Sffi_apply,
-      (repv iface_id, repv ptr, repv args), rep_Subr3)
-{
-  return no_libffi_error();
-}
-
-DEFUN("ffi-new", Fffi_new, Sffi_new, (repv type_id, repv count), rep_Subr2)
-{
-  return no_libffi_error();
-}
-
-DEFUN("ffi-delete", Fffi_delete, Sffi_delete,
-      (repv type_id, repv addr), rep_Subr2)
-{
-  return no_libffi_error();
-}
-
-DEFUN("ffi-address-of", Fffi_address_of, Sffi_address_of,
-      (repv type_id, repv addr, repv idx), rep_Subr3)
-{
-  return no_libffi_error();
-}
-
-DEFUN("ffi-set!", Fffi_set_, Sffi_set_,
-      (repv type_id, repv addr, repv value), rep_Subr4)
-{
-  return no_libffi_error();
-}
-
-DEFUN("ffi-get", Fffi_get, Sffi_get, (repv type_id, repv addr), rep_Subr2)
-{
-  return no_libffi_error();
-}
-
-#endif /* HAVE_LIBFFI */
 
 DEFUN("ffi-load-library", Fffi_load_library,
       Sffi_load_library, (repv name), rep_Subr1)
@@ -1242,8 +1268,8 @@ rep_dl_init(void)
   rep_INTERN(ffi_intptr);
   rep_INTERN(ffi_uintptr);
   
-#ifdef HAVE_LIBFFI
-  /* order of initialization must match rep_ffi_types enum. */
+  /* Order of initialization must match rep_ffi_types enum. */
+
   Fset(Qffi_void, ffi_add_primitive_type(&ffi_type_void));
   Fset(Qffi_uint8, ffi_add_primitive_type(&ffi_type_uint8));
   Fset(Qffi_int8, ffi_add_primitive_type(&ffi_type_sint8));
@@ -1285,39 +1311,6 @@ rep_dl_init(void)
 #endif
   Fset(Qffi_longlong, rep_MAKE_INT(rep_FFI_TYPE_SINT64));
   Fset(Qffi_ulonglong, rep_MAKE_INT(rep_FFI_TYPE_UINT64));
-
-#else
-  Fset(Qffi_void, rep_nil);
-  Fset(Qffi_uint8, rep_nil);
-  Fset(Qffi_int8, rep_nil);
-  Fset(Qffi_uint16, rep_nil);
-  Fset(Qffi_int16, rep_nil);
-  Fset(Qffi_uint32, rep_nil);
-  Fset(Qffi_int32, rep_nil);
-  Fset(Qffi_uint64, rep_nil);
-  Fset(Qffi_int64, rep_nil);
-  Fset(Qffi_float, rep_nil);
-  Fset(Qffi_double, rep_nil);
-  Fset(Qffi_longdouble, rep_nil);
-  Fset(Qffi_pointer, rep_nil);
-  Fset(Qffi_bool, rep_nil);
-  Fset(Qffi_string, rep_nil);
-  Fset(Qffi_object, rep_nil);
-
-  Fset(Qffi_char, rep_nil);
-  Fset(Qffi_uchar, rep_nil);
-  Fset(Qffi_short, rep_nil);
-  Fset(Qffi_ushort, rep_nil);
-  Fset(Qffi_int, rep_nil);
-  Fset(Qffi_uint, rep_nil);
-  Fset(Qffi_long, rep_nil);
-  Fset(Qffi_ulong, rep_nil);
-  Fset(Qffi_longlong, rep_nil);
-  Fset(Qffi_ulonglong, rep_nil);
-  Fset(Qffi_intptr, rep_nil);
-  Fset(Qffi_uintptr, rep_nil);
-
-#endif
   
   Fexport_binding(Qffi_void);
   Fexport_binding(Qffi_uint8);
@@ -1354,8 +1347,6 @@ rep_dl_init(void)
   rep_ADD_SUBR(Sffi_enum);
   rep_ADD_SUBR(Sffi_flags);
   rep_ADD_SUBR(Sffi_type);
-  rep_ADD_SUBR(Sffi_interface);
-  rep_ADD_SUBR(Sffi_apply);
   
   rep_ADD_SUBR(Sffi_load_library);
   rep_ADD_SUBR(Sffi_lookup_symbol);
@@ -1366,9 +1357,13 @@ rep_dl_init(void)
   rep_ADD_SUBR(Sffi_set_);
   rep_ADD_SUBR(Sffi_get);
 
+  rep_ADD_SUBR(Sffi_procedure);
+
 #ifdef HAVE_FFI_OBJECTS
   rep_ffi_objects_init();
 #endif
   
   return rep_pop_structure(tem);
 }
+
+#endif /* HAVE_LIBFFI */

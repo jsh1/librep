@@ -20,6 +20,8 @@
 
 #include "rep-ffi.h"
 
+#ifdef HAVE_LIBFFI
+
 #include "pointer-hash.h"
 
 #import <CoreFoundation/CoreFoundation.h>
@@ -199,6 +201,10 @@ again:
     return -1;
   }
 
+  if (*str != ']') {
+    return -1;
+  }
+
   type = rep_ffi_get_array_type(count, type);
   if (type < 0) {
     return -1;
@@ -227,7 +233,11 @@ parse_objc_struct_type(const char **str_ptr)
   while (1) {
     int type = parse_objc_type(&str);
     if (type < 0) {
-      break;
+      if (*str == '}') {
+	break;
+      } else {
+	return -1;
+      }
     }
     if (count == sizeof(types) / sizeof(types[0])) {
       return -1;
@@ -343,6 +353,7 @@ again:
   case ']':
   case ')':
   case '}':
+    *str_ptr = str - 1;
     return -1;
   default:
     fprintf(stderr, "rep-ffi: unexpected objc type: %s\n", str - 1);
@@ -632,3 +643,5 @@ rep_ffi_objects_init(void)
 {
   rep_ADD_SUBR(Sobjc_class);
 }
+
+#endif /* HAVE_LIBFFI */
