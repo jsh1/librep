@@ -100,6 +100,9 @@ static rep_ffi_subr *subr_free_list;
 #define FFI_SUBRP(v) rep_CELL16_TYPEP(v, subr_type())
 #define FFI_SUBR(v) ((rep_ffi_subr *)rep_PTR(v))
 
+static bool ffi_enum_flags_to_int(rep_ffi_enum *e, repv value,
+  uintptr_t *ret_value);
+
 static bool
 ffi_types_equal_p(const rep_ffi_type *a, const rep_ffi_type *b)
 {
@@ -190,6 +193,62 @@ ffi_alloc_type(rep_ffi_type *type, bool search)
   ffi_types[idx] = type;
 
   return idx;
+}
+
+static bool
+ffi_enum_to_int(rep_ffi_enum *e, repv value, uintptr_t *ret_value)
+{
+  if (rep_INTP(value)) {
+    *ret_value |= rep_INT(value);
+    return true;
+  }
+
+  uintptr_t i = e->super.subtype == rep_FFI_ENUM ? 0 : 1;
+
+  for (repv lst = e->values; rep_CONSP(lst); lst = rep_CDR(lst)) {
+    repv cell = rep_CAR(lst);
+    if (rep_CONSP(cell)) {
+      if (rep_INTP(rep_CDR(cell))) {
+	i = rep_INT(rep_CDR(cell));
+      }
+      if (rep_CAR(cell) == value) {
+	*ret_value |= i;
+	return true;
+      }
+    } else {
+      if (cell == value) {
+	*ret_value |= i;
+	return true;
+      }
+    }
+    if (e->super.subtype == rep_FFI_ENUM) {
+      i++;
+    } else {
+      i <<= 1;
+    }
+  }
+
+  return false;
+}
+
+static bool
+ffi_enum_flags_to_int(rep_ffi_enum *e, repv value, uintptr_t *ret_value)
+{
+  *ret_value = 0;
+
+  if (e->super.subtype == rep_FFI_ENUM || !rep_LISTP(value)) {
+    return ffi_enum_to_int(e, value, ret_value);
+  }
+
+  /* VALUE is a list of individual flags. */
+
+  for (repv lst = value; rep_CONSP(lst); lst = rep_CDR(lst)) {
+    if (!ffi_enum_to_int(e, rep_CAR(lst), ret_value)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 static char *
@@ -331,33 +390,9 @@ rep_ffi_marshal(unsigned int type_id, repv value, char *ptr)
   case rep_FFI_ENUM:
   case rep_FFI_FLAGS: {
     rep_ffi_enum *e = (rep_ffi_enum *)type;
-    if (rep_INTP(value)) {
-      return rep_ffi_marshal(e->element_id, value, ptr);
-    }
     uintptr_t i = 0;
-    for (repv lst = e->values; rep_CONSP(lst); lst = rep_CDR(lst)) {
-      repv cell = rep_CAR(lst);
-      if (rep_CONSP(cell)) {
-	if (rep_INTP(rep_CDR(cell))) {
-	  i = rep_INT(rep_CDR(cell));
-	} else {
-	  DEFSTRING(err, "invalid ffi enum/flags definition");
-	  Fsignal(Qerror, rep_list_2(rep_VAL(&err), cell));
-	  return NULL;
-	}
-	if (rep_CAR(cell) == value) {
-	  return rep_ffi_marshal(e->element_id, rep_MAKE_INT(i), ptr);
-	}
-      } else {
-	if (cell == value) {
-	  return rep_ffi_marshal(e->element_id, rep_MAKE_INT(i), ptr);
-	}
-	if (type->subtype == rep_FFI_ENUM) {
-	  i++;
-	} else {
-	  i = i << 1;
-	}
-      }
+    if (ffi_enum_flags_to_int(e, value, &i)) {
+      return rep_ffi_marshal(e->element_id, rep_make_long_uint(i), ptr);
     }
     DEFSTRING(err, "invalid ffi enum/flags value");
     Fsignal(Qerror, rep_list_2(rep_VAL(&err), value));
@@ -397,6 +432,71 @@ rep_ffi_marshal(unsigned int type_id, repv value, char *ptr)
     Fsignal(Qerror, rep_list_2(rep_VAL(&err), rep_MAKE_INT(type_id)));
     return NULL;
   }
+}
+
+static bool
+ffi_enum_from_int(rep_ffi_enum *e, uintptr_t value, repv *ret_value)
+{
+  uintptr_t i = e->super.subtype == rep_FFI_ENUM ? 0 : 1;
+
+  for (repv lst = e->values; rep_CONSP(lst); lst = rep_CDR(lst)) {
+    repv cell = rep_CAR(lst);
+    if (rep_CONSP(cell)) {
+      if (rep_INTP(rep_CDR(cell))) {
+	i = rep_INT(rep_CDR(cell));
+	if (value == i) {
+	  *ret_value = rep_CAR(cell);
+	  return true;
+	}
+      }
+    } else {
+      if (value == i) {
+	*ret_value = cell;
+	return true;
+      }
+    }
+    if (e->super.subtype == rep_FFI_ENUM) {
+      i++;
+    } else {
+      i <<= 1;
+    }
+  }
+
+  return false;
+}
+
+static bool
+ffi_enum_flags_from_int(rep_ffi_enum *e, uintptr_t value, repv *ret_value)
+{
+  *ret_value = rep_nil;
+
+  if (e->super.subtype == rep_FFI_ENUM
+      || (value != 0 && (value & (value - 1)) == 0))
+  {
+    return ffi_enum_from_int(e, value, ret_value);
+  }
+
+  /* Multiple bits set in flags. Try to return a list. */
+
+  uintptr_t unknown_bits = 0;
+
+  for (uintptr_t flags = value; flags != 0; flags &= flags - 1) {
+    uintptr_t bit = flags ^ (flags & (flags - 1));
+    repv sym = rep_nil;
+    if (!ffi_enum_from_int(e, bit, &sym)) {
+      unknown_bits |= bit;
+    } else {
+      *ret_value = Fcons(sym, *ret_value);
+    }
+  }
+
+  if (unknown_bits != 0) {
+    *ret_value = Fcons(rep_make_long_uint(unknown_bits), *ret_value);
+  }
+
+  *ret_value = Fnreverse(*ret_value);
+
+  return true;
 }
 
 static char *
@@ -520,40 +620,10 @@ rep_ffi_demarshal(unsigned int type_id, char *ptr, repv *value)
     if (!ptr) {
       return NULL;
     }
-    if (!rep_INTP(tem)) {
-      DEFSTRING(err, "non-integer ffi enum/flags value");
-      Fsignal(Qerror, rep_list_2(rep_VAL(&err), tem));
-      return NULL;
+    if (ffi_enum_flags_from_int(e, rep_get_long_uint(tem), value)) {
+      return ptr;
     }
-    uintptr_t i = 0;
-    for (repv lst = e->values; rep_CONSP(lst); lst = rep_CDR(lst)) {
-      repv cell = rep_CAR(lst);
-      if (rep_CONSP(cell)) {
-	if (rep_INTP(rep_CDR(cell))) {
-	  i = rep_INT(rep_CDR(cell));
-	  if (rep_INT(tem) == i) {
-	    *value = rep_CAR(cell);
-	    return ptr;
-	  }
-	} else {
-	  DEFSTRING(err, "invalid ffi enum/flags definition");
-	  Fsignal(Qerror, rep_list_2(rep_VAL(&err), cell));
-	  return NULL;
-	}
-      } else {
-	if (rep_INT(tem) == i) {
-	  *value = cell;
-	  return ptr;
-	}
-	if (type->subtype == rep_FFI_ENUM) {
-	  i++;
-	} else {
-	  i = i << 1;
-	}
-      }
-    }
-    *value = tem;
-    return ptr; }
+    return NULL; }
     
   case rep_FFI_ALIAS: {
     rep_ffi_alias *s = (rep_ffi_alias *)type;
@@ -763,9 +833,8 @@ ffi_enum_flags(unsigned int kind, repv values, repv type)
   e->values = values;
   rep_mark_static(&e->values);
 
-  return ffi_alloc_type(&e->super, false);
+  return rep_MAKE_INT(ffi_alloc_type(&e->super, false));
 }
-
 
 DEFUN("ffi-enum", Fffi_enum, Sffi_enum,
       (repv values, repv type), rep_Subr2)
@@ -777,6 +846,42 @@ DEFUN("ffi-flags", Fffi_flags, Sffi_flags,
       (repv values, repv type), rep_Subr2)
 {
   return ffi_enum_flags(rep_FFI_FLAGS, values, type);
+}
+
+DEFUN("ffi-type->integer", Fffi_type_to_integer, Sffi_type_to_integer,
+      (repv type, repv value), rep_Subr2)
+{
+  rep_DECLARE1(type, rep_VALID_TYPE_P);
+
+  rep_ffi_type *t = ffi_types[rep_INT(type)];
+
+  if (t->subtype == rep_FFI_ENUM || t->subtype == rep_FFI_FLAGS) {
+    uintptr_t ret;
+    if (ffi_enum_flags_to_int((rep_ffi_enum *)t, value, &ret)) {
+      return rep_make_long_uint(ret);
+    }
+  }
+
+  return rep_signal_arg_error(1, type);
+}
+
+DEFUN("integer->ffi-type", Finteger_to_ffi_type, Sinteger_to_ffi_type,
+      (repv type, repv value), rep_Subr2)
+{
+  rep_DECLARE1(type, rep_VALID_TYPE_P);
+  rep_DECLARE1(value, rep_INTEGERP);
+
+  rep_ffi_type *t = ffi_types[rep_INT(type)];
+
+  if (t->subtype == rep_FFI_ENUM || t->subtype == rep_FFI_FLAGS) {
+    uintptr_t tem = rep_get_long_uint(value);
+    repv ret;
+    if (ffi_enum_flags_from_int((rep_ffi_enum *)t, tem, &ret)) {
+      return ret;
+    }
+  }
+
+  return rep_signal_arg_error(1, type);
 }
 
 DEFUN("ffi-type", Fffi_type, Sffi_type,
@@ -1347,6 +1452,8 @@ rep_dl_init(void)
   rep_ADD_SUBR(Sffi_enum);
   rep_ADD_SUBR(Sffi_flags);
   rep_ADD_SUBR(Sffi_type);
+  rep_ADD_SUBR(Sffi_type_to_integer);
+  rep_ADD_SUBR(Sinteger_to_ffi_type);
   
   rep_ADD_SUBR(Sffi_load_library);
   rep_ADD_SUBR(Sffi_lookup_symbol);

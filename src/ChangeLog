@@ -1,5 +1,7 @@
 2015-09-27  John Harper  <jsh@unfactored.org>
 
+	* ffi.c: more work on enum/flags types
+
 	* rep-ffi.h, ffi.c, ffi-objc.m: replaced ffi-apply and
 	ffi-interface functions by ffi-procedure
 
