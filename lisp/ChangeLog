@@ -1,3 +1,7 @@
+2015-09-27  John Harper  <jsh@unfactored.org>
+
+	* rep/io/files.jl: needs to open rep.structures module
+
 2015-09-24  John Harper  <jsh@unfactored.org>
 
 	* rep/vm/compiler.jl, rep/vm/compiler/utils.jl,

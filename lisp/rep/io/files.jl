@@ -25,6 +25,7 @@
 
 (open-structures '(rep.lang.symbols
 		   rep.data
+		   rep.structures
 		   rep.system))
 
 (defun file-name= (name1 name2)
