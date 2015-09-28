@@ -38,7 +38,7 @@
 
 ;;; Code:
 
-(define-structure rep.lang.backquote
+(define-module rep.lang.backquote
 
     (export backquote)
 

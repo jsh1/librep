@@ -18,7 +18,7 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure rep.util.date
+(define-module rep.util.date
 
     (export parse-date
 	    date-vec-day-abbrev
@@ -36,7 +36,7 @@
 	  rep.system
 	  rep.regexp)
 
-  (define-structure-alias date rep.util.date)
+  (define-module-alias date rep.util.date)
 
   (define date-month-alist '(("Jan" . 1) ("Feb" . 2) ("Mar" . 3) ("Apr" . 4)
 			     ("May" . 5) ("Jun" . 6) ("Jul" . 7) ("Aug" . 8)

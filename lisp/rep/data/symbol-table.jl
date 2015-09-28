@@ -31,7 +31,7 @@
 ;; to general code, hence these wrappers for making anonymous
 ;; structures
 
-(define-structure rep.data.symbol-table
+(define-module rep.data.symbol-table
 
     (export make-symbol-table
 	    symbol-table-ref
@@ -42,14 +42,14 @@
     (open rep
 	  rep.structures)
 
-  (define-structure-alias symbol-table rep.data.symbol-table)
+  (define-module-alias symbol-table rep.data.symbol-table)
 
   (define (make-symbol-table)
     (make-structure))
 
   (define (symbol-table-ref table var)
     (and (structure-bound? table var)
-	 (%structure-ref table var)))
+	 (structure-ref table var)))
 
   (define (symbol-table-set! table var value)
     (structure-define table var value))

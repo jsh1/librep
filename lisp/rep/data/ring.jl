@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.data.ring
+(define-module rep.data.ring
 
     (export ring-capacity
 	    ring-size
@@ -38,7 +38,7 @@
     (open rep
 	  rep.data.datums)
 
-  (define-structure-alias ring rep.data.ring)
+  (define-module-alias ring rep.data.ring)
 
   ;; default size of a ring buffer
   (defconst default-size 16)

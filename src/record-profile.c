@@ -132,7 +132,7 @@ test_interrupt(void)
       continue;
     }
 
-    repv tem = F_structure_ref(profile_table, name);
+    repv tem = Fstructure_ref(profile_table, name);
     if (rep_VOIDP(tem)) {
       tem = Fcons(rep_MAKE_INT(0), rep_MAKE_INT(0));
     }

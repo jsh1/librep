@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.data.queues
+(define-module rep.data.queues
 
     (export make-queue
 	    enqueue
@@ -36,7 +36,7 @@
 	  rep.data.datums
 	  rep.test.framework)
 
-  (define-structure-alias queues rep.data.queues)
+  (define-module-alias queues rep.data.queues)
 
   (define type-id (cons))
 

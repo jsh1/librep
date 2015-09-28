@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.www.fetch-url
+(define-module rep.www.fetch-url
 
     (export fetch-url
 	    fetch-url-async)

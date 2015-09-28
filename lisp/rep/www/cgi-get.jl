@@ -19,7 +19,7 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure rep.www.cgi-get
+(define-module rep.www.cgi-get
 
     (export cgi-get-params)
 
@@ -29,7 +29,7 @@
 	  rep.test.framework
 	  rep.www.quote-url)
 
-  (define-structure-alias cgi-get rep.www.cgi-get)
+  (define-module-alias cgi-get rep.www.cgi-get)
 
   (define unquote-plus-map (let ((map (make-string (1+ (char->integer #\+))))
 				 (i 0)

@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.vm.compiler.src
+(define-module rep.vm.compiler.src
 
     (export coalesce-constants
 	    source-code-transform)

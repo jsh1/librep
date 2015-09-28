@@ -24,7 +24,7 @@
 ;; Most of the optimisation patterns in the peephole optimiser were
 ;; lifted from jwz's byte-optimize.el (XEmacs)
 
-(define-structure rep.vm.peephole
+(define-module rep.vm.peephole
 
     (export peephole-optimizer)
 

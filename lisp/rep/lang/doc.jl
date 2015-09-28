@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.lang.doc
+(define-module rep.lang.doc
 
     (export describe-lambda-list
 	    describe-value

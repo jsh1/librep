@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.vm.compiler.utils
+(define-module rep.vm.compiler.utils
 
     (export current-stack max-stack
 	    current-b-stack max-b-stack

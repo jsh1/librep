@@ -241,7 +241,7 @@ is loaded and a warning is displayed.
     path = Fcons(rep_null_string(), rep_nil);
   }
 
-  suffixes = F_structure_ref(rep_structure, Q_load_suffixes);
+  suffixes = Fstructure_ref(rep_structure, Q_load_suffixes);
   if (!suffixes || !rep_CONSP(suffixes)) {
     suffixes = default_suffixes;
   }

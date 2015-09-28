@@ -18,13 +18,13 @@
 ;;; along with Jade; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure rep.mail.addr ()
+(define-module rep.mail.addr ()
 
     (open rep
 	  rep.regexp
 	  rep.system)
 
-  (define-structure-alias mailaddr rep.mail.addr)
+  (define-module-alias mailaddr rep.mail.addr)
 
   (defvar mail-domain-name (if (string-match "^([^.]+\\.)[^.]+" (system-name))
 			       (substring (system-name) (match-end 1))

@@ -23,7 +23,7 @@
 ;;	matching files against regexp(s)
 ;;    - Fix all the kludges marked by XXX
 
-(define-structure rep.io.file-handlers.remote.ftp
+(define-module rep.io.file-handlers.remote.ftp
 
     (export remote-ftp-close-host
 	    remote-ftp-close-all
@@ -40,7 +40,7 @@
 	  rep.util.date
 	  rep.mail.addr)
 
-  (define-structure-alias remote-ftp rep.io.file-handlers.remote.ftp)
+  (define-module-alias remote-ftp rep.io.file-handlers.remote.ftp)
 
 
 ;; Configuration:

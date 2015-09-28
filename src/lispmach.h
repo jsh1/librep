@@ -792,7 +792,7 @@ again: {
       SAFE_NEXT;
     }
 
-    /* This code expanded from F_structure_ref() and lookup() in
+    /* This code expanded from Fstructure_ref() and lookup() in
        structures.c */
 
     INSN_WITH_ARG(OP_REFQ) {
@@ -810,7 +810,7 @@ again: {
 	  }
 	}
       } else if (s->init) {
-	TOP = F_structure_ref(rep_VAL(s), var);
+	TOP = Fstructure_ref(rep_VAL(s), var);
 	NEXT;
       }
       rep_struct_node *n = rep_search_imports(s, var);
@@ -1205,7 +1205,7 @@ again: {
     }
 
     INSN(OP_STRUCT_REF) {
-      CALL_2(Fexternal_structure_ref);
+      CALL_2(Fstructure_access);
     }
 
     INSN(OP_LIST_LENGTH) {

@@ -40,7 +40,7 @@
 
 ;; replicated in files.c
 (defun file-handler-ref (name)
-  (%structure-ref (current-structure) name))
+  (structure-ref (current-structure) name))
 
 (export-bindings '(autoload-file-handler define-file-handler file-handler-ref))
 

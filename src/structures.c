@@ -31,53 +31,53 @@
    rep's module system is based on the Scheme48 system, which itself
    takes ideas from Standard ML and Xerox scheme.
 
-   Modules are known as structures (from SML) and may be anonymous or
-   named (as with functions, but in a separate namespace), but only
-   named structures may be imported or accessed. Each structure is
-   basically a separate global namespace, with a number of variable
-   bindings. Each closure contains a reference to the structure it was
-   instantiated in, providing the source for referencing any unbound
-   variables.
+   Modules may be anonymous or named (as with functions, but in a
+   separate namespace), but only named modules may be imported or
+   accessed. Each module is a separate namespace, with its own set of
+   variable bindings. Each closure contains a reference to the module
+   it was instantiated in, providing the source for referencing any
+   unbound variables.
 
-   Each structure presents an interface to any structures that import
-   its bindings. This interface is simply the list of symbols whose
+   Each module presents an interface to any module that import its
+   bindings. This interface is simply the list of symbols whose
    bindings may be referenced from outside.
 
-   Structures may either `open' or `access' other structures; when
-   opening a structure all its exported bindings are immediately
-   referenceable from the importing structures. Exported bindings from
-   accessed structures are referenced using the `structure-ref' form
+   Modules may either `open' or `access' other modules; when opening a
+   module all its exported bindings are immediately referenceable from
+   the importing module. Exported bindings from accessed modules are
+   referenced using the `module-ref' form.
 
-   Structures are implemented as first-class objects, but only a second-
-   class view is presented to most lisp code, this is to enable static
-   analysis of package imports and exports at compile time
+   Modules are implemented as first-class "structure" objects, but only
+   a second-class view is presented to most lisp code, this is to
+   enable static analysis of package imports and exports at compile
+   time
 
    Here is the module language grammar adapted from Rees' memo:
 
-   <definition> -> (define-structure <name> <interface> <config> <form>*)
+   <definition> -> (define-module <name> <interface> <config> <form>*)
 		   (define-interface <name> <interface>)
 
-   <structure> -> (structure <interface> <config> <form>*)
+   <structure> -> (module <interface> <config> <form>*)
 
    <interface> -> (export <id>*)
 		  <name>
 		  (compound-interface <interface>*)
+		  (module-interface <name>*)
 
    <config> -> (<clause>*)
 	       <clause>
 
    <clause> -> (open <name>*)
 	       (access <name>*)
+	       (export-all)
+	       (set-binds)
 
-   Most files will just contain a single `(define-structure ...)' form.
+   Most files will just contain a single `(define-module ...)' form.
    E.g.:
 
-   (define-structure foo (export foo) (open rep)
+   (define-module foo (export foo) (open rep)
      (defun foo (x)
        (1+ x)))
-
-   As Rees points out, this changes load from being used for its side
-   effects to being used for its value, the created structure.
 
    For backwards compatibility, the `require' form now works with both
    simple files and files containing module definitions. E.g. if a file
@@ -86,7 +86,7 @@
 
    Special variables have their own isolated namespace (the structure
    called `%specials') and thus their names can still clash across
-   structures..  */
+   modules..  */
 
 #include "repint.h"
 
@@ -125,7 +125,7 @@ DEFSYM(_structures, "%structures");
 DEFSYM(_meta, "%meta");
 DEFSYM(rep, "rep");
 DEFSYM(_specials, "%specials");
-DEFSYM(_user_structure_, "*user-structure*");
+DEFSYM(_user_module_, "*user-module*");
 DEFSYM(rep_structures, "rep.structures");
 DEFSYM(rep_lang_interpreter, "rep.lang.interpreter");
 DEFSYM(rep_vm_interpreter, "rep.vm.interpreter");
@@ -835,10 +835,10 @@ BODY-THUNK may be modified by this function!
   return 0;
 }
 
-DEFUN("%structure-ref", F_structure_ref,
-       S_structure_ref, (repv structure, repv var), rep_Subr2) /*
-::doc:rep.structures#%structure-ref::
-%structure-ref STRUCTURE VAR
+DEFUN("structure-ref", Fstructure_ref,
+       Sstructure_ref, (repv structure, repv var), rep_Subr2) /*
+::doc:rep.structures#structure-ref::
+structure-ref STRUCTURE VAR
 
 Return the value of the binding of symbol VAR in structure object
 STRUCTURE or any inner opened structures.
@@ -868,7 +868,7 @@ structure-bound? STRUCTURE VAR
 Return `t' if symbol VAR has a non-void binding in STRUCTURE.
 ::end:: */
 {
-  repv tem = F_structure_ref(structure, var);
+  repv tem = Fstructure_ref(structure, var);
 
   if (tem) {
     tem = rep_VOIDP(tem) ? rep_nil : Qt;
@@ -944,10 +944,10 @@ STRUCTURE to VALUE. If no such binding exists, one is created.
   return rep_undefined_value;
 }
 
-DEFUN("external-structure-ref", Fexternal_structure_ref,
-       Sexternal_structure_ref, (repv name, repv var), rep_Subr2) /*
-::doc:rep.structures#external-structure-ref::
-external-structure-ref STRUCT-NAME VAR
+DEFUN("structure-access", Fstructure_access,
+       Sstructure_access, (repv name, repv var), rep_Subr2) /*
+::doc:rep.structures#access-structure::
+access-structure STRUCT-NAME VAR
 
 Return the value of the binding of symbol VAR within the structure
 called STRUCT-NAME. This structure must have previously been marked as
@@ -1178,12 +1178,12 @@ attempt to load it.
   rep_GC_root gc_name, gc_old;
 
   /* We need to load the file from within a well-defined structure, not
-     just the current one. Look for the value of the *user-structure*
+     just the current one. Look for the value of the *user-module*
      variable first, then fall back to the default structure */
 
   rep_structure = rep_default_structure;
 
-  repv user = Fsymbol_value(Q_user_structure_, Qt);
+  repv user = Fsymbol_value(Q_user_module_, Qt);
   if (user && rep_SYMBOLP(user)) {
     user = Ffind_structure(user);
     if (rep_STRUCTUREP(user)) {
@@ -1536,7 +1536,7 @@ structure.
     return Qt;
   }
 
-  repv value = F_structure_ref(rep_structure, Q_features);
+  repv value = Fstructure_ref(rep_structure, Q_features);
   if (rep_VOIDP(value)) {
     return rep_nil;
   }
@@ -1564,7 +1564,7 @@ structure.
     return rep_undefined_value;
   }
 
-  repv value = F_structure_ref(rep_structure, Q_features);
+  repv value = Fstructure_ref(rep_structure, Q_features);
   if (rep_VOIDP(value)) {
     value = rep_nil;
   }
@@ -1600,7 +1600,7 @@ loaded is either FILE(if given), or the print name of FEATURE.
   /* Need to do all this locally, since the file providing the feature
     / module has to be loaded into the _current_ structure (in case it
     contains bare code). %intern-structure OTOH always loads into
-    *user-structure*, since it's often called with only the %meta
+    *user-module*, since it's often called with only the %meta
     structure imported */
 
   tem = Fmemq(feature, dst->imports);
@@ -1847,7 +1847,7 @@ set-structure-file-handlers! STRUCTURE ENV
    the variable finally gets defvar'd.
 
    So my solution is to mark a structure as the `user' structure (by
-   storing its name in the variable *user-structure*), then check this
+   storing its name in the variable *user-module*), then check this
    structure for bindings when defvar'ing variables
 
    This function may not gc */
@@ -1855,12 +1855,12 @@ set-structure-file-handlers! STRUCTURE ENV
 repv
 rep_get_initial_special_value(repv sym)
 {
-  repv user = F_structure_ref(rep_specials_structure, Q_user_structure_);
+  repv user = Fstructure_ref(rep_specials_structure, Q_user_module_);
 
   if (rep_SYMBOLP(user)) {
     repv s = Ffind_structure(user);
     if (rep_STRUCTUREP(s)) {
-      repv old = F_structure_ref(s, sym);
+      repv old = Fstructure_ref(s, sym);
       if (!rep_VOIDP(old)) {
 	Fstructure_define(s, sym, rep_void);
 	cache_invalidate_symbol(sym);
@@ -1927,11 +1927,11 @@ rep_structures_init(void)
 {
   repv tem = rep_push_structure("rep.structures");
   rep_ADD_SUBR(Smake_structure);
-  rep_ADD_SUBR(S_structure_ref);
+  rep_ADD_SUBR(Sstructure_ref);
   rep_ADD_SUBR(Sstructure_bound_p);
   rep_ADD_SUBR(Sstructure_set);
   rep_ADD_SUBR(Sstructure_define);
-  rep_ADD_SUBR(Sexternal_structure_ref);
+  rep_ADD_SUBR(Sstructure_access);
   rep_ADD_SUBR(Sstructure_name);
   rep_ADD_SUBR(Sstructure_interface);
   rep_ADD_SUBR(Sstructure_exports_p);
@@ -1972,7 +1972,7 @@ rep_structures_init(void)
   rep_INTERN(_meta);
   rep_INTERN(rep);
   rep_INTERN(_specials);
-  rep_INTERN_SPECIAL(_user_structure_);
+  rep_INTERN_SPECIAL(_user_module_);
   rep_INTERN(rep_structures);
   rep_INTERN(rep_lang_interpreter);
   rep_INTERN(rep_vm_interpreter);

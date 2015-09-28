@@ -39,7 +39,7 @@ DEFSYM(backquote_unquote, "backquote-unquote");
 DEFSYM(backquote_splice, "backquote-splice");
 DEFSYM(quote, "quote");
 DEFSYM(function, "function");
-DEFSYM(structure_ref, "structure-ref");
+DEFSYM(module_ref, "module-ref");
 
 /* The `c' variable which keeps coming up is the lookahead character,
    since each reader function normally has to look at the next character
@@ -1081,7 +1081,7 @@ readl(repv stream, register int *c_p, repv end_of_stream_error)
 	*c_p = rep_stream_getc(stream);
 	repv var = read_symbol(stream, c_p, rep_obarray);
 	if (var != 0) {
-	  return rep_list_3(Qstructure_ref, form, var);
+	  return rep_list_3(Qmodule_ref, form, var);
 	} else {
 	  return var;
 	}
@@ -1106,5 +1106,5 @@ rep_read_init(void)
   rep_INTERN(backquote_unquote);
   rep_INTERN(backquote_splice);
   rep_INTERN(function);
-  rep_INTERN(structure_ref);
+  rep_INTERN(module_ref);
 }

@@ -330,7 +330,7 @@ symbol_special_value(repv sym, bool only_default)
     }
   }
 
-  return F_structure_ref(rep_specials_structure, sym);
+  return Fstructure_ref(rep_specials_structure, sym);
 }
 
 static repv
@@ -381,7 +381,7 @@ inner_symbol_value(repv sym, bool allow_lexical)
     }
   }
 
-  return F_structure_ref(rep_structure, sym);
+  return Fstructure_ref(rep_structure, sym);
 }
 
 repv
@@ -432,7 +432,7 @@ not have their own local value.
   if (rep_SYM(sym)->car & rep_SF_SPECIAL) {
     val = symbol_special_value(sym, true);
   } else {
-    val = F_structure_ref(rep_structure, sym);
+    val = Fstructure_ref(rep_structure, sym);
   }
 
   if (no_err == rep_nil && rep_VOIDP(val)) {

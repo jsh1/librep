@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.vm.compiler.modules
+(define-module rep.vm.compiler.modules
 
     (export current-module
 	    macro-env
@@ -38,11 +38,11 @@
 	    compile-module-body
 	    note-require
 	    note-macro-def
-	    compile-structure
-	    compile-define-structure
-	    compile-top-level-structure
-	    compile-top-level-define-structure
-	    compile-structure-ref
+	    compile-anonymous-module
+	    compile-define-module
+	    compile-top-level-module
+	    compile-top-level-define-module
+	    compile-module-ref
 	    compile-function
 	    compile-module)
 
@@ -58,7 +58,7 @@
 
   ;; the name of the module containing what is being compiled
 
-  (define current-module (make-fluid *user-structure*))
+  (define current-module (make-fluid *user-module*))
 
   ;; if true, the namespace of the module containing what is being
   ;; compiled in; only set when compiling code outside a module
@@ -78,7 +78,7 @@
 					    (structure-accessible
 					     (fluid-ref current-structure)))))
 
-  (define (find-structure name)
+  (define (intern-structure-safely name)
     (condition-case nil
 	(intern-structure name)
       (file-error nil)))
@@ -88,27 +88,27 @@
   (defun module-exports? (struct var)
     (and (symbol? var)
 	 (cond ((symbol? struct)
-		(let ((tem (find-structure struct)))
+		(let ((tem (intern-structure-safely struct)))
 		  (and tem (structure-exports? tem var))))
 	       ((structure? struct)
 		(structure-exports? struct var)))))
 
   ;; return t if ARG is a structure reference form
 
-  (defun structure-ref? (arg)
-    (and (eq? (car arg) 'structure-ref)
-	 (memq (locate-variable 'structure-ref) '(rep rep.module-system))))
+  (defun module-ref? (arg)
+    (and (eq? (car arg) 'module-ref)
+	 (memq (locate-variable 'module-ref) '(rep rep.module-system))))
 
   ;; return t if ARG refers to a variable
 
   (defun variable-ref? (arg)
-    (or (symbol? arg) (structure-ref? arg)))
+    (or (symbol? arg) (module-ref? arg)))
 
   ;; return the name of the structure exporting VAR to the current
   ;; structure, or nil
 
   (defun locate-variable (var)
-    (if (structure-ref? var)
+    (if (module-ref? var)
 	(list-ref var 1)
       (let loop ((rest (fluid-ref open-modules)))
 	(if rest
@@ -125,7 +125,7 @@
 
   (defun variable-stem (var)
     (if (pair? var)
-	(list-ref var 2)		;structure-ref
+	(list-ref var 2)		;module-ref
       var))
 
   (defun variable-ref-1 (var)
@@ -133,14 +133,14 @@
 	   (variable-ref var))
 	  ((and (symbol? var) (fluid-ref current-structure)
 		(structure-bound? (fluid-ref current-structure) var))
-	   (%structure-ref (fluid-ref current-structure) var))
+	   (structure-ref (fluid-ref current-structure) var))
 	  ((has-local-binding? var) nil)
 	  (t
 	   (let* ((struct (locate-variable var))
-		  (module (and struct (find-structure struct))))
+		  (module (and struct (intern-structure-safely struct))))
 	     (and module
 		  (structure-bound? module (variable-stem var))
-		  (%structure-ref module (variable-stem var)))))))
+		  (structure-ref module (variable-stem var)))))))
 
   ;; if possible, return the value of variable VAR, else return nil
 
@@ -161,7 +161,7 @@
   ;; return t if the binding of VAR comes from the rep (built-ins) module
 
   (defun compiler-binding-from-rep? (var)
-    (if (structure-ref? var)
+    (if (module-ref? var)
 	(eq? (list-ref var 1) 'rep)
       (and (not (has-local-binding? var))
 	   (eq? (locate-variable var) 'rep))))
@@ -173,7 +173,7 @@
     (and (not (has-local-binding? var))
 	 (let ((struct (locate-variable var)))
 	   (and struct (binding-immutable? (variable-stem var)
-					    (find-structure struct))))))
+					    (intern-structure-safely struct))))))
 
   (defun get-language-property (prop)
     (and (fluid-ref current-language) (get (fluid-ref current-language) prop)))
@@ -284,15 +284,15 @@
 
 	    (t (compiler-warning "unable to require `%s'" feature)))))
 
-  ;; FIXME: enclose macro defs in the *user-structure*, this is
-  ;; different to with interpreted code
+  ;; FIXME: enclose macro defs in the *user-module*, this is different
+  ;; to with interpreted code
 
   (defun note-macro-def (name body)
     (fluid-set! macro-env
 	       (cons (cons name
 			   (let ((closure (make-closure body name)))
 			     (set-closure-structure!
-			      closure (find-structure *user-structure*))
+			      closure (find-structure *user-module*))
 			     closure))
 		     (fluid-ref macro-env))))
 
@@ -352,16 +352,16 @@
 
   ;; Module compilers
 
-  (defun compile-structure (form)
+  (defun compile-anonymous-module (form)
     (compile-structure-def nil (cadr form) (cddr form)))
 
-  (defun compile-define-structure (form)
+  (defun compile-define-module (form)
     (compile-structure-def (cadr form) (caddr form) (cdddr form)))
 
-  (defun compile-top-level-structure (form)
+  (defun compile-top-level-module (form)
     (compile-structure-def nil (cadr form) (cddr form) t))
 
-  (defun compile-top-level-define-structure (form)
+  (defun compile-top-level-define-module (form)
     (compile-structure-def (cadr form) (caddr form) (cdddr form) t))
 
   (defun compile-structure-def (name sig body #!optional top-level)
@@ -396,8 +396,8 @@
 
 	   (if top-level
 	       (if name
-		   `(define-structure ,name ,sig ,config ,@body)
-		 `(structure ,sig ,config ,@body))
+		   `(define-module ,name ,sig ,config ,@body)
+		 `(module ,sig ,config ,@body))
 	     (compile-form-1 '%make-structure)
 	     (compile-form-1 `(%parse-interface ',sig))
 	     (if header
@@ -416,14 +416,14 @@
 	     (decrement-stack (if name 4 3))))
 	 opened accessed))))
 
-  (defun compile-structure-ref (form)
+  (defun compile-module-ref (form)
     (let
 	((struct (list-ref form 1))
 	 (var (list-ref form 2)))
       (or (memq struct (fluid-ref accessed-modules))
 	  (memq struct (fluid-ref open-modules))
 	  (compiler-error
-	   "referencing non-accessible structure `%s'" struct))
+	   "referencing non-accessible module `%s'" struct))
       (or (module-exports? struct var)
 	  (compiler-error
 	   "referencing private variable `%s#%s'" struct var))

@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.data.trie
+(define-module rep.data.trie
 
     (export make-trie
 	    trie?

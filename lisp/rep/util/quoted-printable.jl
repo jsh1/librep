@@ -19,7 +19,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.util.quoted-printable
+(define-module rep.util.quoted-printable
 
     (export encode-quoted-printable
 	    decode-quoted-printable)

@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.lang.error-helper
+(define-module rep.lang.error-helper
 
     (export error-helper)
 
@@ -54,7 +54,7 @@
 
   (define (void-value-helper symbol)
     (case symbol
-      ((export compound-interface structure-interface)
+      ((export compound-interface module-interface)
        (output
 "You may have the interface clause (`export', etc) of a module declaration
 in the wrong position."))

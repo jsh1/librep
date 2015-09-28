@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure user ()
+(define-module user ()
 
     ((open rep
 	   rep.regexp
@@ -30,7 +30,7 @@
 	   rep.io.processes)
      (set-binds))
 
-  (set! *user-structure* 'user)
+  (set! *user-module* 'user)
 
   ;; Install all autoload hooks.
   (load-all "autoload" (lambda (f) (load f nil t)))

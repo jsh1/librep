@@ -162,7 +162,7 @@ file_handler_ref(repv handler)
 {
   repv tem = Ffind_structure(Qrep_io_file_handlers);
   if (tem != rep_nil) {
-    tem = F_structure_ref(tem, handler);
+    tem = Fstructure_ref(tem, handler);
     if (!tem || rep_VOIDP(tem)) {
       tem = rep_nil;
     }

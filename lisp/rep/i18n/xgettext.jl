@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.i18n.xgettext
+(define-module rep.i18n.xgettext
 
     (export current-file current-module
 	    set-included-definers set-helper
@@ -100,7 +100,7 @@
 	       (scan-list (list-tail form 3))
 	     (scan-list (list-tail form 2))))
 
-	  ((define-structure)
+	  ((define-module)
 	   (let-fluids ((current-module (list-ref form 1)))
 	     (scan-list (list-tail form 4))))
 

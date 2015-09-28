@@ -27,7 +27,7 @@
 ;; mailing list (<20000424174557J.1000@eccosys.com>). I've rewritten it
 ;; to use regexps, and added the decoder.
 
-(define-structure rep.www.quote-url
+(define-module rep.www.quote-url
 
     (export quote-url
 	    unquote-url)

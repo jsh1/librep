@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.io.file-handlers.remote.utils
+(define-module rep.io.file-handlers.remote.utils
 
     (export remote-get-user
 	    remote-split-filename

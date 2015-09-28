@@ -54,7 +54,7 @@
 (%define _ (lambda (x) x))
 
 ;; later changed to 'user
-(set! *user-structure* 'rep)
+(set! *user-module* 'rep)
 
 (open-structures '(rep.lang.backquote))
 

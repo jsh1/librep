@@ -31,7 +31,7 @@
 ;; file each time. It would be better to untar the entire contents
 ;; somewhere, and then clean up later..)
 
-(define-structure rep.io.file-handlers.tar ()
+(define-module rep.io.file-handlers.tar ()
 
     (open rep
 	  rep.io.files

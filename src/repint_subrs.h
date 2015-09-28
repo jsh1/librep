@@ -209,15 +209,15 @@ extern void rep_strings_kill(void);
 /* from structures.c */
 extern repv rep_default_structure, rep_specials_structure;
 extern repv Q_features, Q_structures, Q_meta, Qrep, Q_specials,
-    Q_user_structure, Qrep_structures, Qrep_lang_interpreter,
+    Q_user_module, Qrep_structures, Qrep_lang_interpreter,
     Qrep_vm_interpreter, Qexternal, Qinternal;
 extern rep_struct_node *rep_search_imports (rep_struct *s, repv var);
 extern repv Fmake_structure (repv, repv, repv, repv);
-extern repv F_structure_ref (repv, repv);
+extern repv Fstructure_ref (repv, repv);
 extern repv Fstructure_set (repv, repv, repv);
 extern repv Fstructure_define (repv, repv, repv);
 extern repv Fstructure_bound_p (repv, repv);
-extern repv Fexternal_structure_ref (repv, repv);
+extern repv Fstructure_access (repv, repv);
 extern repv Fintern_structure (repv);
 extern repv Ffind_structure (repv);
 extern repv Fset_structure_name (repv structure, repv name);

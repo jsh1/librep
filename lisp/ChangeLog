@@ -1,5 +1,8 @@
 2015-09-28  John Harper  <jsh@unfactored.org>
 
+	* updated everything to reflect module system renaming, e.g.
+	define-module instead of define-structure
+
 	* rep.jl, rep/data/symbol-table.jl, rep/io/files.jl,
 	rep/lang/profiler.jl, rep/lang/interpreter.jl,
 	rep/lang/error-helper.jl, rep/lang/doc.jl, rep/structures.jl,

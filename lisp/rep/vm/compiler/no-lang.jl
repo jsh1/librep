@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.vm.compiler.no-lang ()
+(define-module rep.vm.compiler.no-lang ()
 
     (open rep
 	  rep.vm.compiler.modules
@@ -36,6 +36,6 @@
 ;;; module compilers
 
   ;; module compilers from compiler-modules
-  (put 'structure 'no-lang-compile-fun compile-structure)
-  (put 'define-structure 'no-lang-compile-fun compile-define-structure)
-  (put 'structure-ref 'no-lang-compile-fun compile-structure-ref))
+  (put 'module 'no-lang-compile-fun compile-anonymous-module)
+  (put 'define-module 'no-lang-compile-fun compile-define-module)
+  (put 'module-ref 'no-lang-compile-fun compile-module-ref))

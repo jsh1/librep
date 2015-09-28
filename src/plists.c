@@ -56,7 +56,7 @@ Returns the property-list of SYMBOL.
     return Fsignal(Qvoid_value, rep_LIST_1(sym));
   }
 
-  repv plist = F_structure_ref(plist_structure, sym);
+  repv plist = Fstructure_ref(plist_structure, sym);
   return rep_VOIDP(plist) ? rep_nil : plist;
 }
 
@@ -69,7 +69,7 @@ Returns the value of SYMBOL's property PROPERTY. See `put'.
 {
   rep_DECLARE1(sym, rep_SYMBOLP);
 
-  repv plist = F_structure_ref(plist_structure, sym);
+  repv plist = Fstructure_ref(plist_structure, sym);
   if (rep_VOIDP(plist)) {
     return rep_nil;
   }
@@ -101,7 +101,7 @@ retrieved with the `get' function.
     return Fsignal(Qvoid_value, rep_LIST_1(sym));
   }
 
-  repv old = F_structure_ref(plist_structure, sym);
+  repv old = Fstructure_ref(plist_structure, sym);
   if (rep_VOIDP(old)) {
     old = rep_nil;
   }

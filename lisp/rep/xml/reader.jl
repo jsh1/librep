@@ -40,7 +40,7 @@
 ;; Things like <?xml version="1.0"?> uses the first form: (?xml
 ;; (version . "1.0"))
 
-(define-structure rep.xml.reader
+(define-module rep.xml.reader
 
     (export make-xml-input
 	    read-xml-item)

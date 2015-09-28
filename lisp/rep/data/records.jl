@@ -49,7 +49,7 @@
 ;; <field-param>* is a standard lambda list, the parameters should
 ;; match the <field-tag>'s to be initialized
 
-(define-structure rep.data.records
+(define-module rep.data.records
 
     (export make-record-type
 	    make-record-datum
@@ -64,7 +64,7 @@
     (open rep
 	  rep.data.datums)
 
-  (define-structure-alias records rep.data.records)
+  (define-module-alias records rep.data.records)
 
 ;;; record type structures
 

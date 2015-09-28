@@ -17,7 +17,7 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure rep.util.gaol
+(define-module rep.util.gaol
 
     (export gaol-define
 	    gaol-define-special
@@ -42,7 +42,7 @@
 	  rep.data.datums
 	  rep.structures)
 
-  (define-structure-alias gaol rep.util.gaol)
+  (define-module-alias gaol rep.util.gaol)
 
 ;;; configuration/variables
 
@@ -132,7 +132,7 @@
       (set-structure-implicit-export! gaol-structure t)
       (for-each (lambda (var)
 		  (structure-define gaol-structure var
-				    (%structure-ref (current-structure) var)))
+				    (structure-ref (current-structure) var)))
 		gaol-safe-functions)
       (set! file-handler-env (map (lambda (sym)
 				       (cons sym t))

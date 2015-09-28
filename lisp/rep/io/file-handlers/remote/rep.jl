@@ -18,7 +18,7 @@
 ;;; along with librep; see the file COPYING.  If not, write to
 ;;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure rep.io.file-handlers.remote.rep
+(define-module rep.io.file-handlers.remote.rep
 
     (export remote-rep-add-passwd
 	    remote-rep-close-host
@@ -33,7 +33,7 @@
 	  rep.io.file-handlers
 	  rep.io.file-handlers.remote.utils)
 
-  (define-structure-alias remote-rep rep.io.file-handlers.remote.rep)
+  (define-module-alias remote-rep rep.io.file-handlers.remote.rep)
 
 
 ;; Configuration

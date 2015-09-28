@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.util.autoloader
+(define-module rep.util.autoloader
 
     (export make-autoloader
 	    autoloader-ref)

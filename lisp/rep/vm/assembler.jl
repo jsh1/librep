@@ -25,7 +25,7 @@
 ;; lap code representation, instead compile to assembly language, then
 ;; assemble that.. (with the peephole pass inbetween)
 
-(define-structure rep.vm.assembler
+(define-module rep.vm.assembler
 
     (export assemble)
 

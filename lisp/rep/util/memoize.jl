@@ -19,14 +19,14 @@
 ;; along with librep; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-(define-structure rep.util.memoize
+(define-module rep.util.memoize
 
     (export memoize memoize-function)
 
     (open rep
 	  rep.data.tables)
 
-  (define-structure-alias memoize rep.util.memoize)
+  (define-module-alias memoize rep.util.memoize)
 
   (define (memoize f)
     "Create and return a caching version of the function F. F may not be

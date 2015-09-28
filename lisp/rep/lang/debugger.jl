@@ -24,7 +24,7 @@
 ;; XXX extend this to support the structure inspection meta-commands
 ;; of the top-level repl
 
-(define-structure rep.lang.debugger ()
+(define-module rep.lang.debugger ()
 
     (open rep
 	  rep.system

@@ -192,7 +192,7 @@
       ((catch unwind-protect progn)
        (cons (car form) (define-scan-body (cdr form))))
 
-      ((quote structure-ref) form)
+      ((quote module-ref) form)
 
       ((lambda)
        (let ((body (list-tail form 2))
@@ -212,7 +212,7 @@
        (list* 'defvar (list-ref form 1) (define-scan-form (list-ref form 2))
 	      (list-tail form 3)))
 
-      ((structure define-structure declare) form)
+      ((structure define-module declare) form)
 
       (t (let ((expansion (define-macroexpand-1 form)))
 	   (if (eq? expansion form)

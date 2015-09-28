@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.lang.compat-doc
+(define-module rep.lang.compat-doc
 
     (export describe-lambda-list
 	    describe-value
@@ -37,10 +37,10 @@
 	  rep.lang.doc)
 
   ;; make this appear as the old module 'lisp-doc
-  (define-structure-alias lisp-doc rep.lang.compat-doc)
+  (define-module-alias lisp-doc rep.lang.compat-doc)
 
   (define (infer-structure sym)
-    (locate-binding sym (list *user-structure*)))
+    (locate-binding sym (list *user-module*)))
 
   (define (documentation symbol #!optional value)
     (rep.lang.doc#documentation symbol (infer-structure symbol) value))

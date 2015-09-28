@@ -86,7 +86,7 @@
 ;; executing rpc call
 
 
-(define-structure rep.net.rpc
+(define-module rep.net.rpc
 
     (export rpc-socket-listener
 	    rpc-output-handler

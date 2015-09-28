@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.vm.compiler
+(define-module rep.vm.compiler
 
     (export compile-file
 	    compile-directory
@@ -53,7 +53,7 @@ their position in that file.")
 
   (defvar *compiler-debug* nil)
 
-  (define-structure-alias compiler rep.vm.compiler)
+  (define-module-alias compiler rep.vm.compiler)
 
   (define assembler-sources '(rep.vm.peephole
 			      rep.vm.assembler

@@ -21,7 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 |#
 
-(define-structure rep.vm.compiler.rep ()
+(define-module rep.vm.compiler.rep ()
 
     (open rep
 	  rep.lang.doc
@@ -59,13 +59,13 @@
   ;; form is one of these that form is compiled.
   (define top-level-compiled
     '(if cond when unless let let* letrec catch unwind-protect condition-case
-      progn prog1 prog2 while and or case define-structure structure))
+      progn prog1 prog2 while and or case define-module module))
 
   ;; List of symbols, when the car of a top-level form is a member of this
   ;; list, don't macroexpand the form before compiling.
   (define top-level-unexpanded
     '(defun defmacro defvar defconst defsubst %define require
-      declare eval-when-compile define-structure structure))
+      declare eval-when-compile define-module module))
 
 
 ;;; pass 1 support
@@ -233,11 +233,11 @@
 	     (set-car! (list-tail form 2) (compile-form (list-ref form 2))))
 	   form))
 
-	((define-structure)
-	 (compile-top-level-define-structure form))
+	((define-module)
+	 (compile-top-level-define-module form))
 
-	((structure)
-	 (compile-top-level-structure form))
+	((module)
+	 (compile-top-level-module form))
 
 	((eval-when-compile) nil)
 
@@ -289,9 +289,9 @@
 ;;; Functions which compile non-standard functions (ie special-forms)
 
   ;; module compilers from compiler-modules
-  (put 'structure 'rep-compile-fun compile-structure)
-  (put 'define-structure 'rep-compile-fun compile-define-structure)
-  (put 'structure-ref 'rep-compile-fun compile-structure-ref)
+  (put 'module 'rep-compile-fun compile-anonymous-module)
+  (put 'define-module 'rep-compile-fun compile-define-module)
+  (put 'module-ref 'rep-compile-fun compile-module-ref)
 
   (defun compile-declare (form)
     (compile-declaration (cdr form))
@@ -1014,8 +1014,8 @@
 
   (defun get-form-opcode (form)
     (cond ((symbol? form) (get form 'rep-compile-opcode))
-	  ;; must be a structure-ref
-	  ((eq? (car form) 'structure-ref)
+	  ;; must be a module-ref
+	  ((eq? (car form) 'module-ref)
 	   (get (caddr form) 'rep-compile-opcode))
 	  (t (compiler-error "don't know opcode for `%s'" form))))
 

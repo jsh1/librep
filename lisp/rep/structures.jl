@@ -39,13 +39,13 @@
 	 (cdr sig))
 	((eq? (car sig) 'compound-interface)
 	 (apply append (map parse-interface (cdr sig))))
-	((eq? (car sig) 'structure-interface)
+	((eq? (car sig) 'module-interface)
 	 (structure-interface (intern-structure (cadr sig))))
 	((symbol? sig)
 	 (let ((interfaces (find-structure '%interfaces)))
 	   (or (structure-bound? interfaces sig)
 	       (error "No such interface: %s" sig))
-	   (%structure-ref interfaces sig)))))
+	   (structure-ref interfaces sig)))))
 
 (defun alias-structure (from to)
   "Create an alias of the structure called FROM as the name TO."
