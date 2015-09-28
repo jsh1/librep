@@ -187,10 +187,10 @@ gdbm-delete! DBM KEY
   return rep_undefined_value;
 }
 
-DEFUN("gdbm-walk", Fgdbm_walk, Sgdbm_walk,
+DEFUN("gdbm-for-each", Fgdbm_for_each, Sgdbm_for_each,
       (repv fun, repv dbm), rep_Subr2) /*
-::doc:rep.io.db.gdbm#gdbm-walk::
-gdbm-walk FUN DBM
+::doc:rep.io.db.gdbm#gdbm-for-each::
+gdbm-for-each FUNCTION DBM
 ::end:: */
 {
   rep_TEST_INT_LOOP_COUNTER;
@@ -295,7 +295,7 @@ rep_dl_init(void)
   rep_ADD_SUBR(Sgdbm_fetch);
   rep_ADD_SUBR(Sgdbm_store);
   rep_ADD_SUBR(Sgdbm_delete);
-  rep_ADD_SUBR(Sgdbm_walk);
+  rep_ADD_SUBR(Sgdbm_for_each);
   rep_ADD_SUBR(Sgdbmp);
   return rep_pop_structure(tem);
 }

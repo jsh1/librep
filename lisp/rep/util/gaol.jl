@@ -100,7 +100,7 @@
 
       ;; make-timer delete-timer set-timer
       ;; make-table make-weak-table string-hash symbol-hash eq-hash
-      ;; equal-hash table? table-ref table-set! table-delete! table-walk
+      ;; equal-hash table? table-ref table-set! table-delete! table-for-each
 
       downcase-table upcase-table rep-version))
 
@@ -128,8 +128,8 @@
   (define (build-structure)
     (unless gaol-structure
       (set! gaol-structure (make-structure))
-      (name-structure gaol-structure '%gaol)
-      (structure-exports-all gaol-structure t)
+      (set-structure-name! gaol-structure '%gaol)
+      (set-structure-implicit-export! gaol-structure t)
       (for-each (lambda (var)
 		  (structure-define gaol-structure var
 				    (%structure-ref (current-structure) var)))
@@ -142,13 +142,13 @@
     (build-structure)
     (declare (bound %open-structures))
     (let ((gaol (make-structure '() (lambda () (%open-structures '(%gaol))))))
-      (set-file-handlers! file-handler-env gaol)
-      (set-special-variables! gaol gaol-safe-specials)
+      (set-structure-file-handlers! file-handler-env gaol)
+      (set-structure-special-variables! gaol gaol-safe-specials)
       (set-bytecode-interpreter! gaol byte-code-interpreter)
       (call-hook '*make-gaol-hook* (list gaol))
       gaol))
 
-  (define (define-gaol-structure name gaol) (name-structure gaol name))
+  (define (define-gaol-structure name gaol) (set-structure-name! gaol name))
 
   (define default-gaol (let (gaol)
 			 (lambda ()

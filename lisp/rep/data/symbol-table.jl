@@ -37,7 +37,7 @@
 	    symbol-table-ref
 	    symbol-table-set!
 	    symbol-table-bound?
-	    symbol-table-walk)
+	    symbol-table-for-each)
 
     (open rep
 	  rep.structures)
@@ -57,5 +57,5 @@
   (define (symbol-table-bound? table var)
     (structure-bound? table var))
 
-  (define (symbol-table-walk fun table)
-    (structure-walk fun table)))
+  (define (symbol-table-for-each fun table)
+    (structure-for-each fun table)))

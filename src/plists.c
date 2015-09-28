@@ -128,7 +128,7 @@ rep_plists_init(void)
   plist_structure = Fmake_structure(rep_nil, rep_nil, rep_nil, rep_nil);
   rep_mark_static(&plist_structure);
   rep_INTERN(_plists);
-  Fname_structure(plist_structure, Q_plists);
+  Fset_structure_name(plist_structure, Q_plists);
   
   repv tem = rep_push_structure("rep.lang.symbols");
   rep_ADD_SUBR(Ssetplist);

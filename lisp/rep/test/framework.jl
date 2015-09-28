@@ -92,7 +92,7 @@
 
   (define (ref-1 x) (symbol-table-ref self-tests x))
   (define (set-1 x y) (symbol-table-set! self-tests x y))
-  (define (walk f) (symbol-table-walk f self-tests))
+  (define (walk f) (symbol-table-for-each f self-tests))
 
   ;; initialize autoloading
   (define define-self-test set-1)

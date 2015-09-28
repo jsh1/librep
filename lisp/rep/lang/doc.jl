@@ -79,7 +79,7 @@ NAME is true, then it should be the symbol that is associated with VALUE."
       (when (bytecode? value)
 	(set! type (concat "Compiled " type)))
       (when (and name structure (not (special-variable? name))
-		 (binding-immutable? name (get-structure structure)))
+		 (binding-immutable? name (find-structure structure)))
 	(set! type (concat "Constant " type)))
       (when (and name (special-variable? name))
 	(set! type (concat "Special " type)))

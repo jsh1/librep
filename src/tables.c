@@ -510,10 +510,10 @@ Remove any value stored in TABLE associated with KEY.
   return rep_undefined_value;
 }
 
-DEFUN("table-walk", Ftable_walk, Stable_walk,
+DEFUN("table-for-each", Ftable_for_each, Stable_for_each,
       (repv fun, repv tab), rep_Subr2) /*
-::doc:rep.data.tables#table-walk::
-table-walk FUNCTION TABLE
+::doc:rep.data.tables#table-for-each::
+table-for-each FUNCTION TABLE
 
 Call FUNCTION for every key-value pair stored in hash table TABLE. For
 each pair, the function is called with arguments `(KEY VALUE)'.
@@ -564,7 +564,7 @@ tables_init(void)
   rep_ADD_SUBR(Stable_bound_p);
   rep_ADD_SUBR(Stable_set);
   rep_ADD_SUBR(Stable_unset);
-  rep_ADD_SUBR(Stable_walk);
+  rep_ADD_SUBR(Stable_for_each);
   rep_ADD_SUBR(Stable_size);
 }
 

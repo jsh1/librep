@@ -1,3 +1,20 @@
+2015-09-28  John Harper  <jsh@unfactored.org>
+
+	* tables.c, structures.c, repint_subrs.h, rep_subrs.h,
+	rep-gdbm.c, plists.c, files.c: more renaming:
+
+	gdbm-walk -> gdbm-for-each
+	talk-walk -> table-for-each
+	get-structure -> find-structure
+	name-structure -> set-structure-name!
+	structure-set-interface! -> set-structure-interface!
+	structure-walk -> structure-for-each
+	make-binding-immutable -> set-binding-immutable!
+	structure-exports-all -> set-structure-implicit-export!
+	structure-set-binds -> set-structure-implicit-define!
+	set-special-variables! -> set-structure-special-variables!
+	set-file-handlers! -> set-structure-file-handlers!
+
 2015-09-27  John Harper  <jsh@unfactored.org>
 
 	* ffi.c: more work on enum/flags types

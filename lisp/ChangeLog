@@ -1,3 +1,12 @@
+2015-09-28  John Harper  <jsh@unfactored.org>
+
+	* rep.jl, rep/data/symbol-table.jl, rep/io/files.jl,
+	rep/lang/profiler.jl, rep/lang/interpreter.jl,
+	rep/lang/error-helper.jl, rep/lang/doc.jl, rep/structures.jl,
+	rep/module-system.jl, rep/test/framework.jl, rep/util/repl.jl,
+	rep/util/gaol.jl, rep/vm/compiler/modules.jl: updated for
+	renamed functions
+
 2015-09-27  John Harper  <jsh@unfactored.org>
 
 	* rep/io/files.jl: needs to open rep.structures module

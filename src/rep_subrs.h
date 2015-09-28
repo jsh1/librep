@@ -453,7 +453,7 @@ extern repv Fkeywordp (repv arg);
 
 /* from structures.c */
 extern repv rep_structure;
-extern repv Fmake_binding_immutable (repv);
+extern repv Fset_binding_immutable (repv, repv);
 extern repv Fbinding_immutable_p (repv, repv);
 extern repv Fexport_bindings (repv list);
 extern repv Ffeaturep(repv);

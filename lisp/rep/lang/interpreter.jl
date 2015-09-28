@@ -32,16 +32,15 @@
   "The value of the boolean-false and end-of-list object.")
 (%define t 't
   "The symbol often used as the canonical boolean-true value.")
-(make-binding-immutable 'nil)
-(make-binding-immutable 't)
 
-(%define #F nil)
-(%define #T t)
-(make-binding-immutable '#F)
-(make-binding-immutable '#T)
+(%define #f nil)
+(%define #t t)
 
 (%define #undefined '#undefined)
-(make-binding-immutable '#undefined)
+
+(for-each (lambda (x)
+		 (set-binding-immutable! x t))
+	  '(nil t #f #t #undefined))
 
 (export-bindings '(nil t #F #T #undefined))
 
@@ -92,7 +91,7 @@ are hard-coded into the byte-code."
 
   (list 'progn
 	(list* '%define symbol (list 'quote value) rest)
-	(list '%make-binding-immutable (list 'quote symbol))))
+	(list '%set-binding-immutable! (list 'quote symbol) t)))
 
 (defmacro defsubst (symbol . body)
   "Defines a function that will be compiled inline to any functions that
@@ -100,9 +99,9 @@ call it. Otherwise exactly the same as defun."
   ;; These actions are also hard-coded into dump.jl
   (list* 'defun symbol body))
 
-(%define %make-binding-immutable make-binding-immutable)
+(%define %set-binding-immutable! set-binding-immutable!)
 
-(export-bindings '(defmacro defun defconst defsubst %make-binding-immutable))
+(export-bindings '(defmacro defun defconst defsubst %set-binding-immutable!))
 
 
 ;; Binding syntax

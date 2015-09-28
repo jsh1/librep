@@ -156,17 +156,17 @@
 ;;; module utils
 
   (define (module-exports? name var)
-    (structure-exports? (get-structure name) var))
+    (structure-exports? (find-structure name) var))
 
   (define (module-imports name)
-     (structure-imports (get-structure name)))
+     (structure-imports (find-structure name)))
 
   (define (locate-binding* name)
     (or (locate-binding name (append (list (repl-struct (fluid-ref current-repl)))
 				     (module-imports
 				      (repl-struct (fluid-ref current-repl)))))
 	(and (structure-bound?
-	      (get-structure (repl-struct (fluid-ref current-repl))) name)
+	      (find-structure (repl-struct (fluid-ref current-repl))) name)
 	     (repl-struct (fluid-ref current-repl)))))
 
 
@@ -216,7 +216,7 @@
    (lambda (struct #!optional form)
      (if form
 	 (format *standard-output* "%S\n"
-		 (eval form (get-structure struct)))
+		 (eval form (find-structure struct)))
        (repl-set-struct (fluid-ref current-repl) struct)))
    "STRUCT [FORM ...]")
 
@@ -231,9 +231,9 @@
    'reload
    (lambda structs
      (for-each (lambda (x)
-		 (let ((struct (get-structure x)))
+		 (let ((struct (find-structure x)))
 		   (when struct
-		     (name-structure struct nil))
+		     (set-structure-name! struct nil))
 		   (intern-structure x))) structs))
    "STRUCT ...")
 
@@ -241,9 +241,9 @@
    'unload
    (lambda structs
      (for-each (lambda (x)
-		 (let ((struct (get-structure x)))
+		 (let ((struct (find-structure x)))
 		   (when struct
-		     (name-structure struct nil)))) structs))
+		     (set-structure-name! struct nil)))) structs))
    "STRUCT ...")
 
   (define-repl-command
@@ -269,31 +269,31 @@
    'structures
    (lambda ()
      (let (structures)
-       (structure-walk (lambda (var value)
-			 (declare (unused value))
-			 (when value
-			   (set! structures (cons var structures))))
-		       (get-structure '%structures))
+       (structure-for-each (lambda (var value)
+			     (declare (unused value))
+			     (when value
+			       (set! structures (cons var structures))))
+			   (find-structure '%structures))
        (print-list (sort! structures)))))
 
   (define-repl-command
    'interfaces
    (lambda ()
      (let (interfaces)
-       (structure-walk (lambda (var value)
-			 (declare (unused value))
-			 (set! interfaces (cons var interfaces)))
-		       (get-structure '%interfaces))
+       (structure-for-each (lambda (var value)
+			     (declare (unused value))
+			     (set! interfaces (cons var interfaces)))
+			   (find-structure '%interfaces))
        (print-list (sort! interfaces)))))
 
   (define-repl-command
    'bindings
    (lambda ()
      (let ((lst ()))
-       (structure-walk (lambda (var value)
-			 (set! lst (cons (cons var value) lst)))
-		       (intern-structure
-			(repl-struct (fluid-ref current-repl))))
+       (structure-for-each (lambda (var value)
+			     (set! lst (cons (cons var value) lst)))
+			   (intern-structure
+			    (repl-struct (fluid-ref current-repl))))
        (for-each (lambda (cell)
 		   (format *standard-output*
 			   "%24s  %S\n" (symbol-name (car cell)) (cdr cell)))
@@ -442,12 +442,12 @@ commands may be abbreviated to their unique leading characters.\n\n")
    'find-export
    (lambda (var)
      (let ((out '()))
-       (structure-walk (lambda (k v)
-			 (declare (unused k))
-			 (when (and v (structure-name v)
-				    (structure-exports? v var))
-			   (set! out (cons (structure-name v) out))))
-		       (get-structure '%structures))
+       (structure-for-each (lambda (k v)
+			     (declare (unused k))
+			     (when (and v (structure-name v)
+					(structure-exports? v var))
+			       (set! out (cons (structure-name v) out))))
+			   (find-structure '%structures))
        (if out
 	   (format *standard-output* "%s is exported by: %s.\n"
 		   var (mapconcat symbol-name (sort! out) ", "))

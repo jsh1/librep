@@ -28,7 +28,7 @@
 ;; the large rep module. So be careful to only create bindings that
 ;; should be exported, then set the `exports-all` flag.
 
-(structure-exports-all (current-structure) t)
+(set-structure-implicit-export! (current-structure) t)
 
 (open-structures '(rep.module-system
 		   rep.lang.debug

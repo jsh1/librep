@@ -639,7 +639,7 @@ static rep_struct_node *
 lookup_recursively(repv s, repv var)
 {
   if (rep_SYMBOLP(s)) {
-    s = Fget_structure(s);
+    s = Ffind_structure(s);
   }
 
   if (!s || !rep_STRUCTUREP(s)
@@ -690,10 +690,10 @@ rep_search_imports(rep_struct *s, repv var)
 
 /* Lisp functions. */
 
-DEFUN("get-structure", Fget_structure,
-      Sget_structure, (repv name), rep_Subr1) /*
-::doc:rep.structures#get-structure::
-get-structure NAME
+DEFUN("find-structure", Ffind_structure,
+      Sfind_structure, (repv name), rep_Subr1) /*
+::doc:rep.structures#find-structure::
+find-structure NAME
 
 Return the structure called NAME (a symbol), or return `nil' if no
 such structure.
@@ -706,10 +706,10 @@ such structure.
   return n ? n->binding : rep_nil;
 }
 
-DEFUN("name-structure", Fname_structure,
-      Sname_structure, (repv structure, repv name), rep_Subr2) /*
-::doc:rep.structures#name-structure::
-name-structure STRUCTURE NAME
+DEFUN("set-structure-name!", Fset_structure_name,
+      Sset_structure_name, (repv structure, repv name), rep_Subr2) /*
+::doc:rep.structures#set-structure-name!::
+set-structure-name! STRUCTURE NAME
 
 Assign the name NAME(a symbol) to structure object STRUCTURE.
 ::end:: */
@@ -793,7 +793,7 @@ BODY-THUNK may be modified by this function!
   rep_PUSHGC(gc_s, s_);
 
   if (s->name != rep_nil) {
-    Fname_structure(rep_VAL(s), s->name);
+    Fset_structure_name(rep_VAL(s), s->name);
   }
 
   rep_GC_root gc_body;
@@ -829,7 +829,7 @@ BODY-THUNK may be modified by this function!
 
   s = rep_STRUCTURE(s_);
   if (s->name != rep_nil) {
-    Fname_structure(rep_VAL(s), rep_nil);
+    Fset_structure_name(rep_VAL(s), rep_nil);
   }
 
   return 0;
@@ -1018,7 +1018,7 @@ Returns the interface of structure object STRUCTURE.
     for (repv lst = s->imports; rep_CONSP(lst); lst = rep_CDR(lst)) {
       repv si = rep_CAR(lst);
       if (rep_SYMBOLP(si)) {
-	si = Fget_structure(si);
+	si = Ffind_structure(si);
       }
       if (!si || !rep_STRUCTUREP(si)
 	  || (rep_STRUCTURE(si)->car & rep_STF_EXCLUSION))
@@ -1094,10 +1094,10 @@ STRUCTURE.
   return rep_STRUCTURE(structure)->accessible;
 }
 
-DEFUN("structure-set-interface!", Fstructure_set_interface,
-       Sstructure_set_interface, (repv structure, repv sig), rep_Subr2) /*
-::doc:rep.structures#structure-set-interface!::
-structure-set-interface! STRUCTURE INTERFACE
+DEFUN("set-structure-interface!", Fset_structure_interface,
+       Sset_structure_interface, (repv structure, repv sig), rep_Subr2) /*
+::doc:rep.structures#set-structure-interface!::
+set-structure-interface! STRUCTURE INTERFACE
 
 Set the interface of structure object STRUCTURE to INTERFACE.
 ::end:: */
@@ -1168,7 +1168,7 @@ attempt to load it.
 {
   rep_DECLARE1(name, rep_SYMBOLP);
 
-  repv s = Fget_structure(name);
+  repv s = Ffind_structure(name);
 
   if (s != rep_nil) {
     return s;
@@ -1185,7 +1185,7 @@ attempt to load it.
 
   repv user = Fsymbol_value(Q_user_structure_, Qt);
   if (user && rep_SYMBOLP(user)) {
-    user = Fget_structure(user);
+    user = Ffind_structure(user);
     if (rep_STRUCTUREP(user)) {
       rep_structure = user;
     }
@@ -1366,10 +1366,10 @@ Return the result of evaluating FORM inside structure object STRUCTURE
   return result;
 }
 
-DEFUN("structure-walk", Fstructure_walk,
-       Sstructure_walk, (repv fun, repv structure), rep_Subr2) /*
-::doc:rep.structures#structure-walk::
-structure-walk FUNCTION STRUCTURE
+DEFUN("structure-for-each", Fstructure_for_each,
+       Sstructure_for_each, (repv fun, repv structure), rep_Subr2) /*
+::doc:rep.structures#structure-for-each::
+structure-for-each FUNCTION STRUCTURE
 
 Call FUNCTION for each binding in structure object STRUCTURE. The
 function is called with two arguments, the variable and the binding's
@@ -1431,13 +1431,10 @@ DEFUN("structure-stats", Fstructure_stats,
 
 #endif /* VERBOSE */
 
-DEFUN("make-binding-immutable", Fmake_binding_immutable,
-       Smake_binding_immutable, (repv var), rep_Subr1) /*
-::doc:rep.structures#make-binding-immutable::
-make-binding-immutable VAR
-
-Flag that the binding of symbol VAR in the current structure may not be
-changed.
+DEFUN("set-binding-immutable!", Fset_binding_immutable,
+       Sset_binding_immutable, (repv var, repv state), rep_Subr2) /*
+::doc:rep.structures#set-binding-immutable!::
+set-binding-immutable! VAR STATE
 ::end:: */
 {
   rep_DECLARE1(var, rep_SYMBOLP);
@@ -1448,7 +1445,7 @@ changed.
     return Fsignal(Qvoid_value, rep_LIST_1(var));
   }
 
-  n->is_constant = true;
+  n->is_constant = state != rep_nil;
 
   return rep_undefined_value;
 }
@@ -1609,7 +1606,7 @@ loaded is either FILE(if given), or the print name of FEATURE.
   tem = Fmemq(feature, dst->imports);
 
   if (tem == rep_nil) {
-    tem = Fget_structure(feature);
+    tem = Ffind_structure(feature);
     if (!rep_STRUCTUREP(tem)) {
       rep_GC_root gc_feature;
       rep_PUSHGC(gc_feature, feature);
@@ -1624,7 +1621,7 @@ loaded is either FILE(if given), or the print name of FEATURE.
       }
 
       if (rep_STRUCTUREP(tem)) {
-	Fname_structure(tem, feature);
+	Fset_structure_name(tem, feature);
       }
     }
 
@@ -1654,7 +1651,7 @@ rep_push_structure_name(repv name)
 
   repv old = rep_structure;
 
-  repv s = Fget_structure(name);
+  repv s = Ffind_structure(name);
   if (s == rep_nil) {
     s = Fmake_structure(rep_nil, rep_nil, rep_nil, name);
   }
@@ -1686,7 +1683,7 @@ void
 rep_lazy_structure(const char *name_str, void (*init)(void))
 {
   repv name = Fintern(rep_string_copy(name_str), rep_nil);
-  repv s = Fget_structure(name);
+  repv s = Ffind_structure(name);
   if (s == rep_nil) {
     s = Fmake_structure(rep_nil, rep_nil, rep_nil, name);
   } else {
@@ -1755,8 +1752,8 @@ rep_add_subr(rep_xsubr *subr, bool export)
   return sym;
 }
 
-DEFUN("structure-exports-all", Fstructure_exports_all,
-      Sstructure_exports_all, (repv s, repv status), rep_Subr2)
+DEFUN("set-structure-implicit-export!", Fset_structure_implicit_export,
+      Sset_structure_implicit_export, (repv s, repv status), rep_Subr2)
 {
   rep_DECLARE1(s, rep_STRUCTUREP);
 
@@ -1769,8 +1766,8 @@ DEFUN("structure-exports-all", Fstructure_exports_all,
   return rep_undefined_value;
 }
 
-DEFUN("structure-set-binds", Fstructure_set_binds,
-      Sstructure_set_binds, (repv s, repv status), rep_Subr2)
+DEFUN("set-structure-implicit-define!", Fset_structure_implicit_define,
+      Sset_structure_implicit_define, (repv s, repv status), rep_Subr2)
 {
   rep_DECLARE1(s, rep_STRUCTUREP);
 
@@ -1786,13 +1783,13 @@ DEFUN("structure-set-binds", Fstructure_set_binds,
 void
 rep_structure_exports_all(repv s, bool status)
 {
-  Fstructure_exports_all(s, status ? Qt : rep_nil);
+  Fset_structure_implicit_export(s, status ? Qt : rep_nil);
 }
 
 void
 rep_structure_set_binds(repv s, bool status)
 {
-  Fstructure_set_binds(s, status ? Qt : rep_nil);
+  Fset_structure_implicit_define(s, status ? Qt : rep_nil);
 }
 
 static repv
@@ -1816,10 +1813,10 @@ DEFUN("set-bytecode-interpreter!", Fstructure_install_vm,
   return rep_call_lisp1(vm, s);
 }
 
-DEFUN("set-special-variables!", Fset_special_variables,
-      Sset_special_variables, (repv s, repv env), rep_Subr2) /*
-::doc:rep.structures#set-special-variables!::
-set-special-environment! ENV STRUCTURE
+DEFUN("set-structure-special-variables!", Fset_structure_special_variables,
+      Sset_structure_special_variables, (repv s, repv env), rep_Subr2) /*
+::doc:rep.structures#set-structure-special-variables!::
+set-structure-special-environment! STRUCTURE ENV
 ::end:: */
 {
   rep_DECLARE1(s, rep_STRUCTUREP);
@@ -1829,10 +1826,10 @@ set-special-environment! ENV STRUCTURE
   return rep_undefined_value;
 }
 
-DEFUN("set-file-handlers!", Fset_file_handlers,
-      Sset_file_handlers, (repv s, repv env), rep_Subr2) /*
-::doc:rep.structures#set-file-handlers!::
-set-file-handlers! STRUCTURE ENV
+DEFUN("set-structure-file-handlers!", Fset_structure_file_handlers,
+      Sset_structure_file_handlers, (repv s, repv env), rep_Subr2) /*
+::doc:rep.structures#set-structure-file-handlers!::
+set-structure-file-handlers! STRUCTURE ENV
 ::end:: */
 {
   rep_DECLARE1(s, rep_STRUCTUREP);
@@ -1861,7 +1858,7 @@ rep_get_initial_special_value(repv sym)
   repv user = F_structure_ref(rep_specials_structure, Q_user_structure_);
 
   if (rep_SYMBOLP(user)) {
-    repv s = Fget_structure(user);
+    repv s = Ffind_structure(user);
     if (rep_STRUCTUREP(s)) {
       repv old = F_structure_ref(s, sym);
       if (!rep_VOIDP(old)) {
@@ -1940,9 +1937,9 @@ rep_structures_init(void)
   rep_ADD_SUBR(Sstructure_exports_p);
   rep_ADD_SUBR(Sstructure_imports);
   rep_ADD_SUBR(Sstructure_accessible);
-  rep_ADD_SUBR(Sstructure_set_interface);
-  rep_ADD_SUBR(Sget_structure);
-  rep_ADD_SUBR(Sname_structure);
+  rep_ADD_SUBR(Sset_structure_interface);
+  rep_ADD_SUBR(Sfind_structure);
+  rep_ADD_SUBR(Sset_structure_name);
   rep_ADD_SUBR(Sstructure_file);
   rep_ADD_SUBR(Sintern_structure);
   rep_ADD_SUBR(Sopen_structures);
@@ -1950,18 +1947,18 @@ rep_structures_init(void)
   rep_ADD_SUBR(Scurrent_structure);
   rep_ADD_SUBR(Sstructurep);
   rep_ADD_SUBR(Seval_real);
-  rep_ADD_SUBR(Sstructure_walk);
+  rep_ADD_SUBR(Sstructure_for_each);
 #ifdef VERBOSE
   rep_ADD_SUBR(Sstructure_stats);
 #endif
-  rep_ADD_SUBR(Smake_binding_immutable);
+  rep_ADD_SUBR(Sset_binding_immutable);
   rep_ADD_SUBR(Sbinding_immutable_p);
   rep_ADD_SUBR(Sexport_bindings);
-  rep_ADD_SUBR(Sstructure_exports_all);
-  rep_ADD_SUBR(Sstructure_set_binds);
+  rep_ADD_SUBR(Sset_structure_implicit_export);
+  rep_ADD_SUBR(Sset_structure_implicit_define);
   rep_ADD_SUBR(Sstructure_install_vm);
-  rep_ADD_SUBR(Sset_special_variables);
-  rep_ADD_SUBR(Sset_file_handlers);
+  rep_ADD_SUBR(Sset_structure_special_variables);
+  rep_ADD_SUBR(Sset_structure_file_handlers);
   rep_pop_structure(tem);
 
   tem = rep_push_structure("rep.module-system");
@@ -1987,9 +1984,9 @@ rep_structures_init(void)
   rep_mark_static(&rep_specials_structure);
   rep_mark_static(&rep_structures_structure);
 
-  Fname_structure(rep_default_structure, Qrep);
-  Fname_structure(rep_specials_structure, Q_specials);
-  Fname_structure(rep_structures_structure, Q_structures);
+  Fset_structure_name(rep_default_structure, Qrep);
+  Fset_structure_name(rep_specials_structure, Q_specials);
+  Fset_structure_name(rep_structures_structure, Q_structures);
 #ifdef VERBOSE
   atexit(print_cache_stats);
 #endif

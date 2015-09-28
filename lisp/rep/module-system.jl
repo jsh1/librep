@@ -141,14 +141,14 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
 (defmacro structure-access names
   (list '%access-structures (list 'quote names)))
 (defmacro set-binds ()
-  (list '%structure-set-binds (list '%current-structure) ''t))
+  (list '%set-structure-implicit-define! (list '%current-structure) ''t))
 (defmacro export-all ()
-  (list '%structure-exports-all (list '%current-structure) ''t))
+  (list '%set-structure-implicit-export! (list '%current-structure) ''t))
 
 (let ((meta-struct (make-structure '(open %open-structures
 				     access %access-structures
-				     set-binds %structure-set-binds
-				     export-all %structure-exports-all
+				     set-binds %set-structure-implicit-define!
+				     export-all %set-structure-implicit-export!
 				     %current-structure quote)
 				   nil nil '%meta)))
   (structure-define meta-struct 'quote quote)
@@ -157,9 +157,9 @@ When read, the syntax `FOO#BAR' expands to `(structure-ref FOO BAR)'."
   (structure-define meta-struct 'access structure-access)
   (structure-define meta-struct '%access-structures access-structures)
   (structure-define meta-struct 'set-binds set-binds)
-  (structure-define meta-struct '%structure-set-binds structure-set-binds)
+  (structure-define meta-struct '%set-structure-implicit-define! set-structure-implicit-define!)
   (structure-define meta-struct 'export-all export-all)
-  (structure-define meta-struct '%structure-exports-all structure-exports-all)
+  (structure-define meta-struct '%set-structure-implicit-export! set-structure-implicit-export!)
   (structure-define meta-struct '%current-structure current-structure))
 
 

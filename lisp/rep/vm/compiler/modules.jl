@@ -65,7 +65,7 @@
   ;; definition
 
   (define current-structure (make-fluid
-			     (get-structure (fluid-ref current-module))))
+			     (find-structure (fluid-ref current-module))))
 
   (define current-language (make-fluid 'rep))
 
@@ -266,14 +266,14 @@
       ;; FIXME: this is broken; there's no way to tell if we're trying
       ;; to load a module, or a bare file.
 
-      (cond ((get-structure feature)
+      (cond ((find-structure feature)
 	     ;; structure already loaded..
 	     (fluid-set! open-modules (cons feature (fluid-ref open-modules))))
 
 	    ((fluid-ref current-structure)
 	     ;; try to require it..
 	     (eval `(require ',feature) (fluid-ref current-structure))
-	     (when (get-structure feature)
+	     (when (find-structure feature)
 	       (fluid-set! open-modules (cons feature
 					      (fluid-ref open-modules)))))
 
@@ -292,7 +292,7 @@
 	       (cons (cons name
 			   (let ((closure (make-closure body name)))
 			     (set-closure-structure!
-			      closure (get-structure *user-structure*))
+			      closure (find-structure *user-structure*))
 			     closure))
 		     (fluid-ref macro-env))))
 
@@ -455,6 +455,6 @@
     (interactive "SModule name:")
     (let ((struct (intern-structure struct)))
       (when struct
-	(structure-walk (lambda (var value)
-			  (when (closure? value)
-			    (compile-function value var))) struct)))))
+	(structure-for-each (lambda (var value)
+			      (when (closure? value)
+				(compile-function value var))) struct)))))
