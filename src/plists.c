@@ -125,10 +125,9 @@ retrieved with the `get' function.
 void
 rep_plists_init(void)
 {
-  plist_structure = Fmake_structure(rep_nil, rep_nil, rep_nil, rep_nil);
-  rep_mark_static(&plist_structure);
   rep_INTERN(_plists);
-  Fset_structure_name(plist_structure, Q_plists);
+  plist_structure = Fmake_structure(rep_nil, rep_nil, rep_nil, Q_plists);
+  rep_mark_static(&plist_structure);
   
   repv tem = rep_push_structure("rep.lang.symbols");
   rep_ADD_SUBR(Ssetplist);

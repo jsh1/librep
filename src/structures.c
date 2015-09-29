@@ -706,37 +706,6 @@ such structure.
   return n ? n->binding : rep_nil;
 }
 
-DEFUN("set-structure-name!", Fset_structure_name,
-      Sset_structure_name, (repv structure, repv name), rep_Subr2) /*
-::doc:rep.structures#set-structure-name!::
-set-structure-name! STRUCTURE NAME
-
-Assign the name NAME(a symbol) to structure object STRUCTURE.
-::end:: */
-{
-  rep_DECLARE1(structure, rep_STRUCTUREP);
-
-  if (name != rep_nil) {
-    rep_DECLARE2(name, rep_SYMBOLP);
-    Fstructure_define(rep_structures_structure, name, structure);
-
-    /* FIXME: I'm not sure about this..? */
-
-    if (rep_STRUCTURE(structure)->name == rep_nil) {
-      rep_STRUCTURE(structure)->name = name;
-    }
-  } else if (rep_STRUCTURE(structure)->name != rep_nil) {
-
-    /* Remove the name->structure relation. */
-
-    Fstructure_define(rep_structures_structure,
-		      rep_STRUCTURE(structure)->name, rep_nil);
-  }
-
-  cache_flush();
-  return rep_undefined_value;
-}
-
 /* The environment of the thunks are modified! */
 
 DEFUN("make-structure", Fmake_structure, Smake_structure,
@@ -793,7 +762,7 @@ BODY-THUNK may be modified by this function!
   rep_PUSHGC(gc_s, s_);
 
   if (s->name != rep_nil) {
-    Fset_structure_name(rep_VAL(s), s->name);
+    Fstructure_define(rep_structures_structure, name, rep_VAL(s));
   }
 
   rep_GC_root gc_body;
@@ -829,7 +798,7 @@ BODY-THUNK may be modified by this function!
 
   s = rep_STRUCTURE(s_);
   if (s->name != rep_nil) {
-    Fset_structure_name(rep_VAL(s), rep_nil);
+    Fstructure_define(rep_structures_structure, name, rep_void);
   }
 
   return 0;
@@ -1200,10 +1169,11 @@ attempt to load it.
 
   rep_structure = old;
 
-  if (s && !rep_STRUCTUREP(s))
-    s = rep_nil;
+  if (!s) {
+    return 0;
+  }
 
-  return s;
+  return Ffind_structure(name);
 }
 
 DEFSTRING(no_struct, "No such structure");
@@ -1585,7 +1555,7 @@ DEFUN_INT("require", Frequire, Srequire, (repv feature), rep_Subr1,
 require FEATURE
 
 If FEATURE (a symbol) has not already been loaded, load it. The file
-loaded is either FILE(if given), or the print name of FEATURE.
+loaded is either FILE (if given), or the print name of FEATURE.
 ::end:: */
 {
   rep_DECLARE1(feature, rep_SYMBOLP);
@@ -1607,6 +1577,7 @@ loaded is either FILE(if given), or the print name of FEATURE.
 
   if (tem == rep_nil) {
     tem = Ffind_structure(feature);
+
     if (!rep_STRUCTUREP(tem)) {
       rep_GC_root gc_feature;
       rep_PUSHGC(gc_feature, feature);
@@ -1620,9 +1591,7 @@ loaded is either FILE(if given), or the print name of FEATURE.
 	return 0;
       }
 
-      if (rep_STRUCTUREP(tem)) {
-	Fset_structure_name(tem, feature);
-      }
+      tem = Ffind_structure(feature);
     }
 
     if (rep_STRUCTUREP(tem)) {
@@ -1939,7 +1908,6 @@ rep_structures_init(void)
   rep_ADD_SUBR(Sstructure_accessible);
   rep_ADD_SUBR(Sset_structure_interface);
   rep_ADD_SUBR(Sfind_structure);
-  rep_ADD_SUBR(Sset_structure_name);
   rep_ADD_SUBR(Sstructure_file);
   rep_ADD_SUBR(Sintern_structure);
   rep_ADD_SUBR(Sopen_structures);
@@ -1984,9 +1952,14 @@ rep_structures_init(void)
   rep_mark_static(&rep_specials_structure);
   rep_mark_static(&rep_structures_structure);
 
-  Fset_structure_name(rep_default_structure, Qrep);
-  Fset_structure_name(rep_specials_structure, Q_specials);
-  Fset_structure_name(rep_structures_structure, Q_structures);
+  rep_STRUCTURE(rep_default_structure)->name = Qrep;
+  rep_STRUCTURE(rep_specials_structure)->name = Q_specials;
+  rep_STRUCTURE(rep_structures_structure)->name = Q_structures;
+
+  Fstructure_define(rep_structures_structure, Qrep, rep_default_structure);
+  Fstructure_define(rep_structures_structure, Q_specials, rep_specials_structure);
+  Fstructure_define(rep_structures_structure, Q_structures, rep_structures_structure);
+
 #ifdef VERBOSE
   atexit(print_cache_stats);
 #endif

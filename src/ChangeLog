@@ -1,5 +1,12 @@
 2015-09-29  John Harper  <jsh@unfactored.org>
 
+	* structures.c, repint_subrs.h, plists.c: deleted
+	set-structure-name! only make-structure can change the actual
+	name. Use structure-define to change the name -> structure
+	mapping. intern-structure and require no longer assume the
+	return value from load is the structure, they now call
+	find-structure again to find the module definition
+
 	* lispmach.h, bytecodes.h: renamed some bytecode instructions
 	to match the functions they call
 

@@ -143,6 +143,3 @@ Built %s\n" rep-version rep-build-id)
 
     (require 'rep.util.repl)
     (repl)))
-
-;; prevent this being opened as a module
-nil

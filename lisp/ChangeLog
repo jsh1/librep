@@ -1,5 +1,11 @@
 2015-09-29  John Harper  <jsh@unfactored.org>
 
+	* rep/structures.jl, rep/util/repl.jl, rep/util/repl.jl: use
+	structure-define to create name -> module associations
+
+	* rep/user.jl: no longer any point in returning nil, has no
+	effect
+
 	* rep/vm/bytecodes.jl, rep/vm/bytecode-defs.jl,
 	rep/vm/compiler/rep.jl, rep/vm/peephole.jl,
 	rep/vm/disassembler.jl: renamed some bytecodes to match the

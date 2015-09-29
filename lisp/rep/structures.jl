@@ -49,7 +49,7 @@
 
 (defun alias-structure (from to)
   "Create an alias of the structure called FROM as the name TO."
-  (set-structure-name! (find-structure from) to))
+  (structure-define (find-structure '%structures) to (find-structure from)))
 
 (defun locate-binding (var imported)
   "Return the name of the structure binding VAR, using the list of module

@@ -220,7 +220,6 @@ extern repv Fstructure_bound_p (repv, repv);
 extern repv Fstructure_access (repv, repv);
 extern repv Fintern_structure (repv);
 extern repv Ffind_structure (repv);
-extern repv Fset_structure_name (repv structure, repv name);
 extern repv Fexport_binding (repv var);
 extern repv rep_get_initial_special_value (repv sym);
 extern repv rep_documentation_property (repv structure);

@@ -127,8 +127,7 @@
   ;; initialization
   (define (build-structure)
     (unless gaol-structure
-      (set! gaol-structure (make-structure))
-      (set-structure-name! gaol-structure '%gaol)
+      (set! gaol-structure (make-structure nil nil nil '%gaol))
       (set-structure-implicit-export! gaol-structure t)
       (for-each (lambda (var)
 		  (structure-define gaol-structure var
@@ -136,7 +135,8 @@
 		gaol-safe-functions)
       (set! file-handler-env (map (lambda (sym)
 				       (cons sym t))
-				     gaol-safe-file-handlers))))
+				     gaol-safe-file-handlers))
+      (structure-define (find-structure '%structures) '%gaol gaol-structure)))
 
   (defun make-gaol ()
     (build-structure)
@@ -148,7 +148,8 @@
       (call-hook '*make-gaol-hook* (list gaol))
       gaol))
 
-  (define (define-gaol-structure name gaol) (set-structure-name! gaol name))
+  (define (define-gaol-structure name gaol)
+    (structure-define (find-structure '%structures) name gaol))
 
   (define default-gaol (let (gaol)
 			 (lambda ()

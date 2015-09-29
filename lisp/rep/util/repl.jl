@@ -227,23 +227,23 @@
 		 (intern-structure struct)) structs))
    "STRUCT ...")
 
+  (define (unload-module name)
+    (let ((struct (find-structure name)))
+      (when struct
+	(structure-define (find-structure '%structures) struct nil)))
+
   (define-repl-command
    'reload
    (lambda structs
      (for-each (lambda (x)
-		 (let ((struct (find-structure x)))
-		   (when struct
-		     (set-structure-name! struct nil))
-		   (intern-structure x))) structs))
+		 (unload-module x)
+		 (intern-structure x))) structs))
    "STRUCT ...")
 
   (define-repl-command
    'unload
    (lambda structs
-     (for-each (lambda (x)
-		 (let ((struct (find-structure x)))
-		   (when struct
-		     (set-structure-name! struct nil)))) structs))
+     (for-each unload-module structs))
    "STRUCT ...")
 
   (define-repl-command
