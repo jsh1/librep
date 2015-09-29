@@ -1,5 +1,8 @@
 2015-09-29  John Harper  <jsh@unfactored.org>
 
+	* lispmach.h, bytecodes.h: renamed some bytecode instructions
+	to match the functions they call
+
 	* variables.c: added void? function
 
 2015-09-28  John Harper  <jsh@unfactored.org>

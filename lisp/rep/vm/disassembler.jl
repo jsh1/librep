@@ -46,20 +46,20 @@
      "car" "cdr" "set-car!" "set-cdr!"
      "list-ref" "list-tail" "array-set!" "array-ref"
      "length" "bind" "add" "neg" "sub"	; #x50
-     "mul" "div" "rem" "lnot" "not" "lor" "land"
-     "equal" "eq" "structure-ref" "list-length"
+     "mul" "div" "remainder" "lognot" nil "logior" "logand"
+     "equal?" "eq?" "structure-ref" "list-length"
      "gt" "ge" "lt" "le"		; #x60
-     "inc" "dec" "ash" "zero?" "null" "atom?" "pair?" "list?"
+     "inc" "dec" "ash" "zero?" "null?" "atom?" "pair?" "list?"
      "number?" "string?" "vector?" "catch"
      "throw" "binderr" "return" "pop-frames"	; #x70
      "variable-bound?" "symbol?" "get" "put"
      "errorpro" "signal" "quotient" "reverse"
-     "nreverse" "assoc" "assq" "rassoc"
+     "reverse!" "assoc" "assq" "rassoc"
      "rassq" "last" "mapcar" "mapc"	; #x80
      "member" "memq" "delete!" "delq!"
      "delete-if!" "delete-if-not!" "copy-sequence" "sequence?"
-     "function?" "special-form?" "subr?" "eql"
-     "lxor" "max" "min" "filter"	; #x90
+     "function?" "special-form?" "subr?" "eqv?"
+     "logxor" "max" "min" "filter"	; #x90
      "macro?" "bytecode?" "push 0" "push 1"
      "push 2" "push -1" "push -2" "push %d"
      "push %d" "push %d" "caar" "cadr"

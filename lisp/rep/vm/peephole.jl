@@ -242,15 +242,15 @@
 	    (del-0-1)
 	    (set! keep-going t))
 
-	   ;; push 0; num-eq --> zerop
+	   ;; push 0; num-eq --> zero?
 	   ((and (equal? insn0 '(push 0)) (eq? (car insn1) 'num-eq))
-	    (set-car! insn1 'zerop)
+	    (set-car! insn1 'zero?)
 	    (del-0)
 	    (set! keep-going t))
 
-	   ;; zerop; not --> not-zero-p
-	   ((and (eq? (car insn0) 'zerop) (eq? (car insn1) 'not))
-	    (set-car! insn1 'not-zero-p)
+	   ;; zero?; null? --> not-zero?
+	   ((and (eq? (car insn0) 'zero?) (eq? (car insn1) 'null?))
+	    (set-car! insn1 'not-zero?)
 	    (del-0)
 	    (set! keep-going t))
 
@@ -271,8 +271,8 @@
 	    (del-1)
 	    (set! keep-going t))
 
-	   ;; not; {jn,jt} X --> {jt,jn} X
-	   ((and (eq? (car insn0) 'not)
+	   ;; null?; {jn,jt} X --> {jt,jn} X
+	   ((and (eq? (car insn0) 'null?)
 		 (memq (car insn1) '(jn jt)))
 	    (set-car! insn1 (if (eq? (car insn1) 'jn) 'jt 'jn))
 	    (del-0)

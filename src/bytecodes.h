@@ -128,11 +128,10 @@
 #define OP_SUB 0x58			/* push (- pop[1] pop[2]) */
 #define OP_MUL 0x59			/* push (* pop[1] pop[2]) */
 #define OP_DIV 0x5a			/* push (/ pop[1] pop[2]) */
-#define OP_REM 0x5b			/* push (% pop[1] pop[2]) */
-#define OP_LNOT 0x5c			/* push (lognot pop[1]) */
-#define OP_NOT 0x5d			/* push (not pop[1]) */
-#define OP_LOR 0x5e			/* push (logior pop[1] pop[2]) */
-#define OP_LAND 0x5f			/* push (logand pop[1] pop[2]) */
+#define OP_REMAINDER 0x5b		/* push (% pop[1] pop[2]) */
+#define OP_LOGNOT 0x5c			/* push (lognot pop[1]) */
+#define OP_LOGIOR 0x5e			/* push (logior pop[1] pop[2]) */
+#define OP_LOGAND 0x5f			/* push (logand pop[1] pop[2]) */
 #define OP_EQUAL 0x60			/* push (equal? pop[1] pop[2]) */
 #define OP_EQ 0x61			/* push (eq? pop[1] pop[2]) */
 #define OP_STRUCT_REF 0x62		/* push (structure-ref pop[1] pop[2])*/
@@ -145,9 +144,9 @@
 #define OP_DEC 0x69			/* push (1- pop[1]) */
 #define OP_ASH 0x6a			/* push (ash pop[1] pop[2]) */
 #define OP_ZEROP 0x6b			/* push (zero? pop[1]) */
-#define OP_NULL 0x6c			/* push (null? pop[1]) */
-#define OP_ATOM 0x6d			/* push (atom pop[1]) */
-#define OP_CONSP 0x6e			/* push (pair? pop[1]) */
+#define OP_NULLP 0x6c			/* push (null? pop[1]) */
+#define OP_ATOMP 0x6d			/* push (atom pop[1]) */
+#define OP_PAIRP 0x6e			/* push (pair? pop[1]) */
 #define OP_LISTP 0x6f			/* push (list? pop[1]) */
 #define OP_NUMBERP 0x70			/* push (number? pop[1]) */
 #define OP_STRINGP 0x71			/* push (string? pop[1]) */
@@ -171,7 +170,7 @@
 #define OP_SIGNAL 0x7d			/* call-2 signal */
 #define OP_QUOTIENT 0x7e
 #define OP_REVERSE 0x7f			/* call-1 reverse */
-#define OP_NREVERSE 0x80		/* call-1 nreverse */
+#define OP_NREVERSE 0x80		/* call-1 reverse! */
 #define OP_ASSOC 0x81			/* call-2 assoc */
 #define OP_ASSQ 0x82			/* call-2 assq */
 #define OP_RASSOC 0x83			/* call-2 rassoc */
@@ -181,17 +180,17 @@
 #define OP_MAPC 0x87			/* call-1 mapc */
 #define OP_MEMBER 0x88			/* call-2 member */
 #define OP_MEMQ 0x89			/* call-2 memq */
-#define OP_DELETE 0x8a			/* call-2 delete */
-#define OP_DELQ 0x8b			/* call-2 delq */
-#define OP_DELETE_IF 0x8c		/* call-2 delete-if */
-#define OP_DELETE_IF_NOT 0x8d		/* call-2 delete-if-not */
+#define OP_DELETE 0x8a			/* call-2 delete! */
+#define OP_DELQ 0x8b			/* call-2 delq! */
+#define OP_DELETE_IF 0x8c		/* call-2 delete-if! */
+#define OP_DELETE_IF_NOT 0x8d		/* call-2 delete-if-not! */
 #define OP_COPY_SEQUENCE 0x8e		/* call-1 copy-sequence */
 #define OP_SEQUENCEP 0x8f		/* call-1 sequence? */
 #define OP_FUNCTIONP 0x90		/* call-1 function? */
 #define OP_SPECIAL_FORM_P 0x91		/* call-1 special-form? */
 #define OP_SUBRP 0x92			/* call-1 subr? */
-#define OP_EQL 0x93			/* push (eqv? pop[1] pop[2]) */
-#define OP_LXOR 0x94			/* push (logxor pop[1] pop[2] */
+#define OP_EQV 0x93			/* push (eqv? pop[1] pop[2]) */
+#define OP_LOGXOR 0x94			/* push (logxor pop[1] pop[2] */
 #define OP_MAX 0x95			/* push (max pop[1] pop[2]) */
 #define OP_MIN 0x96			/* push (min pop[1] pop[2]) */
 #define OP_FILTER 0x97			/* call-2 filter */

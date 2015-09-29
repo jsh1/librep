@@ -1,3 +1,10 @@
+2015-09-29  John Harper  <jsh@unfactored.org>
+
+	* rep/vm/bytecodes.jl, rep/vm/bytecode-defs.jl,
+	rep/vm/compiler/rep.jl, rep/vm/peephole.jl,
+	rep/vm/disassembler.jl: renamed some bytecodes to match the
+	functions they represent
+
 2015-09-28  John Harper  <jsh@unfactored.org>
 
 	* updated everything to reflect module system renaming, e.g.

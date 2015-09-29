@@ -289,13 +289,13 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_LIST_REF), &&TAG(OP_LIST_TAIL),				\
   &&TAG(OP_ARRAY_SET), &&TAG(OP_ARRAY_REF),				\
   &&TAG(OP_LENGTH), &&TAG(OP_BIND), &&TAG(OP_ADD), &&TAG(OP_NEG),	\
-  &&TAG(OP_SUB), &&TAG(OP_MUL), &&TAG(OP_DIV), &&TAG(OP_REM),		\
-  &&TAG(OP_LNOT), &&TAG(OP_NOT), &&TAG(OP_LOR), &&TAG(OP_LAND),		\
+  &&TAG(OP_SUB), &&TAG(OP_MUL), &&TAG(OP_DIV), &&TAG(OP_REMAINDER),	\
+  &&TAG(OP_LOGNOT), &&TAG_DEFAULT, &&TAG(OP_LOGIOR), &&TAG(OP_LOGAND),	\
   /* 0x60 */								\
   &&TAG(OP_EQUAL), &&TAG(OP_EQ), &&TAG(OP_STRUCT_REF),			\
   &&TAG(OP_LIST_LENGTH), &&TAG(OP_GT), &&TAG(OP_GE), &&TAG(OP_LT),	\
   &&TAG(OP_LE), &&TAG(OP_INC), &&TAG(OP_DEC), &&TAG(OP_ASH),		\
-  &&TAG(OP_ZEROP), &&TAG(OP_NULL), &&TAG(OP_ATOM), &&TAG(OP_CONSP),	\
+  &&TAG(OP_ZEROP), &&TAG(OP_NULLP), &&TAG(OP_ATOMP), &&TAG(OP_PAIRP),	\
   &&TAG(OP_LISTP),							\
   /* 0x70 */								\
   &&TAG(OP_NUMBERP), &&TAG(OP_STRINGP), &&TAG(OP_VECTORP),		\
@@ -313,7 +313,7 @@ unbind_n(repv *ptr, int n)
   &&TAG(OP_COPY_SEQUENCE), &&TAG(OP_SEQUENCEP),				\
   /* 0x90 */								\
   &&TAG(OP_FUNCTIONP), &&TAG(OP_SPECIAL_FORM_P), &&TAG(OP_SUBRP),	\
-  &&TAG(OP_EQL), &&TAG(OP_LXOR), &&TAG(OP_MAX), &&TAG(OP_MIN),		\
+  &&TAG(OP_EQV), &&TAG(OP_LOGXOR), &&TAG(OP_MAX), &&TAG(OP_MIN),	\
   &&TAG(OP_FILTER), &&TAG(OP_MACROP), &&TAG(OP_BYTECODEP),		\
   &&TAG(OP_PUSHI0), &&TAG(OP_PUSHI1), &&TAG(OP_PUSHI2),			\
   &&TAG(OP_PUSHIM1), &&TAG(OP_PUSHIM2), &&TAG(OP_PUSHI),		\
@@ -1154,15 +1154,15 @@ again: {
       CALL_2(rep_number_div);
     }
 
-    INSN(OP_REM) {
+    INSN(OP_REMAINDER) {
       CALL_2(Fremainder);
     }
 
-    INSN(OP_LNOT) {
+    INSN(OP_LOGNOT) {
       CALL_1(Flognot);
     }
 
-    INSN(OP_NOT) {
+    INSN(OP_NULLP) {
       if (TOP == rep_nil) {
 	TOP = Qt;
       } else {
@@ -1171,24 +1171,15 @@ again: {
       SAFE_NEXT;
     }
 
-    INSN(OP_NULL) {
-      if (TOP == rep_nil) {
-	TOP = Qt;
-      } else {
-	TOP = rep_nil;
-      }
-      SAFE_NEXT;
-    }
-
-    INSN(OP_LOR) {
+    INSN(OP_LOGIOR) {
       CALL_2(rep_number_logior);
     }
 
-    INSN(OP_LXOR) {
+    INSN(OP_LOGXOR) {
       CALL_2(rep_number_logxor);
     }
 
-    INSN(OP_LAND) {
+    INSN(OP_LOGAND) {
       CALL_2(rep_number_logand);
     }
 
@@ -1344,7 +1335,7 @@ again: {
       NEXT;
     }
 
-    INSN(OP_ATOM) {
+    INSN(OP_ATOMP) {
       if (!rep_CONSP(TOP)) {
 	TOP = Qt;
       } else {
@@ -1353,7 +1344,7 @@ again: {
       SAFE_NEXT;
     }
 
-    INSN(OP_CONSP) {
+    INSN(OP_PAIRP) {
       if (rep_CONSP(TOP)) {
 	TOP = Qt;
       } else {
@@ -1583,7 +1574,7 @@ again: {
       CALL_1(Fsubrp);
     }
 
-    INSN(OP_EQL) {
+    INSN(OP_EQV) {
       CALL_2(Feql);
     }
 

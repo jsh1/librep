@@ -57,22 +57,22 @@
   ;; list of instructions that are both side-effect free and don't
   ;; reference any variables. Also none of these may ever raise exceptions
   (define byte-varref-free-insns
-    '(dup push cons car cdr eq equal zerop not-zero-p null atom consp
-      listp numberp stringp vectorp symbolp sequencep functionp
-      special-form-p subrp eql macrop bytecodep caar cadr cdar
+    '(dup push cons car cdr eq? equal? zero? not-zero? null? atom? pair?
+      list? number? string? vector? symbol? sequence? function?
+      special-form? subr? eqv? macro? bytecode? caar cadr cdar
       cadddr caddddr cadddddr caddddddr cadddddddr))
 
 
   ;; list of instructions that can be safely deleted if their result
   ;; isn't actually required
   (define byte-side-effect-free-insns
-    (append '(env-ref refq reg-ref ref list-length list-ref list-tail array-ref
-	      length array-length add neg sub mul div rem lnot not lor land
-	      gt ge lt le inc dec ash boundp get reverse assoc assq rassoc
-	      rassq last copy-sequence lxor max min modulo make-closure enclose
-	      quotient floor ceiling truncate round exp log sin cos tan
-	      sqrt expt structure-ref vector-length vector-ref string-length
-	      string-ref)
+    (append '(env-ref refq reg-ref ref list-length list-ref list-tail
+	      array-ref length array-length add neg sub mul div remainder
+	      lognot logior logand gt ge lt le inc dec ash bound? get
+	      reverse assoc assq rassoc rassq last copy-sequence logxor
+	      max min modulo make-closure enclose quotient floor ceiling
+	      truncate round exp log sin cos tan sqrt expt structure-ref
+	      vector-length vector-ref string-length string-ref)
            byte-varref-free-insns))
 
   (define byte-pushes-undefined-insns
