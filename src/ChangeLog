@@ -1,5 +1,9 @@
 2015-09-29  John Harper  <jsh@unfactored.org>
 
+	* structures.c, repint.h, lispmach.h: structure hash table is
+	always power-of-two sized, so use bitwise-AND to compute hash
+	index, rather than integer divide -- far cheaper
+
 	* structures.c, repint_subrs.h, plists.c: deleted
 	set-structure-name! only make-structure can change the actual
 	name. Use structure-define to change the name -> structure

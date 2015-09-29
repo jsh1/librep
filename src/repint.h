@@ -120,7 +120,8 @@ struct rep_struct_struct {
   rep_struct *next;
   repv name;
   repv inherited;	/* exported symbols that have no local binding */
-  int total_buckets, total_bindings;
+  unsigned int bucket_mask;		/* 1 - bucket_count */
+  unsigned int total_bindings;
   rep_struct_node **buckets;
   repv imports;
   repv accessible;
@@ -164,7 +165,7 @@ struct rep_struct_node_struct {
 
 #define rep_PENDING_CLOSE	(1 << (rep_CELL16_TYPE_BITS + 3))
 
-#define rep_STRUCT_HASH(x,n)	(((x) >> 3) % (n))
+#define rep_STRUCT_HASH(s,x)	(((x) >> 3) & (s)->bucket_mask)
 
 
 /* Binding frames. */

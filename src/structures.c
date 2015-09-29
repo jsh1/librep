@@ -97,6 +97,8 @@
 # include <memory.h>
 #endif
 
+/* MIN_BUCKETS must be a power of two. */
+
 #define MIN_BUCKETS 8
 #define MAX_MULTIPLIER 2
 
@@ -405,11 +407,14 @@ cache_flush(void)
 static void
 structure_mark(repv x)
 {
-  for (int i = 0; i < rep_STRUCTURE(x)->total_buckets; i++) {
-    rep_struct_node *n;
-    for (n = rep_STRUCTURE(x)->buckets[i]; n; n = n->next) {
-      rep_MARKVAL(n->symbol);
-      rep_MARKVAL(n->binding);
+  if (rep_STRUCTURE(x)->bucket_mask != 0) {
+    unsigned int total_buckets = rep_STRUCTURE(x)->bucket_mask + 1;
+    for (int i = 0; i < total_buckets; i++) {
+      rep_struct_node *n;
+      for (n = rep_STRUCTURE(x)->buckets[i]; n; n = n->next) {
+	rep_MARKVAL(n->symbol);
+	rep_MARKVAL(n->binding);
+      }
     }
   }
 
@@ -426,17 +431,19 @@ free_structure(rep_struct *x)
 {
   cache_invalidate_struct(x);
 
-  for (int i = 0; i < x->total_buckets; i++) {
-    rep_struct_node *n, *next;
-    for (n = x->buckets[i]; n; n = next) {
-      next = n->next;
-      rep_free(n);
+  if (x->bucket_mask != 0) {
+    unsigned int total_buckets = x->bucket_mask + 1;
+    for (int i = 0; i < total_buckets; i++) {
+      rep_struct_node *n, *next;
+      for (n = x->buckets[i]; n; n = next) {
+	next = n->next;
+	rep_free(n);
+      }
     }
-  }
 
-  if (x->total_buckets > 0) {
     rep_free(x->buckets);
   }
+
   rep_free(x);
 }
 
@@ -529,17 +536,17 @@ lookup(rep_struct *s, repv var)
 {
   /* Also in OP_REFQ in lispmach.h */
 
-  if (s->total_buckets == 0) {
+  if (s->bucket_mask == 0) {
     if (!s->init) {
       return NULL;
     }
     init_struct(s);
-    if (s->total_buckets == 0) {
+    if (s->bucket_mask == 0) {
       return NULL;
     }
   }
 
-  unsigned int hash = rep_STRUCT_HASH(var, s->total_buckets);
+  unsigned int hash = rep_STRUCT_HASH(s, var);
 
   for (rep_struct_node *n = s->buckets[hash]; n != 0; n = n->next) {
     if (n->symbol == var) {
@@ -559,29 +566,31 @@ lookup_or_add(rep_struct *s, repv var)
     return n;
   }
 
-  if (s->total_buckets == 0) {
-    s->total_buckets = MIN_BUCKETS;
-    s->buckets = rep_alloc(sizeof(rep_struct_node *) * s->total_buckets);
-    memset(s->buckets, 0, sizeof(rep_struct_node *) * s->total_buckets);
-    rep_data_after_gc += sizeof(rep_struct_node *) * s->total_buckets;
+  if (s->bucket_mask == 0) {
+    s->bucket_mask = MIN_BUCKETS - 1;
+    s->buckets = rep_alloc(sizeof(rep_struct_node *) * MIN_BUCKETS);
+    memset(s->buckets, 0, sizeof(rep_struct_node *) * MIN_BUCKETS);
+    rep_data_after_gc += sizeof(rep_struct_node *) * MIN_BUCKETS;
   }
 
-  if (s->total_bindings > s->total_buckets * MAX_MULTIPLIER) {
-    int new_total = s->total_buckets * 2;
+  unsigned int total_buckets = s->bucket_mask + 1;
+
+  if (s->total_bindings > total_buckets * MAX_MULTIPLIER) {
+    unsigned int new_total = total_buckets * 2;
     rep_struct_node **buckets =
       rep_alloc(new_total * sizeof(rep_struct_node *));
     memset(buckets, 0, new_total * sizeof(rep_struct_node *));
     rep_data_after_gc += new_total * sizeof(rep_struct_node *);
-    for (int i = 0; i < s->total_buckets; i++) {
+    s->bucket_mask = new_total - 1;	/* for rep_STRUCT_HASH(s) */
+    for (int i = 0; i < total_buckets; i++) {
       rep_struct_node *next;
       for (rep_struct_node *n = s->buckets[i]; n != 0; n = next) {
-	unsigned int hash = rep_STRUCT_HASH(n->symbol, new_total);
+	unsigned int hash = rep_STRUCT_HASH(s, n->symbol);
 	next = n->next;
 	n->next = buckets[hash];
 	buckets[hash] = n;
       }
     }
-    s->total_buckets = new_total;
     rep_free(s->buckets);
     s->buckets = buckets;
   }
@@ -593,7 +602,7 @@ lookup_or_add(rep_struct *s, repv var)
   n->is_constant = false;
   n->is_exported = false;
 
-  unsigned int hash = rep_STRUCT_HASH(var, s->total_buckets);
+  unsigned int hash = rep_STRUCT_HASH(s, var);
   n->next = s->buckets[hash];
   s->buckets[hash] = n;
 
@@ -612,11 +621,11 @@ lookup_or_add(rep_struct *s, repv var)
 static void
 remove_binding(rep_struct *s, repv var)
 {
-  if (s->total_buckets == 0) {
+  if (s->bucket_mask == 0) {
     return;
   }
 
-  unsigned int hash = rep_STRUCT_HASH(var, s->total_buckets);
+  unsigned int hash = rep_STRUCT_HASH(s, var);
 
   rep_struct_node **ptr = &(s->buckets[hash]);
   rep_struct_node *n;
@@ -744,7 +753,8 @@ BODY-THUNK may be modified by this function!
   s->car = rep_Structure;
   s->inherited = sig;
   s->name = name;
-  s->total_buckets = s->total_bindings = 0;
+  s->bucket_mask = s->total_bindings = 0;
+  s->buckets = NULL;
   s->imports = rep_nil;
   s->accessible = rep_nil;
   s->special_variables = Qt;
@@ -975,10 +985,13 @@ Returns the interface of structure object STRUCTURE.
   rep_struct *s = rep_STRUCTURE(structure);
   repv list = s->inherited;
 
-  for (int i = 0; i < s->total_buckets; i++) {
-    for (rep_struct_node *n = s->buckets[i]; n; n = n->next) {
-      if (n->is_exported || exports_all(s)) {
-	list = Fcons(n->symbol, list);
+  if (s->bucket_mask) {
+    unsigned int total_buckets = s->bucket_mask + 1;
+    for (int i = 0; i < total_buckets; i++) {
+      for (rep_struct_node *n = s->buckets[i]; n; n = n->next) {
+	if (n->is_exported || exports_all(s)) {
+	  list = Fcons(n->symbol, list);
+	}
       }
     }
   }
@@ -1079,13 +1092,16 @@ Set the interface of structure object STRUCTURE to INTERFACE.
   s->inherited = Fcopy_sequence(sig);
   s->car &= ~rep_STF_EXPORT_ALL;
 
-  for (int i = 0; i < s->total_buckets; i++) {
-    for (rep_struct_node *n = s->buckets[i]; n; n = n->next) {
-      if (structure_exports_inherited_p(s, n->symbol)) {
-	n->is_exported = true;
-	s->inherited = Fdelq(n->symbol, s->inherited);
-      } else {
-	n->is_exported = false;
+  if (s->bucket_mask != 0) {
+    unsigned int total_buckets = s->bucket_mask + 1;
+    for (int i = 0; i < total_buckets; i++) {
+      for (rep_struct_node *n = s->buckets[i]; n; n = n->next) {
+	if (structure_exports_inherited_p(s, n->symbol)) {
+	  n->is_exported = true;
+	  s->inherited = Fdelq(n->symbol, s->inherited);
+	} else {
+	  n->is_exported = false;
+	}
       }
     }
   }
@@ -1358,12 +1374,15 @@ value.
 
   init_struct(s);
 
-  for (int i = 0; i < s->total_buckets; i++) {
-    for (rep_struct_node *n = s->buckets[i]; n != 0; n = n->next) {
-      if (!rep_VOIDP(n->binding)) {
-	ret = rep_call_lisp2(fun, n->symbol, n->binding);
-	if (!ret) {
-	  goto out;
+  if (s->bucket_mask != 0) {
+    unsigned int total_buckets = s->bucket_mask + 1;
+    for (int i = 0; i < total_buckets; i++) {
+      for (rep_struct_node *n = s->buckets[i]; n != 0; n = n->next) {
+	if (!rep_VOIDP(n->binding)) {
+	  ret = rep_call_lisp2(fun, n->symbol, n->binding);
+	  if (!ret) {
+	    goto out;
+	  }
 	}
       }
     }
@@ -1386,15 +1405,17 @@ DEFUN("structure-stats", Fstructure_stats,
 
   int empties = 0;
 
-  for (int i = 0; i < s->total_buckets; i++) {
+  unsigned int total_buckets = s->bucket_mask != 0 ? s->bucket_mask + 1 : 0;
+
+  for (int i = 0; i < total_buckets; i++) {
     if (s->buckets[i] == 0) {
       empties++;
     }
   }
 
   fprintf(stderr, "%d buckets, %d of which are empty,\n"
-	  "%g bindings per non-empty bucket\n", s->total_buckets, empties,
-	  (double) s->total_bindings / (s->total_buckets - empties));
+	  "%g bindings per non-empty bucket\n", total_buckets, empties,
+	  (double) s->total_bindings / (total_buckets - empties));
 
   return Qt;
 }

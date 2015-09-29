@@ -799,11 +799,9 @@ again: {
       ASSERT(arg < rep_VECTOR_LEN(consts));
       repv var = rep_VECT(consts)->array[arg];
       rep_struct *s = rep_STRUCTURE(rep_structure);
-      if (s->total_buckets != 0) {
-	for (rep_struct_node *n
-	     = s->buckets[rep_STRUCT_HASH(var, s->total_buckets)];
-	     n; n = n->next)
-	{
+      if (s->bucket_mask != 0) {
+	rep_struct_node *n;
+	for (n = s->buckets[rep_STRUCT_HASH(s, var)]; n; n = n->next) {
 	  if (n->symbol == var) {
 	    PUSH(n->binding);
 	    SAFE_NEXT;
