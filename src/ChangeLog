@@ -1,3 +1,7 @@
+2015-09-29  John Harper  <jsh@unfactored.org>
+
+	* variables.c: added void? function
+
 2015-09-28  John Harper  <jsh@unfactored.org>
 
 	* variables.c, structures.c, repint_subrs.h, record-profile.c,

@@ -692,6 +692,16 @@ Returns t if SYMBOL is a special variable (dynamically scoped).
   return (rep_SYM(sym)->car & rep_SF_SPECIAL) ? Qt : rep_nil;
 }
 
+DEFUN("void?", Fvoidp, Svoidp, (repv arg), rep_Subr1) /*
+::doc:rep.lang.interpreter#void?::
+void? ARG
+
+Returns true if ARG is the void value.
+::end:: */
+{
+  return rep_VOIDP(arg) ? Qt : rep_nil;
+}
+
 void
 rep_variables_init(void)
 {
@@ -722,5 +732,6 @@ rep_variables_init(void)
   rep_ADD_SUBR(Sset_);
   rep_ADD_SUBR(S_define);
   rep_ADD_SUBR(Sdefvar);
+  rep_ADD_SUBR(Svoidp);
   rep_pop_structure(tem);
 }
