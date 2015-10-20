@@ -1,3 +1,8 @@
+2015-10-20  John Harper  <jsh@unfactored.org>
+
+	* numbers.c (rep_number_max, rep_number_min): fixed inline code
+	for negative values
+
 2015-09-29  John Harper  <jsh@unfactored.org>
 
 	* structures.c, repint.h, lispmach.h: structure hash table is

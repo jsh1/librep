@@ -2280,7 +2280,7 @@ repv
 rep_number_max(repv x, repv y)
 {
   if (rep_INTP_2(x, y)) {
-    return x > y ? x : y;
+    return rep_INT(x) > rep_INT(y) ? x : y;
   }
 
   return rep_number_max__(x, y);
@@ -2290,7 +2290,7 @@ repv
 rep_number_min(repv x, repv y)
 {
   if (rep_INTP_2(x, y)) {
-    return x < y ? x : y;
+    return rep_INT(x) < rep_INT(y) ? x : y;
   }
 
   return rep_number_min__(x, y);
