@@ -1088,22 +1088,26 @@ rep_parse_number(const char *buf, size_t len, int radix,
     } else if (len == 5 && strncmp(buf, "nan.0", 5) == 0) {
       d = NAN;
     } else {
+      char copy[len + 1];
+      memcpy(copy, buf, len);
+      copy[len] = 0;
+
       char *tem = NULL;
 #ifdef HAVE_STRTOD_L
-      d = strtod_l(buf, &tem, NULL);
+      d = strtod_l(copy, &tem, NULL);
 #else
 # ifdef HAVE_SETLOCALE
       char *old_locale = NULL;
       INSTALL_LOCALE(old_locale, LC_NUMERIC, "C");
 # endif
-      d = strtod(buf, &tem);
+      d = strtod(copy, &tem);
 # ifdef HAVE_SETLOCALE
       if (old_locale != 0) {
 	setlocale(LC_NUMERIC, old_locale);
       }
 # endif
 #endif
-      if (tem - buf != len) {
+      if (tem - copy != len) {
 	return 0;
       }
     }

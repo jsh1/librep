@@ -1,3 +1,8 @@
+2015-11-01  John Harper  <jsh@unfactored.org>
+
+	* numbers.c (rep_parse_number): must null-terminate buffer when
+	parsing floats, strtod() doesn't have a length param
+
 2015-10-20  John Harper  <jsh@unfactored.org>
 
 	* numbers.c (rep_number_max, rep_number_min): fixed inline code
