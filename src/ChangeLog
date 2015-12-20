@@ -1,3 +1,7 @@
+2015-12-20  John Harper  <jsh@unfactored.org>
+
+	* numbers.c: remove broken integer divide "optimization"
+
 2015-11-01  John Harper  <jsh@unfactored.org>
 
 	* numbers.c (rep_parse_number): must null-terminate buffer when

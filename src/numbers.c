@@ -1613,8 +1613,8 @@ rep_number_mul__(repv x, repv y)
   return out;
 }
 
-static NOT_INLINE repv
-rep_number_div__(repv x, repv y)
+repv
+rep_number_div(repv x, repv y)
 {
   rep_DECLARE1(x, rep_NUMERICP);
   rep_DECLARE2(y, rep_NUMERICP);
@@ -2228,16 +2228,6 @@ rep_number_mul(repv x, repv y)
   }
 
   return rep_number_mul__(x, y);
-}
-
-repv
-rep_number_div(repv x, repv y)
-{
-  if (rep_INTP_2(x, y) && y != rep_MAKE_INT(0)) {
-    return rep_MAKE_INT(rep_INT(x) / rep_INT(y));
-  }
-
-  return rep_number_div__(x, y);
 }
 
 repv
