@@ -489,8 +489,8 @@ DATA)' while the handler is evaluated (these are the arguments given to
 
 (export-bindings '(call-with-catch call-with-unwind-protect
 		   call-with-error-handlers catch throw let-escape
-		   let-escape/tag call-with-escape unwind-protect
-		   condition-case default-error-handler))
+		   let-escape/tag unwind-protect condition-case
+		   default-error-handler))
 
 
 ;; Function to allow easy creation of autoload stubs

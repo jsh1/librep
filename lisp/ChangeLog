@@ -1,3 +1,7 @@
+2016-01-16  John Harper  <jsh@unfactored.org>
+
+	* rep/lang/interpreter.jl: was exporting a non-existent binding
+
 2015-09-29  John Harper  <jsh@unfactored.org>
 
 	* rep/structures.jl, rep/util/repl.jl, rep/util/repl.jl: use
