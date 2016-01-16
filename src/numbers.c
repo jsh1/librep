@@ -926,7 +926,6 @@ rep_parse_number(const char *buf, size_t len, int radix,
   }
 
   switch (type) {
-
   case 0: {
     size_t bits;
     switch (radix) {
@@ -1034,7 +1033,7 @@ rep_parse_number(const char *buf, size_t len, int radix,
   /* not reached */ }
 
   case rep_NUMBER_RATIONAL: {
-    char *tem = strchr(buf, '/');
+    char *tem = memchr(buf, '/', len);
     assert(tem != 0);
 
 #ifdef HAVE_GMP
@@ -1042,12 +1041,18 @@ rep_parse_number(const char *buf, size_t len, int radix,
     number_q *q = make_number(rep_NUMBER_RATIONAL);
     mpq_init(q->q);
 
-    char copy[tem - buf + 1];
-    memcpy(copy, buf, tem - buf);
-    copy[tem - buf] = 0;
+    size_t l1 = tem - buf;
+    char s1[l1 + 1];
+    memcpy(s1, buf, l1);
+    s1[l1] = 0;
 
-    if (mpz_set_str(mpq_numref(q->q), copy, radix) == 0
-	&& mpz_set_str(mpq_denref(q->q), tem + 1, radix) == 0)
+    size_t l2 = len - (tem + 1 - buf);
+    char s2[l2 + 1];
+    memcpy(s2, tem + 1, l2);
+    s2[l2] = 0;
+
+    if (mpz_set_str(mpq_numref(q->q), s1, radix) == 0
+	&& mpz_set_str(mpq_denref(q->q), s2, radix) == 0)
     {
       if (mpz_sgn(mpq_denref(q->q)) == 0) {
 	return 0;

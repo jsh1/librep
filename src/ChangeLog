@@ -1,3 +1,8 @@
+2016-01-16  John Harper  <jsh@unfactored.org>
+
+	* numbers.c (rep_parse_number): fix rational number parsing
+	(input string may not be null-terminated)
+
 2015-12-20  John Harper  <jsh@unfactored.org>
 
 	* numbers.c: remove broken integer divide "optimization"
