@@ -1,3 +1,8 @@
+2016-07-13  John Harper  <jsh@unfactored.org>
+
+	* mac-runloop.m: try to get on-idle function working, getting
+	tired of losing work in Jade everytime my mac crashes!
+
 2016-01-16  John Harper  <jsh@unfactored.org>
 
 	* numbers.c (rep_parse_number): fix rational number parsing

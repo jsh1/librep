@@ -58,7 +58,6 @@ struct input_data_struct {
 struct runloop_context_struct {
   runloop_context *next;
   int timed_out;
-  int idle_counter;
   int this_timeout_msecs;
   int actual_timeout_msecs;
   CFRunLoopTimerRef timer;
@@ -74,6 +73,7 @@ static int sigchld_pipe[2];
 static CFRunLoopSourceRef sigchld_source;
 
 static int waiting_for_input;
+static int idle_counter, last_idle_counter;
 
 static runloop_context *current_context;
 
@@ -122,7 +122,11 @@ input_thread(void *arg)
 
     pthread_mutex_unlock(&input_mutex);
 
-    int err = select(FD_SETSIZE, &copy, NULL, NULL, NULL);
+    struct timeval idle_timeout;
+    idle_timeout.tv_sec = 1;
+    idle_timeout.tv_usec = 0;
+
+    int err = select(FD_SETSIZE, &copy, NULL, NULL, &idle_timeout);
 
     /* We may get EBADF errors if the fd-set changed while we were
        blocked, but that's okay, we'll be in sync with the main thread
@@ -133,6 +137,12 @@ input_thread(void *arg)
 
     bool need_wake = false;
 
+    if (err == 0) {
+      // timeout was reached.
+      idle_counter++;
+      need_wake = true;
+    }
+
     if (err > 0 && FD_ISSET(input_pipe[0], &copy)) {
       empty_pipe(input_pipe[0]);
       err--;
@@ -142,6 +152,7 @@ input_thread(void *arg)
       empty_pipe(sigchld_pipe[0]);
       CFRunLoopSourceSignal(sigchld_source);
       need_wake = true;
+      idle_counter = 0;
       err--;
     }
 
@@ -150,6 +161,7 @@ input_thread(void *arg)
 	OSAtomicIncrement32(&d->pending);
 	CFRunLoopSourceSignal(d->source);
 	need_wake = true;
+        idle_counter = 0;
 	err--;
       }
     }
@@ -413,8 +425,16 @@ observer_callback(CFRunLoopObserverRef observer,
       needs_redisplay = false;
     }
 
+    pthread_mutex_lock(&input_mutex);
+    bool idle_changed = idle_counter != last_idle_counter;
+    last_idle_counter = idle_counter;
+    pthread_mutex_unlock(&input_mutex);
+
+    if (idle_changed && last_idle_counter > 0) {
+      rep_on_idle(last_idle_counter - 1);
+    }
+
     ctx->timed_out = 0;
-    ctx->idle_counter = 0;
 
     if (ctx->timer != NULL) {
       set_timeout(rep_input_timeout_secs * 1000);
@@ -445,6 +465,10 @@ sigchld_callback(void)
 bool
 mac_defer_event(void *view, void *ns_event)
 {
+  pthread_mutex_lock(&input_mutex);
+  idle_counter = 0;
+  pthread_mutex_unlock(&input_mutex);
+
   if (waiting_for_input == 0) {
     return false;
   }
